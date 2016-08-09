@@ -3,12 +3,12 @@
 // *********************
 
 const int SPL_COST_BLINK     =   10; // Mana cost. Can be freely adjusted.
-const int STEP_BLINK         =   10; // "Time" before creating aim vob. Kepp in synch with the invest ani duration.
+const int STEP_BLINK         =    3; // "Time" before creating aim vob. Kepp in synch with the invest ani duration.
 const int SPL_BLINK_MAXDIST  = 1000; // Maximum distance (cm) to blink. Can be freely adjusted.
 const int SPL_BLINK_OBJDIST  =   75; // Set by PFX radius. Do not touch.
 
 INSTANCE Spell_Blink (C_Spell_Proto) {
-    time_per_mana            = 20; // STEP_BLINK * time_per_mana + time_per_mana = ramp up time.
+    time_per_mana            = 50; // STEP_BLINK * time_per_mana + time_per_mana = ramp up time.
     damage_per_level         = 0;
     spelltype                = SPELL_NEUTRAL;
     canTurnDuringInvest      = 1; // Not working. For a hack see updateHeroYrot()
@@ -18,63 +18,43 @@ INSTANCE Spell_Blink (C_Spell_Proto) {
     targetCollectElev        = 0;
 };
 
-func int Spell_Logic_Blink(var int manaInvested) {
-    // Not enough mana
-    if (self.attribute[ATR_MANA] < STEP_BLINK) {
-        return SPL_DONTINVEST;
-    };
+/* Frame function for invest loop. Updates aim vob by mouse movement
+ *
+ * The function does the following.
+ * 1. Update mouse movement
+ * 2. Retrieve (or create) aim vob
+ * 3. Shoot trace ray from caster along the camera axis
+ * 4. Position aim vob at end (intersection) of trace ray
+ * 5. Get distance to aim vob for mouse movement multiplier
+ */
+func void Spell_Invest_Blink(var int casterId) {
+    MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
+    var zCVob caster; caster = Hlp_GetNpc(casterId);
+    var zCVob cam; cam = _^(MEM_Camera.connectedVob);
+    // The line below retrieves self.id by address. I was too lazy to store 'self' just for this
+    var String vobname; vobname = ConCatStrings("BlinkObj_", IntToString(MEM_ReadInt(_@(caster)+MEM_NpcID_Offset)));
+    var int vobPtr; vobPtr = MEM_SearchVobByName(vobname);
 
-    // Aim vob variables
-    var int vobPtr; var zCVob vob;
-    vobPtr = MEM_SearchVobByName(ConCatStrings("BlinkObj_", IntToString(self.id)));
+    if (!vobPtr) { // Aim vob should not exist
+        // Create and name aim vob
+        vobPtr = MEM_Alloc(sizeof_zCVob);
+        const int zCVob__zCVob = 6283744; //0x5FE1E0
+        CALL__thiscall(vobPtr, zCVob__zCVob);
+        MEM_WriteString(vobPtr+16, vobname); // _zCObject_objectName
+        // Insert aim vob into world
+        const int zCWorld__AddVobAsChild = 6440352; //0x6245A0
+        CALL_PtrParam(_@(MEM_Vobtree));
+        CALL_PtrParam(vobPtr);
+        CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
+        // Aim FX
+        var zCVob vob; vob = _^(vobPtr); // Wld_PlayEffect does not _^(vobPtr).. lame
+        Wld_StopEffect("SPELLFX_BLINK_DESTINATION"); // Remove effect if exists first
+        Wld_PlayEffect("SPELLFX_BLINK_DESTINATION", vob, vob, 0, 0, 0, 0); // Stays attached to vob
+    };
 
     // Manually enable rotation around y-axis
     if (!aimModifier) { aimModifier = FLOATEINS; };
     updateHeroYrot(aimModifier); // Outsourced to hook since it might be useful for other spells/weapons as well
-
-    if (manaInvested <= STEP_BLINK*1) {
-
-        // Ramp up (waiting for invest ani): Nothing happens. The caster "builds up" the spell (called several times)
-        self.aivar[AIV_SpellLevel] = 1; // Start with lvl 1
-
-        // Small fix in case a vob is caught in focus (happens rarely when switching between spells very fast)
-        if Npc_IsPlayer(self) {
-            var oCNPC slf; slf = Hlp_GetNpc(self);
-            slf.focus_vob = 0;
-        };
-
-        return SPL_STATUS_CANINVEST_NO_MANADEC;
-    } else if (manaInvested > (STEP_BLINK*1)) && (self.aivar[AIV_SpellLevel] <= 1) {
-        // After ramp up time: Create aim vob (called exactly once)
-
-        if (!vobPtr) {
-            // Create aim vob
-            vobPtr = MEM_Alloc(sizeof_zCVob);
-            const int zCVob__zCVob = 6283744; //0x5FE1E0
-            CALL__thiscall(vobPtr, zCVob__zCVob);
-            vob = _^(vobPtr); vob._zCObject_objectName = ConCatStrings("BlinkObj_", IntToString(self.id));
-            // Insert into world
-            const int zCWorld__AddVobAsChild = 6440352; //0x6245A0
-            CALL_PtrParam(_@(MEM_Vobtree));
-            CALL_PtrParam(vobPtr);
-            CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
-        };
-        vob = _^(vobPtr);
-
-        Wld_StopEffect("SPELLFX_BLINK_DESTINATION"); // Remove effect if exists first
-        Wld_PlayEffect("SPELLFX_BLINK_DESTINATION", vob, vob, 0, 0, 0, FALSE); // FX stays attached to moving aim vob
-
-        // Moved: I was teleported to the origin (0, 0, 0) of the map once. Set spell lvl AFTER position is set.
-        //self.aivar[AIV_SpellLevel] = 2;
-        //return SPL_NEXTLEVEL; // Reach lvl 2
-    };
-
-    // Spell ramp up is over. The following is called every iteration (after creation of aim vob).
-    MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
-
-    // Get caster and camera vob
-    var zCVob caster; caster = Hlp_GetNpc(self);
-    var zCVob cam; cam = _^(MEM_Camera.connectedVob);
 
     // Set trace ray (start from caster and go along the outvector of the camera vob)
     var int pos[6]; // Combined pos[3] + dir[3]
@@ -116,11 +96,29 @@ func int Spell_Logic_Blink(var int manaInvested) {
     var int dz; dz = subf(pos[2], caster.trafoObjToWorld[11]);
     var int dist3d; dist3d = sqrtf(addf(addf(sqrf(dx), sqrf(dy)), sqrf(dz)));
     aimModifier = subf(FLOATEINS, divf(dist3d, mkf(SPL_BLINK_MAXDIST*2)));
+};
 
-    // First time after aim vob creation
-    if (self.aivar[AIV_SpellLevel] <= 1) {
+func int Spell_Logic_Blink(var int manaInvested) {
+    // Not enough mana; only hero is allowed to use this spell
+    if (self.attribute[ATR_MANA] < STEP_BLINK) || (!Npc_IsPlayer(self)) {
+        return SPL_DONTINVEST;
+    };
+
+    // Three levels: Build up spell, create aim vob, start passive invest loop
+    if (manaInvested <= STEP_BLINK*1) {
+        self.aivar[AIV_SpellLevel] = 0; // Start with lvl 0
+        // Small fix in case a vob is caught in focus (happens rarely when switching between spells very fast)
+        var oCNPC slf; slf = Hlp_GetNpc(self); slf.focus_vob = 0;
+        return SPL_STATUS_CANINVEST_NO_MANADEC;
+    } else if (manaInvested > (STEP_BLINK*1)) && (self.aivar[AIV_SpellLevel] <= 0) {
+        // Start frame function
+        if (FF_Active(Spell_Invest_Blink)) { FF_RemoveData(Spell_Invest_Blink, Hlp_GetInstanceID(self)); };
+        FF_ApplyExtData(Spell_Invest_Blink, 0, -1, Hlp_GetInstanceID(self));
+        self.aivar[AIV_SpellLevel] = 1;
+        return SPL_NEXTLEVEL; // Do not go to level two yet, because we need to be sure the vob is created first!
+    } else if (manaInvested > (STEP_BLINK*1+1)) && (self.aivar[AIV_SpellLevel] <= 1) {
         self.aivar[AIV_SpellLevel] = 2;
-        return SPL_NEXTLEVEL; // Reach lvl 2
+        return SPL_NEXTLEVEL; // Now we are ready to got to level 2 (meaning from here on the spell is "armed")
     };
 
     // Aiming does not cost mana
@@ -128,7 +126,8 @@ func int Spell_Logic_Blink(var int manaInvested) {
 };
 
 func void Spell_Cast_Blink(var int spellLevel) {
-    // Remove aim FX
+    // Remove FF and aim FX
+    if (FF_Active(Spell_Invest_Blink)) { FF_RemoveData(Spell_Invest_Blink, Hlp_GetInstanceID(self)); };
     Wld_StopEffect("SPELLFX_BLINK_DESTINATION");
 
     // Spell was aborted by caster before it started (ramp up not finished)
@@ -138,7 +137,7 @@ func void Spell_Cast_Blink(var int spellLevel) {
     var int vobPtr; vobPtr = MEM_SearchVobByName(ConCatStrings("BlinkObj_", IntToString(self.id)));
     if (!vobPtr) {
         // MEM_Error("Blink: Failed to retrieve destination (aim vob)"); // Don't break immersion
-        AI_PlayAni(self, "T_CASTFAIL");
+        AI_PlayAni(self, "T_CASTFAIL"); // Much nicer
         Wld_PlayEffect("SPELLFX_BLINK_FAIL", self, self, 0, 0, 0, FALSE);
         MEM_Warn("Blink: Failed to retrieve destination (aim vob)");
         return;
@@ -156,7 +155,7 @@ func void Spell_Cast_Blink(var int spellLevel) {
     CALL__thiscall(_@(MEM_World), zCWorld__RemoveVob);
     vobPtr = 0; // Don't free vobPtr. Seems to be done in zCWorld::RemoveVob
 
-    // Check for wp
+    // Check if destination wp already (from last cast) exists
     const int zCWayNet__GetWaypoint = 8061744; //0x7B0330
     CALL__fastcall(_@(MEM_Waynet), _@s(ConCatStrings("WP_BLINKOBJ_", IntToString(self.id))), zCWayNet__GetWaypoint);
     var int wpPtr; wpPtr = CALL_RetValAsInt();
@@ -170,23 +169,20 @@ func void Spell_Cast_Blink(var int spellLevel) {
     wpPtr = MEM_Alloc(124); // sizeof_zCWaypoint
     const int zCWaypoint__zCWaypoint = 8058736; //0x7AF770
     CALL__thiscall(wpPtr, zCWaypoint__zCWaypoint);
-    // Set position
+    // Set position and name wp
     MEM_CopyWords(_@(pos), wpPtr+68, 6);
-    // Name wp
     const int zCWaypoint__SetName = 8059824; //0x7AFBB0
     CALL_zStringPtrParam(ConCatStrings("WP_BLINKOBJ_", IntToString(self.id)));
     CALL__thiscall(wpPtr, zCWaypoint__SetName);
-    // Insert into waynet
+    // Insert wp into waynet
     const int zCWayNet__InsertWaypoint = 8048896; //0x7AD100
     CALL_PtrParam(wpPtr);
     CALL__thiscall(_@(MEM_Waynet), zCWayNet__InsertWaypoint);
 
     // Decrease mana (the usual)
     self.attribute[ATR_MANA] -= SPL_COST_BLINK;
-    if (self.attribute[ATR_MANA] < 0) {
-        self.attribute[ATR_MANA] = 0;
-    };
-    self.aivar[AIV_SelectSpell] += 1;
+    if (self.attribute[ATR_MANA] < 0) { self.attribute[ATR_MANA] = 0; };
+    self.aivar[AIV_SelectSpell] += 1; // Since NPCs can't use this spell. This is just for completeness
 
     // Teleport to wp
     AI_Teleport(self, ConCatStrings("WP_BLINKOBJ_", IntToString(self.id)));
