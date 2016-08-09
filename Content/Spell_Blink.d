@@ -3,12 +3,12 @@
 // *********************
 
 const int SPL_COST_BLINK     =   10; // Mana cost. Can be freely adjusted.
-const int STEP_BLINK         =   10; // "Time" before creating aim. Kepp in synch with the invest ani duration.
+const int STEP_BLINK         =   10; // "Time" before creating aim vob. Kepp in synch with the invest ani duration.
 const int SPL_BLINK_MAXDIST  = 1000; // Maximum distance (cm) to blink. Can be freely adjusted.
 const int SPL_BLINK_OBJDIST  =   75; // Set by PFX radius. Do not touch.
 
 INSTANCE Spell_Blink (C_Spell_Proto) {
-    time_per_mana            = 10; // STEP_BLINK * time_per_mana + time_per_mana = ramp up time.
+    time_per_mana            = 20; // STEP_BLINK * time_per_mana + time_per_mana = ramp up time.
     damage_per_level         = 0;
     spelltype                = SPELL_NEUTRAL;
     canTurnDuringInvest      = 1; // Not working. For a hack see updateHeroYrot()
@@ -18,7 +18,6 @@ INSTANCE Spell_Blink (C_Spell_Proto) {
     targetCollectElev        = 0;
 };
 
-var int timeB;
 func int Spell_Logic_Blink(var int manaInvested) {
     // Not enough mana
     if (self.attribute[ATR_MANA] < STEP_BLINK) {
@@ -34,10 +33,6 @@ func int Spell_Logic_Blink(var int manaInvested) {
     updateHeroYrot(aimModifier); // Outsourced to hook since it might be useful for other spells/weapons as well
 
     if (manaInvested <= STEP_BLINK*1) {
-
-        if (manaInvested == 0) {
-            timeB = MEM_Timer.totalTime;
-        };
 
         // Ramp up (waiting for invest ani): Nothing happens. The caster "builds up" the spell (called several times)
         self.aivar[AIV_SpellLevel] = 1; // Start with lvl 1
