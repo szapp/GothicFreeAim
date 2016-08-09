@@ -12,10 +12,10 @@ INSTANCE Spell_Blink (C_Spell_Proto) {
     damage_per_level         = 0;
     spelltype                = SPELL_NEUTRAL;
     canTurnDuringInvest      = 1; // Not working. For a hack see updateHeroYrot()
-    targetCollectAlgo        = TARGET_COLLECT_NONE;
-    targetCollectRange       = 0;
-    targetCollectAzi         = 0;
-    targetCollectElev        = 0;
+    targetCollectAlgo        = TARGET_COLLECT_FOCUS; // TARGET_COLLECT_NONE
+    //targetCollectRange       = 0;
+    //targetCollectAzi         = 0;
+    //targetCollectElev        = 0;
 };
 
 /* Frame function for invest loop. Updates aim vob by mouse movement
@@ -28,14 +28,12 @@ INSTANCE Spell_Blink (C_Spell_Proto) {
  * 5. Get distance to aim vob for mouse movement multiplier
  */
 func void Spell_Invest_Blink(var int casterId) {
-    if (Npc_GetActiveSpell(Hlp_GetNpc(casterId)) == -1) { // If blink is not actually being casted
-        // Remove FF and aim FX
+    var zCVob caster; caster = Hlp_GetNpc(casterId);
+    if (Npc_GetActiveSpell(caster) == -1) { // If blink is not actually being casted
         if (FF_Active(Spell_Invest_Blink)) { FF_RemoveData(Spell_Invest_Blink, casterId); };
-        Wld_StopEffect("SPELLFX_BLINK_DESTINATION");
         return;
     };
     MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
-    var zCVob caster; caster = Hlp_GetNpc(casterId);
     var zCVob cam; cam = _^(MEM_Camera.connectedVob);
     // The line below retrieves self.id by address. I was too lazy to store 'self' just for this
     var String vobname; vobname = ConCatStrings("BlinkObj_", IntToString(MEM_ReadInt(_@(caster)+MEM_NpcID_Offset)));
@@ -47,15 +45,17 @@ func void Spell_Invest_Blink(var int casterId) {
         const int zCVob__zCVob = 6283744; //0x5FE1E0
         CALL__thiscall(vobPtr, zCVob__zCVob);
         MEM_WriteString(vobPtr+16, vobname); // _zCObject_objectName
+          // DEBUG: Give vob visual and collision
+          const int zCVob__SetVisual = 6301312; //0x602680
+          CALL_zStringPtrParam("NW_MONASTERY_ALTAR_01.3DS"); // Visual
+          CALL__thiscall(vobPtr, zCVob__SetVisual);
         // Insert aim vob into world
         const int zCWorld__AddVobAsChild = 6440352; //0x6245A0
         CALL_PtrParam(_@(MEM_Vobtree));
         CALL_PtrParam(vobPtr);
         CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
-        // Aim FX
-        var zCVob vob; vob = _^(vobPtr); // Wld_PlayEffect does not allow _^(vobPtr).. lame
-        Wld_StopEffect("SPELLFX_BLINK_DESTINATION"); // Remove effect if exists first
-        Wld_PlayEffect("SPELLFX_BLINK_DESTINATION", vob, vob, 0, 0, 0, 0); // Stays attached to vob
+        // Set vob as focus vob (for target FX)
+        MEM_WriteInt(_@(caster)+2476, vobPtr);
     };
 
     // Manually enable rotation around y-axis
@@ -107,7 +107,7 @@ func int Spell_Logic_Blink(var int manaInvested) {
     if (manaInvested <= STEP_BLINK*1) {
         self.aivar[AIV_SpellLevel] = 0; // Start with lvl 0
         // Small fix in case a vob is caught in focus (happens rarely when switching between spells very fast)
-        var oCNPC slf; slf = Hlp_GetNpc(self); slf.focus_vob = 0;
+        //var oCNPC slf; slf = Hlp_GetNpc(self); slf.focus_vob = 0;
         return SPL_STATUS_CANINVEST_NO_MANADEC;
     } else if (manaInvested > (STEP_BLINK*1)) && (self.aivar[AIV_SpellLevel] <= 0) {
         // Start frame function
@@ -127,7 +127,6 @@ func int Spell_Logic_Blink(var int manaInvested) {
 func void Spell_Cast_Blink(var int spellLevel) {
     // Remove FF and aim FX
     if (FF_Active(Spell_Invest_Blink)) { FF_RemoveData(Spell_Invest_Blink, Hlp_GetInstanceID(self)); };
-    Wld_StopEffect("SPELLFX_BLINK_DESTINATION");
 
     // Spell was aborted by caster before it started (ramp up not finished)
     if (spellLevel < 2) { return; };
