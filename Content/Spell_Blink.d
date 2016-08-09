@@ -28,6 +28,12 @@ INSTANCE Spell_Blink (C_Spell_Proto) {
  * 5. Get distance to aim vob for mouse movement multiplier
  */
 func void Spell_Invest_Blink(var int casterId) {
+    if (Npc_GetActiveSpell(Hlp_GetNpc(casterId)) == -1) { // If blink is not actually being casted
+        // Remove FF and aim FX
+        if (FF_Active(Spell_Invest_Blink)) { FF_RemoveData(Spell_Invest_Blink, casterId); };
+        Wld_StopEffect("SPELLFX_BLINK_DESTINATION");
+        return;
+    };
     MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
     var zCVob caster; caster = Hlp_GetNpc(casterId);
     var zCVob cam; cam = _^(MEM_Camera.connectedVob);
@@ -47,14 +53,14 @@ func void Spell_Invest_Blink(var int casterId) {
         CALL_PtrParam(vobPtr);
         CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
         // Aim FX
-        var zCVob vob; vob = _^(vobPtr); // Wld_PlayEffect does not _^(vobPtr).. lame
+        var zCVob vob; vob = _^(vobPtr); // Wld_PlayEffect does not allow _^(vobPtr).. lame
         Wld_StopEffect("SPELLFX_BLINK_DESTINATION"); // Remove effect if exists first
         Wld_PlayEffect("SPELLFX_BLINK_DESTINATION", vob, vob, 0, 0, 0, 0); // Stays attached to vob
     };
 
     // Manually enable rotation around y-axis
     if (!aimModifier) { aimModifier = FLOATEINS; };
-    updateHeroYrot(aimModifier); // Outsourced to hook since it might be useful for other spells/weapons as well
+    updateHeroYrot(aimModifier); // Outsourced since it might be useful for other spells/weapons as well (free aim)
 
     // Set trace ray (start from caster and go along the outvector of the camera vob)
     var int pos[6]; // Combined pos[3] + dir[3]
@@ -64,10 +70,7 @@ func void Spell_Invest_Blink(var int casterId) {
 
     // Shoot trace ray
     if (TraceRay(_@(pos), _@(pos)+12, // From caster to max distance
-            (zTRACERAY_VOB_IGNORE_NO_CD_DYN         // Ignore dynamic vobs (like NPCs)
-                | zTRACERAY_POLY_TEST_WATER         // Hit water
-                | zTRACERAY_POLY_NORMAL             // Calculate normal vector (actually not needed here)
-                | zTRACERAY_POLY_IGNORE_TRANSP))) { // Ignore alpha objects (invisible objects)
+            (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_POLY_TEST_WATER | zTRACERAY_POLY_IGNORE_TRANSP))) {
         // Set new position to intersection (point where the trace ray made contact with a polygon)
         pos[0] = MEM_World.foundIntersection[0];
         pos[1] = MEM_World.foundIntersection[1];
@@ -78,10 +81,8 @@ func void Spell_Invest_Blink(var int casterId) {
         pos[1] = addf(pos[1], pos[4]);
         pos[2] = addf(pos[2], pos[5]);
     };
-
     // Substract OBJDIST to get away from intersection (do it also if there was no intersection, to make it smoother)
-    // POS = POS - (DIR * OBJDIS)
-    pos[0] = subf(pos[0], mulf(cam.trafoObjToWorld[ 2], mkf(SPL_BLINK_OBJDIST)));
+    pos[0] = subf(pos[0], mulf(cam.trafoObjToWorld[ 2], mkf(SPL_BLINK_OBJDIST))); // Pos = pos - (dir * OBJDIS)
     pos[1] = subf(pos[1], mulf(cam.trafoObjToWorld[ 6], mkf(SPL_BLINK_OBJDIST)));
     pos[2] = subf(pos[2], mulf(cam.trafoObjToWorld[10], mkf(SPL_BLINK_OBJDIST)));
 
@@ -94,15 +95,13 @@ func void Spell_Invest_Blink(var int casterId) {
     var int dx; dx = subf(pos[0], caster.trafoObjToWorld[ 3]);
     var int dy; dy = subf(pos[1], caster.trafoObjToWorld[ 7]);
     var int dz; dz = subf(pos[2], caster.trafoObjToWorld[11]);
-    var int dist3d; dist3d = sqrtf(addf(addf(sqrf(dx), sqrf(dy)), sqrf(dz)));
-    aimModifier = subf(FLOATEINS, divf(dist3d, mkf(SPL_BLINK_MAXDIST*2)));
+    var int dist3d; dist3d = sqrtf(addf(addf(sqrf(dx), sqrf(dy)), sqrf(dz))); // Simply the euclidean distance
+    aimModifier = subf(FLOATEINS, divf(dist3d, mkf(SPL_BLINK_MAXDIST*2))); // 1 - (dist * (maxdist * 2))
 };
 
 func int Spell_Logic_Blink(var int manaInvested) {
     // Not enough mana; only hero is allowed to use this spell
-    if (self.attribute[ATR_MANA] < STEP_BLINK) || (!Npc_IsPlayer(self)) {
-        return SPL_DONTINVEST;
-    };
+    if (self.attribute[ATR_MANA] < STEP_BLINK) || (!Npc_IsPlayer(self)) { return SPL_DONTINVEST; };
 
     // Three levels: Build up spell, create aim vob, start passive invest loop
     if (manaInvested <= STEP_BLINK*1) {
@@ -159,7 +158,7 @@ func void Spell_Cast_Blink(var int spellLevel) {
     const int zCWayNet__GetWaypoint = 8061744; //0x7B0330
     CALL__fastcall(_@(MEM_Waynet), _@s(ConCatStrings("WP_BLINKOBJ_", IntToString(self.id))), zCWayNet__GetWaypoint);
     var int wpPtr; wpPtr = CALL_RetValAsInt();
-    if (wpPtr) { // Delete old wp
+    if (wpPtr) { // Delete old wp first
         const int zCWayNet__DeleteWaypoint = 8049328; //0x7AD2B0
         CALL_PtrParam(wpPtr);
         CALL__thiscall(_@(MEM_Waynet), zCWayNet__DeleteWaypoint);
@@ -169,7 +168,7 @@ func void Spell_Cast_Blink(var int spellLevel) {
     wpPtr = MEM_Alloc(124); // sizeof_zCWaypoint
     const int zCWaypoint__zCWaypoint = 8058736; //0x7AF770
     CALL__thiscall(wpPtr, zCWaypoint__zCWaypoint);
-    // Set position and name wp
+    // Set position and name wp (position needs to before adding it to the waynet)
     MEM_CopyWords(_@(pos), wpPtr+68, 6);
     const int zCWaypoint__SetName = 8059824; //0x7AFBB0
     CALL_zStringPtrParam(ConCatStrings("WP_BLINKOBJ_", IntToString(self.id)));
