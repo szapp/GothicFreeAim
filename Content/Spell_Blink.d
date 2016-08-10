@@ -29,7 +29,7 @@ INSTANCE Spell_Blink (C_Spell_Proto) {
  */
 func void Spell_Invest_Blink(var int casterId) {
     var zCVob caster; caster = Hlp_GetNpc(casterId);
-    if (Npc_GetActiveSpell(caster) == -1) { // If blink is not actually being casted
+    if (Npc_GetActiveSpell(caster) != SPL_Blink) { // If blink is not actually being casted
         if (FF_Active(Spell_Invest_Blink)) { FF_RemoveData(Spell_Invest_Blink, casterId); };
         return;
     };
