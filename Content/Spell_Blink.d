@@ -2,21 +2,22 @@
 // SPL_Blink (mud-freak)
 // *********************
 
-const int SPL_COST_BLINK     =   10; // Mana cost. Can be freely adjusted.
-const int STEP_BLINK         =    1; // STEP_BLINK * time_per_mana = time before "arming" the spell.
-const int SPL_BLINK_MAXDIST  = 1000; // Maximum distance (cm) to traverse. Can be freely adjusted.
-const int SPL_BLINK_OBJDIST  =   75; // Set by PFX radius. Do not touch.
+const int SPL_COST_BLINK        =   10; // Mana cost. Can be freely adjusted.
+const int STEP_BLINK            =    1; // STEP_BLINK * time_per_mana = time before "arming" the spell.
+const int SPL_BLINK_MAXDIST     = 1000; // Maximum distance (cm) to traverse. Can be freely adjusted.
+const int SPL_BLINK_OBJDIST     =   75; // Set by PFX radius. Do not touch.
 
 /* Do NOT change any of these settings. Some might seem non-sensical but each of them is very important! */
 INSTANCE Spell_Blink (C_Spell_Proto) {
-    time_per_mana            = 500; // Time (ms): STEP_BLINK * time_per_mana = ramp up time.
-    damage_per_level         = 0;
-    spelltype                = SPELL_NEUTRAL;
-    targetCollectAlgo        = TARGET_COLLECT_CASTER; // TARGET_COLLECT_FOCUS_FALLBACK_NONE; // Do not change
-    targetCollectType        = TARGET_TYPE_ITEMS; // Do not change
-    targetCollectRange       = 0;
-    targetCollectAzi         = 0;
-    targetCollectElev        = 0;
+    time_per_mana               = 500; // Time (ms): STEP_BLINK * time_per_mana = ramp up time.
+    damage_per_level            = 0;
+    spelltype                   = SPELL_NEUTRAL;
+    targetCollectAlgo           = TARGET_COLLECT_FOCUS_FALLBACK_CASTER; // Do not change
+    targetCollectType           = TARGET_TYPE_ITEMS; // Do not change
+    canChangeTargetDuringInvest = 0; // Do not change
+    //targetCollectRange          = 0;
+    //targetCollectAzi            = 0;
+    //targetCollectElev           = 0;
 };
 
 func int Spell_Logic_Blink(var int manaInvested) {
@@ -48,21 +49,21 @@ func void Spell_Invest_Blink_new() {
     const int zCVob__SetPositionWorld = 6404976; //0x61BB70
     if (!vobPtr) { // Aim vob should not exist at this point
         // Create and name aim vob (NEEDS to be an item, because of focus)
-//        vobPtr = MEM_Alloc(840); // sizeof_oCItem
-/*        const int oCItem__oCItem = 7410320; //0x711290
-        CALL__thiscall(vobPtr, oCItem__oCItem);*/
+        vobPtr = MEM_Alloc(840); // sizeof_oCItem
+        const int oCItem__oCItem = 7410320; //0x711290
+        CALL__thiscall(vobPtr, oCItem__oCItem);
 /*        const int oCItem__oCItem = 7410800;
         CALL_IntParam(1);
         CALL_zStringPtrParam("ITMI_STOMPER");
         CALL__thiscall(vobPtr, oCItem__oCItem);*/
 
-        vobPtr = MEM_Alloc(sizeof_zCVob);
+/*        vobPtr = MEM_Alloc(sizeof_zCVob);
         const int oCVob__oCVob = 7845536; //0x77B6A0
-        CALL__thiscall(vobPtr, oCVob__oCVob);
+        CALL__thiscall(vobPtr, oCVob__oCVob);*/
 
-        const int zCVob__SetVisual = 6301312; //0x602680
+/*        const int zCVob__SetVisual = 6301312; //0x602680
         CALL_zStringPtrParam("NW_NATURE_BAUMSTUMPF_02_115P.3DS");
-        CALL__thiscall(vobPtr, zCVob__SetVisual);
+        CALL__thiscall(vobPtr, zCVob__SetVisual);*/
 
         MEM_WriteString(vobPtr+16, vobname); // _zCObject_objectName
         // Set temporary position (on hero)
@@ -119,13 +120,66 @@ func void Spell_Invest_Blink_new() {
     var int dist3d; dist3d = sqrtf(addf(addf(sqrf(dx), sqrf(dy)), sqrf(dz))); // Simply the euclidean distance
     aimModifier = subf(FLOATEINS, divf(dist3d, mkf(SPL_BLINK_MAXDIST*2))); // 1 - (dist * (maxdist * 2))
 
+    const int oCNpc__GetSpellBook = 7596544; //0x73EA00
+    CALL__thiscall(_@(slf), oCNpc__GetSpellBook);
+    var int mbok; mbok = CALL_RetValAsPtr();
+
+    const int oCMag_Book__GetSelectedSpell = 4683648; //0x477780
+    CALL__thiscall(mbok, oCMag_Book__GetSelectedSpell);
+    var int spellPtr; spellPtr = CALL_RetValAsPtr();
+
+    var oCSpell curSpell; curSpell = _^(spellPtr);
+    curSpell.spellTargetNpc = vobPtr;
+    curSpell.spellTarget = vobPtr;
+
+/*    const int oCNpc__SetFocusVob = 7547744; //0x732B60
+    CALL_PtrParam(vobPtr);
+    CALL__thiscall(_@(slf), oCNpc__SetFocusVob);*/
+
 /*    // Set focus vob (core of this function)
     const int oCNpc__SetFocusVob = 7547744; //0x732B60
     CALL_PtrParam(vobPtr);
     CALL__thiscall(_@(slf), oCNpc__SetFocusVob);*/
 
+
+/*    const int oCSpell__IsValidTarget = 4743632; //0x4861D0
+    CALL_PtrParam(vobPtr);
+    CALL__thiscall(spellPtr, oCSpell__IsValidTarget);
+    var int valVob; valVob = CALL_RetValAsInt();
+    MEM_Info(ConCatStrings("### is valid vob: ", IntToString(valVob)));*/
+
     // Set target vob
     MEM_WriteInt(ESP+12, vobPtr);
+};
+
+func void Spell_Invest_Blink_new_IVT() {
+    if (!Npc_IsPlayer(self)) { return; }; // Only player is allowed to use this spell
+    var zCVob slf; slf = Hlp_GetNpc(self);
+    var String vobname; vobname = ConCatStrings("BlinkObj_", IntToString(MEM_ReadInt(_@(slf)+MEM_NpcID_Offset)));
+    var int vobPtr; vobPtr = MEM_SearchVobByName(vobname);
+
+    const int oCNpc__GetSpellBook = 7596544; //0x73EA00
+    CALL__thiscall(_@(slf), oCNpc__GetSpellBook);
+    var int mbok; mbok = CALL_RetValAsPtr();
+
+    const int oCMag_Book__GetSelectedSpell = 4683648; //0x477780
+    CALL__thiscall(mbok, oCMag_Book__GetSelectedSpell);
+    var int spellPtr; spellPtr = CALL_RetValAsPtr();
+
+    var oCSpell curSpell; curSpell = _^(spellPtr);
+    curSpell.spellTargetNpc = vobPtr;
+    curSpell.spellTarget = vobPtr;
+
+/*    if (!vobPtr) {
+        const int oCNpc__ClearFocusVob = 7547840; //0x732BC0
+        CALL__thiscall(_@(slf), oCNpc__ClearFocusVob);
+    } else {
+        const int oCNpc__SetFocusVob = 7547744; //0x732B60
+        CALL_PtrParam(vobPtr);
+        CALL__thiscall(_@(slf), oCNpc__SetFocusVob);
+    };*/
+
+    MEM_WriteInt(ESP+4, vobPtr);
 };
 
 func void Spell_Cast_Blink(var int spellLevel) {
@@ -300,3 +354,12 @@ func void EXTRA() {
     };
     MEM_Info(infoStr);
 };
+
+
+
+// Start effect?
+// (*(void (__stdcall **)(zCVob *, int, int))(v16 + 148))(a2, v47, v48);
+// Modify effect?
+// (*(void (__stdcall **)(zCVob *, zCVob *, _DWORD))(*(_DWORD *)v5->effect + 148))(a2, a2, 0);
+
+

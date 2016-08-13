@@ -39,3 +39,29 @@ func void Spell_ProcessInvest() {
 
     // ------ All other spells don't need to hook the function and should not be listed here ------
 };
+
+
+func void Spell_ProcessInvest_IVT() {
+
+    // Get self and other (or item)
+    var int targetPtr; targetPtr = MEM_ReadInt(ESP+4);
+    var int spellPtr; spellPtr = ECX;
+    if (!spellPtr) { return; }; // Should never happen
+    var oCSpell spell; spell = _^(spellPtr);
+    if (!Hlp_Is_oCNpc(spell.spellCaster)) { return; }; // Not a spell from an NPC (Are there other uses of spells?)
+    self = _^(spell.spellCaster); // Self is a global instance (Classes.d) and will stay set in the functions below
+    if (Hlp_Is_oCNpc(targetPtr)) {other = _^(targetPtr); } // Other will stay set in the functions below
+    else if (Hlp_Is_oCItem(targetPtr)) { item = _^(targetPtr); }; // Same for item
+    // From here on it's the usual (like in Spell_ProcessMana and Spell_ProcessManaRelease)
+
+
+    var int activeSpell; activeSpell = Npc_GetActiveSpell(self);
+
+    // ------ Spells, that cast after letting go of the key ------
+    if (activeSpell == SPL_Blink            )   {   Spell_Invest_Blink_new_IVT(); return;   };
+    // ...
+
+
+
+    // ------ All other spells don't need to hook the function and should not be listed here ------
+};
