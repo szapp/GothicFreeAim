@@ -10,6 +10,13 @@ func int getAimVob(var int posPtr) {
         const int oCVob__oCVob = 7845536; //0x77B6A0
         CALL__thiscall(vobPtr, oCVob__oCVob);
         MEM_WriteString(vobPtr+16, "AIMVOB"); // _zCObject_objectName
+
+        // DEBUUG: Visual
+            const int zCVob__SetVisual = 6301312; //0x602680
+            CALL_zStringPtrParam("ITMI_FOCUS.3DS");
+            CALL__thiscall(vobPtr, zCVob__SetVisual);
+        //
+
         const int zCWorld__AddVobAsChild = 6440352; //0x6245A0
         CALL_PtrParam(_@(MEM_Vobtree));
         CALL_PtrParam(vobPtr);
@@ -33,7 +40,7 @@ func void turnHero(var int degreesf) {
 
 /* Turn hero (incl. camera if attached) by degrees (in float) "aim-edition" */
 func void aimHero(var int degreesf) {
-    turnHero(degreesf); return;
+    // turnHero(degreesf); return;
 
 
 
@@ -48,12 +55,15 @@ func void aimHero(var int degreesf) {
     pos[1] = addf(pos[1], pos[4]);
     pos[2] = addf(pos[2], pos[5]);
 
-    const int oCAniCtrl_Human__TurnDegrees = 7006992; //0x6AEB10
-    CALL_IntParam(0); // 0 = disable turn animation
-    CALL_FloatParam(degreesf);
-    CALL__thiscall(her.anictrl, oCAniCtrl_Human__TurnDegrees);
+    //const int oCAniCtrl_Human__TurnDegrees = 7006992; //0x6AEB10
+    //CALL_IntParam(0); // 0 = disable turn animation
+    //CALL_FloatParam(degreesf);
+    //CALL__thiscall(her.anictrl, oCAniCtrl_Human__TurnDegrees);
 
     var zCVob vob; vob = _^(getAimVob(_@(pos)));
+    MEM_Info("Aim plz");
+    AI_AimAt(self, vob);
+
 
     //const int oCAniCtrl_Human__SetLookAtTarget = 7037792; //0x6B6360
     //CALL_PtrParam(_@(pos));
@@ -77,8 +87,8 @@ var int timeM; var int disp;
 func void updateHeroYrot(var int mod) { // Float multiplier (e.g. FLOATEINS)
     var int xChng; xChng = getMouseMove(0); // Change in x position
     if (xChng == FLOATNULL) { return; };
-    //turnHero(mulf(xChng, mod));
-    aimHero(mulf(xChng, mod));
+    turnHero(mulf(xChng, mod));
+    //aimHero(mulf(xChng, mod));
 };
 
 const int AIM_MAX_DIST    = 10000; // 100 meters. Enough?
@@ -108,9 +118,7 @@ func void ShootTarget() {
         pos[1] = addf(pos[1], pos[4]);
         pos[2] = addf(pos[2], pos[5]);
     };
-    var int vobPtr; vobPtr = getAimVob(_@(pos));
-    var int ptr; ptr = ESP+12;
-    MEM_WriteInt(ptr, vobPtr);
+    MEM_WriteInt(ESP+12, getAimVob(_@(pos)));
 };
 
 /*
