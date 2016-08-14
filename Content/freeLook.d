@@ -10,13 +10,6 @@ func int getAimVob(var int posPtr) {
         const int oCVob__oCVob = 7845536; //0x77B6A0
         CALL__thiscall(vobPtr, oCVob__oCVob);
         MEM_WriteString(vobPtr+16, "AIMVOB"); // _zCObject_objectName
-
-        // DEBUUG: Visual
-            const int zCVob__SetVisual = 6301312; //0x602680
-            CALL_zStringPtrParam("ITMI_FOCUS.3DS");
-            CALL__thiscall(vobPtr, zCVob__SetVisual);
-        //
-
         const int zCWorld__AddVobAsChild = 6440352; //0x6245A0
         CALL_PtrParam(_@(MEM_Vobtree));
         CALL_PtrParam(vobPtr);
@@ -38,38 +31,6 @@ func void turnHero(var int degreesf) {
     CALL__thiscall(her.anictrl, oCAniCtrl_Human__TurnDegrees);
 };
 
-/* Turn hero (incl. camera if attached) by degrees (in float) "aim-edition" */
-func void aimHero(var int degreesf) {
-    // turnHero(degreesf); return;
-
-
-
-    MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
-    var zCVob cam; cam = _^(MEM_Camera.connectedVob);
-    var oCNPC her; her = Hlp_GetNpc(hero);
-    var int pos[6]; // Combined pos[3] + dir[3]
-    pos[0] = her._zCVob_trafoObjToWorld[ 3];  pos[3] = mulf(cam.trafoObjToWorld[ 2], mkf(AIM_MAX_DIST));
-    pos[1] = her._zCVob_trafoObjToWorld[ 7];  pos[4] = mulf(cam.trafoObjToWorld[ 6], mkf(AIM_MAX_DIST));
-    pos[2] = her._zCVob_trafoObjToWorld[11];  pos[5] = mulf(cam.trafoObjToWorld[10], mkf(AIM_MAX_DIST));
-    pos[0] = addf(pos[0], pos[3]);
-    pos[1] = addf(pos[1], pos[4]);
-    pos[2] = addf(pos[2], pos[5]);
-
-    //const int oCAniCtrl_Human__TurnDegrees = 7006992; //0x6AEB10
-    //CALL_IntParam(0); // 0 = disable turn animation
-    //CALL_FloatParam(degreesf);
-    //CALL__thiscall(her.anictrl, oCAniCtrl_Human__TurnDegrees);
-
-    var zCVob vob; vob = _^(getAimVob(_@(pos)));
-    MEM_Info("Aim plz");
-    AI_AimAt(self, vob);
-
-
-    //const int oCAniCtrl_Human__SetLookAtTarget = 7037792; //0x6B6360
-    //CALL_PtrParam(_@(pos));
-    //CALL__thiscall(her.anictrl, oCAniCtrl_Human__SetLookAtTarget);
-};
-
 /* Check if mouse moved along the x-/y-axis */
 func int getMouseMove(var int xy) { // 0 = x, 1 = y
     const int zCInput_Win32__GetMousePos = 5068592; //0x4D5730
@@ -86,9 +47,53 @@ var int timeM; var int disp;
 /* Manually update the rotation of the hero including the camera */
 func void updateHeroYrot(var int mod) { // Float multiplier (e.g. FLOATEINS)
     var int xChng; xChng = getMouseMove(0); // Change in x position
-    if (xChng == FLOATNULL) { return; };
+    // if (xChng == FLOATNULL) { return; }; // Do not return, because there is also Y aiming
     turnHero(mulf(xChng, mod));
-    //aimHero(mulf(xChng, mod));
+};
+
+func void catchICAni() {
+    var int ani; ani = MEM_ReadInt(ESP+12);
+    var oCNpc her; her = Hlp_GetNpc(hero);
+    if (!Npc_IsInFightMode(her, FMODE_FAR)) { return; };
+    const int oCAniCtrl_Human__IsAiming = 7003456; //0x6ADD40
+    CALL__thiscall(her.anictrl, oCAniCtrl_Human__IsAiming);
+    if (!CALL_RetValAsInt()) { return; };
+
+    MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
+    var zCVob cam; cam = _^(MEM_Camera.connectedVob);
+    var int pos[6]; // Combined pos[3] + dir[3]
+    pos[0] = her._zCVob_trafoObjToWorld[ 3];  pos[3] = mulf(cam.trafoObjToWorld[ 2], mkf(AIM_MAX_DIST));
+    pos[1] = her._zCVob_trafoObjToWorld[ 7];  pos[4] = mulf(cam.trafoObjToWorld[ 6], mkf(AIM_MAX_DIST));
+    pos[2] = her._zCVob_trafoObjToWorld[11];  pos[5] = mulf(cam.trafoObjToWorld[10], mkf(AIM_MAX_DIST));
+    pos[0] = addf(pos[0], pos[3]);
+    pos[1] = addf(pos[1], pos[4]);
+    pos[2] = addf(pos[2], pos[5]);
+    var int vobPtr; vobPtr = getAimVob(_@(pos));
+
+    var int angleX; var int angleY;
+    const int oCNpc__GetAngles = 6821504; //0x681680
+    CALL_FloatParam(MEM_GetIntAddress(angleY));
+    CALL_FloatParam(MEM_GetIntAddress(angleX));
+    CALL_PtrParam(vobPtr);
+    CALL__thiscall(_@(her), oCNpc__GetAngles);
+    var int deg90To1; deg90To1 = mulf(MEM_ReadInt(8586988), FLOATHALB); //0x8306EC // 0.0111111*0.5, 90 degrees => 0.5
+    angleX = mulf(angleX, deg90To1);  // Scale X +-90 degrees to +-0.5
+    angleX = addf(angleX, FLOATHALB); // Shift X +-0.5 to +-1
+    angleY = mulf(angleY, deg90To1);  // Scale Y +-90 degrees to +-0.5
+    angleY = addf(angleY, FLOATHALB); // Shift Y +-0.5 to +-1
+    angleY = subf(FLOATEINS, angleY); // Inv   Y +-1 to -+1
+    if (lef(angleX, FLOATNULL)) {
+        angleX = FLOATNULL; // Maximum aim turn
+    } else if (gef(angleX, 1065353216)) {
+        angleX = 1065353216; //3F800000 // Minimum aim turn
+    };
+    if (lef(angleY, FLOATNULL)) {
+        angleY = FLOATNULL; // Maximum aim height (straight up)
+    } else if (gef(angleY, 1065353216)) {
+        angleY = 1065353216; //3F800000 // Minimum aim height (down)
+    };
+    MEM_WriteInt(ESP+4, angleX);
+    MEM_WriteInt(ESP+8, angleY);
 };
 
 const int AIM_MAX_DIST    = 10000; // 100 meters. Enough?
