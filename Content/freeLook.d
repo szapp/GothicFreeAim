@@ -32,25 +32,42 @@ func void turnHero(var int degreesf) {
 };
 
 /* Check if mouse moved along the x-/y-axis */
-func int getMouseMove(var int xy) { // 0 = x, 1 = y
-    const int zCInput_Win32__GetMousePos = 5068592; //0x4D5730
-    const int zCInput_zinput = 9246288; //0x8D1650
-    var int pos[3];
-    CALL_PtrParam(_@(pos)+8); // Not clear
-    CALL_PtrParam(_@(pos)+4); // Change in y position
-    CALL_PtrParam(_@(pos));   // Change in x position
-    CALL__thiscall(MEM_ReadInt(zCInput_zinput), zCInput_Win32__GetMousePos);
-    return MEM_ReadStatArr(pos, !!xy);
+func int getMouseMoveDelta(var int xy) { // 0 = x, 1 = y
+    var _Cursor c; c = _^(Cursor_Ptr); // As defined in LeGo
+    if !xy {
+        return mulf(mkf(c.relX), mulf(MEM_ReadInt(Cursor_sX), mkf(2)));
+    } else {
+        return mulf(mkf(c.relY), mulf(MEM_ReadInt(Cursor_sY), mkf(2)));
+    };
 };
 
-var int timeM; var int disp;
+/* Sine and cosine functions taken from LeGo\Misc.d (not included in Header.src)? */
+func int sin(var int angle) {
+    const int _sinf = 8123910; //0x7BF606
+    const int call = 0;
+    var int ret;
+    if (Call_Begin(call)) {
+        CALL_FloatParam(_@(angle));
+        CALL_RetValisFloat();
+        CALL_PutRetValTo(_@(ret));
+        CALL__cdecl(_sinf);
+
+        call = CALL_End();
+    };
+    return +ret;
+};
+func int cos(var int angle) {
+    return +sin(subf(1070141312, angle)); //1070141312 = PI/2
+};
+
 /* Manually update the rotation of the hero including the camera */
 func void updateHeroYrot(var int mod) { // Float multiplier (e.g. FLOATEINS)
-    var int xChng; xChng = getMouseMove(0); // Change in x position
+    var int xChng; xChng = getMouseMoveDelta(0); // Get the change in x position
     // if (xChng == FLOATNULL) { return; }; // Do not return, because there is also Y aiming
     turnHero(mulf(xChng, mod));
 };
 
+/* Hooks oCAniCtrl_Human::InterpolateCombineAni */
 func void catchICAni() {
     var int ani; ani = MEM_ReadInt(ESP+12);
     var oCNpc her; her = Hlp_GetNpc(hero);
@@ -65,16 +82,34 @@ func void catchICAni() {
     pos[0] = her._zCVob_trafoObjToWorld[ 3];  pos[3] = mulf(cam.trafoObjToWorld[ 2], mkf(AIM_MAX_DIST));
     pos[1] = her._zCVob_trafoObjToWorld[ 7];  pos[4] = mulf(cam.trafoObjToWorld[ 6], mkf(AIM_MAX_DIST));
     pos[2] = her._zCVob_trafoObjToWorld[11];  pos[5] = mulf(cam.trafoObjToWorld[10], mkf(AIM_MAX_DIST));
-    pos[0] = addf(pos[0], pos[3]);
-    pos[1] = addf(pos[1], pos[4]);
-    pos[2] = addf(pos[2], pos[5]);
-    var int vobPtr; vobPtr = getAimVob(_@(pos));
+    pos[3] = addf(pos[0], pos[3]);
+    pos[4] = addf(pos[1], pos[4]);
+    pos[5] = addf(pos[2], pos[5]);
+    // Translate point back to origin
+    pos[3] = subf(pos[3], pos[0]);
+    pos[5] = subf(pos[5], pos[2]);
+    var int deltaX; deltaX = getMouseMoveDelta(0); // Get mouse change in x
+    var int c; c = cos(deltaX);
+    var int s; s = sin(deltaX);
+    // Rotate point
+    var int xNew; xNew = subf(mulf(pos[3], c), mulf(pos[5], s));
+    var int yNew; yNew = addf(mulf(pos[3], s), mulf(pos[5], c));
+    // Translate point back:
+    pos[3] = addf(xNew, pos[0]);
+    pos[5] = addf(yNew, pos[2]);
 
+    // A little help is necessary
+    const int oCAniCtrl_Human__TurnDegrees = 7006992; //0x6AEB10
+    CALL_IntParam(0); // 0 = disable turn animation
+    CALL_FloatParam(divf(deltaX, mkf(10)));
+    CALL__thiscall(her.anictrl, oCAniCtrl_Human__TurnDegrees);
+
+    // Get aiming angles
     var int angleX; var int angleY;
-    const int oCNpc__GetAngles = 6821504; //0x681680
-    CALL_FloatParam(MEM_GetIntAddress(angleY));
-    CALL_FloatParam(MEM_GetIntAddress(angleX));
-    CALL_PtrParam(vobPtr);
+    const int oCNpc__GetAngles = 6820528; //0x6812B0
+    CALL_FloatParam(_@(angleY));
+    CALL_FloatParam(_@(angleX));
+    CALL_PtrParam(_@(pos)+12);
     CALL__thiscall(_@(her), oCNpc__GetAngles);
     var int deg90To1; deg90To1 = mulf(MEM_ReadInt(8586988), FLOATHALB); //0x8306EC // 0.0111111*0.5, 90 degrees => 0.5
     angleX = mulf(angleX, deg90To1);  // Scale X +-90 degrees to +-0.5
@@ -92,6 +127,7 @@ func void catchICAni() {
     } else if (gef(angleY, 1065353216)) {
         angleY = 1065353216; //3F800000 // Minimum aim height (down)
     };
+    // New aiming coordinates
     MEM_WriteInt(ESP+4, angleX);
     MEM_WriteInt(ESP+8, angleY);
 };
@@ -192,3 +228,6 @@ func void hookFreeLook_magic() {
     };
     hookFreeLook(MEM_ReadStatArr(spellTurnable, activeSpell));
 };
+
+
+// void __thiscall zCVob::RotateLocal(zVEC3 const & float) 0x0061B610
