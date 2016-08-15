@@ -67,6 +67,8 @@ func void updateHeroYrot(var int mod) { // Float multiplier (e.g. FLOATEINS)
     turnHero(mulf(xChng, mod));
 };
 
+const int AIM_MAX_DIST    = 10000; // 100 meters. Enough?
+const int AIM_OBJ_OFFSET  = 150;   // Cm to shift behind intersection
 /* Hooks oCAniCtrl_Human::InterpolateCombineAni */
 func void catchICAni() {
     var int ani; ani = MEM_ReadInt(ESP+12);
@@ -79,30 +81,43 @@ func void catchICAni() {
     MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
     var zCVob cam; cam = _^(MEM_Camera.connectedVob);
     var int pos[6]; // Combined pos[3] + dir[3]
-    pos[0] = her._zCVob_trafoObjToWorld[ 3];  pos[3] = mulf(cam.trafoObjToWorld[ 2], mkf(AIM_MAX_DIST));
-    pos[1] = her._zCVob_trafoObjToWorld[ 7];  pos[4] = mulf(cam.trafoObjToWorld[ 6], mkf(AIM_MAX_DIST));
-    pos[2] = her._zCVob_trafoObjToWorld[11];  pos[5] = mulf(cam.trafoObjToWorld[10], mkf(AIM_MAX_DIST));
+    // This is dangerous: The position is calculated from the camera, not the player model. Don't change the camera pos.
+    pos[0] = cam.trafoObjToWorld[ 3];  pos[3] = mulf(cam.trafoObjToWorld[ 2], mkf(AIM_MAX_DIST));
+    pos[1] = cam.trafoObjToWorld[ 7];  pos[4] = mulf(cam.trafoObjToWorld[ 6], mkf(AIM_MAX_DIST));
+    pos[2] = cam.trafoObjToWorld[11];  pos[5] = mulf(cam.trafoObjToWorld[10], mkf(AIM_MAX_DIST));
     pos[3] = addf(pos[0], pos[3]);
     pos[4] = addf(pos[1], pos[4]);
     pos[5] = addf(pos[2], pos[5]);
-    // Translate point back to origin
+    var int deltaX; deltaX = mulf(mkf(Cursor_RelX), MEM_ReadInt(Cursor_sX)); // Get mouse change in x
+    /*// Translate point back to origin
     pos[3] = subf(pos[3], pos[0]);
     pos[5] = subf(pos[5], pos[2]);
-    var int deltaX; deltaX = getMouseMoveDelta(0); // Get mouse change in x
-    var int c; c = cos(deltaX);
-    var int s; s = sin(deltaX);
+    var int c; c = cos(mulf(deltaX, mkf(10)));
+    var int s; s = sin(mulf(deltaX, mkf(10)));
     // Rotate point
     var int xNew; xNew = subf(mulf(pos[3], c), mulf(pos[5], s));
     var int yNew; yNew = addf(mulf(pos[3], s), mulf(pos[5], c));
     // Translate point back:
     pos[3] = addf(xNew, pos[0]);
-    pos[5] = addf(yNew, pos[2]);
+    pos[5] = addf(yNew, pos[2]);*/
 
-    // A little help is necessary
-    const int oCAniCtrl_Human__TurnDegrees = 7006992; //0x6AEB10
-    CALL_IntParam(0); // 0 = disable turn animation
-    CALL_FloatParam(divf(deltaX, mkf(10)));
-    CALL__thiscall(her.anictrl, oCAniCtrl_Human__TurnDegrees);
+    if (deltaX) {
+        // Turning needs to be done this way, aiming does not turn the hero sufficiently far enougth
+        var int turnDeg; turnDeg = deltaX;
+/*        if (lef(absf(turnDeg), FLOATEINS)) {
+            if (lf(turnDeg, FLOATNULL)) {
+                turnDeg = negf(FLOATEINS);
+            } else {
+                turnDeg = FLOATEINS;
+            };
+        };*/
+        var int frameAdj; frameAdj = divf(MEM_Timer.frameTimeFloat, mkf(100)); // Adjust speed to fps (~= frame lock)
+        turnDeg = mulf(turnDeg, frameAdj);
+        const int oCAniCtrl_Human__TurnDegrees = 7006992; //0x6AEB10
+        CALL_IntParam(0); // 0 = disable turn animation
+        CALL_FloatParam(turnDeg);
+        CALL__thiscall(her.anictrl, oCAniCtrl_Human__TurnDegrees);
+    };
 
     // Get aiming angles
     var int angleX; var int angleY;
@@ -128,21 +143,26 @@ func void catchICAni() {
         angleY = 1065353216; //3F800000 // Minimum aim height (down)
     };
     // New aiming coordinates
-    MEM_WriteInt(ESP+4, angleX);
+    MEM_WriteInt(ESP+4, angleX); // Should always be at the center
     MEM_WriteInt(ESP+8, angleY);
 };
 
-const int AIM_MAX_DIST    = 10000; // 100 meters. Enough?
-const int AIM_OBJ_OFFSET  = 150;   // Cm to shift behind intersection
 func void ShootTarget() {
     // Set trace ray (start from shooter and go along the outvector of the camera vob)
     MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
     var zCVob cam; cam = _^(MEM_Camera.connectedVob);
     var zCVob her; her = Hlp_GetNpc(hero);
     var int pos[6]; // Combined pos[3] + dir[3]
-    pos[0] = her.trafoObjToWorld[ 3];  pos[3] = mulf(cam.trafoObjToWorld[ 2], mkf(AIM_MAX_DIST));
-    pos[1] = her.trafoObjToWorld[ 7];  pos[4] = mulf(cam.trafoObjToWorld[ 6], mkf(AIM_MAX_DIST));
-    pos[2] = her.trafoObjToWorld[11];  pos[5] = mulf(cam.trafoObjToWorld[10], mkf(AIM_MAX_DIST));
+    // This is dangerous: The position is calculated from the camera, not the player model. Don't change the camera pos.
+    destination[0] = addf(cam.trafoObjToWorld[ 3], mulf(cam.trafoObjToWorld[ 2], mkf(AIM_MAX_DIST)));
+    destination[1] = addf(cam.trafoObjToWorld[ 7], mulf(cam.trafoObjToWorld[ 6], mkf(AIM_MAX_DIST)));
+    destination[2] = addf(cam.trafoObjToWorld[11], mulf(cam.trafoObjToWorld[10], mkf(AIM_MAX_DIST)));
+    pos[0] = her.trafoObjToWorld[ 3]; pos[3] = subf(destination[0], pos[0]);
+    pos[1] = her.trafoObjToWorld[ 7]; pos[4] = subf(destination[1], pos[1]);
+    pos[2] = her.trafoObjToWorld[11]; pos[5] = subf(destination[2], pos[2]);
+    pos[0] = cam.trafoObjToWorld[ 3];  pos[3] = mulf(cam.trafoObjToWorld[ 2], mkf(AIM_MAX_DIST));
+    pos[1] = cam.trafoObjToWorld[ 7];  pos[4] = mulf(cam.trafoObjToWorld[ 6], mkf(AIM_MAX_DIST));
+    pos[2] = cam.trafoObjToWorld[11];  pos[5] = mulf(cam.trafoObjToWorld[10], mkf(AIM_MAX_DIST));
     // Shoot trace ray
     if (TraceRay(_@(pos), _@(pos)+12, // From shooter to max distance
             (zTRACERAY_VOB_IGNORE_NO_CD_DYN
@@ -173,6 +193,40 @@ var int aimModifier; // Modifies the mouse movement speed
 /* Delete crosshair (hiding it is not sufficient, since it might change texture later) */
 func void removeCrosshair_() {
     if (Hlp_IsValidHandle(crosshairHndl)) { View_Delete(crosshairHndl); };
+};
+
+/* Set crosshair */
+func void insertCrosshair_(var int crosshairStyle) {
+    // Set fancy crosshair
+    if (crosshairStyle > 1) {
+        if (!Hlp_IsValidHandle(crosshairHndl)) {
+            Print_GetScreenSize();
+            var int posX; posX = Print_Screen[PS_X] / 2;
+            var int posY; posY = Print_Screen[PS_Y] / 2;
+            crosshairHndl = View_CreatePxl(posX-32, posY-32, posX+32, posY+32);
+            var String crosshairTex; crosshairTex = MEM_ReadStatStringArr(crosshair, crosshairStyle);
+            View_SetTexture(crosshairHndl, crosshairTex);
+            View_Open(crosshairHndl);
+        } else {
+            var zCView crsHr; crsHr = _^(getPtr(crosshairHndl));
+            if (!crsHr.isOpen) { View_Open(crosshairHndl); };
+        };
+    } else { removeCrosshair_(); };
+};
+
+func void manageCrosshair() {
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) {
+        Focus_Ranged.npc_azi     = 10;
+        Focus_Ranged.npc_elevup  = 10;
+        Focus_Ranged.npc_elevdo  = -10;
+        Focus_Ranged.npc_prio = 0; // Disable focus collection
+        insertCrosshair_(NORMAL_CROSSHAIR);
+    } else if (Npc_IsInFightMode(hero, FMODE_MAGIC)) {
+        var int activeSpell; activeSpell = Npc_GetActiveSpell(hero);
+        insertCrosshair_(MEM_ReadStatArr(spellTurnable, activeSpell));
+    } else {
+        removeCrosshair_();
+    };
 };
 
 /* "Light" version of removeCrosshair_ (hook into oCNpcFocus::SetFocusMode) */
