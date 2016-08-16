@@ -81,9 +81,9 @@ func void Spell_Invest_Blink_new() {
     };
 
     // Manually enable rotation around y-axis
-    if (!aimModifier) { aimModifier = FLOATEINS; };
+    //if (!aimModifier) { aimModifier = FLOATEINS; };
     var int frameAdj; frameAdj = divf(MEM_Timer.frameTimeFloat, mkf(10)); // It adjusts speed to fps (~= frame lock)
-    updateHeroYrot(mulf(aimModifier, frameAdj));
+    //updateHeroYrot(mulf(aimModifier, frameAdj));
 
     // Set trace ray (start from caster and go along the outvector of the camera vob)
     var int pos[6]; // Combined pos[3] + dir[3]
@@ -118,7 +118,7 @@ func void Spell_Invest_Blink_new() {
     var int dy; dy = subf(pos[1], slf.trafoObjToWorld[ 7]);
     var int dz; dz = subf(pos[2], slf.trafoObjToWorld[11]);
     var int dist3d; dist3d = sqrtf(addf(addf(sqrf(dx), sqrf(dy)), sqrf(dz))); // Simply the euclidean distance
-    aimModifier = subf(FLOATEINS, divf(dist3d, mkf(SPL_BLINK_MAXDIST*2))); // 1 - (dist * (maxdist * 2))
+    //aimModifier = subf(FLOATEINS, divf(dist3d, mkf(SPL_BLINK_MAXDIST*2))); // 1 - (dist * (maxdist * 2))
 
     const int oCNpc__GetSpellBook = 7596544; //0x73EA00
     CALL__thiscall(_@(slf), oCNpc__GetSpellBook);
@@ -290,10 +290,10 @@ func void Spell_Invest_Blink() {
     };
 
     // Manually enable rotation around y-axis
-    if (!aimModifier) { aimModifier = FLOATEINS; };
+    //if (!aimModifier) { aimModifier = FLOATEINS; };
     var int frameAdj; frameAdj = divf(MEM_Timer.frameTimeFloat, mkf(10)); // It adjusts speed to fps (~= frame lock)
     // Outsourced since it might be useful for other spells/weapons as well (free aim)
-    updateHeroYrot(mulf(aimModifier, frameAdj));
+    //updateHeroYrot(mulf(aimModifier, frameAdj));
 
     // Set trace ray (start from caster and go along the outvector of the camera vob)
     var int pos[6]; // Combined pos[3] + dir[3]
@@ -328,7 +328,7 @@ func void Spell_Invest_Blink() {
     var int dy; dy = subf(pos[1], her.trafoObjToWorld[ 7]);
     var int dz; dz = subf(pos[2], her.trafoObjToWorld[11]);
     var int dist3d; dist3d = sqrtf(addf(addf(sqrf(dx), sqrf(dy)), sqrf(dz))); // Simply the euclidean distance
-    aimModifier = subf(FLOATEINS, divf(dist3d, mkf(SPL_BLINK_MAXDIST*2))); // 1 - (dist * (maxdist * 2))
+    //aimModifier = subf(FLOATEINS, divf(dist3d, mkf(SPL_BLINK_MAXDIST*2))); // 1 - (dist * (maxdist * 2))
 
     // Set focus vob (core of this function)
     const int oCNpc__SetFocusVob = 7547744; //0x732B60
