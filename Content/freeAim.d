@@ -114,7 +114,7 @@ func void catchICAni() {
 func void shootTarget() {
     var C_NPC shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
     if (!Npc_IsPlayer(shooter)) { return; }; // Only for player
-    // Set trace ray (start from shooter and go along the outvector of the camera vob)
+    // Set trace ray (start from camera(!) and go along the outvector of the camera vob)
     MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
     var zCVob cam; cam = _^(MEM_Camera.connectedVob);
     var int pos[6]; // Combined pos[3] + dir[3]
