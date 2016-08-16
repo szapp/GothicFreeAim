@@ -29,6 +29,19 @@ const int oCAIHuman__BowMode                      = 6905600; //0x695F00
 const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0
 
+/* Initialize free aim framework */
+func void Init_FreeAim() {
+    const int hookFreeAim = 0;
+    if (!hookFreeAim) {
+        HookEngineF(oCAniCtrl_Human__InterpolateCombineAni, 5, catchICAni);
+        HookEngineF(oCAIArrow__SetupAIVob, 6, shootTarget);
+        HookEngineF(oCAIHuman__BowMode, 6, manageCrosshair); // Called continuously
+        HookEngineF(oCNpcFocus__SetFocusMode, 7, manageCrosshair); // Called when changing focus mode (several times)
+        HookEngineF(oCAIHuman__MagicMode, 7, manageCrosshair); // Called continuously
+        hookFreeAim = 1;
+    };
+};
+
 /* Hook oCAniCtrl_Human::InterpolateCombineAni */
 func void catchICAni() {
     var oCNpc her; her = Hlp_GetNpc(hero);
