@@ -27,6 +27,7 @@ const int oCAIArrow__SetupAIVob                   = 6951136; //0x6A10E0
 const int oCAIHuman__BowMode                      = 6905600; //0x695F00
 const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0
+const int mouseUpdate                             = 5062907; //0x4D40FB
 
 /* Initialize free aim framework */
 func void Init_FreeAim() {
@@ -37,17 +38,16 @@ func void Init_FreeAim() {
         HookEngineF(oCAIHuman__BowMode, 6, manageCrosshair); // Called continuously
         HookEngineF(oCNpcFocus__SetFocusMode, 7, manageCrosshair); // Called when changing focus mode (several times)
         HookEngineF(oCAIHuman__MagicMode, 7, manageCrosshair); // Called continuously
-        HookEngineF(5062907, 5, manualTurn); // Like LeGo_Cursor
+        HookEngineF(mouseUpdate, 5, manualRotation);
         hookFreeAim = 1;
     };
 };
 
-/* Mouse Handling for manually turning the player model */
-func void manualTurn() {
+/* Mouse handling for manually turning the player model */
+func void manualRotation() {
     var oCNpc her; her = Hlp_GetNpc(hero);
     if (!Npc_IsInFightMode(her, FMODE_FAR)) { return; }; // Only while using bow/crossbow
     if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) { return; };
-    // Mouse handling
     var int deltaX; deltaX = mulf(mkf(MEM_ReadInt(mouseDeltaX)), MEM_ReadInt(mouseSensX)); // Get mouse change in x
     if (deltaX == FLOATNULL) { return; }; // Only rotate if there was movement along x position
     var int frameAdj; frameAdj = mulf(MEM_Timer.frameTimeFloat, fracf(16, 1000)); // Frame lock
@@ -122,7 +122,7 @@ func void shootTarget() {
     pos[1] = cam.trafoObjToWorld[ 7]; pos[4] = mulf(cam.trafoObjToWorld[ 6], mkf(AIM_MAX_DIST));
     pos[2] = cam.trafoObjToWorld[11]; pos[5] = mulf(cam.trafoObjToWorld[10], mkf(AIM_MAX_DIST));
     if (TraceRay(_@(pos), _@(pos)+12, 0)) { // Shoot trace ray from camera(!) to max distance
-            // (zTRACERAY_POLY_TEST_WATER | zTRACERAY_POLY_IGNORE_TRANSP &~ zTRACERAY_VOB_IGNORE_CHARACTER))) {
+            // (zTRACERAY_POLY_TEST_WATER | zTRACERAY_POLY_IGNORE_TRANSP | zTRACERAY_POLY_IGNORE_TRANSP))) {
         pos[0] = MEM_World.foundIntersection[0]; // Set new position to intersection
         pos[1] = MEM_World.foundIntersection[1]; // (First point where the trace ray made contact with a polygon)
         pos[2] = MEM_World.foundIntersection[2];
