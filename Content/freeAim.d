@@ -17,7 +17,6 @@ const int sizeof_zCVob                            = 288;
 const int zCVob__zCVob                            = 7845536; //0x5FE1E0
 const int zCVob__SetPositionWorld                 = 6404976; //0x61BB70
 const int zCWorld__AddVobAsChild                  = 6440352; //0x6245A0
-const int oCAniCtrl_Human__IsAiming               = 7003456; //0x6ADD40
 const int oCAniCtrl_Human__TurnDegrees            = 7006992; //0x6AEB10
 const int oCNpc__GetAngles                        = 6820528; //0x6812B0
 const int mouseSensX                              = 9019720; //0x89A148
@@ -38,7 +37,29 @@ func void Init_FreeAim() {
         HookEngineF(oCAIHuman__BowMode, 6, manageCrosshair); // Called continuously
         HookEngineF(oCNpcFocus__SetFocusMode, 7, manageCrosshair); // Called when changing focus mode (several times)
         HookEngineF(oCAIHuman__MagicMode, 7, manageCrosshair); // Called continuously
+        HookEngineF(5062907, 5, manualTurn); // Like LeGo_Cursor
         hookFreeAim = 1;
+    };
+};
+
+/* Mouse Handling for manually turning the player model */
+func void manualTurn() {
+    var oCNpc her; her = Hlp_GetNpc(hero);
+    if (!Npc_IsInFightMode(her, FMODE_FAR)) { return; }; // Only while using bow/crossbow
+    if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) { return; };
+    // Mouse handling
+    var int deltaX; deltaX = mulf(mkf(MEM_ReadInt(mouseDeltaX)), MEM_ReadInt(mouseSensX)); // Get mouse change in x
+    if (deltaX == FLOATNULL) { return; }; // Only rotate if there was movement along x position
+    var int frameAdj; frameAdj = mulf(MEM_Timer.frameTimeFloat, fracf(16, 1000)); // Frame lock
+    deltaX = mulf(deltaX, frameAdj);
+    var int null;
+    var int hAniCtrl; hAniCtrl = her.anictrl;
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL_IntParam(_@(null)); // 0 = disable turn animation (there is none while aiming anyways)
+        CALL_FloatParam(_@(deltaX));
+        CALL__thiscall(_@(hAniCtrl), oCAniCtrl_Human__TurnDegrees);
+        call = CALL_End();
     };
 };
 
@@ -46,28 +67,7 @@ func void Init_FreeAim() {
 func void catchICAni() {
     var oCNpc her; her = Hlp_GetNpc(hero);
     if (!Npc_IsInFightMode(her, FMODE_FAR)) { return; }; // Only while using bow/crossbow
-    const int call1 = 0;
-    if (CALL_Begin(call1)) {
-        CALL__thiscall(_@(her.anictrl), oCAniCtrl_Human__IsAiming);
-        call1 = CALL_End();
-    };
-    if (!CALL_RetValAsInt()) { return; }; // Only while aiming
-    // Mouse handling
-    //var int deltaX; deltaX = mulf(mkf(MEM_ReadInt(mouseDeltaX)), MEM_ReadInt(mouseSensX)); // Does not work?!
-    var int deltaX; deltaX = mulf(mkf(Cursor_RelX), MEM_ReadInt(Cursor_sX)); // Get mouse change in x (LeGo_Cursor)
-    if (deltaX != FLOATNULL) { // Only rotate if there was movement, otherwise small movements are "overwritten"
-        // Turning needs to be done this way, aiming alone does not turn the hero sufficiently far enough
-        var int frameAdj; frameAdj = divf(MEM_Timer.frameTimeFloat, mkf(100)); // Adjust speed to fps (~= frame lock)
-        deltaX = mulf(deltaX, frameAdj);
-        var int null;
-        const int call2 = 0;
-        if (CALL_Begin(call2)) {
-            CALL_IntParam(_@(null)); // 0 = disable turn animation (there is none while aiming anyways)
-            CALL_FloatParam(_@(deltaX));
-            CALL__thiscall(_@(her.anictrl), oCAniCtrl_Human__TurnDegrees);
-            call2 = CALL_End();
-        };
-    };
+    if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) { return; };
     // Target position for animation
     MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
     var zCVob cam; cam = _^(MEM_Camera.connectedVob);
@@ -121,8 +121,8 @@ func void shootTarget() {
     pos[0] = cam.trafoObjToWorld[ 3]; pos[3] = mulf(cam.trafoObjToWorld[ 2], mkf(AIM_MAX_DIST));
     pos[1] = cam.trafoObjToWorld[ 7]; pos[4] = mulf(cam.trafoObjToWorld[ 6], mkf(AIM_MAX_DIST));
     pos[2] = cam.trafoObjToWorld[11]; pos[5] = mulf(cam.trafoObjToWorld[10], mkf(AIM_MAX_DIST));
-    if (TraceRay(_@(pos), _@(pos)+12, // Shoot trace ray from camera(!) to max distance
-            (zTRACERAY_POLY_TEST_WATER | zTRACERAY_POLY_IGNORE_TRANSP | zTRACERAY_VOB_IGNORE_PROJECTILES))) {
+    if (TraceRay(_@(pos), _@(pos)+12, 0)) { // Shoot trace ray from camera(!) to max distance
+            // (zTRACERAY_POLY_TEST_WATER | zTRACERAY_POLY_IGNORE_TRANSP &~ zTRACERAY_VOB_IGNORE_CHARACTER))) {
         pos[0] = MEM_World.foundIntersection[0]; // Set new position to intersection
         pos[1] = MEM_World.foundIntersection[1]; // (First point where the trace ray made contact with a polygon)
         pos[2] = MEM_World.foundIntersection[2];
