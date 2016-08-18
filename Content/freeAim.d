@@ -11,7 +11,7 @@
  *     - LeGo_Cursor
   */
 
-const int AIM_MAX_DIST                            = 5000; // 50 meters. Does not matter how far, there is no drop-off.
+const int AIM_MAX_DIST                            = 5000; // 50 meters. For shooting at the crosshair at all ranges.
 const int sizeof_zCVob                            = 288;
 /* These are all addresses used. When adjusting these, it should also work for Gothic 1 */
 const int zCVob__zCVob                            = 7845536; //0x5FE1E0
@@ -19,6 +19,7 @@ const int zCVob__SetPositionWorld                 = 6404976; //0x61BB70
 const int zCWorld__AddVobAsChild                  = 6440352; //0x6245A0
 const int oCAniCtrl_Human__TurnDegrees            = 7006992; //0x6AEB10
 const int oCNpc__GetAngles                        = 6820528; //0x6812B0
+const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
 const int mouseDeltaX                             = 9246300; //0x8D165C
 /* Hooks */
@@ -44,7 +45,8 @@ func void Init_FreeAim() {
 };
 
 /* Check whether free aim should be activated */
-func int applyFreeAim() {
+func int isFreeAimActive() {
+    if (!MEM_ReadInt(mouseEnabled)) { return 0; }; // Only when mouse controls are enabled
     var oCNpc her; her = Hlp_GetNpc(hero);
     if (!Npc_IsInFightMode(her, FMODE_FAR)) { return 0; }; // Only while using bow/crossbow
     if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) { return 0; };
@@ -53,7 +55,7 @@ func int applyFreeAim() {
 
 /* Mouse handling for manually turning the player model */
 func void manualRotation() {
-    if (!applyFreeAim()) { return; };
+    if (!isFreeAimActive()) { return; };
     var int deltaX; deltaX = mulf(mkf(MEM_ReadInt(mouseDeltaX)), MEM_ReadInt(mouseSensX)); // Get mouse change in x
     if (deltaX == FLOATNULL) { return; }; // Only rotate if there was movement along x position
     var int frameAdj; frameAdj = mulf(MEM_Timer.frameTimeFloat, fracf(16, 1000)); // Frame lock
@@ -72,7 +74,7 @@ func void manualRotation() {
 
 /* Hook oCAniCtrl_Human::InterpolateCombineAni. Set target position to update aim animation */
 func void catchICAni() {
-    if (!applyFreeAim()) { return; };
+    if (!isFreeAimActive()) { return; };
     MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
     var zCVob cam; cam = _^(MEM_Camera.connectedVob);
     var int pos[6]; // Combined pos[3] + dir[3]. The position is calculated from the camera, not the player model.
@@ -118,7 +120,7 @@ func void catchICAni() {
 /* Hook oCAIArrow::SetupAIVob */
 func void shootTarget() {
     var C_NPC shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
-    if (!Npc_IsPlayer(shooter)) || (!applyFreeAim()) { return; }; // Only for the player
+    if (!Npc_IsPlayer(shooter)) || (!isFreeAimActive()) { return; }; // Only for the player
     MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
     var zCVob cam; cam = _^(MEM_Camera.connectedVob);
     var int pos[6]; // Combined pos[3] + dir[3]
@@ -139,7 +141,7 @@ func void shootTarget() {
     if (!vobPtr) {
         vobPtr = MEM_Alloc(sizeof_zCVob); // Will never delete this vob (it will be re-used on the next shot)
         CALL__thiscall(vobPtr, zCVob__zCVob);
-        MEM_WriteString(vobPtr+16, "AIMVOB"); // _zCObject_objectName // Hope that is the same offset in g1
+        MEM_WriteString(vobPtr+16, "AIMVOB"); // _zCObject_objectName
         CALL_PtrParam(_@(MEM_Vobtree));
         CALL_PtrParam(vobPtr);
         CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
