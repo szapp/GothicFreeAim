@@ -14,7 +14,7 @@
 const int AIM_MAX_DIST                            = 5000; // 50 meters. For shooting at the crosshair at all ranges.
 const int sizeof_zCVob                            = 288;
 /* These are all addresses used. When adjusting these, it should also work for Gothic 1 */
-const int zCVob__zCVob                            = 7845536; //0x5FE1E0
+const int zCVob__zCVob                            = 6283744; //0x5FE1E0
 const int zCVob__SetPositionWorld                 = 6404976; //0x61BB70
 const int zCWorld__AddVobAsChild                  = 6440352; //0x6245A0
 const int oCAniCtrl_Human__TurnDegrees            = 7006992; //0x6AEB10
