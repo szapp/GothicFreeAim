@@ -196,6 +196,10 @@ func void manageCrosshair() {
         removeCrosshair(); // Only apply manual rotation when action button is held
         return;
     };
+    if (!MEM_ReadInt(mouseEnabled)) {
+        removeCrosshair(); // Only when mouse controls are enabled
+        return;
+    };
     if (Npc_IsInFightMode(hero, FMODE_FAR)) {
         Focus_Ranged.npc_prio = -1; // Disable focus collection
         insertCrosshair(PNTSML_CROSSHAIR);
