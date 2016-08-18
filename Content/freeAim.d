@@ -6,10 +6,8 @@
  *
  * Requirements:
  *  - Ikarus (>= 1.2 +floats)
- *  - LeGo (>= 2.3.2) with initialized packages:
- *     - LeGo_HookEngine
- *     - LeGo_Cursor
-  */
+ *  - LeGo (>= 2.3.2 HookEngine)
+ */
 
 const int AIM_MAX_DIST                            = 5000; // 50 meters. For shooting at the crosshair at all ranges.
 const int sizeof_zCVob                            = 288;
@@ -42,6 +40,8 @@ func void Init_FreeAim() {
         HookEngineF(mouseUpdate, 5, manualRotation);
         hookFreeAim = 1;
     };
+    Focus_Ranged.npc_prio = -1; // Disable focus collection
+    MEM_Info("Free aim initialized.");
 };
 
 /* Check whether free aim should be activated */
@@ -201,7 +201,6 @@ func void manageCrosshair() {
         return;
     };
     if (Npc_IsInFightMode(hero, FMODE_FAR)) {
-        Focus_Ranged.npc_prio = -1; // Disable focus collection
         insertCrosshair(PNTSML_CROSSHAIR);
     } else if (Npc_IsInFightMode(hero, FMODE_MAGIC)) {
         var int activeSpell; activeSpell = Npc_GetActiveSpell(hero);
