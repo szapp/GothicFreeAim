@@ -121,8 +121,8 @@ func void shootTarget() {
     pos[0] = cam.trafoObjToWorld[ 3]; pos[3] = mulf(cam.trafoObjToWorld[ 2], mkf(AIM_MAX_DIST));
     pos[1] = cam.trafoObjToWorld[ 7]; pos[4] = mulf(cam.trafoObjToWorld[ 6], mkf(AIM_MAX_DIST));
     pos[2] = cam.trafoObjToWorld[11]; pos[5] = mulf(cam.trafoObjToWorld[10], mkf(AIM_MAX_DIST));
-    if (TraceRay(_@(pos), _@(pos)+12, 0)) { // Shoot trace ray from camera(!) to max distance
-            // (zTRACERAY_POLY_TEST_WATER | zTRACERAY_POLY_IGNORE_TRANSP | zTRACERAY_POLY_IGNORE_TRANSP))) {
+    if (TraceRay(_@(pos), _@(pos)+12, // Shoot trace ray from camera(!) to max distance
+            (zTRACERAY_POLY_TEST_WATER | zTRACERAY_POLY_IGNORE_TRANSP | zTRACERAY_VOB_IGNORE_PROJECTILES))) {
         pos[0] = MEM_World.foundIntersection[0]; // Set new position to intersection
         pos[1] = MEM_World.foundIntersection[1]; // (First point where the trace ray made contact with a polygon)
         pos[2] = MEM_World.foundIntersection[2];
