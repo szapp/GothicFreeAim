@@ -43,17 +43,24 @@ func void Init_FreeAim() {
     };
 };
 
+/* Check whether free aim should be activated */
+func int applyFreeAim() {
+    var oCNpc her; her = Hlp_GetNpc(hero);
+    if (!Npc_IsInFightMode(her, FMODE_FAR)) { return 0; }; // Only while using bow/crossbow
+    if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) { return 0; };
+    return 1;
+};
+
 /* Mouse handling for manually turning the player model */
 func void manualRotation() {
-    var oCNpc her; her = Hlp_GetNpc(hero);
-    if (!Npc_IsInFightMode(her, FMODE_FAR)) { return; }; // Only while using bow/crossbow
-    if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) { return; };
+    if (!applyFreeAim()) { return; };
     var int deltaX; deltaX = mulf(mkf(MEM_ReadInt(mouseDeltaX)), MEM_ReadInt(mouseSensX)); // Get mouse change in x
     if (deltaX == FLOATNULL) { return; }; // Only rotate if there was movement along x position
     var int frameAdj; frameAdj = mulf(MEM_Timer.frameTimeFloat, fracf(16, 1000)); // Frame lock
     deltaX = mulf(deltaX, frameAdj);
-    var int null;
+    var oCNpc her; her = Hlp_GetNpc(hero);
     var int hAniCtrl; hAniCtrl = her.anictrl;
+    var int null;
     const int call = 0;
     if (CALL_Begin(call)) {
         CALL_IntParam(_@(null)); // 0 = disable turn animation (there is none while aiming anyways)
@@ -63,12 +70,9 @@ func void manualRotation() {
     };
 };
 
-/* Hook oCAniCtrl_Human::InterpolateCombineAni */
+/* Hook oCAniCtrl_Human::InterpolateCombineAni. Set target position to update aim animation */
 func void catchICAni() {
-    var oCNpc her; her = Hlp_GetNpc(hero);
-    if (!Npc_IsInFightMode(her, FMODE_FAR)) { return; }; // Only while using bow/crossbow
-    if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) { return; };
-    // Target position for animation
+    if (!applyFreeAim()) { return; };
     MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
     var zCVob cam; cam = _^(MEM_Camera.connectedVob);
     var int pos[6]; // Combined pos[3] + dir[3]. The position is calculated from the camera, not the player model.
@@ -79,6 +83,7 @@ func void catchICAni() {
     pos[1] = addf(pos[1], pos[4]);
     pos[2] = addf(pos[2], pos[5]);
     // Get aiming angles
+    var oCNpc her; her = Hlp_GetNpc(hero);
     var int angleX; var int angXptr; angXptr = _@(angleX);
     var int angleY; var int angYptr; angYptr = _@(angleY);
     var int posPtr; posPtr = _@(pos);
@@ -113,8 +118,7 @@ func void catchICAni() {
 /* Hook oCAIArrow::SetupAIVob */
 func void shootTarget() {
     var C_NPC shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
-    if (!Npc_IsPlayer(shooter)) { return; }; // Only for player
-    // Set trace ray (start from camera(!) and go along the outvector of the camera vob)
+    if (!Npc_IsPlayer(shooter)) || (!applyFreeAim()) { return; }; // Only for the player
     MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
     var zCVob cam; cam = _^(MEM_Camera.connectedVob);
     var int pos[6]; // Combined pos[3] + dir[3]
