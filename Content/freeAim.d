@@ -40,7 +40,7 @@ func void Init_FreeAim() {
         HookEngineF(mouseUpdate, 5, manualRotation);
         hookFreeAim = 1;
     };
-    Focus_Ranged.npc_prio = -1; // Disable focus collection
+    //Focus_Ranged.npc_prio = -1; // Disable focus collection
     MEM_Info("Free aim initialized.");
 };
 
@@ -51,6 +51,13 @@ func int isFreeAimActive() {
     if (!Npc_IsInFightMode(her, FMODE_FAR)) { return 0; }; // Only while using bow/crossbow
     if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) { return 0; };
     return 1;
+};
+
+/* Check whether free aim should collect focus */
+func int getFreeAimFocus() {
+    var oCNpc her; her = Hlp_GetNpc(hero);
+    if (Npc_IsInFightMode(her, FMODE_FAR)) { return 1; }; // Only while using bow/crossbow
+    return 0;
 };
 
 /* Mouse handling for manually turning the player model */
@@ -77,15 +84,46 @@ func void catchICAni() {
     if (!isFreeAimActive()) { return; };
     MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
     var zCVob cam; cam = _^(MEM_Camera.connectedVob);
+    var oCNpc her; her = Hlp_GetNpc(hero);
     var int pos[6]; // Combined pos[3] + dir[3]. The position is calculated from the camera, not the player model.
-    pos[0] = cam.trafoObjToWorld[ 3];  pos[3] = mulf(cam.trafoObjToWorld[ 2], mkf(AIM_MAX_DIST));
-    pos[1] = cam.trafoObjToWorld[ 7];  pos[4] = mulf(cam.trafoObjToWorld[ 6], mkf(AIM_MAX_DIST));
-    pos[2] = cam.trafoObjToWorld[11];  pos[5] = mulf(cam.trafoObjToWorld[10], mkf(AIM_MAX_DIST));
+    pos[0] = addf(cam.trafoObjToWorld[ 3], mulf(cam.trafoObjToWorld[ 2], mkf(300))); pos[3] = mulf(cam.trafoObjToWorld[ 2], mkf(AIM_MAX_DIST));
+    pos[1] = addf(cam.trafoObjToWorld[ 7], mulf(cam.trafoObjToWorld[ 6], mkf(300))); pos[4] = mulf(cam.trafoObjToWorld[ 6], mkf(AIM_MAX_DIST));
+    pos[2] = addf(cam.trafoObjToWorld[11], mulf(cam.trafoObjToWorld[10], mkf(300))); pos[5] = mulf(cam.trafoObjToWorld[10], mkf(AIM_MAX_DIST));
+    if (getFreeAimFocus()) {
+        MEM_World.showTraceRayLines = 0;
+        if (TraceRay(_@(pos), _@(pos)+12, // Shoot trace ray from camera(!) to max distance
+           (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_POLY_IGNORE_TRANSP | zTRACERAY_POLY_TEST_WATER |
+            zTRACERAY_VOB_IGNORE_PROJECTILES | zTRACERAY_VOB_BBOX)))
+        && (MEM_World.foundVob) {
+            //MEM_Info(ConcatStrings(ConcatStrings(ConcatStrings("Found vob: ", MEM_ReadString(MEM_World.foundVob+16)), " of class "), MEM_GetClassName(MEM_World.foundVob)));
+            if (Hlp_Is_oCNpc(MEM_World.foundVob)) {
+                var C_NPC targetNPC; targetNPC = _^(MEM_World.foundVob);
+                if (Npc_IsInState(targetNPC, ZS_Unconscious))
+                || (Npc_IsInState(targetNPC, ZS_MagicSleep))
+                || (Npc_IsDead(targetNPC)) {
+                    her.focus_vob = 0; // If nothing is in the way, clear focus vob
+                } else {
+                    //MEM_Info(ConcatStrings("Set focus vob: ", MEM_ReadString(MEM_World.foundVob+16)));
+                    her.focus_vob = MEM_World.foundVob;
+                };
+            } else {
+                her.focus_vob = 0; // If nothing is in the way, clear focus vob
+            };
+        } else {
+            if (her.focus_vob) {
+                if (Hlp_Is_oCNpc(her.focus_vob)) {
+                    var oCNpc hfc; hfc = _^(her.focus_vob);
+                    //MEM_Info(ConcatStrings(ConcatStrings(hfc.name, " cleared. Ignore trace ray: "), IntToString(hfc._zCVob_bitfield[0] & zCVob_bitfield0_ignoredByTraceRay)));
+                };
+            };
+            her.focus_vob = 0; // If nothing is in the way, clear focus vob
+        };
+    };
+
     pos[0] = addf(pos[0], pos[3]);
     pos[1] = addf(pos[1], pos[4]);
     pos[2] = addf(pos[2], pos[5]);
     // Get aiming angles
-    var oCNpc her; her = Hlp_GetNpc(hero);
     var int angleX; var int angXptr; angXptr = _@(angleX);
     var int angleY; var int angYptr; angYptr = _@(angleY);
     var int posPtr; posPtr = _@(pos);
