@@ -125,8 +125,8 @@ func void manualRotation() {
 
 /* Shoot aim-tailored trace ray. Do no use for other things. This function is customized for aiming. */
 func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPtr) {
-    var int flags; flags = (1<<0) | (1<<14); // (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_VOB_IGNORE_PROJECTILES)
-    if (vobPtr) { flags = flags | (1<<2); }; // zTRACERAY_VOB_BBOX
+    // (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_VOB_BBOX | zTRACERAY_VOB_IGNORE_PROJECTILES)
+    var int flags; flags = (1<<0) | (1<<2) | (1<<14);
     var int herPtr; herPtr = _@(hero);
     MEM_InitGlobalInst(); var int camPos[6];
     camPos[0] = MEM_ReadInt(MEM_Camera.connectedVob+72);
