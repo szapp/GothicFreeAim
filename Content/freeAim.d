@@ -10,8 +10,9 @@
  */
 
 /* Free aim settings */
+const int FREEAIM_ACTIVATED                       = 1;      // Enable/Disable free aiming
 const int FREEAIM_SHOULDER                        = 0;      // 0 = left, 1 = right
-const int AIM_MAX_DIST                            = 5000;   // 50 meters. For shooting at the crosshair at all ranges.
+const int FREEAIM_MAX_DIST                        = 5000;   // 50 meters. For shooting at the crosshair at all ranges.
 const int CROSSHAIR_MIN_SIZE                      = 16;     // Smallest crosshair size in pixels (longest aiming range)
 const int CROSSHAIR_MAX_SIZE                      = 32;     // Biggest crosshair size in pixels (closest aiming range)
 var int crosshairHndl;                                      // Holds the crosshair handle
@@ -53,6 +54,7 @@ func void Init_FreeAim() {
 
 /* Check whether free aim should be activated */
 func int isFreeAimActive() {
+    if (!FREEAIM_ACTIVATED) { return 0; }; // Only free aiming is enabled
     if (!MEM_ReadInt(mouseEnabled)) { return 0; }; // Only when mouse controls are enabled
     var oCNpc her; her = Hlp_GetNpc(hero);
     if (!Npc_IsInFightMode(her, FMODE_FAR)) { return 0; }; // Only while using bow/crossbow
@@ -82,8 +84,8 @@ func void insertCrosshair(var int crosshairStyle, var int size) {
             if (!Hlp_StrCmp(View_GetTexture(crosshairHndl), crosshairTex)) {
                 View_SetTexture(crosshairHndl, crosshairTex);
             };
-            if (size < CROSSHAIR_MIN_SIZE) { size = CROSSHAIR_MIN_SIZE; };
-            if (size > CROSSHAIR_MAX_SIZE) { size = CROSSHAIR_MAX_SIZE; };
+            if (size < CROSSHAIR_MIN_SIZE) { size = CROSSHAIR_MIN_SIZE; }
+            else if (size > CROSSHAIR_MAX_SIZE) { size = CROSSHAIR_MAX_SIZE; };
             if (crsHr.psizex != size) {
                 View_ResizePxl(crosshairHndl, size, size);
                 View_MoveToPxl(crosshairHndl, Print_Screen[PS_X]/2-(size/2), Print_Screen[PS_Y]/2-(size/2));
@@ -141,9 +143,9 @@ func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPt
     helpPos[1] = addf(MEM_ReadInt(herPtr+88), mulf(MEM_ReadInt(MEM_Camera.connectedVob+76), mulf(shoulder, mkf(1000))));
     helpPos[2] = addf(MEM_ReadInt(herPtr+104),mulf(MEM_ReadInt(MEM_Camera.connectedVob+92), mulf(shoulder, mkf(1000))));
     var int u[3]; var int v[3];
-    u[0] = subf(camPos[0], MEM_ReadInt(herPtr+72));   v[0] = subf(camPos[0], helpPos[0]);
-    u[1] = subf(camPos[1], MEM_ReadInt(herPtr+88));   v[1] = subf(camPos[1], helpPos[1]);
-    u[2] = subf(camPos[2], MEM_ReadInt(herPtr+104));  v[2] = subf(camPos[2], helpPos[2]);
+    u[0] = subf(camPos[0], MEM_ReadInt(herPtr+72));  v[0] = subf(camPos[0], helpPos[0]);
+    u[1] = subf(camPos[1], MEM_ReadInt(herPtr+88));  v[1] = subf(camPos[1], helpPos[1]);
+    u[2] = subf(camPos[2], MEM_ReadInt(herPtr+104)); v[2] = subf(camPos[2], helpPos[2]);
     var int crossProd[3]; // Cross-product
     crossProd[0] = subf(mulf(u[1], v[2]), mulf(u[2], v[1]));
     crossProd[1] = subf(mulf(u[2], v[0]), mulf(u[0], v[2]));
@@ -184,11 +186,23 @@ func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPt
 /* Hook oCAniCtrl_Human::InterpolateCombineAni. Set target position to update aim animation */
 func void catchICAni() {
     if (!isFreeAimActive()) { return; };
+    // Strafing
+    if (MEM_KeyPressed(MEM_GetKey("keyStrafeLeft")))
+    || (MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeLeft"))) {
+    /*  const int oCAIHuman__PC_Strafe = 6925440; //0x69AC80
+        CALL_IntParam(1);
+        CALL__thiscall(her.human_ai, oCAIHuman__PC_Strafe);
+        MEM_Info(IntToString(CALL_RetValAsInt()));*/
+        //MEM_Info("strafe left");
+        //AI_PlayAniBS(her, "T_STRAFENEW", BS_WALK);
+        return;
+    };
+
     var oCNpc her; her = Hlp_GetNpc(hero);
     var int size; size = CROSSHAIR_MAX_SIZE; // Size of crosshair
     if (getFreeAimFocus()) { // Set focus npc if there is a valid one under the crosshair
         var int target; var int distance;
-        aimRay(AIM_MAX_DIST, _@(target), 0, _@(distance)); // Shoot trace ray and retrieve vob
+        aimRay(FREEAIM_MAX_DIST, _@(target), 0, _@(distance)); // Shoot trace ray and retrieve vob
         if (Hlp_Is_oCNpc(target)) {
             var C_NPC targetNPC; targetNPC = _^(target);
             if (Npc_IsInState(targetNPC, ZS_Unconscious))
@@ -196,15 +210,15 @@ func void catchICAni() {
             || (Npc_IsDead(targetNPC)) { her.focus_vob = 0; } // If npc is down don't show name or health bar
             else { her.focus_vob = target; }; // Set new focus vob
         } else { her.focus_vob = 0; }; // No npc under crosshair
-        size = size - roundf(mulf(divf(distance, mkf(AIM_MAX_DIST)), mkf(size))); // Adjust crosshair size
+        size = size - roundf(mulf(divf(distance, mkf(FREEAIM_MAX_DIST)), mkf(size))); // Adjust crosshair size
     };
     insertCrosshair(POINTY_CROSSHAIR, size); // Draw/update crosshair
     MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
     var zCVob cam; cam = _^(MEM_Camera.connectedVob);
     var int pos[3]; // The position is calculated from the camera, not the player model.
-    pos[0] = addf(cam.trafoObjToWorld[ 3], mulf(cam.trafoObjToWorld[ 2], mkf(AIM_MAX_DIST)));
-    pos[1] = addf(cam.trafoObjToWorld[ 7], mulf(cam.trafoObjToWorld[ 6], mkf(AIM_MAX_DIST)));
-    pos[2] = addf(cam.trafoObjToWorld[11], mulf(cam.trafoObjToWorld[10], mkf(AIM_MAX_DIST)));
+    pos[0] = addf(cam.trafoObjToWorld[ 3], mulf(cam.trafoObjToWorld[ 2], mkf(FREEAIM_MAX_DIST)));
+    pos[1] = addf(cam.trafoObjToWorld[ 7], mulf(cam.trafoObjToWorld[ 6], mkf(FREEAIM_MAX_DIST)));
+    pos[2] = addf(cam.trafoObjToWorld[11], mulf(cam.trafoObjToWorld[10], mkf(FREEAIM_MAX_DIST)));
     // Get aiming angles
     var int angleX; var int angXptr; angXptr = _@(angleX);
     var int angleY; var int angYptr; angYptr = _@(angleY);
@@ -226,7 +240,7 @@ func void catchICAni() {
     var int deg90To05; deg90To05 = mulf(1010174817, FLOATHALF); // 0.0111111*0.5 (from 0x8306EC in g2)
     angleY = mulf(angleY, deg90To05); // Scale Y +-90 degrees to +-0.5
     angleY = addf(angleY, FLOATHALF); // Shift Y +-0.5 to +-1
-    angleY = subf(FLOATONE, angleY); // Flip  Y +-1 to -+1
+    angleY = subf(FLOATONE, angleY);  // Flip  Y +-1 to -+1
     if (lef(angleY, FLOATNULL)) {
         angleY = FLOATNULL; // Maximum aim height (straight up)
     } else if (gef(angleY, 1065353216)) {
@@ -241,7 +255,7 @@ func void catchICAni() {
 func void shootTarget() {
     var C_NPC shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
     if (!Npc_IsPlayer(shooter)) || (!isFreeAimActive()) { return; }; // Only for the player
-    var int pos[3]; aimRay(AIM_MAX_DIST, 0, _@(pos), 0); // Shoot trace ray and retrieve intersection
+    var int pos[3]; aimRay(FREEAIM_MAX_DIST, 0, _@(pos), 0); // Shoot trace ray and retrieve intersection
     var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB"); // Arrow needs target vob
     if (!vobPtr) {
         vobPtr = MEM_Alloc(sizeof_zCVob); // Will never delete this vob (it will be re-used on the next shot)
