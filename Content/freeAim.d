@@ -10,8 +10,11 @@
  */
 
 /* Free aim settings */
-const int FREEAIM_SHOULDER                        = 0; // 0 = left, 1 = right
-const int AIM_MAX_DIST                            = 5000; // 50 meters. For shooting at the crosshair at all ranges.
+const int FREEAIM_SHOULDER                        = 0;      // 0 = left, 1 = right
+const int AIM_MAX_DIST                            = 5000;   // 50 meters. For shooting at the crosshair at all ranges.
+const int CROSSHAIR_MIN_SIZE                      = 16;     // Smallest crosshair size in pixels (longest aiming range)
+const int CROSSHAIR_MAX_SIZE                      = 32;     // Biggest crosshair size in pixels (closest aiming range)
+var int crosshairHndl;                                      // Holds the crosshair handle
 
 /* These are all addresses (a.o.) used. When adjusting these, it should also work for Gothic 1 */
 const int sizeof_zCVob                            = 288; // Gothic 2: 288, Gothic 1: 256
@@ -57,6 +60,43 @@ func int isFreeAimActive() {
     return 1;
 };
 
+/* Delete crosshair (hiding it is not sufficient, since it might change texture later) */
+func void removeCrosshair() {
+    if (Hlp_IsValidHandle(crosshairHndl)) { View_Delete(crosshairHndl); };
+};
+
+/* Draw crosshair */
+func void insertCrosshair(var int crosshairStyle, var int size) {
+    if (crosshairStyle > 1) {
+        var string crosshairTex;
+        if (!Hlp_IsValidHandle(crosshairHndl)) {
+            Print_GetScreenSize();
+            crosshairHndl = View_CreateCenterPxl(Print_Screen[PS_X]/2, Print_Screen[PS_Y]/2, size, size);
+            crosshairTex = MEM_ReadStatStringArr(crosshair, crosshairStyle);
+            View_SetTexture(crosshairHndl, crosshairTex);
+            View_Open(crosshairHndl);
+        } else {
+            var zCView crsHr; crsHr = _^(getPtr(crosshairHndl));
+            if (!crsHr.isOpen) { View_Open(crosshairHndl); };
+            crosshairTex = MEM_ReadStatStringArr(crosshair, crosshairStyle);
+            if (!Hlp_StrCmp(View_GetTexture(crosshairHndl), crosshairTex)) {
+                View_SetTexture(crosshairHndl, crosshairTex);
+            };
+            if (size < CROSSHAIR_MIN_SIZE) { size = CROSSHAIR_MIN_SIZE; };
+            if (size > CROSSHAIR_MAX_SIZE) { size = CROSSHAIR_MAX_SIZE; };
+            if (crsHr.psizex != size) {
+                View_ResizePxl(crosshairHndl, size, size);
+                View_MoveToPxl(crosshairHndl, Print_Screen[PS_X]/2-(size/2), Print_Screen[PS_Y]/2-(size/2));
+            };
+        };
+    } else { removeCrosshair(); };
+};
+
+/* Decide when to draw crosshair (otherwise make sure it's deleted) */
+func void manageCrosshair() {
+    if (!isFreeAimActive()) { removeCrosshair(); };
+};
+
 /* Check whether free aim should collect focus */
 func int getFreeAimFocus() {
     var oCNpc her; her = Hlp_GetNpc(hero);
@@ -85,7 +125,8 @@ func void manualRotation() {
 
 /* Shoot aim-tailored trace ray. Do no use for other things. This function is customized for aiming. */
 func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPtr) {
-    var int flags; flags = (1<<0) | (1<<2); // (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_VOB_BBOX)
+    var int flags; flags = (1<<0) | (1<<14); // (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_VOB_IGNORE_PROJECTILES)
+    if (vobPtr) { flags = flags | (1<<2); }; // zTRACERAY_VOB_BBOX
     var int herPtr; herPtr = _@(hero);
     MEM_InitGlobalInst(); var int camPos[6];
     camPos[0] = MEM_ReadInt(MEM_Camera.connectedVob+72);
@@ -131,9 +172,9 @@ func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPt
     if (posPtr) { MEM_CopyWords(_@(MEM_World.foundIntersection), posPtr, 3); };
     if (distPtr) {
         distance = sqrtf(addf(addf(
-            sqrf(MEM_World.foundIntersection[0]),
-            sqrf(MEM_World.foundIntersection[1])),
-            sqrf(MEM_World.foundIntersection[2])));
+            sqrf(subf(MEM_World.foundIntersection[0], camPos[0])),
+            sqrf(subf(MEM_World.foundIntersection[1], camPos[1]))),
+            sqrf(subf(MEM_World.foundIntersection[2], camPos[2]))));
         MEM_WriteInt(distPtr, distance);
     };
     return found;
@@ -142,9 +183,8 @@ func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPt
 /* Hook oCAniCtrl_Human::InterpolateCombineAni. Set target position to update aim animation */
 func void catchICAni() {
     if (!isFreeAimActive()) { return; };
-    MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
-    var zCVob cam; cam = _^(MEM_Camera.connectedVob);
     var oCNpc her; her = Hlp_GetNpc(hero);
+    var int size; size = CROSSHAIR_MAX_SIZE; // Size of crosshair
     if (getFreeAimFocus()) { // Set focus npc if there is a valid one under the crosshair
         var int target; var int distance;
         aimRay(AIM_MAX_DIST, _@(target), 0, _@(distance)); // Shoot trace ray and retrieve vob
@@ -152,15 +192,14 @@ func void catchICAni() {
             var C_NPC targetNPC; targetNPC = _^(target);
             if (Npc_IsInState(targetNPC, ZS_Unconscious))
             || (Npc_IsInState(targetNPC, ZS_MagicSleep))
-            || (Npc_IsDead(targetNPC)) {
-                her.focus_vob = 0; // If npc is down don't show name or health bar
-            } else {
-                her.focus_vob = MEM_World.foundVob; // Set new focus vob
-            };
-        } else {
-            her.focus_vob = 0; // No npc under crosshair
-        };
+            || (Npc_IsDead(targetNPC)) { her.focus_vob = 0; } // If npc is down don't show name or health bar
+            else { her.focus_vob = target; }; // Set new focus vob
+        } else { her.focus_vob = 0; }; // No npc under crosshair
+        size = size - roundf(mulf(divf(distance, mkf(AIM_MAX_DIST)), mkf(size))); // Adjust crosshair size
     };
+    insertCrosshair(POINTY_CROSSHAIR, size); // Draw/update crosshair
+    MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
+    var zCVob cam; cam = _^(MEM_Camera.connectedVob);
     var int pos[3]; // The position is calculated from the camera, not the player model.
     pos[0] = addf(cam.trafoObjToWorld[ 3], mulf(cam.trafoObjToWorld[ 2], mkf(AIM_MAX_DIST)));
     pos[1] = addf(cam.trafoObjToWorld[ 7], mulf(cam.trafoObjToWorld[ 6], mkf(AIM_MAX_DIST)));
@@ -219,56 +258,4 @@ func void shootTarget() {
         call = CALL_End();
     };
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
-};
-
-/*
- * Crosshair framework
- */
-var int crosshairHndl; // Hold the crosshair handle
-
-/* Delete crosshair (hiding it is not sufficient, since it might change texture later) */
-func void removeCrosshair() {
-    if (Hlp_IsValidHandle(crosshairHndl)) { View_Delete(crosshairHndl); };
-};
-
-/* Draw crosshair */
-func void insertCrosshair(var int crosshairStyle) {
-    if (crosshairStyle > 1) {
-        var string crosshairTex;
-        if (!Hlp_IsValidHandle(crosshairHndl)) {
-            Print_GetScreenSize();
-            var int posX; posX = Print_Screen[PS_X] / 2;
-            var int posY; posY = Print_Screen[PS_Y] / 2;
-            crosshairHndl = View_CreatePxl(posX-32, posY-32, posX+32, posY+32);
-            crosshairTex = MEM_ReadStatStringArr(crosshair, crosshairStyle);
-            View_SetTexture(crosshairHndl, crosshairTex);
-            View_Open(crosshairHndl);
-        } else {
-            var zCView crsHr; crsHr = _^(getPtr(crosshairHndl));
-            if (!crsHr.isOpen) { View_Open(crosshairHndl); };
-            crosshairTex = MEM_ReadStatStringArr(crosshair, crosshairStyle);
-            if (!Hlp_StrCmp(View_GetTexture(crosshairHndl), crosshairTex)) {
-                View_SetTexture(crosshairHndl, crosshairTex);
-            };
-        };
-    } else { removeCrosshair(); };
-};
-
-/* Decide when to draw crosshair (otherwise make sure it's deleted) */
-func void manageCrosshair() {
-    if (!MEM_KeyPressed(MEM_GetKey("keyAction")))
-    && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) {
-        removeCrosshair(); // Only apply manual rotation when action button is held
-        return;
-    };
-    if (!MEM_ReadInt(mouseEnabled)) {
-        removeCrosshair(); // Only when mouse controls are enabled
-        return;
-    };
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) {
-        insertCrosshair(PNTSML_CROSSHAIR);
-    } else if (Npc_IsInFightMode(hero, FMODE_MAGIC)) {
-        var int activeSpell; activeSpell = Npc_GetActiveSpell(hero);
-        insertCrosshair(MEM_ReadStatArr(spellTurnable, activeSpell));
-    } else { removeCrosshair(); };
 };
