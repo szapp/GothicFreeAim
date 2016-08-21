@@ -84,56 +84,35 @@ func void manualRotation() {
 };
 
 /* Shoot aim-tailored trace ray. Do no use for other things. This function is customized for aiming. */
-func int aimRay(var int distance, var int returnVobPtr) {
+func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPtr) {
     var int flags; flags = (1<<0) | (1<<2); // (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_VOB_BBOX)
-    var oCNpc her; her = Hlp_GetNpc(hero);
-    var int herPtr; herPtr = _@(her);
+    var int herPtr; herPtr = _@(hero);
     MEM_InitGlobalInst(); var int camPos[6];
-    camPos[0] = MEM_ReadInt(MEM_Camera.connectedVob+72); // Camera vob position
+    camPos[0] = MEM_ReadInt(MEM_Camera.connectedVob+72);
     camPos[1] = MEM_ReadInt(MEM_Camera.connectedVob+88);
     camPos[2] = MEM_ReadInt(MEM_Camera.connectedVob+104);
-
-/*    // (FREEAIM_SHOULDER*2)-1 // Now left is -1, right is +1
-    var int d[3];
-    d[0] = subf(MEM_ReadInt(MEM_Camera.connectedVob+72),  MEM_ReadInt(_@(her)+72));
-    d[1] = subf(MEM_ReadInt(MEM_Camera.connectedVob+88),  MEM_ReadInt(_@(her)+88));
-    d[2] = subf(MEM_ReadInt(MEM_Camera.connectedVob+104), MEM_ReadInt(_@(her)+104));
-    var int dist1; dist1 = sqrtf(addf(addf(sqrf(d[0]), sqrf(d[1])), sqrf(d[2])));
-    d[0] = mulf(MEM_ReadInt(MEM_Camera.connectedVob+68),  d[0]);
-    d[1] = mulf(MEM_ReadInt(MEM_Camera.connectedVob+84),  d[1]);
-    d[2] = mulf(MEM_ReadInt(MEM_Camera.connectedVob+100), d[2]);
-    var int dist; dist = sqrtf(addf(addf(sqrf(d[0]), sqrf(d[1])), sqrf(d[2])));
-    //d[0] = addf(MEM_ReadInt(MEM_Camera.connectedVob+72),  d[0]);
-    //d[1] = addf(MEM_ReadInt(MEM_Camera.connectedVob+88),  d[1]);
-    //d[2] = addf(MEM_ReadInt(MEM_Camera.connectedVob+104), d[2]);
-    d[0] = subf(MEM_ReadInt(MEM_Camera.connectedVob+72),  d[0]);
-    d[1] = subf(MEM_ReadInt(MEM_Camera.connectedVob+88),  d[1]);
-    d[2] = subf(MEM_ReadInt(MEM_Camera.connectedVob+104), d[2]);
-    var int dist2; dist2 = sqrtf(addf(addf(sqrf(d[0]), sqrf(d[1])), sqrf(d[2])));
-    // MEM_Info(ConcatStrings(ConcatStrings(toStringf(dist1), " -> "), toStringf(dist)));
-    MEM_Info(ConcatStrings(ConcatStrings(toStringf(dist), " -> "), toStringf(dist2)));
-
-    var int vobPtr; vobPtr = MEM_SearchVobByName("TESTVOB123");
-    if (!vobPtr) {
-        vobPtr = MEM_Alloc(sizeof_zCVob); // Will never delete this vob (it will be re-used on the next shot)
-        CALL__thiscall(vobPtr, zCVob__zCVob);
-        MEM_WriteString(vobPtr+16, "TESTVOB123"); // _zCObject_objectName
-
-        VobSetVisual(vobPtr, "NC_LOB_TABLE2.3DS");
-
-        CALL_PtrParam(_@(MEM_Vobtree));
-        CALL_PtrParam(vobPtr);
-        CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
-    };
-    var int posPtr; posPtr = _@(d);
-    const int call1 = 0;
-    if (CALL_Begin(call1)) {
-        CALL_PtrParam(_@(posPtr)); // Update aim vob position
-        CALL__thiscall(_@(vobPtr), zCVob__SetPositionWorld);
-        call1 = CALL_End();
-    };*/
-
-    camPos[3] = mulf(MEM_ReadInt(MEM_Camera.connectedVob+68), mkf(distance)); // Direction-/to-vector
+    // Calculate point-line distance, to shift the start point of the trace ray beyond the player model
+    // Necessary, because if zooming out, (1) there might be something between camera and hero, (2) max distance is off
+    var int shoulder; shoulder = mkf((FREEAIM_SHOULDER*2)-1); // Now left is -1, right is +1
+    var int helpPos[3]; // Help point along the right vector of the camera vob for point-line distance
+    helpPos[0] = addf(MEM_ReadInt(herPtr+72), mulf(MEM_ReadInt(MEM_Camera.connectedVob+60), mulf(shoulder, mkf(1000))));
+    helpPos[1] = addf(MEM_ReadInt(herPtr+88), mulf(MEM_ReadInt(MEM_Camera.connectedVob+76), mulf(shoulder, mkf(1000))));
+    helpPos[2] = addf(MEM_ReadInt(herPtr+104),mulf(MEM_ReadInt(MEM_Camera.connectedVob+92), mulf(shoulder, mkf(1000))));
+    var int u[3]; var int v[3];
+    u[0] = subf(camPos[0], MEM_ReadInt(herPtr+72));   v[0] = subf(camPos[0], helpPos[0]);
+    u[1] = subf(camPos[1], MEM_ReadInt(herPtr+88));   v[1] = subf(camPos[1], helpPos[1]);
+    u[2] = subf(camPos[2], MEM_ReadInt(herPtr+104));  v[2] = subf(camPos[2], helpPos[2]);
+    var int crossProd[3]; // Cross-product
+    crossProd[0] = subf(mulf(u[1], v[2]), mulf(u[2], v[1]));
+    crossProd[1] = subf(mulf(u[2], v[0]), mulf(u[0], v[2]));
+    crossProd[2] = subf(mulf(u[0], v[1]), mulf(u[1], v[0]));
+    var int dist; dist = sqrtf(addf(addf(sqrf(crossProd[0]), sqrf(crossProd[1])), sqrf(crossProd[2])));
+    dist = divf(dist, mkf(1000)); // Devide area of triangle by length between herPos and helpPos
+    // Trace ray vectors
+    camPos[0] = addf(camPos[0], mulf(MEM_ReadInt(MEM_Camera.connectedVob+68), dist)); // Start ray from here
+    camPos[1] = addf(camPos[1], mulf(MEM_ReadInt(MEM_Camera.connectedVob+84), dist));
+    camPos[2] = addf(camPos[2], mulf(MEM_ReadInt(MEM_Camera.connectedVob+100), dist));
+    camPos[3] = mulf(MEM_ReadInt(MEM_Camera.connectedVob+68), mkf(distance)); // Direction-/to-vector of ray
     camPos[4] = mulf(MEM_ReadInt(MEM_Camera.connectedVob+84), mkf(distance));
     camPos[5] = mulf(MEM_ReadInt(MEM_Camera.connectedVob+100), mkf(distance));
     var int fromPosPtr; fromPosPtr = _@(camPos);
@@ -147,9 +126,17 @@ func int aimRay(var int distance, var int returnVobPtr) {
         CALL__fastcall(_@(worldPtr), _@(fromPosPtr), zCWorld__TraceRayNearestHit_Vob);
         call = CALL_End();
     };
-    if (!CALL_RetValAsInt()) { return 0; };                                   // Return zero, if no intersection found
-    if (MEM_World.foundVob) && (returnVobPtr) { return MEM_World.foundVob; }; // Return pointer to found vob
-    return _@(MEM_World.foundIntersection);                                   // Return pointer to intersection
+    var int found; found = CALL_RetValAsInt();
+    if (vobPtr) { MEM_WriteInt(vobPtr, MEM_World.foundVob); };
+    if (posPtr) { MEM_CopyWords(_@(MEM_World.foundIntersection), posPtr, 3); };
+    if (distPtr) {
+        distance = sqrtf(addf(addf(
+            sqrf(MEM_World.foundIntersection[0]),
+            sqrf(MEM_World.foundIntersection[1])),
+            sqrf(MEM_World.foundIntersection[2])));
+        MEM_WriteInt(distPtr, distance);
+    };
+    return found;
 };
 
 /* Hook oCAniCtrl_Human::InterpolateCombineAni. Set target position to update aim animation */
@@ -158,12 +145,9 @@ func void catchICAni() {
     MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
     var zCVob cam; cam = _^(MEM_Camera.connectedVob);
     var oCNpc her; her = Hlp_GetNpc(hero);
-    var int pos[6]; // Combined pos[3] + dir[3]. The position is calculated from the camera, not the player model.
-    pos[0] = cam.trafoObjToWorld[ 3]; pos[3] = mulf(cam.trafoObjToWorld[ 2], mkf(AIM_MAX_DIST));
-    pos[1] = cam.trafoObjToWorld[ 7]; pos[4] = mulf(cam.trafoObjToWorld[ 6], mkf(AIM_MAX_DIST));
-    pos[2] = cam.trafoObjToWorld[11]; pos[5] = mulf(cam.trafoObjToWorld[10], mkf(AIM_MAX_DIST));
     if (getFreeAimFocus()) { // Set focus npc if there is a valid one under the crosshair
-        var int target; target = aimRay(AIM_MAX_DIST, 1); // Shoot trace ray
+        var int target; var int distance;
+        aimRay(AIM_MAX_DIST, _@(target), 0, _@(distance)); // Shoot trace ray and retrieve vob
         if (Hlp_Is_oCNpc(target)) {
             var C_NPC targetNPC; targetNPC = _^(target);
             if (Npc_IsInState(targetNPC, ZS_Unconscious))
@@ -177,9 +161,10 @@ func void catchICAni() {
             her.focus_vob = 0; // No npc under crosshair
         };
     };
-    pos[0] = addf(pos[0], pos[3]);
-    pos[1] = addf(pos[1], pos[4]);
-    pos[2] = addf(pos[2], pos[5]);
+    var int pos[3]; // The position is calculated from the camera, not the player model.
+    pos[0] = addf(cam.trafoObjToWorld[ 3], mulf(cam.trafoObjToWorld[ 2], mkf(AIM_MAX_DIST)));
+    pos[1] = addf(cam.trafoObjToWorld[ 7], mulf(cam.trafoObjToWorld[ 6], mkf(AIM_MAX_DIST)));
+    pos[2] = addf(cam.trafoObjToWorld[11], mulf(cam.trafoObjToWorld[10], mkf(AIM_MAX_DIST)));
     // Get aiming angles
     var int angleX; var int angXptr; angXptr = _@(angleX);
     var int angleY; var int angYptr; angYptr = _@(angleY);
@@ -198,17 +183,17 @@ func void catchICAni() {
         if (lf(angleY, FLOATNULL)) { angleY =  negf(angleY); };
     };
     // This following paragraph is essentially "copied" from oCAIHuman::BowMode (0x695F00)
-    var int deg90To05; deg90To05 = mulf(1010174817, FLOATHALB); // 0.0111111*0.5 (from 0x8306EC in g2)
+    var int deg90To05; deg90To05 = mulf(1010174817, FLOATHALF); // 0.0111111*0.5 (from 0x8306EC in g2)
     angleY = mulf(angleY, deg90To05); // Scale Y +-90 degrees to +-0.5
-    angleY = addf(angleY, FLOATHALB); // Shift Y +-0.5 to +-1
-    angleY = subf(FLOATEINS, angleY); // Flip  Y +-1 to -+1
+    angleY = addf(angleY, FLOATHALF); // Shift Y +-0.5 to +-1
+    angleY = subf(FLOATONE, angleY); // Flip  Y +-1 to -+1
     if (lef(angleY, FLOATNULL)) {
         angleY = FLOATNULL; // Maximum aim height (straight up)
     } else if (gef(angleY, 1065353216)) {
         angleY = 1065353216; //3F800000 // Minimum aim height (down)
     };
     // New aiming coordinates. Overwrite the arguments passed to oCAniCtrl_Human::InterpolateCombineAni
-    MEM_WriteInt(ESP+4, FLOATHALB); // Always at the x center
+    MEM_WriteInt(ESP+4, FLOATHALF); // Always at the x center
     MEM_WriteInt(ESP+8, angleY);
 };
 
@@ -216,22 +201,7 @@ func void catchICAni() {
 func void shootTarget() {
     var C_NPC shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
     if (!Npc_IsPlayer(shooter)) || (!isFreeAimActive()) { return; }; // Only for the player
-    MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
-    var zCVob cam; cam = _^(MEM_Camera.connectedVob);
-    var int pos[6]; // Combined pos[3] + dir[3]
-    pos[0] = cam.trafoObjToWorld[ 3]; pos[3] = mulf(cam.trafoObjToWorld[ 2], mkf(AIM_MAX_DIST));
-    pos[1] = cam.trafoObjToWorld[ 7]; pos[4] = mulf(cam.trafoObjToWorld[ 6], mkf(AIM_MAX_DIST));
-    pos[2] = cam.trafoObjToWorld[11]; pos[5] = mulf(cam.trafoObjToWorld[10], mkf(AIM_MAX_DIST));
-    if (TraceRay(_@(pos), _@(pos)+12, // Shoot trace ray from camera(!) to max distance
-            (zTRACERAY_POLY_TEST_WATER | zTRACERAY_POLY_IGNORE_TRANSP | zTRACERAY_VOB_IGNORE_PROJECTILES))) {
-        pos[0] = MEM_World.foundIntersection[0]; // Set new position to intersection
-        pos[1] = MEM_World.foundIntersection[1]; // (First point where the trace ray made contact with a polygon)
-        pos[2] = MEM_World.foundIntersection[2];
-    } else {
-        pos[0] = addf(pos[0], pos[3]); // If nothing is in the way, set new position to max distance
-        pos[1] = addf(pos[1], pos[4]);
-        pos[2] = addf(pos[2], pos[5]);
-    };
+    var int pos[3]; aimRay(AIM_MAX_DIST, 0, _@(pos), 0); // Shoot trace ray and retrieve intersection
     var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB"); // Arrow needs target vob
     if (!vobPtr) {
         vobPtr = MEM_Alloc(sizeof_zCVob); // Will never delete this vob (it will be re-used on the next shot)
