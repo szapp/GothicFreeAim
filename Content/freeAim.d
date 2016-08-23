@@ -186,19 +186,51 @@ func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPt
 /* Hook oCAniCtrl_Human::InterpolateCombineAni. Set target position to update aim animation */
 func void catchICAni() {
     if (!isFreeAimActive()) { return; };
+    var oCNpc her; her = Hlp_GetNpc(hero);
+
+
+
     // Strafing
-    if (MEM_KeyPressed(MEM_GetKey("keyStrafeLeft")))
-    || (MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeLeft"))) {
-    /*  const int oCAIHuman__PC_Strafe = 6925440; //0x69AC80
-        CALL_IntParam(1);
-        CALL__thiscall(her.human_ai, oCAIHuman__PC_Strafe);
-        MEM_Info(IntToString(CALL_RetValAsInt()));*/
-        //MEM_Info("strafe left");
-        //AI_PlayAniBS(her, "T_STRAFENEW", BS_WALK);
-        return;
+    var int keyState_strafeL1; keyState_strafeL1 = MEM_KeyState(MEM_GetKey("keyStrafeLeft"));
+    var int keyState_strafeL2; keyState_strafeL2 = MEM_KeyState(MEM_GetSecondaryKey("keyStrafeLeft"));
+    var int keyState_strafeR1; keyState_strafeR1 = MEM_KeyState(MEM_GetKey("keyStrafeRight"));
+    var int keyState_strafeR2; keyState_strafeR2 = MEM_KeyState(MEM_GetSecondaryKey("keyStrafeRight"));
+    if (keyState_strafeL1 > KEY_UP) || (keyState_strafeL2 > KEY_UP)
+    || (keyState_strafeR1 > KEY_UP) || (keyState_strafeR2 > KEY_UP) {
+        const int zCModel__IsAnimationActive = 5727888; //0x576690
+        const int zCModel__StopAnimation = 5727728; //0x5765F0
+        const int oCNpc__GetModel = 7571232; //0x738720
+        CALL__thiscall(_@(her), oCNpc__GetModel);
+        var int model; model = CALL_RetValAsInt();
+        if (keyState_strafeL1 == KEY_PRESSED || keyState_strafeL1 == KEY_HOLD)
+        || (keyState_strafeL2 == KEY_PRESSED || keyState_strafeL2 == KEY_HOLD) {
+            CALL_zStringPtrParam("T_FREEAIMSTRAFEL");
+            CALL__thiscall(model, zCModel__IsAnimationActive);
+            if (!CALL_RetValAsInt()) {
+                Npc_ClearAIQueue(her);
+                AI_PlayAni(her, "T_FREEAIMSTRAFEL");
+            };
+        } else if (keyState_strafeL1 == KEY_RELEASED) || (keyState_strafeL2 == KEY_RELEASED) {
+            Npc_ClearAIQueue(her);
+            CALL_zStringPtrParam("T_FREEAIMSTRAFEL");
+            CALL__thiscall(model, zCModel__StopAnimation);
+        };
+        if (keyState_strafeR1 == KEY_PRESSED || keyState_strafeR1 == KEY_HOLD)
+        || (keyState_strafeR2 == KEY_PRESSED || keyState_strafeR2 == KEY_HOLD) {
+            CALL_zStringPtrParam("T_BOWRUNSTRAFER");
+            CALL__thiscall(model, zCModel__IsAnimationActive);
+            if (!CALL_RetValAsInt()) {
+                Npc_ClearAIQueue(her);
+                AI_PlayAni(her, "T_BOWRUNSTRAFER");
+            };
+        } else if (keyState_strafeR1 == KEY_RELEASED) || (keyState_strafeR2 == KEY_RELEASED) {
+            Npc_ClearAIQueue(her);
+            CALL_zStringPtrParam("T_BOWRUNSTRAFER");
+            CALL__thiscall(model, zCModel__StopAnimation);
+        };
     };
 
-    var oCNpc her; her = Hlp_GetNpc(hero);
+
     var int size; size = CROSSHAIR_MAX_SIZE; // Size of crosshair
     if (getFreeAimFocus()) { // Set focus npc if there is a valid one under the crosshair
         var int target; var int distance;
