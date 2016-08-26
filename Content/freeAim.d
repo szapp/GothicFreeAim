@@ -195,11 +195,15 @@ func void catchICAni() {
     var int keyState_strafeL2; keyState_strafeL2 = MEM_KeyState(MEM_GetSecondaryKey("keyStrafeLeft"));
     var int keyState_strafeR1; keyState_strafeR1 = MEM_KeyState(MEM_GetKey("keyStrafeRight"));
     var int keyState_strafeR2; keyState_strafeR2 = MEM_KeyState(MEM_GetSecondaryKey("keyStrafeRight"));
+    var int keyState_back1; keyState_back1 = MEM_KeyState(MEM_GetKey("keyDown"));
+    var int keyState_back2; keyState_back2 = MEM_KeyState(MEM_GetSecondaryKey("keyDown"));
     if (keyState_strafeL1 > KEY_UP) || (keyState_strafeL2 > KEY_UP)
-    || (keyState_strafeR1 > KEY_UP) || (keyState_strafeR2 > KEY_UP) {
-        const int zCModel__IsAnimationActive = 5727888; //0x576690
-        const int zCModel__StopAnimation = 5727728; //0x5765F0
+    || (keyState_strafeR1 > KEY_UP) || (keyState_strafeR2 > KEY_UP)
+    || (keyState_back1 > KEY_UP) || (keyState_back2 > KEY_UP) {
         const int oCNpc__GetModel = 7571232; //0x738720
+        const int zCModel__IsAnimationActive = 5727888; //0x576690
+        const int zCModel__StartAni = 5746544; //0x57AF70
+        const int zCModel__StopAnimation = 5727728; //0x5765F0
         CALL__thiscall(_@(her), oCNpc__GetModel);
         var int model; model = CALL_RetValAsInt();
         if (keyState_strafeL1 == KEY_PRESSED || keyState_strafeL1 == KEY_HOLD)
@@ -207,11 +211,11 @@ func void catchICAni() {
             CALL_zStringPtrParam("T_FREEAIMSTRAFEL");
             CALL__thiscall(model, zCModel__IsAnimationActive);
             if (!CALL_RetValAsInt()) {
-                Npc_ClearAIQueue(her);
-                AI_PlayAni(her, "T_FREEAIMSTRAFEL");
+                CALL_IntParam(0);
+                CALL_zStringPtrParam("T_FREEAIMSTRAFEL");
+                CALL__thiscall(model, zCModel__StartAni);
             };
         } else if (keyState_strafeL1 == KEY_RELEASED) || (keyState_strafeL2 == KEY_RELEASED) {
-            Npc_ClearAIQueue(her);
             CALL_zStringPtrParam("T_FREEAIMSTRAFEL");
             CALL__thiscall(model, zCModel__StopAnimation);
         };
@@ -220,15 +224,29 @@ func void catchICAni() {
             CALL_zStringPtrParam("T_BOWRUNSTRAFER");
             CALL__thiscall(model, zCModel__IsAnimationActive);
             if (!CALL_RetValAsInt()) {
-                Npc_ClearAIQueue(her);
-                AI_PlayAni(her, "T_BOWRUNSTRAFER");
+                CALL_IntParam(0);
+                CALL_zStringPtrParam("T_BOWRUNSTRAFER");
+                CALL__thiscall(model, zCModel__StartAni);
             };
         } else if (keyState_strafeR1 == KEY_RELEASED) || (keyState_strafeR2 == KEY_RELEASED) {
-            Npc_ClearAIQueue(her);
             CALL_zStringPtrParam("T_BOWRUNSTRAFER");
             CALL__thiscall(model, zCModel__StopAnimation);
         };
+        if (keyState_back1 == KEY_PRESSED || keyState_back1 == KEY_HOLD)
+        || (keyState_back2 == KEY_PRESSED || keyState_back2 == KEY_HOLD) {
+            CALL_zStringPtrParam("T_FREEAIMBACK");
+            CALL__thiscall(model, zCModel__IsAnimationActive);
+            if (!CALL_RetValAsInt()) {
+                CALL_IntParam(0);
+                CALL_zStringPtrParam("T_FREEAIMBACK");
+                CALL__thiscall(model, zCModel__StartAni);
+            };
+        } else if (keyState_back1 == KEY_RELEASED) || (keyState_back2 == KEY_RELEASED) {
+            CALL_zStringPtrParam("T_FREEAIMBACK");
+            CALL__thiscall(model, zCModel__StopAnimation);
+        };
     };
+
 
 
     var int size; size = CROSSHAIR_MAX_SIZE; // Size of crosshair
