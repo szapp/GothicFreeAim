@@ -111,18 +111,30 @@ func void manualRotation() {
     if (!isFreeAimActive()) { return; };
     var int deltaX; deltaX = mulf(mkf(MEM_ReadInt(mouseDeltaX)), MEM_ReadInt(mouseSensX)); // Get mouse change in x
     if (deltaX == FLOATNULL) { return; }; // Only rotate if there was movement along x position
-    var int frameAdj; frameAdj = mulf(MEM_Timer.frameTimeFloat, fracf(16, 1000)); // Frame lock
-    deltaX = mulf(deltaX, frameAdj);
+
+
     var oCNpc her; her = Hlp_GetNpc(hero);
-    var int hAniCtrl; hAniCtrl = her.anictrl;
-    var int null;
-    const int call = 0;
-    if (CALL_Begin(call)) {
-        CALL_IntParam(_@(null)); // 0 = disable turn animation (there is none while aiming anyways)
-        CALL_FloatParam(_@(deltaX));
-        CALL__thiscall(_@(hAniCtrl), oCAniCtrl_Human__TurnDegrees);
-        call = CALL_End();
-    };
+    deltaX = mulf(MEM_ReadInt(/*0x8B0E40*/9113152), deltaX); // zMouseRotationScale
+    deltaX = mulf(mulf(deltaX, MEM_ReadInt(/*0x82EE44*/8580676)), MEM_ReadInt(/*0x82F258*/8581720));
+
+    MEM_Info(toStringf(deltaX));
+    const int oCAniCtrl_Human__Turn = 7005504; //0x6AE540
+    CALL_IntParam(0); // 0 = disable turn animation (there is none while aiming anyways)
+    CALL_FloatParam(deltaX);
+    CALL__thiscall(her.anictrl, oCAniCtrl_Human__Turn);
+
+    //var int frameAdj; frameAdj = mulf(MEM_Timer.frameTimeFloat, fracf(16, 1000)); // Frame lock
+    //deltaX = mulf(deltaX, frameAdj);
+    //var oCNpc her; her = Hlp_GetNpc(hero);
+    //var int hAniCtrl; hAniCtrl = her.anictrl;
+    //var int null;
+    //const int call = 0;
+    //if (CALL_Begin(call)) {
+    //    CALL_IntParam(_@(null)); // 0 = disable turn animation (there is none while aiming anyways)
+    //    CALL_FloatParam(_@(deltaX));
+    //    CALL__thiscall(_@(hAniCtrl), oCAniCtrl_Human__TurnDegrees);
+    //    call = CALL_End();
+    //};
 };
 
 /* Shoot aim-tailored trace ray. Do no use for other things. This function is customized for aiming. */
@@ -221,15 +233,15 @@ func void catchICAni() {
         };
         if (keyState_strafeR1 == KEY_PRESSED || keyState_strafeR1 == KEY_HOLD)
         || (keyState_strafeR2 == KEY_PRESSED || keyState_strafeR2 == KEY_HOLD) {
-            CALL_zStringPtrParam("T_BOWRUNSTRAFER");
+            CALL_zStringPtrParam("T_FREEAIMSTRAFER");
             CALL__thiscall(model, zCModel__IsAnimationActive);
             if (!CALL_RetValAsInt()) {
                 CALL_IntParam(0);
-                CALL_zStringPtrParam("T_BOWRUNSTRAFER");
+                CALL_zStringPtrParam("T_FREEAIMSTRAFER");
                 CALL__thiscall(model, zCModel__StartAni);
             };
         } else if (keyState_strafeR1 == KEY_RELEASED) || (keyState_strafeR2 == KEY_RELEASED) {
-            CALL_zStringPtrParam("T_BOWRUNSTRAFER");
+            CALL_zStringPtrParam("T_FREEAIMSTRAFER");
             CALL__thiscall(model, zCModel__StopAnimation);
         };
         if (keyState_back1 == KEY_PRESSED || keyState_back1 == KEY_HOLD)
