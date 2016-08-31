@@ -23,7 +23,8 @@ const int zCVob__zCVob                            = 6283744; //0x5FE1E0
 const int zCVob__SetPositionWorld                 = 6404976; //0x61BB70
 const int zCWorld__AddVobAsChild                  = 6440352; //0x6245A0
 const int oCAniCtrl_Human__TurnDegrees            = 7006992; //0x6AEB10
-const int oCNpc__GetAngles                        = 6820528; //0x6812B0
+const int oCNpc__GetAngles_Vec                    = 6820528; //0x6812B0
+const int oCNpc__GetAngles_Vob                    = 6821504; //0x681680
 const int zCWorld__TraceRayNearestHit_Vob         = 6430624; //0x621FA0
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
@@ -117,7 +118,7 @@ func void manualRotation() {
     deltaX = mulf(MEM_ReadInt(/*0x8B0E40*/9113152), deltaX); // zMouseRotationScale
     deltaX = mulf(mulf(deltaX, MEM_ReadInt(/*0x82EE44*/8580676)), MEM_ReadInt(/*0x82F258*/8581720));
 
-    MEM_Info(toStringf(deltaX));
+    //MEM_Info(toStringf(deltaX));
     const int oCAniCtrl_Human__Turn = 7005504; //0x6AE540
     CALL_IntParam(0); // 0 = disable turn animation (there is none while aiming anyways)
     CALL_FloatParam(deltaX);
@@ -139,10 +140,16 @@ func void manualRotation() {
 
 /* Shoot aim-tailored trace ray. Do no use for other things. This function is customized for aiming. */
 func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPtr) {
+    var int herPtr; herPtr = _@(hero);
+    if (Hlp_Is_oCNpc(herPtr+2476)) { // oCNpc->focus_vob
+
+    };
+
+
+
     var int flags; flags = (1<<0) | (1<<2) | (1<<14) | (1<<8) | (1<<9);
     // (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_VOB_BBOX | zTRACERAY_VOB_IGNORE_PROJECTILES
     // | zTRACERAY_POLY_IGNORE_TRANSP | zTRACERAY_POLY_TEST_WATER)
-    var int herPtr; herPtr = _@(hero);
     MEM_InitGlobalInst(); var int camPos[6];
     camPos[0] = MEM_ReadInt(MEM_Camera.connectedVob+72);
     camPos[1] = MEM_ReadInt(MEM_Camera.connectedVob+88);
@@ -263,16 +270,60 @@ func void catchICAni() {
 
     var int size; size = CROSSHAIR_MAX_SIZE; // Size of crosshair
     if (getFreeAimFocus()) { // Set focus npc if there is a valid one under the crosshair
-        var int target; var int distance;
-        aimRay(FREEAIM_MAX_DIST, _@(target), 0, _@(distance)); // Shoot trace ray and retrieve vob
-        if (Hlp_Is_oCNpc(target)) {
-            var C_NPC targetNPC; targetNPC = _^(target);
-            if (Npc_IsInState(targetNPC, ZS_Unconscious))
-            || (Npc_IsInState(targetNPC, ZS_MagicSleep))
-            || (Npc_IsDead(targetNPC)) { her.focus_vob = 0; } // If npc is down don't show name or health bar
-            else { her.focus_vob = target; }; // Set new focus vob
-        } else { her.focus_vob = 0; }; // No npc under crosshair
-        size = size - roundf(mulf(divf(distance, mkf(FREEAIM_MAX_DIST)), mkf(size))); // Adjust crosshair size
+    //    var int distance; aimRay(FREEAIM_MAX_DIST, 0, 0, _@(distance)); // Shoot trace ray and retrieve distance
+    //    size = size - roundf(mulf(divf(distance, mkf(FREEAIM_MAX_DIST)), mkf(size))); // Adjust crosshair size
+    // };
+
+        if (Hlp_Is_oCNpc(her.focus_vob)) {
+            var zCVob v16; v16 = _^(her.focus_vob);
+            var int v107; v107 = mulf(addf(v16.bbox3D_maxs[0], v16.bbox3D_mins[0]), FLOATHALF);
+            var int v101; v101 = mulf(addf(her._zCVob_bbox3D_maxs[0], her._zCVob_bbox3D_mins[0]), FLOATHALF);
+            var int v96; v96 = subf(v107, v101);
+            var int v110; v110 = mulf(v96, MEM_ReadInt(8590760)); //0x8315A8
+            //CALL_IntParam(2304); // Flags 2048+256 (zTRACERAY_POLY_IGNORE_TRANSP | zTRACERAY_VOB_IGNORE_CHARACTER)
+            //CALL_PtrParam(her.focus_vob);
+            //CALL_PtrParam(_@(v110));
+            //CALL__cdecl(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+140);
+            //CALL__cdecl(MEMINT_oGame_Pointer_Address+140);
+            //MEM_Info(IntToString(CALL_RetValAsInt()));
+        };
+
+        const int oCNpcFocus__focus = 11208504; //0xAB0738
+        const int oCNpcFocus__IsNpcInAngle = 7074352; //0x6BF230
+        //const int oCNpcFocus__GetMaxRange = 7073648; //0x6BEF70
+        //const int oCNpc__CollectFocusVob = 7551504; //0x733A10
+        //CALL__thiscall(oCNpcFocus__focus, oCNpcFocus__GetMaxRange);
+        //var int maxRange; maxRange = CALL_RetValAsInt();
+        //CALL_FloatParam(maxRange);
+        //CALL__thiscall(_@(her), oCNpc__CollectFocusVob);
+
+        if (Hlp_Is_oCNpc(her.focus_vob)) {
+            //var int anglX; var int anglY;
+            //MEM_InitGlobalInst();
+            //CALL_FloatParam(_@(anglY));
+            //CALL_FloatParam(_@(anglX));
+            //CALL_PtrParam(her.focus_vob);
+            //CALL__thiscall(MEM_Camera.connectedVob, oCNpc__GetAngles_Vob);
+            //MEM_Info(ConcatStrings(ConcatStrings(toStringf(anglX), " | "), toStringf(anglY)));
+            //if (absf(anglX) > FLOATONE) {
+            //    her.focus_vob = 0;
+            //};
+        };
+
+
+        const int oCNpc__CreateVobList = 7723584; //0x75DA40
+
+        //CALL__thiscall(oCNpcFocus__focus, oCNpcFocus__GetMaxRange);
+        //var int maxRange; maxRange = CALL_RetValAsInt();
+        //CALL_FloatParam(maxRange);
+        //CALL__thiscall(_@(her), oCNpc__CreateVobList);
+
+        //MEM_Info(her.vobList_array);
+
+        // var int i; i = 0;
+        // while(i < her.voblist.numInArray);
+        //
+        // end;
     };
     insertCrosshair(POINTY_CROSSHAIR, size); // Draw/update crosshair
     MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
@@ -291,7 +342,7 @@ func void catchICAni() {
         CALL_PtrParam(_@(angYptr));
         CALL_PtrParam(_@(angXptr)); // X angle not needed
         CALL_PtrParam(_@(posPtr));
-        CALL__thiscall(_@(herPtr), oCNpc__GetAngles);
+        CALL__thiscall(_@(herPtr), oCNpc__GetAngles_Vec);
         call3 = CALL_End();
     };
     if (lf(absf(angleY), fracf(1, 4))) { // Prevent multiplication with too small numbers. Would result in aim twitching
