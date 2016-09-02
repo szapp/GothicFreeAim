@@ -11,9 +11,11 @@
 
 /* Free aim settings */
 const int FREEAIM_ACTIVATED                       = 1;      // Enable/Disable free aiming
+const int FREEAIM_FOCUS_ACTIVATED                 = 1;      // Enable/Disable focus collection (disable for performance)
 const int FREEAIM_SHOULDER                        = 0;      // 0 = left, 1 = right
 const int FREEAIM_MAX_DIST                        = 5000;   // 50 meters. For shooting at the crosshair at all ranges.
 const int CROSSHAIR_MIN_SIZE                      = 16;     // Smallest crosshair size in pixels (longest aiming range)
+const int CROSSHAIR_MED_SIZE                      = 20;     // Medium crosshair size in pixels (for disabled focus)
 const int CROSSHAIR_MAX_SIZE                      = 32;     // Biggest crosshair size in pixels (closest aiming range)
 var int crosshairHndl;                                      // Holds the crosshair handle
 
@@ -23,9 +25,10 @@ const int zCVob__zCVob                            = 6283744; //0x5FE1E0
 const int zCVob__SetPositionWorld                 = 6404976; //0x61BB70
 const int zCWorld__AddVobAsChild                  = 6440352; //0x6245A0
 const int oCAniCtrl_Human__TurnDegrees            = 7006992; //0x6AEB10
-const int oCNpc__GetAngles_Vec                    = 6820528; //0x6812B0
-const int oCNpc__GetAngles_Vob                    = 6821504; //0x681680
+const int oCNpc__GetAngles                        = 6820528; //0x6812B0
 const int zCWorld__TraceRayNearestHit_Vob         = 6430624; //0x621FA0
+const int zCVob__TraceRay                         = 6291008; //0x5FFE40
+const int oCNpc__SetFocusVob                      = 7547744; //0x732B60
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
 const int mouseDeltaX                             = 9246300; //0x8D165C
@@ -102,6 +105,7 @@ func void manageCrosshair() {
 
 /* Check whether free aim should collect focus */
 func int getFreeAimFocus() {
+    if (!FREEAIM_FOCUS_ACTIVATED) { return 0; }; // More performance friendly
     var oCNpc her; her = Hlp_GetNpc(hero);
     if (Npc_IsInFightMode(her, FMODE_FAR)) { return 1; }; // Only while using bow/crossbow
     return 0;
@@ -140,22 +144,15 @@ func void manualRotation() {
 
 /* Shoot aim-tailored trace ray. Do no use for other things. This function is customized for aiming. */
 func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPtr) {
-    var int herPtr; herPtr = _@(hero);
-    if (Hlp_Is_oCNpc(herPtr+2476)) { // oCNpc->focus_vob
-
-    };
-
-
-
-    var int flags; flags = (1<<0) | (1<<2) | (1<<14) | (1<<8) | (1<<9);
-    // (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_VOB_BBOX | zTRACERAY_VOB_IGNORE_PROJECTILES
-    // | zTRACERAY_POLY_IGNORE_TRANSP | zTRACERAY_POLY_TEST_WATER)
+    var int flags; flags = (1<<0) | (1<<14) | (1<<9);
+    // (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_VOB_IGNORE_PROJECTILES | zTRACERAY_POLY_TEST_WATER)
     MEM_InitGlobalInst(); var int camPos[6];
     camPos[0] = MEM_ReadInt(MEM_Camera.connectedVob+72);
     camPos[1] = MEM_ReadInt(MEM_Camera.connectedVob+88);
     camPos[2] = MEM_ReadInt(MEM_Camera.connectedVob+104);
-    // Calculate point-line distance, to shift the start point of the trace ray beyond the player model
+    // Calculate point-line distance, to shift the start point of the trace ray to the level of the player model
     // Necessary, because if zooming out, (1) there might be something between camera and hero, (2) max distance is off
+    var int herPtr; herPtr = _@(hero);
     var int shoulder; shoulder = mkf((FREEAIM_SHOULDER*2)-1); // Now left is -1, right is +1
     var int helpPos[3]; // Help point along the right vector of the camera vob for point-line distance
     helpPos[0] = addf(MEM_ReadInt(herPtr+72), mulf(MEM_ReadInt(MEM_Camera.connectedVob+60), mulf(shoulder, mkf(1000))));
@@ -183,13 +180,60 @@ func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPt
     var int worldPtr; worldPtr = _@(MEM_World);
     const int call = 0;
     if (CALL_Begin(call)) {
-        CALL_IntParam(_@(flags));
+        CALL_IntParam(_@(flags)); // Trace ray flags
         CALL_PtrParam(_@(herPtr)); // Ignore player model
-        CALL_PtrParam(_@(dirPosPtr));
+        CALL_PtrParam(_@(dirPosPtr)); // Trace ray direction
         CALL__fastcall(_@(worldPtr), _@(fromPosPtr), zCWorld__TraceRayNearestHit_Vob);
         call = CALL_End();
     };
     var int found; found = CALL_RetValAsInt();
+    // The is a hack to allow detection of npcs. Trace rays ignore npcs unless zTRACERAY_VOB_BBOX is specified = bad!
+    var int offset; offset = 0; // Index to iterate over vob list
+    var int foundFocus; foundFocus = 0; // Is the focus vob in the vob list
+    var int trRep; trRep = MEM_Alloc(40); // sizeof_zTTraceRayReport
+    var int nearestNpcDist; nearestNpcDist = mkf(distance); // Select nearest npc
+    var C_NPC target;
+    flags = (1<<0) | (1<<2); // (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_VOB_BBOX) // Important!
+    // This is essentially taken/modified from 0x621B80 zCWorld::TraceRayNearestHit (specifically at 0x621D82)
+    while(MEM_World.traceRayVobList_numInArray > offset); // Iterate over vob list
+        var int curVob; curVob = MEM_ReadIntArray(MEM_World.traceRayVobList_array, offset); // Current vob
+        offset += 1; // Advance in array
+        if (Hlp_Is_oCNpc(curVob)) && (curVob != herPtr) { // If vob is npc and not hero
+            target = _^(curVob); // Do not allow focussing npcs that are down
+            if (Npc_IsInState(target, ZS_Unconscious))
+            || (Npc_IsInState(target, ZS_MagicSleep))
+            || (Npc_IsDead(target)) { continue; };
+            const int call2 = 0;
+            if (CALL_Begin(call2)) {
+                CALL_PtrParam(_@(trRep)); // zTTraceRayReport
+                CALL_IntParam(_@(flags)); // Trace ray flags
+                CALL_PtrParam(_@(dirPosPtr)); // Trace ray direction
+                CALL_PtrParam(_@(fromPosPtr)); // Start vector
+                CALL__thiscall(_@(curVob), zCVob__TraceRay);
+                call2 = CALL_End();
+            };
+            if (CALL_RetValAsInt()) { // Got a hit: Update trace ray report
+                distance = sqrtf(addf(addf(
+                    sqrf(subf(MEM_ReadInt(trRep+12), camPos[0])),
+                    sqrf(subf(MEM_ReadInt(trRep+16), camPos[1]))),
+                    sqrf(subf(MEM_ReadInt(trRep+20), camPos[2]))));
+                if (lf(distance, nearestNpcDist)) { // Prefer the closest npc
+                    nearestNpcDist = distance;
+                    MEM_World.foundVob = curVob;
+                    MEM_CopyWords(trRep+12, _@(MEM_World.foundIntersection), 3); // 0x0C zVEC3
+                    foundFocus = curVob; // Found focus vob (do not leave loop yet, there might be a nearer npc)
+                };
+            };
+        };
+    end;
+    MEM_Free(trRep); // Free the report
+    const int call3 = 0; // Set the focus vob properly: reference counter
+    if (CALL_Begin(call3)) {
+        CALL_PtrParam(_@(foundFocus)); // If no npc was found, this will remove the focus
+        CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
+        call3 = CALL_End();
+    };
+    // Write return/call-by-reference variables
     if (vobPtr) { MEM_WriteInt(vobPtr, MEM_World.foundVob); };
     if (posPtr) { MEM_CopyWords(_@(MEM_World.foundIntersection), posPtr, 3); };
     if (distPtr) {
@@ -205,7 +249,7 @@ func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPt
 /* Hook oCAniCtrl_Human::InterpolateCombineAni. Set target position to update aim animation */
 func void catchICAni() {
     if (!isFreeAimActive()) { return; };
-    var oCNpc her; her = Hlp_GetNpc(hero);
+    var int herPtr; herPtr = _@(hero);
 
 
 
@@ -223,7 +267,7 @@ func void catchICAni() {
         const int zCModel__IsAnimationActive = 5727888; //0x576690
         const int zCModel__StartAni = 5746544; //0x57AF70
         const int zCModel__StopAnimation = 5727728; //0x5765F0
-        CALL__thiscall(_@(her), oCNpc__GetModel);
+        CALL__thiscall(herPtr, oCNpc__GetModel);
         var int model; model = CALL_RetValAsInt();
         if (keyState_strafeL1 == KEY_PRESSED || keyState_strafeL1 == KEY_HOLD)
         || (keyState_strafeL2 == KEY_PRESSED || keyState_strafeL2 == KEY_HOLD) {
@@ -267,63 +311,18 @@ func void catchICAni() {
     };
 
 
-
-    var int size; size = CROSSHAIR_MAX_SIZE; // Size of crosshair
+    var int size; size = CROSSHAIR_MED_SIZE; // Size of crosshair
     if (getFreeAimFocus()) { // Set focus npc if there is a valid one under the crosshair
-    //    var int distance; aimRay(FREEAIM_MAX_DIST, 0, 0, _@(distance)); // Shoot trace ray and retrieve distance
-    //    size = size - roundf(mulf(divf(distance, mkf(FREEAIM_MAX_DIST)), mkf(size))); // Adjust crosshair size
-    // };
-
-        if (Hlp_Is_oCNpc(her.focus_vob)) {
-            var zCVob v16; v16 = _^(her.focus_vob);
-            var int v107; v107 = mulf(addf(v16.bbox3D_maxs[0], v16.bbox3D_mins[0]), FLOATHALF);
-            var int v101; v101 = mulf(addf(her._zCVob_bbox3D_maxs[0], her._zCVob_bbox3D_mins[0]), FLOATHALF);
-            var int v96; v96 = subf(v107, v101);
-            var int v110; v110 = mulf(v96, MEM_ReadInt(8590760)); //0x8315A8
-            //CALL_IntParam(2304); // Flags 2048+256 (zTRACERAY_POLY_IGNORE_TRANSP | zTRACERAY_VOB_IGNORE_CHARACTER)
-            //CALL_PtrParam(her.focus_vob);
-            //CALL_PtrParam(_@(v110));
-            //CALL__cdecl(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+140);
-            //CALL__cdecl(MEMINT_oGame_Pointer_Address+140);
-            //MEM_Info(IntToString(CALL_RetValAsInt()));
+       var int distance; aimRay(FREEAIM_MAX_DIST, 0, 0, _@(distance)); // Shoot trace ray and retrieve aim distance
+       size = size - roundf(mulf(divf(distance, mkf(FREEAIM_MAX_DIST)), mkf(size))); // Adjust crosshair size
+    } else { // More performance friendly. Here, there will be NO focus, otherwise it gets stuck on npcs.
+        const int call2 = 0; // Set the focus vob properly (here it will be set to zero): reference counter
+        var int null;
+        if (CALL_Begin(call2)) {
+            CALL_PtrParam(_@(null)); // This will remove the focus
+            CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
+            call2 = CALL_End();
         };
-
-        const int oCNpcFocus__focus = 11208504; //0xAB0738
-        const int oCNpcFocus__IsNpcInAngle = 7074352; //0x6BF230
-        //const int oCNpcFocus__GetMaxRange = 7073648; //0x6BEF70
-        //const int oCNpc__CollectFocusVob = 7551504; //0x733A10
-        //CALL__thiscall(oCNpcFocus__focus, oCNpcFocus__GetMaxRange);
-        //var int maxRange; maxRange = CALL_RetValAsInt();
-        //CALL_FloatParam(maxRange);
-        //CALL__thiscall(_@(her), oCNpc__CollectFocusVob);
-
-        if (Hlp_Is_oCNpc(her.focus_vob)) {
-            //var int anglX; var int anglY;
-            //MEM_InitGlobalInst();
-            //CALL_FloatParam(_@(anglY));
-            //CALL_FloatParam(_@(anglX));
-            //CALL_PtrParam(her.focus_vob);
-            //CALL__thiscall(MEM_Camera.connectedVob, oCNpc__GetAngles_Vob);
-            //MEM_Info(ConcatStrings(ConcatStrings(toStringf(anglX), " | "), toStringf(anglY)));
-            //if (absf(anglX) > FLOATONE) {
-            //    her.focus_vob = 0;
-            //};
-        };
-
-
-        const int oCNpc__CreateVobList = 7723584; //0x75DA40
-
-        //CALL__thiscall(oCNpcFocus__focus, oCNpcFocus__GetMaxRange);
-        //var int maxRange; maxRange = CALL_RetValAsInt();
-        //CALL_FloatParam(maxRange);
-        //CALL__thiscall(_@(her), oCNpc__CreateVobList);
-
-        //MEM_Info(her.vobList_array);
-
-        // var int i; i = 0;
-        // while(i < her.voblist.numInArray);
-        //
-        // end;
     };
     insertCrosshair(POINTY_CROSSHAIR, size); // Draw/update crosshair
     MEM_InitGlobalInst(); // This is necessary here to find the camera vob, although it was called in init_global. Why?
@@ -335,14 +334,13 @@ func void catchICAni() {
     // Get aiming angles
     var int angleX; var int angXptr; angXptr = _@(angleX);
     var int angleY; var int angYptr; angYptr = _@(angleY);
-    var int posPtr; posPtr = _@(pos);
-    var int herPtr; herPtr = _@(her); // So many pointer because it is a recyclable call
+    var int posPtr; posPtr = _@(pos); // So many pointer because it is a recyclable call
     const int call3 = 0;
     if (CALL_Begin(call3)) {
         CALL_PtrParam(_@(angYptr));
         CALL_PtrParam(_@(angXptr)); // X angle not needed
         CALL_PtrParam(_@(posPtr));
-        CALL__thiscall(_@(herPtr), oCNpc__GetAngles_Vec);
+        CALL__thiscall(_@(herPtr), oCNpc__GetAngles);
         call3 = CALL_End();
     };
     if (lf(absf(angleY), fracf(1, 4))) { // Prevent multiplication with too small numbers. Would result in aim twitching
