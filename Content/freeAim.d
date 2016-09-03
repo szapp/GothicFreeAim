@@ -10,13 +10,14 @@
  */
 
 /* Free aim settings */
-const int FREEAIM_ACTIVATED                       = 1;      // Enable/Disable free aiming
-const int FREEAIM_FOCUS_ACTIVATED                 = 1;      // Enable/Disable focus collection (disable for performance)
-const int FREEAIM_SHOULDER                        = 0;      // 0 = left, 1 = right
-const int FREEAIM_MAX_DIST                        = 5000;   // 50 meters. For shooting at the crosshair at all ranges.
-const int CROSSHAIR_MIN_SIZE                      = 16;     // Smallest crosshair size in pixels (longest aiming range)
-const int CROSSHAIR_MED_SIZE                      = 20;     // Medium crosshair size in pixels (for disabled focus)
-const int CROSSHAIR_MAX_SIZE                      = 32;     // Biggest crosshair size in pixels (closest aiming range)
+const int   FREEAIM_ACTIVATED                     = 1;      // Enable/Disable free aiming
+const int   FREEAIM_FOCUS_ACTIVATED               = 1;      // Enable/Disable focus collection (disable for performance)
+const int   FREEAIM_SHOULDER                      = 0;      // 0 = left, 1 = right
+const int   FREEAIM_MAX_DIST                      = 5000;   // 50 meters. For shooting and crosshair adjustments.
+const float FREEAIM_ROTATION_SCALE                = 0.16;   // Turn rate. Non weapon mode is 0.2 (zMouseRotationScale)
+const int   CROSSHAIR_MIN_SIZE                    = 16;     // Smallest crosshair size in pixels (longest range)
+const int   CROSSHAIR_MED_SIZE                    = 20;     // Medium crosshair size in pixels (for disabled focus)
+const int   CROSSHAIR_MAX_SIZE                    = 32;     // Biggest crosshair size in pixels (closest range)
 var int crosshairHndl;                                      // Holds the crosshair handle
 
 /* These are all addresses (a.o.) used. When adjusting these, it should also work for Gothic 1 */
@@ -24,7 +25,7 @@ const int sizeof_zCVob                            = 288; // Gothic 2: 288, Gothi
 const int zCVob__zCVob                            = 6283744; //0x5FE1E0
 const int zCVob__SetPositionWorld                 = 6404976; //0x61BB70
 const int zCWorld__AddVobAsChild                  = 6440352; //0x6245A0
-const int oCAniCtrl_Human__TurnDegrees            = 7006992; //0x6AEB10
+const int oCAniCtrl_Human__Turn                   = 7005504; //0x6AE540
 const int oCNpc__GetAngles                        = 6820528; //0x6812B0
 const int zCWorld__TraceRayNearestHit_Vob         = 6430624; //0x621FA0
 const int zCVob__TraceRay                         = 6291008; //0x5FFE40
@@ -32,13 +33,12 @@ const int oCNpc__SetFocusVob                      = 7547744; //0x732B60
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
 const int mouseDeltaX                             = 9246300; //0x8D165C
-/* Hooks */
-const int oCAniCtrl_Human__InterpolateCombineAni  = 7037296; //0x6B6170
-const int oCAIArrow__SetupAIVob                   = 6951136; //0x6A10E0
-const int oCAIHuman__BowMode                      = 6905600; //0x695F00
-const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20
-const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0
-const int mouseUpdate                             = 5062907; //0x4D40FB
+const int oCAniCtrl_Human__InterpolateCombineAni  = 7037296; //0x6B6170 // Hook
+const int oCAIArrow__SetupAIVob                   = 6951136; //0x6A10E0 // Hook
+const int oCAIHuman__BowMode                      = 6905600; //0x695F00 // Hook
+const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook
+const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook
+const int mouseUpdate                             = 5062907; //0x4D40FB // Hook
 
 /* Initialize free aim framework */
 func void Init_FreeAim() {
@@ -60,8 +60,7 @@ func void Init_FreeAim() {
 func int isFreeAimActive() {
     if (!FREEAIM_ACTIVATED) { return 0; }; // Only free aiming is enabled
     if (!MEM_ReadInt(mouseEnabled)) { return 0; }; // Only when mouse controls are enabled
-    var oCNpc her; her = Hlp_GetNpc(hero);
-    if (!Npc_IsInFightMode(her, FMODE_FAR)) { return 0; }; // Only while using bow/crossbow
+    if (!Npc_IsInFightMode(hero, FMODE_FAR)) { return 0; }; // Only while using bow/crossbow
     if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) { return 0; };
     return 1;
 };
@@ -116,30 +115,16 @@ func void manualRotation() {
     if (!isFreeAimActive()) { return; };
     var int deltaX; deltaX = mulf(mkf(MEM_ReadInt(mouseDeltaX)), MEM_ReadInt(mouseSensX)); // Get mouse change in x
     if (deltaX == FLOATNULL) { return; }; // Only rotate if there was movement along x position
-
-
-    var oCNpc her; her = Hlp_GetNpc(hero);
-    deltaX = mulf(MEM_ReadInt(/*0x8B0E40*/9113152), deltaX); // zMouseRotationScale
-    deltaX = mulf(mulf(deltaX, MEM_ReadInt(/*0x82EE44*/8580676)), MEM_ReadInt(/*0x82F258*/8581720));
-
-    //MEM_Info(toStringf(deltaX));
-    const int oCAniCtrl_Human__Turn = 7005504; //0x6AE540
-    CALL_IntParam(0); // 0 = disable turn animation (there is none while aiming anyways)
-    CALL_FloatParam(deltaX);
-    CALL__thiscall(her.anictrl, oCAniCtrl_Human__Turn);
-
-    //var int frameAdj; frameAdj = mulf(MEM_Timer.frameTimeFloat, fracf(16, 1000)); // Frame lock
-    //deltaX = mulf(deltaX, frameAdj);
-    //var oCNpc her; her = Hlp_GetNpc(hero);
-    //var int hAniCtrl; hAniCtrl = her.anictrl;
-    //var int null;
-    //const int call = 0;
-    //if (CALL_Begin(call)) {
-    //    CALL_IntParam(_@(null)); // 0 = disable turn animation (there is none while aiming anyways)
-    //    CALL_FloatParam(_@(deltaX));
-    //    CALL__thiscall(_@(hAniCtrl), oCAniCtrl_Human__TurnDegrees);
-    //    call = CALL_End();
-    //};
+    deltaX = mulf(deltaX, castToIntf(FREEAIM_ROTATION_SCALE)); // Turn rate
+    var int hAniCtrl; hAniCtrl = MEM_ReadInt(_@(hero)+2432); // oCNpc->anictrl
+    var int null;
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL_IntParam(_@(null)); // 0 = disable turn animation (there is none while aiming anyways)
+        CALL_FloatParam(_@(deltaX));
+        CALL__thiscall(_@(hAniCtrl), oCAniCtrl_Human__Turn);
+        call = CALL_End();
+    };
 };
 
 /* Shoot aim-tailored trace ray. Do no use for other things. This function is customized for aiming. */
@@ -311,11 +296,12 @@ func void catchICAni() {
     };
 
 
-    var int size; size = CROSSHAIR_MED_SIZE; // Size of crosshair
+    var int size; size = CROSSHAIR_MAX_SIZE; // Start out with the maximum size of crosshair (adjust below)
     if (getFreeAimFocus()) { // Set focus npc if there is a valid one under the crosshair
        var int distance; aimRay(FREEAIM_MAX_DIST, 0, 0, _@(distance)); // Shoot trace ray and retrieve aim distance
-       size = size - roundf(mulf(divf(distance, mkf(FREEAIM_MAX_DIST)), mkf(size))); // Adjust crosshair size
+       size -= roundf(mulf(divf(distance, mkf(FREEAIM_MAX_DIST)), mkf(size))); // Adjust crosshair size
     } else { // More performance friendly. Here, there will be NO focus, otherwise it gets stuck on npcs.
+        size = CROSSHAIR_MED_SIZE; // Set default crosshair size. Here, it is not dynamic
         const int call2 = 0; // Set the focus vob properly (here it will be set to zero): reference counter
         var int null;
         if (CALL_Begin(call2)) {
