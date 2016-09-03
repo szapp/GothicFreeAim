@@ -118,9 +118,8 @@ func void manualRotation() {
     var int deltaX; deltaX = mulf(mkf(MEM_ReadInt(mouseDeltaX)), MEM_ReadInt(mouseSensX)); // Get mouse change in x
     if (deltaX == FLOATNULL) { return; }; // Only rotate if there was movement along x position
     deltaX = mulf(deltaX, castToIntf(FREEAIM_ROTATION_SCALE)); // Turn rate
-    var int hAniCtrl; hAniCtrl = MEM_ReadInt(_@(hero)+2432); // oCNpc.anictrl
-    var int null;
-    const int call = 0;
+    var oCNpc her; her = Hlp_GetNpc(hero); var int hAniCtrl; hAniCtrl = her.anictrl;
+    const int call = 0; var int null;
     if (CALL_Begin(call)) {
         CALL_IntParam(_@(null)); // 0 = disable turn animation (there is none while aiming anyways)
         CALL_FloatParam(_@(deltaX));
@@ -181,7 +180,7 @@ func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPt
     var int nearestNpcDist; nearestNpcDist = mkf(distance); // Select nearest npc
     var C_NPC target;
     flags = (1<<0) | (1<<2); // (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_VOB_BBOX) // Important!
-    // This is essentially taken/modified from 0x621B80 zCWorld::TraceRayNearestHit (specifically at 0x621D82)
+    // This is essentially taken/modified from 0x621B80 zCWorld::TraceRayNearestHit (specifically at 0x621D82 in g2)
     while(MEM_World.traceRayVobList_numInArray > offset); // Iterate over vob list
         var int curVob; curVob = MEM_ReadIntArray(MEM_World.traceRayVobList_array, offset); // Current vob
         offset += 1; // Advance in array
@@ -304,8 +303,7 @@ func void catchICAni() {
        size -= roundf(mulf(divf(distance, mkf(FREEAIM_MAX_DIST)), mkf(size))); // Adjust crosshair size
     } else { // More performance friendly. Here, there will be NO focus, otherwise it gets stuck on npcs.
         size = CROSSHAIR_MED_SIZE; // Set default crosshair size. Here, it is not dynamic
-        const int call2 = 0; // Set the focus vob properly (here it will be set to zero): reference counter
-        var int null;
+        const int call2 = 0; var int null; // Set the focus vob properly: reference counter
         if (CALL_Begin(call2)) {
             CALL_PtrParam(_@(null)); // This will remove the focus
             CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
@@ -331,22 +329,23 @@ func void catchICAni() {
         CALL__thiscall(_@(herPtr), oCNpc__GetAngles);
         call3 = CALL_End();
     };
-    if (lf(absf(angleY), fracf(1, 4))) { // Prevent multiplication with too small numbers. Would result in aim twitching
-        angleY = fracf(1, 4);
-        if (lf(angleY, FLOATNULL)) { angleY =  negf(angleY); };
+    if (lf(absf(angleX), 1048576000)) { // Prevent multiplication with too small numbers. Would result in aim twitching
+        if (lf(angleX, FLOATNULL)) { angleX =  -1098907648; } // -0.25
+        else { angleX = 1048576000; }; // 0.25
     };
-    // This following paragraph is essentially "copied" from oCAIHuman::BowMode (0x695F00)
-    var int deg90To05; deg90To05 = mulf(1010174817, FLOATHALF); // 0.0111111*0.5 (from 0x8306EC in g2)
-    angleY = mulf(angleY, deg90To05); // Scale Y +-90 degrees to +-0.5
-    angleY = addf(angleY, FLOATHALF); // Shift Y +-0.5 to +-1
-    angleY = subf(FLOATONE, angleY);  // Flip  Y +-1 to -+1
-    if (lef(angleY, FLOATNULL)) {
-        angleY = FLOATNULL; // Maximum aim height (straight up)
-    } else if (gef(angleY, 1065353216)) {
-        angleY = 1065353216; //3F800000 // Minimum aim height (down)
+    if (lf(absf(angleY), 1048576000)) { // Prevent multiplication with too small numbers. Would result in aim twitching
+        if (lf(angleY, FLOATNULL)) { angleY =  -1098907648; } // -0.25
+        else { angleY = 1048576000; }; // 0.25
     };
+    // This following paragraph is essentially "copied" from oCAIHuman::BowMode (0x695F00 in g2)
+    angleX = addf(mulf(angleX, 1001786197), FLOATHALF); // Scale and X [-90° +90°] to [0 +1]
+    angleY = negf(subf(mulf(angleY, 1001786197), FLOATHALF)); // Scale and flip Y [-90° +90°] to [+1 0]
+    if (lef(angleX, FLOATNULL)) { angleX = FLOATNULL; } // Maximum turning
+    else if (gef(angleX, 1065353216)) { angleX = 1065353216; };
+    if (lef(angleY, FLOATNULL)) { angleY = FLOATNULL; } // Maximum aim height (straight up)
+    else if (gef(angleY, 1065353216)) { angleY = 1065353216; }; // Minimum aim height (down)
     // New aiming coordinates. Overwrite the arguments passed to oCAniCtrl_Human::InterpolateCombineAni
-    MEM_WriteInt(ESP+4, FLOATHALF); // Always at the x center
+    MEM_WriteInt(ESP+4, angleX); // Also overwrite x. Important for strafing
     MEM_WriteInt(ESP+8, angleY);
 };
 
