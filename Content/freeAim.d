@@ -15,6 +15,7 @@ const int   FREEAIM_FOCUS_ACTIVATED               = 1;      // Enable/Disable fo
 const int   FREEAIM_SHOULDER                      = 0;      // 0 = left, 1 = right
 const int   FREEAIM_MAX_DIST                      = 5000;   // 50 meters. For shooting and crosshair adjustments.
 const float FREEAIM_ROTATION_SCALE                = 0.16;   // Turn rate. Non weapon mode is 0.2 (zMouseRotationScale)
+const float FREEAIM_PROJECTILE_GRAVITY            = 0.1;    // The gravity decides how fast the projectile drops
 const int   CROSSHAIR_MIN_SIZE                    = 16;     // Smallest crosshair size in pixels (longest range)
 const int   CROSSHAIR_MED_SIZE                    = 20;     // Medium crosshair size in pixels (for disabled focus)
 const int   CROSSHAIR_MAX_SIZE                    = 32;     // Biggest crosshair size in pixels (closest range)
@@ -30,6 +31,7 @@ const int oCNpc__GetAngles                        = 6820528; //0x6812B0
 const int zCWorld__TraceRayNearestHit_Vob         = 6430624; //0x621FA0
 const int zCVob__TraceRay                         = 6291008; //0x5FFE40
 const int oCNpc__SetFocusVob                      = 7547744; //0x732B60
+const int zCVob__GetRigidBody                     = 6285664; //0x5FE960
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
 const int mouseDeltaX                             = 9246300; //0x8D165C
@@ -116,7 +118,7 @@ func void manualRotation() {
     var int deltaX; deltaX = mulf(mkf(MEM_ReadInt(mouseDeltaX)), MEM_ReadInt(mouseSensX)); // Get mouse change in x
     if (deltaX == FLOATNULL) { return; }; // Only rotate if there was movement along x position
     deltaX = mulf(deltaX, castToIntf(FREEAIM_ROTATION_SCALE)); // Turn rate
-    var int hAniCtrl; hAniCtrl = MEM_ReadInt(_@(hero)+2432); // oCNpc->anictrl
+    var int hAniCtrl; hAniCtrl = MEM_ReadInt(_@(hero)+2432); // oCNpc.anictrl
     var int null;
     const int call = 0;
     if (CALL_Begin(call)) {
@@ -350,6 +352,7 @@ func void catchICAni() {
 
 /* Hook oCAIArrow::SetupAIVob */
 func void shootTarget() {
+    var int projectile; projectile = MEM_ReadInt(ESP+4);  // First argument is the projectile
     var C_NPC shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
     if (!Npc_IsPlayer(shooter)) || (!isFreeAimActive()) { return; }; // Only for the player
     var int pos[3]; aimRay(FREEAIM_MAX_DIST, 0, _@(pos), 0); // Shoot trace ray and retrieve intersection
@@ -357,7 +360,7 @@ func void shootTarget() {
     if (!vobPtr) {
         vobPtr = MEM_Alloc(sizeof_zCVob); // Will never delete this vob (it will be re-used on the next shot)
         CALL__thiscall(vobPtr, zCVob__zCVob);
-        MEM_WriteString(vobPtr+16, "AIMVOB"); // _zCObject_objectName
+        MEM_WriteString(vobPtr+16, "AIMVOB"); // zCVob._zCObject_objectName
         CALL_PtrParam(_@(MEM_Vobtree));
         CALL_PtrParam(vobPtr);
         CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
@@ -369,5 +372,14 @@ func void shootTarget() {
         CALL__thiscall(_@(vobPtr), zCVob__SetPositionWorld);
         call = CALL_End();
     };
+    // Set projectile drop-off
+    const int call2 = 0;
+    if (CALL_Begin(call2)) {
+        CALL__thiscall(_@(projectile), zCVob__GetRigidBody);
+        call2 = CALL_End();
+    };
+    var int rigidBody; rigidBody = CALL_RetValAsInt(); // zCRigidBody*
+    MEM_WriteByte(rigidBody+256, 1); // Turn on gravity (zCRigidBody.bitfield)
+    MEM_WriteInt(rigidBody+236, castToIntf(FREEAIM_PROJECTILE_GRAVITY)); // Set gravity (zCRigidBody.gravityScale)
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
 };
