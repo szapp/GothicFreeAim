@@ -12,17 +12,26 @@
 /* Free aim settings */
 const int   FREEAIM_ACTIVATED                     = 1;      // Enable/Disable free aiming
 const int   FREEAIM_FOCUS_ACTIVATED               = 1;      // Enable/Disable focus collection (disable for performance)
-const int   FREEAIM_SHOULDER                      = 0;      // 0 = left, 1 = right
-const int   FREEAIM_MAX_DIST                      = 5000;   // 50 meters. For shooting and crosshair adjustments.
+const int   FREEAIM_CAMERA_X_SHIFT                = 0;      // Set to 1, if camera is in shoulder view (not recommended)
+const int   FREEAIM_MAX_DIST                      = 5000;   // 50 meters. For shooting and crosshair adjustments
+const int   FREEAIM_DRAWTIME_MIN                  = 1110;   // Minimum draw time (ms). Do not change - tied to animation
+const int   FREEAIM_DRAWTIME_MAX                  = 2500;   // Maximum draw time (ms) for best trajectory
+const int   FREEAIM_TRAJECTORY_ARC_MAX            = 400;    // Maximum distance at which the trajectory drops off
+const int   FREEAIM_TREMOR                        = 12;     // Camera tremor when exceeding FREEAIM_DRAWTIME_MAX
 const float FREEAIM_ROTATION_SCALE                = 0.16;   // Turn rate. Non weapon mode is 0.2 (zMouseRotationScale)
 const float FREEAIM_PROJECTILE_GRAVITY            = 0.1;    // The gravity decides how fast the projectile drops
+const int   FREEAIM_PROJECTILE_COLLECTABLE        = 1;      // Make use of the projectile collectible script
 const int   CROSSHAIR_MIN_SIZE                    = 16;     // Smallest crosshair size in pixels (longest range)
 const int   CROSSHAIR_MED_SIZE                    = 20;     // Medium crosshair size in pixels (for disabled focus)
 const int   CROSSHAIR_MAX_SIZE                    = 32;     // Biggest crosshair size in pixels (closest range)
-var int crosshairHndl;                                      // Holds the crosshair handle
+const int   ARROWAI_REDIRECT                      = 0;      // Used to redirect call-by-reference argument
+var   int   crosshairHndl;                                  // Holds the crosshair handle
+var   int   bowDrawOnset;                                   // Time onset of drawing the bow
 
-/* These are all addresses (a.o.) used. When adjusting these, it should also work for Gothic 1 */
-const int sizeof_zCVob                            = 288; // Gothic 2: 288, Gothic 1: 256
+/* These are all addresses (a.o.) used. Of course for gothic 2 as LeGo only supports gothic 2 */
+const int sizeof_zCVob                            = 288; // Gothic 1: 256
+const int oCNpc_anictrl_offset                    = 2432; // Gothic 1: 2488
+const int oCNpc_focus_vob_offset                  = 2476; // Gothic 1: 2532
 const int zCVob__zCVob                            = 6283744; //0x5FE1E0
 const int zCVob__SetPositionWorld                 = 6404976; //0x61BB70
 const int zCWorld__AddVobAsChild                  = 6440352; //0x6245A0
@@ -30,14 +39,18 @@ const int oCAniCtrl_Human__Turn                   = 7005504; //0x6AE540
 const int oCNpc__GetAngles                        = 6820528; //0x6812B0
 const int zCWorld__TraceRayNearestHit_Vob         = 6430624; //0x621FA0
 const int zCVob__TraceRay                         = 6291008; //0x5FFE40
+const int zCArray_zCVob__IsInList                 = 7159168; //0x6D3D80
 const int oCNpc__SetFocusVob                      = 7547744; //0x732B60
+const int oCNpc__SetEnemy                         = 7556032; //0x734BC0
 const int zCVob__GetRigidBody                     = 6285664; //0x5FE960
+const int oCGame__s_bUseOldControls               = 9118144; //0x8B21C0
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
 const int mouseDeltaX                             = 9246300; //0x8D165C
 const int oCAniCtrl_Human__InterpolateCombineAni  = 7037296; //0x6B6170 // Hook
 const int oCAIArrow__SetupAIVob                   = 6951136; //0x6A10E0 // Hook
 const int oCAIHuman__BowMode                      = 6905600; //0x695F00 // Hook
+const int oCAIArrowBase__DoAI                     = 6948416; //0x6A0640 // Hook
 const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook
@@ -51,25 +64,37 @@ func void Init_FreeAim() {
         HookEngineF(oCAIHuman__BowMode, 6, manageCrosshair); // Called continuously
         HookEngineF(oCNpcFocus__SetFocusMode, 7, manageCrosshair); // Called when changing focus mode (several times)
         HookEngineF(oCAIHuman__MagicMode, 7, manageCrosshair); // Called continuously
+        HookEngineF(oCAIArrowBase__DoAI, 7, projectileCollectable); // Called for projectile
         HookEngineF(mouseUpdate, 5, manualRotation);
         hookFreeAim = 1;
     };
-    //Focus_Ranged.npc_prio = -1; // Disable focus collection
     MEM_Info("Free aim initialized.");
 };
 
 /* Check whether free aim should be activated */
 func int isFreeAimActive() {
     if (!FREEAIM_ACTIVATED) { return 0; }; // Only free aiming is enabled
+    if (MEM_Game.pause_screen) { return 0; }; // Only when playing
     if (!MEM_ReadInt(mouseEnabled)) { return 0; }; // Only when mouse controls are enabled
+    if (!MEM_ReadInt(oCGame__s_bUseOldControls)) { return 0; }; // Only for classic gothic 1 controls
     if (!Npc_IsInFightMode(hero, FMODE_FAR)) { return 0; }; // Only while using bow/crossbow
-    if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) { return 0; };
+    if (!InfoManager_HasFinished()) { return 0; }; // Not in dialogs
+    var int keyStateAction1; keyStateAction1 = MEM_KeyState(MEM_GetKey("keyAction"));
+    var int keyStateAction2; keyStateAction2 = MEM_KeyState(MEM_GetSecondaryKey("keyAction"));
+    if (keyStateAction1 != KEY_PRESSED) && (keyStateAction1 != KEY_HOLD) // Only while pressing the action button
+    && (keyStateAction2 != KEY_PRESSED) && (keyStateAction2 != KEY_HOLD) { return 0; };
+    // Get onset for drawing the bow when just pressing down the action key
+    if (keyStateAction1 == KEY_PRESSED) || (keyStateAction2 == KEY_PRESSED) { bowDrawOnset = MEM_Timer.totalTime; };
     return 1;
 };
 
 /* Delete crosshair (hiding it is not sufficient, since it might change texture later) */
 func void removeCrosshair() {
     if (Hlp_IsValidHandle(crosshairHndl)) { View_Delete(crosshairHndl); };
+
+    // const int zCCamera__StopTremor = 5551696; //0x54B650
+    // CALL__thiscall(_@(MEM_Camera), zCCamera__StopTremor);
+
 };
 
 /* Draw crosshair */
@@ -96,6 +121,43 @@ func void insertCrosshair(var int crosshairStyle, var int size) {
                 View_MoveToPxl(crosshairHndl, Print_Screen[PS_X]/2-(size/2), Print_Screen[PS_Y]/2-(size/2));
             };
         };
+
+        if (FREEAIM_TREMOR) {
+            if (MEM_Timer.totalTime-bowDrawOnset > FREEAIM_DRAWTIME_MAX) {
+                var int vec1[3]; var int vec2[3];
+                vec1[0] = castToIntf(12.0);
+                vec1[1] = castToIntf(12.0);
+                vec1[2] = castToIntf(12.0);
+                vec2[0] = castToIntf(12.0);
+                vec2[1] = castToIntf(12.0);
+                vec2[2] = castToIntf(12.0);
+                const int zCCamera__AddTremor = 5551712; //0x54B660
+                CALL_PtrParam(_@(vec2)); // zVEC3 const &
+                CALL_FloatParam(castToIntf(0.001)); // float tremorVelo
+                CALL_FloatParam(castToIntf(0.4)); // float tremorScale
+                CALL_PtrParam(_@(vec1)); // zVEC3 const &
+                CALL__thiscall(MEM_ReadInt(9273236), zCCamera__AddTremor); // zCCamera__activeCam 0x08D7F94
+            } else {
+                // const int zCCamera__StopTremor = 5551696; //0x54B650
+                // CALL__thiscall(_@(MEM_Camera), zCCamera__StopTremor);
+            };
+        };
+/*        if (FREEAIM_TREMOR) {
+            if (MEM_Timer.totalTime-bowDrawOnset > FREEAIM_DRAWTIME_MAX) {
+                MEM_Camera.tremorToggle = 1;
+                MEM_Camera.tremorScale = castToIntf(0.08);
+                MEM_Camera.tremorAmplitude[0] = FLOATNULL; // Z (back and forth)
+                MEM_Camera.tremorAmplitude[1] = mkf(FREEAIM_TREMOR); // Y (up and down)
+                MEM_Camera.tremorAmplitude[2] = mkf(FREEAIM_TREMOR); // X (left and right)
+                MEM_Camera.tremorOrigin[0] = castToIntf(0.0);
+                MEM_Camera.tremorOrigin[1] = castToIntf(20.0);
+                MEM_Camera.tremorOrigin[2] = castToIntf(0.0);
+                MEM_Camera.tremorVelo = castToIntf(0.00001);
+            } else {
+                MEM_Camera.tremorToggle = 0;
+                MEM_Camera.tremorScale = FLOATNULL;
+            };
+        };*/
     } else { removeCrosshair(); };
 };
 
@@ -107,8 +169,7 @@ func void manageCrosshair() {
 /* Check whether free aim should collect focus */
 func int getFreeAimFocus() {
     if (!FREEAIM_FOCUS_ACTIVATED) { return 0; }; // More performance friendly
-    var oCNpc her; her = Hlp_GetNpc(hero);
-    if (Npc_IsInFightMode(her, FMODE_FAR)) { return 1; }; // Only while using bow/crossbow
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { return 1; }; // Only while using bow/crossbow
     return 0;
 };
 
@@ -118,7 +179,7 @@ func void manualRotation() {
     var int deltaX; deltaX = mulf(mkf(MEM_ReadInt(mouseDeltaX)), MEM_ReadInt(mouseSensX)); // Get mouse change in x
     if (deltaX == FLOATNULL) { return; }; // Only rotate if there was movement along x position
     deltaX = mulf(deltaX, castToIntf(FREEAIM_ROTATION_SCALE)); // Turn rate
-    var oCNpc her; her = Hlp_GetNpc(hero); var int hAniCtrl; hAniCtrl = her.anictrl;
+    var int hAniCtrl; hAniCtrl = MEM_ReadInt(_@(hero)+oCNpc_anictrl_offset); // oCNpc.anictrl
     const int call = 0; var int null;
     if (CALL_Begin(call)) {
         CALL_IntParam(_@(null)); // 0 = disable turn animation (there is none while aiming anyways)
@@ -136,25 +197,34 @@ func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPt
     camPos[0] = MEM_ReadInt(MEM_Camera.connectedVob+72);
     camPos[1] = MEM_ReadInt(MEM_Camera.connectedVob+88);
     camPos[2] = MEM_ReadInt(MEM_Camera.connectedVob+104);
-    // Calculate point-line distance, to shift the start point of the trace ray to the level of the player model
-    // Necessary, because if zooming out, (1) there might be something between camera and hero, (2) max distance is off
     var int herPtr; herPtr = _@(hero);
-    var int shoulder; shoulder = mkf((FREEAIM_SHOULDER*2)-1); // Now left is -1, right is +1
-    var int helpPos[3]; // Help point along the right vector of the camera vob for point-line distance
-    helpPos[0] = addf(MEM_ReadInt(herPtr+72), mulf(MEM_ReadInt(MEM_Camera.connectedVob+60), mulf(shoulder, mkf(1000))));
-    helpPos[1] = addf(MEM_ReadInt(herPtr+88), mulf(MEM_ReadInt(MEM_Camera.connectedVob+76), mulf(shoulder, mkf(1000))));
-    helpPos[2] = addf(MEM_ReadInt(herPtr+104),mulf(MEM_ReadInt(MEM_Camera.connectedVob+92), mulf(shoulder, mkf(1000))));
-    var int u[3]; var int v[3];
-    u[0] = subf(camPos[0], MEM_ReadInt(herPtr+72));  v[0] = subf(camPos[0], helpPos[0]);
-    u[1] = subf(camPos[1], MEM_ReadInt(herPtr+88));  v[1] = subf(camPos[1], helpPos[1]);
-    u[2] = subf(camPos[2], MEM_ReadInt(herPtr+104)); v[2] = subf(camPos[2], helpPos[2]);
-    var int crossProd[3]; // Cross-product
-    crossProd[0] = subf(mulf(u[1], v[2]), mulf(u[2], v[1]));
-    crossProd[1] = subf(mulf(u[2], v[0]), mulf(u[0], v[2]));
-    crossProd[2] = subf(mulf(u[0], v[1]), mulf(u[1], v[0]));
-    var int dist; dist = sqrtf(addf(addf(sqrf(crossProd[0]), sqrf(crossProd[1])), sqrf(crossProd[2])));
-    dist = divf(dist, mkf(1000)); // Devide area of triangle by length between herPos and helpPos
-    // Trace ray vectors
+    // Shift the start point for the trace ray beyond the player model. Necessary, because if zooming out,
+    // (1) there might be something between camera and hero and (2) the maximum aiming distance is off.
+    var int dist; dist = sqrtf(addf(addf( // Distance between camera and player model (does not care about cam offset)
+        sqrf(subf(MEM_ReadInt(herPtr+72), camPos[0])),
+        sqrf(subf(MEM_ReadInt(herPtr+88), camPos[1]))),
+        sqrf(subf(MEM_ReadInt(herPtr+104), camPos[2]))));
+    if (FREEAIM_CAMERA_X_SHIFT) { // Shifting the camera (shoulderview) is not recommended. Aiming is harder + less fps?
+        // This makes the distance mentioned above more complex and requires the calculation of a point-line distance
+        // For illustration: http://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
+        var int line[6]; // Line with two points along the camera right vector at the level of the player model
+        line[0] = subf(MEM_ReadInt(herPtr+72),  mulf(MEM_ReadInt(MEM_Camera.connectedVob+60), mkf(1000))); // Left of
+        line[1] = subf(MEM_ReadInt(herPtr+88),  mulf(MEM_ReadInt(MEM_Camera.connectedVob+76), mkf(1000))); // Model
+        line[2] = subf(MEM_ReadInt(herPtr+104), mulf(MEM_ReadInt(MEM_Camera.connectedVob+92), mkf(1000)));
+        line[3] = addf(MEM_ReadInt(herPtr+72),  mulf(MEM_ReadInt(MEM_Camera.connectedVob+60), mkf(1000))); // Right of
+        line[4] = addf(MEM_ReadInt(herPtr+88),  mulf(MEM_ReadInt(MEM_Camera.connectedVob+76), mkf(1000))); // Model
+        line[5] = addf(MEM_ReadInt(herPtr+104), mulf(MEM_ReadInt(MEM_Camera.connectedVob+92), mkf(1000)));
+        var int u[3]; var int v[3]; // Substract both points of the line from the camera position
+        u[0] = subf(camPos[0], line[0]); v[0] = subf(camPos[0], line[3]);
+        u[1] = subf(camPos[1], line[1]); v[1] = subf(camPos[1], line[4]);
+        u[2] = subf(camPos[2], line[2]); v[2] = subf(camPos[2], line[5]);
+        var int crossProd[3]; // Cross-product
+        crossProd[0] = subf(mulf(u[1], v[2]), mulf(u[2], v[1]));
+        crossProd[1] = subf(mulf(u[2], v[0]), mulf(u[0], v[2]));
+        crossProd[2] = subf(mulf(u[0], v[1]), mulf(u[1], v[0]));
+        dist = sqrtf(addf(addf(sqrf(crossProd[0]), sqrf(crossProd[1])), sqrf(crossProd[2])));
+        dist = divf(dist, mkf(2000)); // Devide area of triangle by length between the points on the line
+    };
     camPos[0] = addf(camPos[0], mulf(MEM_ReadInt(MEM_Camera.connectedVob+68), dist)); // Start ray from here
     camPos[1] = addf(camPos[1], mulf(MEM_ReadInt(MEM_Camera.connectedVob+84), dist));
     camPos[2] = addf(camPos[2], mulf(MEM_ReadInt(MEM_Camera.connectedVob+100), dist));
@@ -172,54 +242,57 @@ func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPt
         CALL__fastcall(_@(worldPtr), _@(fromPosPtr), zCWorld__TraceRayNearestHit_Vob);
         call = CALL_End();
     };
-    var int found; found = CALL_RetValAsInt();
-    // The is a hack to allow detection of npcs. Trace rays ignore npcs unless zTRACERAY_VOB_BBOX is specified = bad!
-    var int offset; offset = 0; // Index to iterate over vob list
-    var int foundFocus; foundFocus = 0; // Is the focus vob in the vob list
-    var int trRep; trRep = MEM_Alloc(40); // sizeof_zTTraceRayReport
-    var int nearestNpcDist; nearestNpcDist = mkf(distance); // Select nearest npc
-    var C_NPC target;
-    flags = (1<<0) | (1<<2); // (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_VOB_BBOX) // Important!
-    // This is essentially taken/modified from 0x621B80 zCWorld::TraceRayNearestHit (specifically at 0x621D82 in g2)
-    while(MEM_World.traceRayVobList_numInArray > offset); // Iterate over vob list
-        var int curVob; curVob = MEM_ReadIntArray(MEM_World.traceRayVobList_array, offset); // Current vob
-        offset += 1; // Advance in array
-        if (Hlp_Is_oCNpc(curVob)) && (curVob != herPtr) { // If vob is npc and not hero
-            target = _^(curVob); // Do not allow focussing npcs that are down
-            if (Npc_IsInState(target, ZS_Unconscious))
-            || (Npc_IsInState(target, ZS_MagicSleep))
-            || (Npc_IsDead(target)) { continue; };
+    var int found; found = CALL_RetValAsInt(); // Did the trace ray hit
+    var int foundFocus; foundFocus = 0; // Is the focus vob in the trace ray vob list
+    var int potentialVob; potentialVob = MEM_ReadInt(herPtr+oCNpc_focus_vob_offset); // Focus vob by focus collection
+    if (potentialVob) && (Hlp_Is_oCNpc(potentialVob)) { // Now check if the collected focus was hit by the trace ray
+        var C_NPC target; target = _^(potentialVob);  // Do not allow focussing npcs that are down
+        if (!Npc_IsInState(target, ZS_Unconscious)) && (!Npc_IsInState(target, ZS_MagicSleep)) && (!Npc_IsDead(target)){
+            var int potVobPtr; potVobPtr = _@(potentialVob);
+            var int voblist; voblist = _@(MEM_World.traceRayVobList_array);
             const int call2 = 0;
-            if (CALL_Begin(call2)) {
-                CALL_PtrParam(_@(trRep)); // zTTraceRayReport
-                CALL_IntParam(_@(flags)); // Trace ray flags
-                CALL_PtrParam(_@(dirPosPtr)); // Trace ray direction
-                CALL_PtrParam(_@(fromPosPtr)); // Start vector
-                CALL__thiscall(_@(curVob), zCVob__TraceRay);
+            if (CALL_Begin(call2)) { // Check if focus vob is in trace ray vob list
+                CALL_PtrParam(_@(potVobPtr));
+                CALL__thiscall(_@(voblist), zCArray_zCVob__IsInList);
                 call2 = CALL_End();
             };
-            if (CALL_RetValAsInt()) { // Got a hit: Update trace ray report
-                distance = sqrtf(addf(addf(
-                    sqrf(subf(MEM_ReadInt(trRep+12), camPos[0])),
-                    sqrf(subf(MEM_ReadInt(trRep+16), camPos[1]))),
-                    sqrf(subf(MEM_ReadInt(trRep+20), camPos[2]))));
-                if (lf(distance, nearestNpcDist)) { // Prefer the closest npc
-                    nearestNpcDist = distance;
-                    MEM_World.foundVob = curVob;
-                    MEM_CopyWords(trRep+12, _@(MEM_World.foundIntersection), 3); // 0x0C zVEC3
-                    foundFocus = curVob; // Found focus vob (do not leave loop yet, there might be a nearer npc)
+            if (CALL_RetValAsInt()) { // If it is in the vob list, run a more detailed examination
+                // This is essentially taken/modified from zCWorld::TraceRayNearestHit (specifically at 0x621D82 in g2)
+                flags = (1<<0) | (1<<2); // (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_VOB_BBOX) // Important!
+                var int trRep; trRep = MEM_Alloc(40); // sizeof_zTTraceRayReport
+                const int call3 = 0;
+                if (CALL_Begin(call3)) {
+                    CALL_PtrParam(_@(trRep)); // zTTraceRayReport
+                    CALL_IntParam(_@(flags)); // Trace ray flags
+                    CALL_PtrParam(_@(dirPosPtr)); // Trace ray direction
+                    CALL_PtrParam(_@(fromPosPtr)); // Start vector
+                    CALL__thiscall(_@(potentialVob), zCVob__TraceRay); // This is a vob specific trace ray
+                    call3 = CALL_End();
                 };
+                if (CALL_RetValAsInt()) { // Got a hit: Update trace ray report
+                    MEM_World.foundVob = potentialVob;
+                    MEM_CopyWords(trRep+12, _@(MEM_World.foundIntersection), 3); // 0x0C zVEC3
+                    foundFocus = potentialVob; // Confirmed focus vob
+                };
+                MEM_Free(trRep); // Free the report
             };
         };
-    end;
-    MEM_Free(trRep); // Free the report
-    const int call3 = 0; // Set the focus vob properly: reference counter
-    if (CALL_Begin(call3)) {
-        CALL_PtrParam(_@(foundFocus)); // If no npc was found, this will remove the focus
-        CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
-        call3 = CALL_End();
     };
-    // Write return/call-by-reference variables
+    if (foundFocus != potentialVob) { // If focus vob changed
+        const int call4 = 0; // Set the focus vob properly: reference counter
+        if (CALL_Begin(call4)) {
+            CALL_PtrParam(_@(foundFocus)); // If no npc was found, this will remove the focus
+            CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
+            call4 = CALL_End();
+        };
+        const int call5 = 0; var int null; // Remove the enemy properly: reference counter
+        if (CALL_Begin(call5)) {
+            CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. Target will be set to aimvob when shooting
+            CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
+            call5 = CALL_End();
+        };
+    };
+    // Write call-by-reference variables
     if (vobPtr) { MEM_WriteInt(vobPtr, MEM_World.foundVob); };
     if (posPtr) { MEM_CopyWords(_@(MEM_World.foundIntersection), posPtr, 3); };
     if (distPtr) {
@@ -303,11 +376,17 @@ func void catchICAni() {
        size -= roundf(mulf(divf(distance, mkf(FREEAIM_MAX_DIST)), mkf(size))); // Adjust crosshair size
     } else { // More performance friendly. Here, there will be NO focus, otherwise it gets stuck on npcs.
         size = CROSSHAIR_MED_SIZE; // Set default crosshair size. Here, it is not dynamic
-        const int call2 = 0; var int null; // Set the focus vob properly: reference counter
-        if (CALL_Begin(call2)) {
+        const int call4 = 0; var int null; // Set the focus vob properly: reference counter
+        if (CALL_Begin(call4)) {
             CALL_PtrParam(_@(null)); // This will remove the focus
             CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
-            call2 = CALL_End();
+            call4 = CALL_End();
+        };
+        const int call5 = 0; // Remove the enemy properly: reference counter
+        if (CALL_Begin(call5)) {
+            CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. Target will be set to aimvob when shooting
+            CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
+            call5 = CALL_End();
         };
     };
     insertCrosshair(POINTY_CROSSHAIR, size); // Draw/update crosshair
@@ -374,11 +453,66 @@ func void shootTarget() {
     // Set projectile drop-off
     const int call2 = 0;
     if (CALL_Begin(call2)) {
-        CALL__thiscall(_@(projectile), zCVob__GetRigidBody);
+        CALL__thiscall(_@(projectile), zCVob__GetRigidBody); // Get ridigBody this way, it will be properly created
         call2 = CALL_End();
     };
-    var int rigidBody; rigidBody = CALL_RetValAsInt(); // zCRigidBody*
-    MEM_WriteByte(rigidBody+256, 1); // Turn on gravity (zCRigidBody.bitfield)
-    MEM_WriteInt(rigidBody+236, castToIntf(FREEAIM_PROJECTILE_GRAVITY)); // Set gravity (zCRigidBody.gravityScale)
+    var zCRigidBody rBody; rBody = _^(CALL_RetValAsInt()); // zCRigidBody*
+    MEM_Info(ConcatStrings("^ End time: ", IntToString(MEM_Timer.totalTime)));
+    bowDrawOnset = MEM_Timer.totalTime - bowDrawOnset; // Check for how long the bow was drawn
+    MEM_Info(ConcatStrings("| Duration: ", IntToString(bowDrawOnset)));
+    if (bowDrawOnset > FREEAIM_DRAWTIME_MAX) { bowDrawOnset = FREEAIM_TRAJECTORY_ARC_MAX; } // Force drop-off
+    else if (bowDrawOnset < FREEAIM_DRAWTIME_MIN) { bowDrawOnset = 0; } // No negative numbers
+    else { // Calculate the drop-off time within the range of [0, FREEAIM_TRAJECTORY_ARC_MAX]
+        var int numerator; numerator = mkf(FREEAIM_TRAJECTORY_ARC_MAX * (bowDrawOnset - FREEAIM_DRAWTIME_MIN));
+        var int denominator; denominator = mkf(FREEAIM_DRAWTIME_MAX - FREEAIM_DRAWTIME_MIN);
+        bowDrawOnset = roundf(divf(numerator, denominator));
+    };
+    MEM_Info(ConcatStrings("### Drop-off time: ", IntToString(bowDrawOnset)));
+    FF_ApplyOnceExtData(dropProjectile, bowDrawOnset, 1, _@(rBody)); // Safe?
+    bowDrawOnset = MEM_Timer.totalTime; // Reset draw timer
+    MEM_Info(ConcatStrings("v Start time (rld): ", IntToString(bowDrawOnset)));
+    var int gravityMod; gravityMod = FLOATONE;
+    if (bowDrawOnset < FREEAIM_TRAJECTORY_ARC_MAX/4) { gravityMod = mkf(2); }; // Very short draw time increases gravity
+    // rBody.gravity = mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod); // Experimental
+    rBody.gravity = castToIntf(FREEAIM_PROJECTILE_GRAVITY);
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
+};
+
+func void dropProjectile(var int rigidBody) {
+    if (!rigidBody) { return; };
+    var zCRigidBody rBody; rBody = _^(rigidBody);
+    rBody.bitfield = rBody.bitfield | zCRigidBody_bitfield_gravityActive; // Turn on gravity
+};
+
+/* Once a projectile stopped moving or collided with an npc keep it alive or put it into the inventory. */
+func void projectileCollectable() {
+    var oCAIArrow arrowAI; arrowAI = _^(ECX); // AI of the projectile
+    var int projectilePtr; projectilePtr = MEM_ReadInt(ESP+4); // Projectile (item). Taken from arguments
+    var int removePtr; removePtr = MEM_ReadInt(ESP+8); // Boolean pointer (call-by-reference argument)
+    if (!projectilePtr) { return; }; // oCItem. In case it does not exist
+    var oCItem projectile; projectile = _^(projectilePtr);
+    if (!projectile._zCVob_rigidBody) { return; }; // zCRigidBody. Might not exist the first time
+    var zCRigidBody rBody; rBody = _^(projectile._zCVob_rigidBody);
+    // Reset projectile gravity after collision
+    if (arrowAI._oCAIArrowBase_collision) { rBody.gravity = FLOATONE; }; // Reset gravity
+    if (!FREEAIM_PROJECTILE_COLLECTABLE) { return; }; // Normal projectile handling
+    // If the projectile gets stuck (instead of bouncing of), check what the projectile collided with
+    if (rBody.bitfield & zCRigidBody_bitfield_collision) && (MEM_ReadInt(arrowAI._oCAIArrowBase_ignoreVobList)) {
+        var zCList voblist; voblist = _^(arrowAI._oCAIArrowBase_ignoreVobList);
+        while(voblist.next); // Traverse voblist. Don't ask me why the target is in the ignoreVobList
+            if (!Hlp_Is_oCNpc(voblist.data)) { voblist = _^(voblist.next); continue; }; // Search for npc
+            var C_NPC victim; victim = _^(voblist.data);
+            CreateInvItems(victim, projectile.instanz, 1); // Put a respective projectile into the inventory
+            arrowAI._oCAIArrowBase_lifeTime = FLOATNULL; // Destroy AI and projectile (set lifetime to zero)
+            return;
+        end;
+    };
+    // If the projectile stopped moving, release its AI
+    if (rBody.velocity[0] == FLOATNULL) && (rBody.velocity[1] == FLOATNULL) && (rBody.velocity[2] == FLOATNULL) {
+        arrowAI._oCAIArrowBase_lifeTime = FLOATONE; // Set high lifetime to ensure item visibility
+        projectile.flags = projectile.flags &~ ITEM_NFOCUS; // Focusable (collectable)
+        projectile._zCVob_callback_ai = 0; // Release vob from AI
+        MEM_WriteInt(removePtr, 0); // Do not remove vob on AI destruction
+        MEM_WriteInt(ESP+8, _@(ARROWAI_REDIRECT)); // Divert the actual "return" value
+    };
 };
