@@ -10,7 +10,6 @@
  */
 
 /* Free aim settings */
-const int   FREEAIM_ACTIVATED                     = 1;      // Enable/Disable free aiming
 const int   FREEAIM_FOCUS_ACTIVATED               = 1;      // Enable/Disable focus collection (disable for performance)
 const int   FREEAIM_CAMERA_X_SHIFT                = 0;      // Set to 1, if camera is in shoulder view (not recommended)
 const int   FREEAIM_MAX_DIST                      = 5000;   // 50 meters. For shooting and crosshair adjustments
@@ -73,7 +72,7 @@ func void Init_FreeAim() {
 
 /* Check whether free aim should be activated */
 func int isFreeAimActive() {
-    if (!FREEAIM_ACTIVATED) { return 0; }; // Only free aiming is enabled
+    if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled"))) { return 0; }; // Only free aiming is enabled in the menu
     if (MEM_Game.pause_screen) { return 0; }; // Only when playing
     if (!MEM_ReadInt(mouseEnabled)) { return 0; }; // Only when mouse controls are enabled
     if (!MEM_ReadInt(oCGame__s_bUseOldControls)) { return 0; }; // Only for classic gothic 1 controls
@@ -91,10 +90,6 @@ func int isFreeAimActive() {
 /* Delete crosshair (hiding it is not sufficient, since it might change texture later) */
 func void removeCrosshair() {
     if (Hlp_IsValidHandle(crosshairHndl)) { View_Delete(crosshairHndl); };
-
-    // const int zCCamera__StopTremor = 5551696; //0x54B650
-    // CALL__thiscall(_@(MEM_Camera), zCCamera__StopTremor);
-
 };
 
 /* Draw crosshair */
@@ -121,43 +116,6 @@ func void insertCrosshair(var int crosshairStyle, var int size) {
                 View_MoveToPxl(crosshairHndl, Print_Screen[PS_X]/2-(size/2), Print_Screen[PS_Y]/2-(size/2));
             };
         };
-
-        if (FREEAIM_TREMOR) {
-            if (MEM_Timer.totalTime-bowDrawOnset > FREEAIM_DRAWTIME_MAX) {
-                var int vec1[3]; var int vec2[3];
-                vec1[0] = castToIntf(12.0);
-                vec1[1] = castToIntf(12.0);
-                vec1[2] = castToIntf(12.0);
-                vec2[0] = castToIntf(12.0);
-                vec2[1] = castToIntf(12.0);
-                vec2[2] = castToIntf(12.0);
-                const int zCCamera__AddTremor = 5551712; //0x54B660
-                CALL_PtrParam(_@(vec2)); // zVEC3 const &
-                CALL_FloatParam(castToIntf(0.001)); // float tremorVelo
-                CALL_FloatParam(castToIntf(0.4)); // float tremorScale
-                CALL_PtrParam(_@(vec1)); // zVEC3 const &
-                CALL__thiscall(MEM_ReadInt(9273236), zCCamera__AddTremor); // zCCamera__activeCam 0x08D7F94
-            } else {
-                // const int zCCamera__StopTremor = 5551696; //0x54B650
-                // CALL__thiscall(_@(MEM_Camera), zCCamera__StopTremor);
-            };
-        };
-/*        if (FREEAIM_TREMOR) {
-            if (MEM_Timer.totalTime-bowDrawOnset > FREEAIM_DRAWTIME_MAX) {
-                MEM_Camera.tremorToggle = 1;
-                MEM_Camera.tremorScale = castToIntf(0.08);
-                MEM_Camera.tremorAmplitude[0] = FLOATNULL; // Z (back and forth)
-                MEM_Camera.tremorAmplitude[1] = mkf(FREEAIM_TREMOR); // Y (up and down)
-                MEM_Camera.tremorAmplitude[2] = mkf(FREEAIM_TREMOR); // X (left and right)
-                MEM_Camera.tremorOrigin[0] = castToIntf(0.0);
-                MEM_Camera.tremorOrigin[1] = castToIntf(20.0);
-                MEM_Camera.tremorOrigin[2] = castToIntf(0.0);
-                MEM_Camera.tremorVelo = castToIntf(0.00001);
-            } else {
-                MEM_Camera.tremorToggle = 0;
-                MEM_Camera.tremorScale = FLOATNULL;
-            };
-        };*/
     } else { removeCrosshair(); };
 };
 
