@@ -72,18 +72,26 @@ func void Init_FreeAim() {
 
 /* Check whether free aim should be activated */
 func int isFreeAimActive() {
-    if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled"))) { return 0; }; // Only free aiming is enabled in the menu
+    if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled"))) { // Only free aiming is enabled in the menu
+        Focus_Ranged.npc_azi =  45.0; // Reset ranged focus collection to standard
+        Focus_Ranged.npc_elevup =  90.0;
+        Focus_Ranged.npc_elevdo =  -85.0;
+        return 0;
+    };
     if (MEM_Game.pause_screen) { return 0; }; // Only when playing
     if (!MEM_ReadInt(mouseEnabled)) { return 0; }; // Only when mouse controls are enabled
     if (!MEM_ReadInt(oCGame__s_bUseOldControls)) { return 0; }; // Only for classic gothic 1 controls
     if (!Npc_IsInFightMode(hero, FMODE_FAR)) { return 0; }; // Only while using bow/crossbow
     if (!InfoManager_HasFinished()) { return 0; }; // Not in dialogs
-    var int keyStateAction1; keyStateAction1 = MEM_KeyState(MEM_GetKey("keyAction"));
+    var int keyStateAction1; keyStateAction1 = MEM_KeyState(MEM_GetKey("keyAction")); // A bit much, but needed later
     var int keyStateAction2; keyStateAction2 = MEM_KeyState(MEM_GetSecondaryKey("keyAction"));
     if (keyStateAction1 != KEY_PRESSED) && (keyStateAction1 != KEY_HOLD) // Only while pressing the action button
     && (keyStateAction2 != KEY_PRESSED) && (keyStateAction2 != KEY_HOLD) { return 0; };
     // Get onset for drawing the bow when just pressing down the action key
     if (keyStateAction1 == KEY_PRESSED) || (keyStateAction2 == KEY_PRESSED) { bowDrawOnset = MEM_Timer.totalTime; };
+    Focus_Ranged.npc_azi = 15.0; // Set stricter focus collection
+    Focus_Ranged.npc_elevup = 15.0;
+    Focus_Ranged.npc_elevdo = -10.0;
     return 1;
 };
 
