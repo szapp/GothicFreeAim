@@ -422,7 +422,7 @@ func void shootTarget() {
         CALL__thiscall(_@(projectile), zCVob__GetRigidBody); // Get ridigBody this way, it will be properly created
         call2 = CALL_End();
     };
-    var zCRigidBody rBody; rBody = _^(CALL_RetValAsInt()); // zCRigidBody*
+    var int rBody; rBody = CALL_RetValAsInt(); // zCRigidBody*
     MEM_Info(ConcatStrings("^ End time: ", IntToString(MEM_Timer.totalTime)));
     bowDrawOnset = MEM_Timer.totalTime - bowDrawOnset; // Check for how long the bow was drawn
     MEM_Info(ConcatStrings("| Duration: ", IntToString(bowDrawOnset)));
@@ -434,48 +434,49 @@ func void shootTarget() {
         bowDrawOnset = roundf(divf(numerator, denominator));
     };
     MEM_Info(ConcatStrings("### Drop-off time: ", IntToString(bowDrawOnset)));
-    FF_ApplyOnceExtData(dropProjectile, bowDrawOnset, 1, _@(rBody)); // Safe?
+    FF_ApplyOnceExtData(dropProjectile, bowDrawOnset, 1, rBody); // Safe?
     bowDrawOnset = MEM_Timer.totalTime; // Reset draw timer
     MEM_Info(ConcatStrings("v Start time (rld): ", IntToString(bowDrawOnset)));
     var int gravityMod; gravityMod = FLOATONE;
     if (bowDrawOnset < FREEAIM_TRAJECTORY_ARC_MAX/4) { gravityMod = mkf(2); }; // Very short draw time increases gravity
-    // rBody.gravity = mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod); // Experimental
-    rBody.gravity = castToIntf(FREEAIM_PROJECTILE_GRAVITY);
+    // MEM_WriteInt(rBody+236, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod)); // Experimental
+    MEM_WriteInt(rBody+236, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod));
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
 };
 
 func void dropProjectile(var int rigidBody) {
     if (!rigidBody) { return; };
-    var zCRigidBody rBody; rBody = _^(rigidBody);
-    rBody.bitfield = rBody.bitfield | zCRigidBody_bitfield_gravityActive; // Turn on gravity
+    MEM_WriteByte(rigidBody+256, 1); // Turn on gravity (zCRigidBody.bitfield)
 };
 
 /* Once a projectile stopped moving or collided with an npc keep it alive or put it into the inventory. */
 func void projectileCollectable() {
-    var oCAIArrow arrowAI; arrowAI = _^(ECX); // AI of the projectile
+    var int arrowAI; arrowAI = ECX; // AI of the projectile
     var int projectilePtr; projectilePtr = MEM_ReadInt(ESP+4); // Projectile (item). Taken from arguments
     var int removePtr; removePtr = MEM_ReadInt(ESP+8); // Boolean pointer (call-by-reference argument)
     if (!projectilePtr) { return; }; // oCItem. In case it does not exist
     var oCItem projectile; projectile = _^(projectilePtr);
     if (!projectile._zCVob_rigidBody) { return; }; // zCRigidBody. Might not exist the first time
-    var zCRigidBody rBody; rBody = _^(projectile._zCVob_rigidBody);
-    // Reset projectile gravity after collision
-    if (arrowAI._oCAIArrowBase_collision) { rBody.gravity = FLOATONE; }; // Reset gravity
+    // Reset projectile gravity (zCRigidBody.gravity) after collision (oCAIArrow.collision)
+    if (MEM_ReadInt(arrowAI+52)) { MEM_WriteInt(projectile._zCVob_rigidBody+236, FLOATONE); }; // Set gravity to zero
     if (!FREEAIM_PROJECTILE_COLLECTABLE) { return; }; // Normal projectile handling
     // If the projectile gets stuck (instead of bouncing of), check what the projectile collided with
-    if (rBody.bitfield & zCRigidBody_bitfield_collision) && (MEM_ReadInt(arrowAI._oCAIArrowBase_ignoreVobList)) {
-        var zCList voblist; voblist = _^(arrowAI._oCAIArrowBase_ignoreVobList);
+    if (MEM_ReadInt(projectile._zCVob_rigidBody+256) & (1 << 1)) // zCRigidBody.bitfield & collision
+    && (MEM_ReadInt(arrowAI+48)) { // oCAIArrow.ignoreVobList
+        var zCList voblist; voblist = _^(MEM_ReadInt(arrowAI+48)); // oCAIArrow.ignoreVobList
         while(voblist.next); // Traverse voblist. Don't ask me why the target is in the ignoreVobList
             if (!Hlp_Is_oCNpc(voblist.data)) { voblist = _^(voblist.next); continue; }; // Search for npc
             var C_NPC victim; victim = _^(voblist.data);
             CreateInvItems(victim, projectile.instanz, 1); // Put a respective projectile into the inventory
-            arrowAI._oCAIArrowBase_lifeTime = FLOATNULL; // Destroy AI and projectile (set lifetime to zero)
+            MEM_WriteInt(arrowAI+56,  FLOATNULL); // oCAIArrow.lifeTime // Destroy AI and projectile (lifetime = zero)
             return;
         end;
     };
     // If the projectile stopped moving, release its AI
-    if (rBody.velocity[0] == FLOATNULL) && (rBody.velocity[1] == FLOATNULL) && (rBody.velocity[2] == FLOATNULL) {
-        arrowAI._oCAIArrowBase_lifeTime = FLOATONE; // Set high lifetime to ensure item visibility
+    if (MEM_ReadInt(projectile._zCVob_rigidBody+188) == FLOATNULL) // zCRigidBody.velocity[3]
+    && (MEM_ReadInt(projectile._zCVob_rigidBody+192) == FLOATNULL)
+    && (MEM_ReadInt(projectile._zCVob_rigidBody+196) == FLOATNULL) {
+        MEM_WriteInt(arrowAI+56, FLOATONE); // oCAIArrow.lifeTime // Set high lifetime to ensure item visibility
         projectile.flags = projectile.flags &~ ITEM_NFOCUS; // Focusable (collectable)
         projectile._zCVob_callback_ai = 0; // Release vob from AI
         MEM_WriteInt(removePtr, 0); // Do not remove vob on AI destruction
