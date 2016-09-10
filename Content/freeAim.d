@@ -10,22 +10,23 @@
  */
 
 /* Free aim settings */
-const int   FREEAIM_FOCUS_ACTIVATED               = 1;      // Enable/Disable focus collection (disable for performance)
-const int   FREEAIM_CAMERA_X_SHIFT                = 0;      // Set to 1, if camera is in shoulder view (not recommended)
-const int   FREEAIM_MAX_DIST                      = 5000;   // 50 meters. For shooting and crosshair adjustments
-const int   FREEAIM_DRAWTIME_MIN                  = 1110;   // Minimum draw time (ms). Do not change - tied to animation
-const int   FREEAIM_DRAWTIME_MAX                  = 2500;   // Maximum draw time (ms) for best trajectory
-const int   FREEAIM_TRAJECTORY_ARC_MAX            = 400;    // Maximum distance at which the trajectory drops off
-const int   FREEAIM_TREMOR                        = 12;     // Camera tremor when exceeding FREEAIM_DRAWTIME_MAX
-const float FREEAIM_ROTATION_SCALE                = 0.16;   // Turn rate. Non weapon mode is 0.2 (zMouseRotationScale)
-const float FREEAIM_PROJECTILE_GRAVITY            = 0.1;    // The gravity decides how fast the projectile drops
-const int   FREEAIM_PROJECTILE_COLLECTABLE        = 1;      // Make use of the projectile collectible script
-const int   CROSSHAIR_MIN_SIZE                    = 16;     // Smallest crosshair size in pixels (longest range)
-const int   CROSSHAIR_MED_SIZE                    = 20;     // Medium crosshair size in pixels (for disabled focus)
-const int   CROSSHAIR_MAX_SIZE                    = 32;     // Biggest crosshair size in pixels (closest range)
-const int   ARROWAI_REDIRECT                      = 0;      // Used to redirect call-by-reference argument
-var   int   crosshairHndl;                                  // Holds the crosshair handle
-var   int   bowDrawOnset;                                   // Time onset of drawing the bow
+const int    FREEAIM_FOCUS_ACTIVATED              = 1;      // Enable/Disable focus collection (disable for performance)
+const int    FREEAIM_CAMERA_X_SHIFT               = 0;      // Set to 1, if camera is in shoulder view (not recommended)
+const int    FREEAIM_MAX_DIST                     = 5000;   // 50 meters. For shooting and crosshair adjustments
+const int    FREEAIM_DRAWTIME_MIN                 = 1110;   // Minimum draw time (ms). Do not change - tied to animation
+const int    FREEAIM_DRAWTIME_MAX                 = 2500;   // Maximum draw time (ms) for best trajectory
+const int    FREEAIM_TRAJECTORY_ARC_MAX           = 400;    // Maximum distance at which the trajectory drops off
+const int    FREEAIM_TREMOR                       = 12;     // Camera tremor when exceeding FREEAIM_DRAWTIME_MAX
+const float  FREEAIM_ROTATION_SCALE               = 0.16;   // Turn rate. Non weapon mode is 0.2 (zMouseRotationScale)
+const float  FREEAIM_PROJECTILE_GRAVITY           = 0.1;    // The gravity decides how fast the projectile drops
+const int    FREEAIM_PROJECTILE_COLLECTABLE       = 1;      // Make use of the projectile collectible script
+const int    CROSSHAIR_MIN_SIZE                   = 16;     // Smallest crosshair size in pixels (longest range)
+const int    CROSSHAIR_MED_SIZE                   = 20;     // Medium crosshair size in pixels (for disabled focus)
+const int    CROSSHAIR_MAX_SIZE                   = 32;     // Biggest crosshair size in pixels (closest range)
+const int    ARROWAI_REDIRECT                     = 0;      // Used to redirect call-by-reference argument
+const string FREEAIM_TRAIL_FX            = "freeAim_TRAIL"; // Trailstrip FX. Should not be changed
+var   int    crosshairHndl;                                 // Holds the crosshair handle
+var   int    bowDrawOnset;                                  // Time onset of drawing the bow
 
 /* These are all addresses (a.o.) used. Of course for gothic 2 as LeGo only supports gothic 2 */
 const int sizeof_zCVob                            = 288; // Gothic 1: 256
@@ -42,6 +43,8 @@ const int zCArray_zCVob__IsInList                 = 7159168; //0x6D3D80
 const int oCNpc__SetFocusVob                      = 7547744; //0x732B60
 const int oCNpc__SetEnemy                         = 7556032; //0x734BC0
 const int zCVob__GetRigidBody                     = 6285664; //0x5FE960
+const int oCItem__InsertEffect                    = 7416896; //0x712C40
+const int oCItem__RemoveEffect                    = 7416832; //0x712C00
 const int oCGame__s_bUseOldControls               = 9118144; //0x8B21C0
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
@@ -438,6 +441,15 @@ func void shootTarget() {
     if (bowDrawOnset < FREEAIM_TRAJECTORY_ARC_MAX/4) { gravityMod = mkf(2); }; // Very short draw time increases gravity
     // MEM_WriteInt(rBody+236, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod)); // Experimental
     MEM_WriteInt(rBody+236, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod));
+    if (Hlp_Is_oCItem(projectile)) && (Hlp_StrCmp(MEM_ReadString(projectile+564), "")) { // Projectile has no FX
+        MEM_WriteString(projectile+564, FREEAIM_TRAIL_FX); // Set trail strip fx for better visibility
+        const int call3 = 0;
+        if (CALL_Begin(call3)) {
+            CALL__thiscall(_@(projectile), oCItem__InsertEffect);
+            call3 = CALL_End();
+        };
+    };
+    MEM_Info(MEM_ReadString(projectile+564));
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
 };
 
@@ -475,6 +487,13 @@ func void projectileCollectable() {
     && (MEM_ReadInt(projectile._zCVob_rigidBody+196) == FLOATNULL) {
         MEM_WriteInt(arrowAI+56, FLOATONE); // oCAIArrow.lifeTime // Set high lifetime to ensure item visibility
         projectile.flags = projectile.flags &~ ITEM_NFOCUS; // Focusable (collectable)
+        if (Hlp_StrCmp(projectile.effect, FREEAIM_TRAIL_FX)) { // Remove trail strip pfx
+            const int call = 0;
+            if (CALL_Begin(call)) {
+                CALL__thiscall(_@(projectilePtr), oCItem__RemoveEffect);
+                call = CALL_End();
+            };
+        };
         projectile._zCVob_callback_ai = 0; // Release vob from AI
         MEM_WriteInt(removePtr, 0); // Do not remove vob on AI destruction
         MEM_WriteInt(ESP+8, _@(ARROWAI_REDIRECT)); // Divert the actual "return" value
