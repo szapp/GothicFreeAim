@@ -24,6 +24,7 @@ const int    CROSSHAIR_MIN_SIZE                   = 16;     // Smallest crosshai
 const int    CROSSHAIR_MED_SIZE                   = 20;     // Medium crosshair size in pixels (for disabled focus)
 const int    CROSSHAIR_MAX_SIZE                   = 32;     // Biggest crosshair size in pixels (closest range)
 const int    ARROWAI_REDIRECT                     = 0;      // Used to redirect call-by-reference argument
+const string FREEAIM_CAMERA               = "CamModRngeFA"; // CCamSys_Def script instance
 const string FREEAIM_TRAIL_FX            = "freeAim_TRAIL"; // Trailstrip FX. Should not be changed
 var   int    crosshairHndl;                                 // Holds the crosshair handle
 var   int    bowDrawOnset;                                  // Time onset of drawing the bow
@@ -46,6 +47,7 @@ const int zCVob__GetRigidBody                     = 6285664; //0x5FE960
 const int oCItem__InsertEffect                    = 7416896; //0x712C40
 const int oCItem__RemoveEffect                    = 7416832; //0x712C00
 const int oCGame__s_bUseOldControls               = 9118144; //0x8B21C0
+const int zString_CamModRanged                    = 9234704; //0x8CE910
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
 const int mouseDeltaX                             = 9246300; //0x8D165C
@@ -73,28 +75,53 @@ func void Init_FreeAim() {
     MEM_Info("Free aim initialized.");
 };
 
+const int oCNpcFocus__focuslist = 11208440; //0xAB06F8
+const int oCNpcFocus__focus = 11208504; //0xAB0738
+const int Focus_RangedFA = 0; // Focus class ptr
+
 /* Check whether free aim should be activated */
 func int isFreeAimActive() {
-    if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled"))) { // Only free aiming is enabled in the menu
+    if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled"))) // Free aiming is disabled in the menu
+    || (!MEM_ReadInt(mouseEnabled)) // Mouse controls are disabled
+    || (!MEM_ReadInt(oCGame__s_bUseOldControls)) { // Classic gothic 1 controls are disabled
+/*        if (MEM_ReadInt(oCNpcFocus__focuslist+8) != _@(Focus_Ranged)) { // Reset ranged focus collection to standard
+            MEM_WriteInt(oCNpcFocus__focuslist+8, _@(Focus_Ranged));
+        };*/
         Focus_Ranged.npc_azi =  45.0; // Reset ranged focus collection to standard
         Focus_Ranged.npc_elevup =  90.0;
         Focus_Ranged.npc_elevdo =  -85.0;
+        if (!Hlp_StrCmp(MEM_ReadString(zString_CamModRanged), "CamModRanged")) { // Reset camera mode to standard
+            MEM_WriteString(zString_CamModRanged, "CAMMODRANGED"); // Upper case here is very important
+        };
         return 0;
     };
+    // Everything below is only reached if free aiming is enabled (but not necessarily active)
     if (MEM_Game.pause_screen) { return 0; }; // Only when playing
-    if (!MEM_ReadInt(mouseEnabled)) { return 0; }; // Only when mouse controls are enabled
-    if (!MEM_ReadInt(oCGame__s_bUseOldControls)) { return 0; }; // Only for classic gothic 1 controls
-    if (!Npc_IsInFightMode(hero, FMODE_FAR)) { return 0; }; // Only while using bow/crossbow
     if (!InfoManager_HasFinished()) { return 0; }; // Not in dialogs
+    if (!Npc_IsInFightMode(hero, FMODE_FAR)) { return 0; }; // Only while using bow/crossbow
+    // Everything below is only reached if free aiming is enabled and active (player is in respective fight mode)
+/*    if (!Focus_RangedFA) { // DANGEROUS: pointer changes
+        Focus_RangedFA = MEM_Alloc(80);
+        MEM_CopyWords(oCNpcFocus__focuslist+8, Focus_RangedFA, 80);
+        MEM_WriteInt(Focus_RangedFA+12, castToIntf(15.0));
+        MEM_WriteInt(Focus_RangedFA+16, castToIntf(15.0));
+        MEM_WriteInt(Focus_RangedFA+20, castToIntf(-10.0));
+    };
+    if (MEM_ReadInt(oCNpcFocus__focuslist+8) != _@(Focus_RangedFA)) { // Set stricter focus collection
+        MEM_WriteInt(oCNpcFocus__focuslist+8, _@(Focus_RangedFA));
+    };*/
+    Focus_Ranged.npc_azi = 15.0; // Set stricter focus collection
+    Focus_Ranged.npc_elevup = 15.0;
+    Focus_Ranged.npc_elevdo = -10.0;
+    if (!Hlp_StrCmp(MEM_ReadString(zString_CamModRanged), FREEAIM_CAMERA)) { // Correct the camera mode
+        MEM_WriteString(zString_CamModRanged, STR_Upper(FREEAIM_CAMERA)); // Upper case here is very important
+    };
     var int keyStateAction1; keyStateAction1 = MEM_KeyState(MEM_GetKey("keyAction")); // A bit much, but needed later
     var int keyStateAction2; keyStateAction2 = MEM_KeyState(MEM_GetSecondaryKey("keyAction"));
     if (keyStateAction1 != KEY_PRESSED) && (keyStateAction1 != KEY_HOLD) // Only while pressing the action button
     && (keyStateAction2 != KEY_PRESSED) && (keyStateAction2 != KEY_HOLD) { return 0; };
     // Get onset for drawing the bow when just pressing down the action key
     if (keyStateAction1 == KEY_PRESSED) || (keyStateAction2 == KEY_PRESSED) { bowDrawOnset = MEM_Timer.totalTime; };
-    Focus_Ranged.npc_azi = 15.0; // Set stricter focus collection
-    Focus_Ranged.npc_elevup = 15.0;
-    Focus_Ranged.npc_elevdo = -10.0;
     return 1;
 };
 
@@ -449,7 +476,6 @@ func void shootTarget() {
             call3 = CALL_End();
         };
     };
-    MEM_Info(MEM_ReadString(projectile+564));
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
 };
 
