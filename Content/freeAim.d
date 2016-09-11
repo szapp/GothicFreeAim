@@ -75,18 +75,11 @@ func void Init_FreeAim() {
     MEM_Info("Free aim initialized.");
 };
 
-const int oCNpcFocus__focuslist = 11208440; //0xAB06F8
-const int oCNpcFocus__focus = 11208504; //0xAB0738
-const int Focus_RangedFA = 0; // Focus class ptr
-
 /* Check whether free aim should be activated */
 func int isFreeAimActive() {
     if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled"))) // Free aiming is disabled in the menu
     || (!MEM_ReadInt(mouseEnabled)) // Mouse controls are disabled
     || (!MEM_ReadInt(oCGame__s_bUseOldControls)) { // Classic gothic 1 controls are disabled
-/*        if (MEM_ReadInt(oCNpcFocus__focuslist+8) != _@(Focus_Ranged)) { // Reset ranged focus collection to standard
-            MEM_WriteInt(oCNpcFocus__focuslist+8, _@(Focus_Ranged));
-        };*/
         Focus_Ranged.npc_azi =  45.0; // Reset ranged focus collection to standard
         Focus_Ranged.npc_elevup =  90.0;
         Focus_Ranged.npc_elevdo =  -85.0;
@@ -100,16 +93,6 @@ func int isFreeAimActive() {
     if (!InfoManager_HasFinished()) { return 0; }; // Not in dialogs
     if (!Npc_IsInFightMode(hero, FMODE_FAR)) { return 0; }; // Only while using bow/crossbow
     // Everything below is only reached if free aiming is enabled and active (player is in respective fight mode)
-/*    if (!Focus_RangedFA) { // DANGEROUS: pointer changes
-        Focus_RangedFA = MEM_Alloc(80);
-        MEM_CopyWords(oCNpcFocus__focuslist+8, Focus_RangedFA, 80);
-        MEM_WriteInt(Focus_RangedFA+12, castToIntf(15.0));
-        MEM_WriteInt(Focus_RangedFA+16, castToIntf(15.0));
-        MEM_WriteInt(Focus_RangedFA+20, castToIntf(-10.0));
-    };
-    if (MEM_ReadInt(oCNpcFocus__focuslist+8) != _@(Focus_RangedFA)) { // Set stricter focus collection
-        MEM_WriteInt(oCNpcFocus__focuslist+8, _@(Focus_RangedFA));
-    };*/
     Focus_Ranged.npc_azi = 15.0; // Set stricter focus collection
     Focus_Ranged.npc_elevup = 15.0;
     Focus_Ranged.npc_elevdo = -10.0;
