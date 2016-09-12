@@ -103,7 +103,7 @@ func void Init_FreeAim() {
         HookEngineF(oCAIHuman__MagicMode, 7, manageCrosshair); // Called continuously
         HookEngineF(oCAIArrowBase__DoAI, 7, projectileCollectable); // Called for projectile
         HookEngineF(mouseUpdate, 5, manualRotation);
-        disableProjectileNpcBounce();
+        if (FREEAIM_PROJECTILE_COLLECTABLE) { disableProjectileNpcBounce(); };
         MemoryProtectionOverride(alternativeHitchanceAdr, 10); // Enable overwriting hit chance
         hookFreeAim = 1;
     };
