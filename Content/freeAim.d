@@ -503,6 +503,9 @@ func void shootTarget() {
 
 func void dropProjectile(var int rigidBody) {
     if (!rigidBody) { return; };
+    if (MEM_ReadInt(rigidBody+188) == FLOATNULL) // zCRigidBody.velocity[3]
+    && (MEM_ReadInt(rigidBody+192) == FLOATNULL)
+    && (MEM_ReadInt(rigidBody+196) == FLOATNULL) { return; }; // Do not add gravity if projectile stopped moving
     MEM_WriteByte(rigidBody+256, 1); // Turn on gravity (zCRigidBody.bitfield)
 };
 
