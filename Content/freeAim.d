@@ -48,6 +48,7 @@ const int oCItem__InsertEffect                    = 7416896; //0x712C40
 const int oCItem__RemoveEffect                    = 7416832; //0x712C00
 const int oCGame__s_bUseOldControls               = 9118144; //0x8B21C0
 const int zString_CamModRanged                    = 9234704; //0x8CE910
+const int projectileBounceOffAdr                  = 6949734; //0x6A0B66
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
 const int mouseDeltaX                             = 9246300; //0x8D165C
@@ -58,6 +59,18 @@ const int oCAIArrowBase__DoAI                     = 6948416; //0x6A0640 // Hook
 const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook
+
+/* Let projectiles never bounce off of npcs */
+func void disableProjectileNpcBounce() {
+    MemoryProtectionOverride(projectileBounceOffAdr, 2);
+    MEM_WriteByte(projectileBounceOffAdr+1, /*60*/ 96); // jz to 0x6A0BC8
+};
+
+/* Restore default behavior */
+func void resetProjectileNpcBounce() {
+    MemoryProtectionOverride(projectileBounceOffAdr, 2);
+    MEM_WriteByte(projectileBounceOffAdr+1, /*3B*/ 59); // jz to 0x6A0BA3
+};
 
 /* Initialize free aim framework */
 func void Init_FreeAim() {
@@ -70,6 +83,7 @@ func void Init_FreeAim() {
         HookEngineF(oCAIHuman__MagicMode, 7, manageCrosshair); // Called continuously
         HookEngineF(oCAIArrowBase__DoAI, 7, projectileCollectable); // Called for projectile
         HookEngineF(mouseUpdate, 5, manualRotation);
+        disableProjectileNpcBounce();
         hookFreeAim = 1;
     };
     MEM_Info("Free aim initialized.");
@@ -479,28 +493,38 @@ func void projectileCollectable() {
     if (MEM_ReadInt(arrowAI+52)) { MEM_WriteInt(projectile._zCVob_rigidBody+236, FLOATONE); }; // Set gravity to zero
     if (!FREEAIM_PROJECTILE_COLLECTABLE) { return; }; // Normal projectile handling
     // If the projectile gets stuck (instead of bouncing of), check what the projectile collided with
-    if (MEM_ReadInt(projectile._zCVob_rigidBody+256) & (1 << 1)) // zCRigidBody.bitfield & collision
-    && (MEM_ReadInt(arrowAI+48)) { // oCAIArrow.ignoreVobList
-        var zCList voblist; voblist = _^(MEM_ReadInt(arrowAI+48)); // oCAIArrow.ignoreVobList
-        while(voblist.next); // Traverse voblist. Don't ask me why the target is in the ignoreVobList
-            if (!Hlp_Is_oCNpc(voblist.data)) { voblist = _^(voblist.next); continue; }; // Search for npc
-            var C_NPC victim; victim = _^(voblist.data);
-            CreateInvItems(victim, projectile.instanz, 1); // Put a respective projectile into the inventory
-            MEM_WriteInt(arrowAI+56,  FLOATNULL); // oCAIArrow.lifeTime // Destroy AI and projectile (lifetime = zero)
-            return;
-        end;
+    if (MEM_ReadInt(projectile._zCVob_rigidBody+256) & (1 << 1)) { // zCRigidBody.bitfield & collision
+        if (MEM_ReadInt(arrowAI+48)) { // oCAIArrow.ignoreVobList
+            var zCList voblist; voblist = _^(MEM_ReadInt(arrowAI+48)); // oCAIArrow.ignoreVobList
+            while(voblist.next); // Traverse voblist. Don't ask me why the target is in the ignoreVobList
+                if (!Hlp_Is_oCNpc(voblist.data)) { voblist = _^(voblist.next); continue; }; // Search for npc
+                var C_NPC victim; victim = _^(voblist.data);
+                CreateInvItems(victim, projectile.instanz, 1); // Put a respective projectile into the inventory
+                MEM_WriteInt(arrowAI+56,  FLOATNULL); // oCAIArrow.lifeTime // Destroy AI and projectile
+                return;
+            end;
+        };
+        // Move the projectile 25 cm in the direction of right vector (that is: back; the projectile flies sideways)
+        var int pos[3]; var int posPtr; posPtr = _@(pos);
+        pos[0] = addf(projectile._zCVob_trafoObjToWorld[3], mulf(projectile._zCVob_trafoObjToWorld[0], mkf(25)));
+        pos[1] = addf(projectile._zCVob_trafoObjToWorld[7], mulf(projectile._zCVob_trafoObjToWorld[4], mkf(25)));
+        pos[2] = addf(projectile._zCVob_trafoObjToWorld[11], mulf(projectile._zCVob_trafoObjToWorld[8], mkf(25)));
+        const int call = 0;
+        if (CALL_Begin(call)) {
+            CALL_PtrParam(_@(posPtr)); // Update projectile position
+            CALL__thiscall(_@(projectilePtr), zCVob__SetPositionWorld);
+            call = CALL_End();
+        };
     };
     // If the projectile stopped moving, release its AI
-    if (MEM_ReadInt(projectile._zCVob_rigidBody+188) == FLOATNULL) // zCRigidBody.velocity[3]
-    && (MEM_ReadInt(projectile._zCVob_rigidBody+192) == FLOATNULL)
-    && (MEM_ReadInt(projectile._zCVob_rigidBody+196) == FLOATNULL) {
+    if !(projectile._zCVob_bitfield[0] & zCVob_bitfield0_physicsEnabled) { // Stopped moving
         MEM_WriteInt(arrowAI+56, FLOATONE); // oCAIArrow.lifeTime // Set high lifetime to ensure item visibility
         projectile.flags = projectile.flags &~ ITEM_NFOCUS; // Focusable (collectable)
-        if (Hlp_StrCmp(projectile.effect, FREEAIM_TRAIL_FX)) { // Remove trail strip pfx
-            const int call = 0;
-            if (CALL_Begin(call)) {
+        if (Hlp_StrCmp(projectile.effect, FREEAIM_TRAIL_FX)) { // Remove trail strip fx
+            const int call2 = 0;
+            if (CALL_Begin(call2)) {
                 CALL__thiscall(_@(projectilePtr), oCItem__RemoveEffect);
-                call = CALL_End();
+                call2 = CALL_End();
             };
         };
         projectile._zCVob_callback_ai = 0; // Release vob from AI
