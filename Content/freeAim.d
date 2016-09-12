@@ -1,8 +1,7 @@
 /*
  * Free aim framework
  *
- * Written by mud-freak
- * With help from Lehona
+ * Written by mud-freak (2016)
  *
  * Requirements:
  *  - Ikarus (>= 1.2 +floats)
@@ -49,6 +48,7 @@ const int oCItem__RemoveEffect                    = 7416832; //0x712C00
 const int oCGame__s_bUseOldControls               = 9118144; //0x8B21C0
 const int zString_CamModRanged                    = 9234704; //0x8CE910
 const int projectileBounceOffAdr                  = 6949734; //0x6A0B66
+const int alternativeHitchanceAdr                 = 6953494; //0x6A1A10
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
 const int mouseDeltaX                             = 9246300; //0x8D165C
@@ -72,6 +72,26 @@ func void resetProjectileNpcBounce() {
     MEM_WriteByte(projectileBounceOffAdr+1, /*3B*/ 59); // jz to 0x6A0BA3
 };
 
+/* Hit chance of 100%. Taken from http://forum.worldofplayers.de/forum/threads/1475456?p=25080651#post25080651 */
+func void alternativeHitchance() {
+    MEM_WriteByte(alternativeHitchanceAdr, ASMINT_OP_nop);
+    MEM_WriteByte(alternativeHitchanceAdr+1, ASMINT_OP_nop);
+    MEM_WriteByte(alternativeHitchanceAdr+2, ASMINT_OP_nop);
+    MEM_WriteByte(alternativeHitchanceAdr+3, ASMINT_OP_nop);
+    MEM_WriteByte(alternativeHitchanceAdr+4, ASMINT_OP_nop);
+    MEM_WriteByte(alternativeHitchanceAdr+5, ASMINT_OP_nop);
+};
+
+/* Restore default hit chance calculation (by talent) */
+func void resetHitchance() {
+    MEM_WriteByte(alternativeHitchanceAdr, 15);
+    MEM_WriteByte(alternativeHitchanceAdr+1, 141);
+    MEM_WriteByte(alternativeHitchanceAdr+2, 157);
+    MEM_WriteByte(alternativeHitchanceAdr+3, 1);
+    MEM_WriteByte(alternativeHitchanceAdr+4, 0);
+    MEM_WriteByte(alternativeHitchanceAdr+5, 0);
+};
+
 /* Initialize free aim framework */
 func void Init_FreeAim() {
     const int hookFreeAim = 0;
@@ -84,6 +104,7 @@ func void Init_FreeAim() {
         HookEngineF(oCAIArrowBase__DoAI, 7, projectileCollectable); // Called for projectile
         HookEngineF(mouseUpdate, 5, manualRotation);
         disableProjectileNpcBounce();
+        MemoryProtectionOverride(alternativeHitchanceAdr, 10); // Enable overwriting hit chance
         hookFreeAim = 1;
     };
     MEM_Info("Free aim initialized.");
@@ -100,6 +121,7 @@ func int isFreeAimActive() {
         if (!Hlp_StrCmp(MEM_ReadString(zString_CamModRanged), "CamModRanged")) { // Reset camera mode to standard
             MEM_WriteString(zString_CamModRanged, "CAMMODRANGED"); // Upper case here is very important
         };
+        if (MEM_ReadByte(alternativeHitchanceAdr) != 15) { resetHitchance(); }; // Restore default hit chance
         return 0;
     };
     // Everything below is only reached if free aiming is enabled (but not necessarily active)
@@ -113,6 +135,7 @@ func int isFreeAimActive() {
     if (!Hlp_StrCmp(MEM_ReadString(zString_CamModRanged), FREEAIM_CAMERA)) { // Correct the camera mode
         MEM_WriteString(zString_CamModRanged, STR_Upper(FREEAIM_CAMERA)); // Upper case here is very important
     };
+    if (MEM_ReadByte(alternativeHitchanceAdr) != ASMINT_OP_nop) { alternativeHitchance(); }; // 100% hit chance
     var int keyStateAction1; keyStateAction1 = MEM_KeyState(MEM_GetKey("keyAction")); // A bit much, but needed later
     var int keyStateAction2; keyStateAction2 = MEM_KeyState(MEM_GetSecondaryKey("keyAction"));
     if (keyStateAction1 != KEY_PRESSED) && (keyStateAction1 != KEY_HOLD) // Only while pressing the action button
@@ -423,7 +446,7 @@ func void shootTarget() {
     var int projectile; projectile = MEM_ReadInt(ESP+4);  // First argument is the projectile
     var C_NPC shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
     if (!Npc_IsPlayer(shooter)) || (!isFreeAimActive()) { return; }; // Only for the player
-    var int pos[3]; aimRay(FREEAIM_MAX_DIST, 0, _@(pos), 0); // Shoot trace ray and retrieve intersection
+    var int distance; var int pos[3]; aimRay(FREEAIM_MAX_DIST, 0, _@(pos), _@(distance)); // Trace ray intersection
     var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB"); // Arrow needs target vob
     if (!vobPtr) {
         vobPtr = MEM_Alloc(sizeof_zCVob); // Will never delete this vob (it will be re-used on the next shot)
@@ -433,6 +456,8 @@ func void shootTarget() {
         CALL_PtrParam(vobPtr);
         CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
     };
+    // Manipulate aiming position (scatter/accuracy)
+    /* ... */
     var int posPtr; posPtr = _@(pos);
     const int call = 0;
     if (CALL_Begin(call)) {
@@ -447,9 +472,9 @@ func void shootTarget() {
         call2 = CALL_End();
     };
     var int rBody; rBody = CALL_RetValAsInt(); // zCRigidBody*
-    MEM_Info(ConcatStrings("^ End time: ", IntToString(MEM_Timer.totalTime)));
+    //MEM_Info(ConcatStrings("^ End time: ", IntToString(MEM_Timer.totalTime)));
     bowDrawOnset = MEM_Timer.totalTime - bowDrawOnset; // Check for how long the bow was drawn
-    MEM_Info(ConcatStrings("| Duration: ", IntToString(bowDrawOnset)));
+    //MEM_Info(ConcatStrings("| Duration: ", IntToString(bowDrawOnset)));
     if (bowDrawOnset > FREEAIM_DRAWTIME_MAX) { bowDrawOnset = FREEAIM_TRAJECTORY_ARC_MAX; } // Force drop-off
     else if (bowDrawOnset < FREEAIM_DRAWTIME_MIN) { bowDrawOnset = 0; } // No negative numbers
     else { // Calculate the drop-off time within the range of [0, FREEAIM_TRAJECTORY_ARC_MAX]
@@ -457,10 +482,10 @@ func void shootTarget() {
         var int denominator; denominator = mkf(FREEAIM_DRAWTIME_MAX - FREEAIM_DRAWTIME_MIN);
         bowDrawOnset = roundf(divf(numerator, denominator));
     };
-    MEM_Info(ConcatStrings("### Drop-off time: ", IntToString(bowDrawOnset)));
+    //MEM_Info(ConcatStrings("### Drop-off time: ", IntToString(bowDrawOnset)));
     FF_ApplyOnceExtData(dropProjectile, bowDrawOnset, 1, rBody); // Safe?
     bowDrawOnset = MEM_Timer.totalTime; // Reset draw timer
-    MEM_Info(ConcatStrings("v Start time (rld): ", IntToString(bowDrawOnset)));
+    //MEM_Info(ConcatStrings("v Start time (rld): ", IntToString(bowDrawOnset)));
     var int gravityMod; gravityMod = FLOATONE;
     if (bowDrawOnset < FREEAIM_TRAJECTORY_ARC_MAX/4) { gravityMod = mkf(2); }; // Very short draw time increases gravity
     // MEM_WriteInt(rBody+236, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod)); // Experimental
