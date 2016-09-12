@@ -47,6 +47,7 @@ const int oCItem__InsertEffect                    = 7416896; //0x712C40
 const int oCItem__RemoveEffect                    = 7416832; //0x712C00
 const int oCGame__s_bUseOldControls               = 9118144; //0x8B21C0
 const int zString_CamModRanged                    = 9234704; //0x8CE910
+const int projectileBounceOffAdr                  = 6949734; //0x6A0B66
 const int alternativeHitchanceAdr                 = 6953494; //0x6A1A10
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
@@ -58,6 +59,18 @@ const int oCAIArrowBase__DoAI                     = 6948416; //0x6A0640 // Hook
 const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook
+
+/* Let projectiles never bounce off of npcs */
+func void disableProjectileNpcBounce() {
+    MemoryProtectionOverride(projectileBounceOffAdr, 2);
+    MEM_WriteByte(projectileBounceOffAdr+1, /*60*/ 96); // jz to 0x6A0BC8
+};
+
+/* Restore default behavior */
+func void resetProjectileNpcBounce() {
+    MemoryProtectionOverride(projectileBounceOffAdr, 2);
+    MEM_WriteByte(projectileBounceOffAdr+1, /*3B*/ 59); // jz to 0x6A0BA3
+};
 
 /* Hit chance of 100%. Taken from http://forum.worldofplayers.de/forum/threads/1475456?p=25080651#post25080651 */
 func void alternativeHitchance() {
@@ -90,6 +103,7 @@ func void Init_FreeAim() {
         HookEngineF(oCAIHuman__MagicMode, 7, manageCrosshair); // Called continuously
         HookEngineF(oCAIArrowBase__DoAI, 7, projectileCollectable); // Called for projectile
         HookEngineF(mouseUpdate, 5, manualRotation);
+        disableProjectileNpcBounce();
         MemoryProtectionOverride(alternativeHitchanceAdr, 10); // Enable overwriting hit chance
         hookFreeAim = 1;
     };
