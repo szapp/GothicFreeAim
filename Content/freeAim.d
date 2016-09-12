@@ -19,6 +19,7 @@ const int    FREEAIM_TREMOR                       = 12;     // Camera tremor whe
 const float  FREEAIM_ROTATION_SCALE               = 0.16;   // Turn rate. Non weapon mode is 0.2 (zMouseRotationScale)
 const float  FREEAIM_PROJECTILE_GRAVITY           = 0.1;    // The gravity decides how fast the projectile drops
 const int    FREEAIM_PROJECTILE_COLLECTABLE       = 1;      // Make use of the projectile collectible script
+const int    FREEAIM_ACTIVE_PREVFRAME             = 0;      // Internal. Do not change
 const int    CROSSHAIR_MIN_SIZE                   = 16;     // Smallest crosshair size in pixels (longest range)
 const int    CROSSHAIR_MED_SIZE                   = 20;     // Medium crosshair size in pixels (for disabled focus)
 const int    CROSSHAIR_MAX_SIZE                   = 32;     // Biggest crosshair size in pixels (closest range)
@@ -110,37 +111,45 @@ func void Init_FreeAim() {
     MEM_Info("Free aim initialized.");
 };
 
+/* Update internal settings when turning free aim on/off in the options. Outsourced for performance */
+func void updateFreeAimSetting(var int on) {
+    MEM_Info("Updating internal free aiming settings");
+    if (on) {
+        Focus_Ranged.npc_azi = 15.0; // Set stricter focus collection
+        Focus_Ranged.npc_elevup = 15.0;
+        Focus_Ranged.npc_elevdo = -10.0;
+        MEM_WriteString(zString_CamModRanged, STR_Upper(FREEAIM_CAMERA)); // New camera mode, upper case is important
+        alternativeHitchance(); // 100% hit chance (calculated else where for free aiming)
+        FREEAIM_ACTIVE_PREVFRAME = 1;
+    } else {
+        Focus_Ranged.npc_azi =  45.0; // Reset ranged focus collection to standard
+        Focus_Ranged.npc_elevup =  90.0;
+        Focus_Ranged.npc_elevdo =  -85.0;
+        MEM_WriteString(zString_CamModRanged, "CAMMODRANGED"); // Restore camera mode, upper case is important
+        resetHitchance(); // Restore default hit chance
+        FREEAIM_ACTIVE_PREVFRAME = -1;
+    };
+};
+
 /* Check whether free aim should be activated */
 func int isFreeAimActive() {
     if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled"))) // Free aiming is disabled in the menu
     || (!MEM_ReadInt(mouseEnabled)) // Mouse controls are disabled
     || (!MEM_ReadInt(oCGame__s_bUseOldControls)) { // Classic gothic 1 controls are disabled
-        Focus_Ranged.npc_azi =  45.0; // Reset ranged focus collection to standard
-        Focus_Ranged.npc_elevup =  90.0;
-        Focus_Ranged.npc_elevdo =  -85.0;
-        if (!Hlp_StrCmp(MEM_ReadString(zString_CamModRanged), "CamModRanged")) { // Reset camera mode to standard
-            MEM_WriteString(zString_CamModRanged, "CAMMODRANGED"); // Upper case here is very important
-        };
-        if (MEM_ReadByte(alternativeHitchanceAdr) != 15) { resetHitchance(); }; // Restore default hit chance
+        if (FREEAIM_ACTIVE_PREVFRAME != -1) { updateFreeAimSetting(0); }; // Set internal settings
         return 0;
     };
+    if (FREEAIM_ACTIVE_PREVFRAME != 1) { updateFreeAimSetting(1); }; // Set internal settings
     // Everything below is only reached if free aiming is enabled (but not necessarily active)
     if (MEM_Game.pause_screen) { return 0; }; // Only when playing
     if (!InfoManager_HasFinished()) { return 0; }; // Not in dialogs
     if (!Npc_IsInFightMode(hero, FMODE_FAR)) { return 0; }; // Only while using bow/crossbow
     // Everything below is only reached if free aiming is enabled and active (player is in respective fight mode)
-    Focus_Ranged.npc_azi = 15.0; // Set stricter focus collection
-    Focus_Ranged.npc_elevup = 15.0;
-    Focus_Ranged.npc_elevdo = -10.0;
-    if (!Hlp_StrCmp(MEM_ReadString(zString_CamModRanged), FREEAIM_CAMERA)) { // Correct the camera mode
-        MEM_WriteString(zString_CamModRanged, STR_Upper(FREEAIM_CAMERA)); // Upper case here is very important
-    };
-    if (MEM_ReadByte(alternativeHitchanceAdr) != ASMINT_OP_nop) { alternativeHitchance(); }; // 100% hit chance
     var int keyStateAction1; keyStateAction1 = MEM_KeyState(MEM_GetKey("keyAction")); // A bit much, but needed later
     var int keyStateAction2; keyStateAction2 = MEM_KeyState(MEM_GetSecondaryKey("keyAction"));
     if (keyStateAction1 != KEY_PRESSED) && (keyStateAction1 != KEY_HOLD) // Only while pressing the action button
     && (keyStateAction2 != KEY_PRESSED) && (keyStateAction2 != KEY_HOLD) { return 0; };
-    // Get onset for drawing the bow when just pressing down the action key
+    // Get onset for drawing the bow - right when pressing down the action key
     if (keyStateAction1 == KEY_PRESSED) || (keyStateAction2 == KEY_PRESSED) { bowDrawOnset = MEM_Timer.totalTime; };
     return 1;
 };
