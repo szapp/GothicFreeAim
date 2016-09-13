@@ -19,6 +19,7 @@ const int    FREEAIM_TREMOR                       = 12;     // Camera tremor whe
 const float  FREEAIM_ROTATION_SCALE               = 0.16;   // Turn rate. Non weapon mode is 0.2 (zMouseRotationScale)
 const float  FREEAIM_PROJECTILE_GRAVITY           = 0.1;    // The gravity decides how fast the projectile drops
 const int    FREEAIM_PROJECTILE_COLLECTABLE       = 1;      // Make use of the projectile collectible script
+const float  FREEAIM_SCATTER_DEG                  = 2.0;    // Maximum scatter in degrees. Set the accuracy else where!
 const int    FREEAIM_ACTIVE_PREVFRAME             = 0;      // Internal. Do not change
 const int    CROSSHAIR_MIN_SIZE                   = 16;     // Smallest crosshair size in pixels (longest range)
 const int    CROSSHAIR_MED_SIZE                   = 20;     // Medium crosshair size in pixels (for disabled focus)
@@ -100,6 +101,7 @@ func void Init_FreeAim() {
             HookEngineF(onArrowHitStatPtr, 5, onArrowGetStuck);
         };
         MemoryProtectionOverride(alternativeHitchanceAdr, 10); // Enable overwriting hit chance
+        r_DefaultInit(); // Start rng for aiming accuracy
         hookFreeAim = 1;
     };
     MEM_Info("Free aim initialized.");
@@ -408,18 +410,18 @@ func void catchICAni() {
     };
     insertCrosshair(POINTY_CROSSHAIR, size); // Draw/update crosshair
     var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60); //0=right, 2=out, 3=pos
-    var int pos[3]; // The position is calculated from the camera, not the player model.
+    var int pos[3]; // The position is calculated from the camera, not the player model
     pos[0] = addf(camPos.v0[3], mulf(camPos.v0[2], mkf(FREEAIM_MAX_DIST)));
     pos[1] = addf(camPos.v1[3], mulf(camPos.v1[2], mkf(FREEAIM_MAX_DIST)));
     pos[2] = addf(camPos.v2[3], mulf(camPos.v2[2], mkf(FREEAIM_MAX_DIST)));
     // Get aiming angles
     var int angleX; var int angXptr; angXptr = _@(angleX);
     var int angleY; var int angYptr; angYptr = _@(angleY);
-    var int posPtr; posPtr = _@(pos); // So many pointer because it is a recyclable call
+    var int posPtr; posPtr = _@(pos); // So many pointers because it is a recyclable call
     const int call3 = 0;
     if (CALL_Begin(call3)) {
         CALL_PtrParam(_@(angYptr));
-        CALL_PtrParam(_@(angXptr)); // X angle not needed
+        CALL_PtrParam(_@(angXptr)); // X angle not needed so far (later for strafing)
         CALL_PtrParam(_@(posPtr));
         CALL__thiscall(_@(herPtr), oCNpc__GetAngles);
         call3 = CALL_End();
@@ -433,7 +435,7 @@ func void catchICAni() {
         else { angleY = 1048576000; }; // 0.25
     };
     // This following paragraph is essentially "copied" from oCAIHuman::BowMode (0x695F00 in g2)
-    angleX = addf(mulf(angleX, 1001786197), FLOATHALF); // Scale and X [-90° +90°] to [0 +1]
+    angleX = addf(mulf(angleX, 1001786197), FLOATHALF); // Scale X [-90° +90°] to [0 +1]
     angleY = negf(subf(mulf(angleY, 1001786197), FLOATHALF)); // Scale and flip Y [-90° +90°] to [+1 0]
     if (lef(angleX, FLOATNULL)) { angleX = FLOATNULL; } // Maximum turning
     else if (gef(angleX, 1065353216)) { angleX = 1065353216; };
@@ -459,8 +461,27 @@ func void shootTarget() {
         CALL_PtrParam(vobPtr);
         CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
     };
-    // Manipulate aiming position (scatter/accuracy)
-    /* ... */
+    // Manipulate aiming position (scatter/accuracy): Rotate position by y and z axes
+    var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60); //0=right, 2=out, 3=pos
+    pos[0] = subf(pos[0], camPos.v0[3]); // For modifying the angle, move the vector to origin (afterwards back)
+    pos[1] = subf(pos[1], camPos.v1[3]);
+    pos[2] = subf(pos[2], camPos.v2[3]);
+    var int accuracy; accuracy = 0; // Outsource into a function e.g. getAccurracy();
+    if (accuracy > 100) { accuracy = 100; } else if (accuracy < 1) { accuracy = 1; };
+    var int angleMax; angleMax = roundf(mulf(mulf(fracf(1, accuracy), castToIntf(FREEAIM_SCATTER_DEG)), mkf(1000)));
+    var int angleY; angleY = fracf(r_MinMax(-angleMax, angleMax), 1000);
+    SinCosApprox(Print_ToRadian(angleY));
+    var int rotX; rotX = addf(mulf(pos[0], cosApprox), mulf(pos[2], sinApprox));
+    pos[2] = subf(mulf(pos[2], cosApprox), mulf(pos[0], sinApprox));
+    angleMax -= roundf(mulf(absf(angleY), mkf(1000))); // Diamond scatter pattern
+    var int angleZ; angleZ = fracf(r_MinMax(-angleMax, angleMax), 1000);
+    SinCosApprox(Print_ToRadian(angleZ));
+    pos[0] = subf(mulf(rotX, cosApprox), mulf(pos[1], sinApprox));
+    pos[1] = addf(mulf(rotX, sinApprox), mulf(pos[1], cosApprox));
+    pos[0] = addf(pos[0], camPos.v0[3]); // Move back, past camera position
+    pos[1] = addf(pos[1], camPos.v1[3]);
+    pos[2] = addf(pos[2], camPos.v2[3]);
+    // Set position to aim vob
     var int posPtr; posPtr = _@(pos);
     const int call = 0;
     if (CALL_Begin(call)) {
@@ -523,7 +544,15 @@ func void onArrowHitNpc() {
 
 /* Arrow gets stuck in static or dynamic world (non-npc): keep ai alive */
 func void onArrowGetStuck() {
-    var oCItem projectile; projectile = _^(MEM_ReadInt(ESI+88));
+    var int projectilePtr; projectilePtr = MEM_ReadInt(ESI+88);
+    var oCItem projectile; projectile = _^(projectilePtr);
+    if (Hlp_StrCmp(projectile.effect, FREEAIM_TRAIL_FX)) { // Remove trail strip fx
+        const int call = 0;
+        if (CALL_Begin(call)) {
+            CALL__thiscall(_@(projectilePtr), oCItem__RemoveEffect);
+            call = CALL_End();
+        };
+    };
     projectile.flags = projectile.flags &~ ITEM_NFOCUS; // Focusable (collectable)
     projectile._zCVob_callback_ai = 0; // Release vob from AI
     // Have projectile not go to deep in. Might not make sense but trust me. (RightVec will be multiplied later)
