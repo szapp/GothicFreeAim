@@ -48,7 +48,6 @@ const int oCItem__InsertEffect                    = 7416896; //0x712C40
 const int oCItem__RemoveEffect                    = 7416832; //0x712C00
 const int oCGame__s_bUseOldControls               = 9118144; //0x8B21C0
 const int zString_CamModRanged                    = 9234704; //0x8CE910
-const int projectileBounceOffAdr                  = 6949734; //0x6A0B66
 const int alternativeHitchanceAdr                 = 6953494; //0x6A1A10
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
@@ -57,21 +56,12 @@ const int oCAniCtrl_Human__InterpolateCombineAni  = 7037296; //0x6B6170 // Hook
 const int oCAIArrow__SetupAIVob                   = 6951136; //0x6A10E0 // Hook
 const int oCAIHuman__BowMode                      = 6905600; //0x695F00 // Hook
 const int oCAIArrowBase__DoAI                     = 6948416; //0x6A0640 // Hook
+const int onArrowHitNpcPtr                        = 6949832; //0x6A0BC8 // Hook
+const int onArrowHitVobPtr                        = 6949929; //0x6A0C29 // Hook
+const int onArrowHitStatPtr                       = 6949460; //0x6A0A54 // Hook
 const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook
-
-/* Let projectiles never bounce off of npcs */
-func void disableProjectileNpcBounce() {
-    MemoryProtectionOverride(projectileBounceOffAdr, 2);
-    MEM_WriteByte(projectileBounceOffAdr+1, /*60*/ 96); // jz to 0x6A0BC8
-};
-
-/* Restore default behavior */
-func void resetProjectileNpcBounce() {
-    MemoryProtectionOverride(projectileBounceOffAdr, 2);
-    MEM_WriteByte(projectileBounceOffAdr+1, /*3B*/ 59); // jz to 0x6A0BA3
-};
 
 /* Hit chance of 100%. Taken from http://forum.worldofplayers.de/forum/threads/1475456?p=25080651#post25080651 */
 func void alternativeHitchance() {
@@ -102,9 +92,13 @@ func void Init_FreeAim() {
         HookEngineF(oCAIHuman__BowMode, 6, manageCrosshair); // Called continuously
         HookEngineF(oCNpcFocus__SetFocusMode, 7, manageCrosshair); // Called when changing focus mode (several times)
         HookEngineF(oCAIHuman__MagicMode, 7, manageCrosshair); // Called continuously
-        HookEngineF(oCAIArrowBase__DoAI, 7, projectileCollectable); // Called for projectile
         HookEngineF(mouseUpdate, 5, manualRotation);
-        if (FREEAIM_PROJECTILE_COLLECTABLE) { disableProjectileNpcBounce(); };
+        HookEngineF(oCAIArrowBase__DoAI, 7, projectileCollectable); // Called for projectile
+        if (FREEAIM_PROJECTILE_COLLECTABLE) {
+            HookEngineF(onArrowHitNpcPtr, 5, onArrowHitNpc);
+            HookEngineF(onArrowHitVobPtr, 5, onArrowGetStuck);
+            HookEngineF(onArrowHitStatPtr, 5, onArrowGetStuck);
+        };
         MemoryProtectionOverride(alternativeHitchanceAdr, 10); // Enable overwriting hit chance
         hookFreeAim = 1;
     };
@@ -518,7 +512,27 @@ func void dropProjectile(var int rigidBody) {
     MEM_WriteByte(rigidBody+256, 1); // Turn on gravity (zCRigidBody.bitfield)
 };
 
-/* Once a projectile stopped moving or collided with an npc keep it alive or put it into the inventory. */
+/* Arrow gets stuck in npc: put projectile instance into inventory and let ai die */
+func void onArrowHitNpc() {
+    var oCItem projectile; projectile = _^(MEM_ReadInt(ESI+88));
+    var C_NPC victim; victim = _^(EDI);
+    var int munitionInst; munitionInst = projectile.instanz; // May change munitionInst here, e.g. into "used arrow"
+    CreateInvItems(victim, munitionInst, 1); // Put respective munition instance into the inventory
+    MEM_WriteInt(ESI+56, -1073741824); // oCAIArrow.lifeTime (mark this AI for projectileCollectable)
+};
+
+/* Arrow gets stuck in static or dynamic world (non-npc): keep ai alive */
+func void onArrowGetStuck() {
+    var oCItem projectile; projectile = _^(MEM_ReadInt(ESI+88));
+    projectile.flags = projectile.flags &~ ITEM_NFOCUS; // Focusable (collectable)
+    projectile._zCVob_callback_ai = 0; // Release vob from AI
+    // Have projectile not go to deep in. Might not make sense but trust me. (RightVec will be multiplied later)
+    projectile._zCVob_trafoObjToWorld[0] = mulf(projectile._zCVob_trafoObjToWorld[0], -1096111445);
+    projectile._zCVob_trafoObjToWorld[4] = mulf(projectile._zCVob_trafoObjToWorld[4], -1096111445);
+    projectile._zCVob_trafoObjToWorld[8] = mulf(projectile._zCVob_trafoObjToWorld[8], -1096111445);
+};
+
+/* Once a projectile stopped moving keep it alive */
 func void projectileCollectable() {
     var int arrowAI; arrowAI = ECX; // AI of the projectile
     var int projectilePtr; projectilePtr = MEM_ReadInt(ESP+4); // Projectile (item). Taken from arguments
@@ -527,36 +541,10 @@ func void projectileCollectable() {
     var oCItem projectile; projectile = _^(projectilePtr);
     if (!projectile._zCVob_rigidBody) { return; }; // zCRigidBody. Might not exist the first time
     // Reset projectile gravity (zCRigidBody.gravity) after collision (oCAIArrow.collision)
-    if (MEM_ReadInt(arrowAI+52)) { MEM_WriteInt(projectile._zCVob_rigidBody+236, FLOATONE); }; // Set gravity to zero
+    if (MEM_ReadInt(arrowAI+52)) { MEM_WriteInt(projectile._zCVob_rigidBody+236, FLOATONE); }; // Set gravity to default
     if (!FREEAIM_PROJECTILE_COLLECTABLE) { return; }; // Normal projectile handling
-    // If the projectile gets stuck (instead of bouncing of), check what the projectile collided with
-    if (MEM_ReadInt(projectile._zCVob_rigidBody+256) & (1 << 1)) { // zCRigidBody.bitfield & collision
-        if (MEM_ReadInt(arrowAI+48)) { // oCAIArrow.ignoreVobList
-            var zCList voblist; voblist = _^(MEM_ReadInt(arrowAI+48)); // oCAIArrow.ignoreVobList
-            while(voblist.next); // Traverse voblist. Don't ask me why the target is in the ignoreVobList
-                if (!Hlp_Is_oCNpc(voblist.data)) { voblist = _^(voblist.next); continue; }; // Search for npc
-                var C_NPC victim; victim = _^(voblist.data);
-                CreateInvItems(victim, projectile.instanz, 1); // Put a respective projectile into the inventory
-                MEM_WriteInt(arrowAI+56,  FLOATNULL); // oCAIArrow.lifeTime // Destroy AI and projectile
-                return;
-            end;
-        };
-        // Move the projectile 25 cm in the direction of right vector (that is: back; the projectile flies sideways)
-        var int pos[3]; var int posPtr; posPtr = _@(pos);
-        pos[0] = addf(projectile._zCVob_trafoObjToWorld[3], mulf(projectile._zCVob_trafoObjToWorld[0], mkf(25)));
-        pos[1] = addf(projectile._zCVob_trafoObjToWorld[7], mulf(projectile._zCVob_trafoObjToWorld[4], mkf(25)));
-        pos[2] = addf(projectile._zCVob_trafoObjToWorld[11], mulf(projectile._zCVob_trafoObjToWorld[8], mkf(25)));
-        const int call = 0;
-        if (CALL_Begin(call)) {
-            CALL_PtrParam(_@(posPtr)); // Update projectile position
-            CALL__thiscall(_@(projectilePtr), zCVob__SetPositionWorld);
-            call = CALL_End();
-        };
-    };
-    // If the projectile stopped moving, release its AI
-    if !(projectile._zCVob_bitfield[0] & zCVob_bitfield0_physicsEnabled) { // Stopped moving
-        MEM_WriteInt(arrowAI+56, FLOATONE); // oCAIArrow.lifeTime // Set high lifetime to ensure item visibility
-        projectile.flags = projectile.flags &~ ITEM_NFOCUS; // Focusable (collectable)
+    // If the projectile stopped moving (and did not hit npc), release its AI
+    if (MEM_ReadInt(arrowAI+56) != -1073741824) && !(projectile._zCVob_bitfield[0] & zCVob_bitfield0_physicsEnabled) {
         if (Hlp_StrCmp(projectile.effect, FREEAIM_TRAIL_FX)) { // Remove trail strip fx
             const int call2 = 0;
             if (CALL_Begin(call2)) {
@@ -564,8 +552,12 @@ func void projectileCollectable() {
                 call2 = CALL_End();
             };
         };
+        projectile.flags = projectile.flags &~ ITEM_NFOCUS; // Focusable (collectable)
         projectile._zCVob_callback_ai = 0; // Release vob from AI
+        MEM_WriteInt(arrowAI+56, FLOATONE); // oCAIArrow.lifeTime // Set high lifetime to ensure item visibility
         MEM_WriteInt(removePtr, 0); // Do not remove vob on AI destruction
         MEM_WriteInt(ESP+8, _@(ARROWAI_REDIRECT)); // Divert the actual "return" value
+    } else if (MEM_ReadInt(arrowAI+56) == -1073741824) { // Marked as positive hit on npc: do not keep alive
+        MEM_WriteInt(arrowAI+56, FLOATNULL); // oCAIArrow.lifeTime
     };
 };
