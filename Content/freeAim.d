@@ -14,12 +14,12 @@ const int    FREEAIM_CAMERA_X_SHIFT               = 0;      // Set to 1, if came
 const int    FREEAIM_MAX_DIST                     = 5000;   // 50 meters. For shooting and crosshair adjustments
 const int    FREEAIM_DRAWTIME_MIN                 = 1110;   // Minimum draw time (ms). Do not change - tied to animation
 const int    FREEAIM_DRAWTIME_MAX                 = 2500;   // Maximum draw time (ms) for best trajectory
-const int    FREEAIM_TRAJECTORY_ARC_MAX           = 400;    // Maximum distance at which the trajectory drops off
+const int    FREEAIM_TRAJECTORY_ARC_MAX           = 400;    // Maximum time (ms) at which the trajectory drops off
 const int    FREEAIM_TREMOR                       = 12;     // Camera tremor when exceeding FREEAIM_DRAWTIME_MAX
 const float  FREEAIM_ROTATION_SCALE               = 0.16;   // Turn rate. Non weapon mode is 0.2 (zMouseRotationScale)
 const float  FREEAIM_PROJECTILE_GRAVITY           = 0.1;    // The gravity decides how fast the projectile drops
 const int    FREEAIM_PROJECTILE_COLLECTABLE       = 1;      // Make use of the projectile collectible script
-const float  FREEAIM_SCATTER_DEG                  = 2.0;    // Maximum scatter in degrees. Set the accuracy else where!
+const float  FREEAIM_SCATTER_DEG                  = 2.2;    // Maximum scatter radius in degrees
 const int    FREEAIM_ACTIVE_PREVFRAME             = 0;      // Internal. Do not change
 const int    CROSSHAIR_MIN_SIZE                   = 16;     // Smallest crosshair size in pixels (longest range)
 const int    CROSSHAIR_MED_SIZE                   = 20;     // Medium crosshair size in pixels (for disabled focus)
@@ -63,6 +63,46 @@ const int onArrowHitStatPtr                       = 6949460; //0x6A0A54 // Hook
 const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook
+
+/* Retrieve draw force scaled between 0 and 100 (percent). Modify this function to alter the draw force calculation */
+func int freeAimGetDrawForce() {
+    // Scale draw time between 0 and 100
+    var int drawForce; drawForce = MEM_Timer.totalTime - bowDrawOnset; // Check for how long the bow was drawn
+    if (drawForce > FREEAIM_DRAWTIME_MAX) { drawForce = 100; } // Fully drawn
+    else if (drawForce < FREEAIM_DRAWTIME_MIN) { drawForce = 0; } // No negative numbers
+    else { // Calculate the percentage [0, 100]
+        var int numerator; numerator = mkf(100 * (drawForce - FREEAIM_DRAWTIME_MIN));
+        var int denominator; denominator = mkf(FREEAIM_DRAWTIME_MAX - FREEAIM_DRAWTIME_MIN);
+        drawForce = roundf(divf(numerator, denominator));
+    };
+    // Possibly incorporate more factors like e.g. a quick-draw talent, weapon-specific stats, ...
+    // If adding more factors, keep in mind that the final drawForce must be in [0, 100]. This line could ensure that:
+    // if (drawForce > 100) { drawForce = 100; } else if (drawForce < 0) { drawForce = 0; };
+    return drawForce;
+};
+
+/* Retrieve aiming accuracy scaled between 0 and 100 (percent). Modify this function to alter accuracy calculation */
+func int freeAimGetAccuracy() {
+    var int accuracy[3]; // Number of factors playing into the accuracy(+1), here: talent [1] and draw force [2]
+    // Factor 1: Talent (keep in mind that it might be greater than 100)
+    var C_Item weapon;
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
+    else { MEM_Error("freeAimGetAccuracy: No valid weapon equipped/readied!"); return -1; };
+    if (weapon.flags & ITEM_BOW) { accuracy[1] = hero.HitChance[NPC_TALENT_BOW]; }
+    else if (weapon.flags & ITEM_CROSSBOW) { accuracy[1] = hero.HitChance[NPC_TALENT_CROSSBOW]; }
+    else { MEM_Error("freeAimGetAccuracy: No valid weapon equipped/readied!"); return -1; };
+    // Factor 2: Draw force
+    accuracy[2] = freeAimGetDrawForce(); // Already scaled between [0, 100], see freeAimGetDrawForce()
+    // Factor X: Add any other factors here e.g. weapon-specific accuracy stats, weapon spread, accuracy talent, ...
+    // Calculate overall accuracy: From all factors (modify the following lines to change the calculation)
+    // Here the talent is scaled by draw force: draw force=100% => accuracy=talent; draw force=0% => accuracy=talent/2
+    if (accuracy[2] < accuracy[1]) { accuracy[2] = accuracy[1]; }; // Decrease impact of draw force on talent
+    accuracy[0] = (accuracy[1] * accuracy[2])/100;
+    // Final accuracy needs to be in [0, 100]
+    if (accuracy[0] > 100) { accuracy[0] = 100; } else if (accuracy[0] < 0) { accuracy[0] = 0; };
+    return accuracy[0];
+};
 
 /* Hit chance of 100%. Taken from http://forum.worldofplayers.de/forum/threads/1475456?p=25080651#post25080651 */
 func void alternativeHitchance() {
@@ -469,8 +509,8 @@ func void shootTarget() {
         CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
     };
     // Manipulate aiming position (scatter/accuracy): Rotate position around y and x axes (left/right, up/down)
-    var int accuracy; accuracy = 0; // Outsource into a function e.g. getAccurracy();
-    if (accuracy > 100) { accuracy = 100; } else if (accuracy < 1) { accuracy = 1; };
+    var int accuracy; accuracy = freeAimGetAccuracy(); // Change the accuracy calculation in that function, not here!
+    if (accuracy > 100) { accuracy = 100; } else if (accuracy < 1) { accuracy = 1; }; // Prevent devision by zero
     var int angleMax; angleMax = roundf(mulf(mulf(fracf(1, accuracy), castToIntf(FREEAIM_SCATTER_DEG)), mkf(1000)));
     var int angleY; angleY = fracf(r_MinMax(-angleMax, angleMax), 1000); // Degrees around y-axis
     angleMax = roundf(sqrtf(subf(sqrf(mkf(angleMax)), sqrf(mulf(angleY, mkf(1000)))))); // sqrt(angleMax^2-angleY^2)
@@ -498,31 +538,21 @@ func void shootTarget() {
         CALL__thiscall(_@(vobPtr), zCVob__SetPositionWorld);
         call = CALL_End();
     };
-    // Set projectile drop-off
+    // Set projectile drop-off (by draw force)
     const int call2 = 0;
     if (CALL_Begin(call2)) {
         CALL__thiscall(_@(projectile), zCVob__GetRigidBody); // Get ridigBody this way, it will be properly created
         call2 = CALL_End();
     };
     var int rBody; rBody = CALL_RetValAsInt(); // zCRigidBody*
-    //MEM_Info(ConcatStrings("^ End time: ", IntToString(MEM_Timer.totalTime)));
-    bowDrawOnset = MEM_Timer.totalTime - bowDrawOnset; // Check for how long the bow was drawn
-    //MEM_Info(ConcatStrings("| Duration: ", IntToString(bowDrawOnset)));
-    if (bowDrawOnset > FREEAIM_DRAWTIME_MAX) { bowDrawOnset = FREEAIM_TRAJECTORY_ARC_MAX; } // Force drop-off
-    else if (bowDrawOnset < FREEAIM_DRAWTIME_MIN) { bowDrawOnset = 0; } // No negative numbers
-    else { // Calculate the drop-off time within the range of [0, FREEAIM_TRAJECTORY_ARC_MAX]
-        var int numerator; numerator = mkf(FREEAIM_TRAJECTORY_ARC_MAX * (bowDrawOnset - FREEAIM_DRAWTIME_MIN));
-        var int denominator; denominator = mkf(FREEAIM_DRAWTIME_MAX - FREEAIM_DRAWTIME_MIN);
-        bowDrawOnset = roundf(divf(numerator, denominator));
-    };
-    //MEM_Info(ConcatStrings("### Drop-off time: ", IntToString(bowDrawOnset)));
-    FF_ApplyOnceExtData(dropProjectile, bowDrawOnset, 1, rBody); // Safe?
+    var int drawForce; drawForce = freeAimGetDrawForce(); // Modify the draw force in that function, not here!
+    var int gravityMod; gravityMod = FLOATONE; // Gravity only modified on short draw time
+    if (drawForce < 25) { gravityMod = mkf(3); }; // Very short draw time increases gravity
+    drawForce = mulf(fracf(drawForce, 100), mkf(FREEAIM_TRAJECTORY_ARC_MAX));
+    MEM_Info(ConcatStrings("Drop-off after (ms): ", toStringf(drawForce)));
+    FF_ApplyOnceExtData(dropProjectile, roundf(drawForce), 1, rBody); // When to hit the projectile with gravity
     bowDrawOnset = MEM_Timer.totalTime; // Reset draw timer
-    //MEM_Info(ConcatStrings("v Start time (rld): ", IntToString(bowDrawOnset)));
-    var int gravityMod; gravityMod = FLOATONE;
-    if (bowDrawOnset < FREEAIM_TRAJECTORY_ARC_MAX/4) { gravityMod = mkf(2); }; // Very short draw time increases gravity
-    // MEM_WriteInt(rBody+236, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod)); // Experimental
-    MEM_WriteInt(rBody+236, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod));
+    MEM_WriteInt(rBody+236, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod)); // Set gravity (but not enabled)
     if (Hlp_Is_oCItem(projectile)) && (Hlp_StrCmp(MEM_ReadString(projectile+564), "")) { // Projectile has no FX
         MEM_WriteString(projectile+564, FREEAIM_TRAIL_FX); // Set trail strip fx for better visibility
         const int call3 = 0;
@@ -534,11 +564,12 @@ func void shootTarget() {
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
 };
 
+/* This function is timed by draw force and is responsible for applying gravity to a projectile */
 func void dropProjectile(var int rigidBody) {
     if (!rigidBody) { return; };
     if (MEM_ReadInt(rigidBody+188) == FLOATNULL) // zCRigidBody.velocity[3]
     && (MEM_ReadInt(rigidBody+192) == FLOATNULL)
-    && (MEM_ReadInt(rigidBody+196) == FLOATNULL) { return; }; // Do not add gravity if projectile stopped moving
+    && (MEM_ReadInt(rigidBody+196) == FLOATNULL) { return; }; // Do not add gravity if projectile already stopped moving
     MEM_WriteByte(rigidBody+256, 1); // Turn on gravity (zCRigidBody.bitfield)
 };
 
