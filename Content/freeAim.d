@@ -5,7 +5,7 @@
  *
  * Requirements:
  *  - Ikarus (>= 1.2 +floats)
- *  - LeGo (>= 2.3.2 HookEngine)
+ *  - LeGo (>= 2.3.2 LeGo_FrameFunctions | LeGo_HookEngine)
  */
 
 /* Free aim settings */
@@ -50,6 +50,12 @@ const int oCItem__RemoveEffect                    = 7416832; //0x712C00
 const int oCGame__s_bUseOldControls               = 9118144; //0x8B21C0
 const int zString_CamModRanged                    = 9234704; //0x8CE910
 const int alternativeHitchanceAdr                 = 6953494; //0x6A1A10
+const int oCNpc__GetModel                         = 7571232; //0x738720
+const int zCModel__SearchNode                     = 5758960; //0x57DFF0
+const int zCModel__GetBBox3DNodeWorld             = 5738736; //0x5790F0
+const int zTBBox3D__GetSphere3D                   = 5528768; //0x545CC0
+const int zTBBox3D__Scale                         = 5528560; //0x545BF0
+const int zTBBox3D__IsIntersecting                = 6115184; //0x5D4F70
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
 const int mouseDeltaX                             = 9246300; //0x8D165C
@@ -60,11 +66,12 @@ const int oCAIArrowBase__DoAI                     = 6948416; //0x6A0640 // Hook
 const int onArrowHitNpcPtr                        = 6949832; //0x6A0BC8 // Hook
 const int onArrowHitVobPtr                        = 6949929; //0x6A0C29 // Hook
 const int onArrowHitStatPtr                       = 6949460; //0x6A0A54 // Hook
+const int onArrowDamagePtr                        = 6953621; //0x6A1A95 // Hook
 const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook
 
-/* Retrieve draw force scaled between 0 and 100 (percent). Modify this function to alter the draw force calculation */
+/* Modify this function to alter the draw force calculation. Scaled between 0 and 100 (percent) */
 func int freeAimGetDrawForce() {
     // Scale draw time between 0 and 100
     var int drawForce; drawForce = MEM_Timer.totalTime - bowDrawOnset; // Check for how long the bow was drawn
@@ -81,7 +88,7 @@ func int freeAimGetDrawForce() {
     return drawForce;
 };
 
-/* Retrieve aiming accuracy scaled between 0 and 100 (percent). Modify this function to alter accuracy calculation */
+/* Modify this function to alter accuracy calculation. Scaled between 0 and 100 (percent) */
 func int freeAimGetAccuracy() {
     var int accuracy[3]; // Number of factors playing into the accuracy(+1), here: talent [1] and draw force [2]
     // Factor 1: Talent (keep in mind that it might be greater than 100)
@@ -102,6 +109,20 @@ func int freeAimGetAccuracy() {
     // Final accuracy needs to be in [0, 100]
     if (accuracy[0] > 100) { accuracy[0] = 100; } else if (accuracy[0] < 0) { accuracy[0] = 0; };
     return accuracy[0];
+};
+
+/* Modify this function to set the headshot multiplier. Caution return value is a float */
+func int freeAimGetHeadshotMultiplier() {
+    var int multiplier;
+    // Possibly incorporate weapon-specific stats, headshot talent, dependency on accuracy, ...
+    multiplier = castToIntf(2.0); // For now it is just a fixed multiplier
+    return multiplier; // Caution: This is only multiplies the base damage (damage of the weapon), not the final damage!
+};
+
+/* Use this function to create an event when getting a headshot, e.g. a print or a sound jingle */
+func void freeAimHeadshotEvent() {
+    Snd_Play("FORGE_ANVIL_A1"); // "HAMMER"
+    PrintS("Kritischer Treffer");
 };
 
 /* Hit chance of 100%. Taken from http://forum.worldofplayers.de/forum/threads/1475456?p=25080651#post25080651 */
@@ -135,6 +156,7 @@ func void Init_FreeAim() {
         HookEngineF(oCAIHuman__MagicMode, 7, manageCrosshair); // Called continuously
         HookEngineF(mouseUpdate, 5, manualRotation);
         HookEngineF(oCAIArrowBase__DoAI, 7, projectileCollectable); // Called for projectile
+        HookEngineF(onArrowDamagePtr, 7, headshotDetection); // Headshot detection
         if (FREEAIM_PROJECTILE_COLLECTABLE) {
             HookEngineF(onArrowHitNpcPtr, 5, onArrowHitNpc);
             HookEngineF(onArrowHitVobPtr, 5, onArrowGetStuck);
@@ -549,7 +571,6 @@ func void shootTarget() {
     var int gravityMod; gravityMod = FLOATONE; // Gravity only modified on short draw time
     if (drawForce < 25) { gravityMod = mkf(3); }; // Very short draw time increases gravity
     drawForce = mulf(fracf(drawForce, 100), mkf(FREEAIM_TRAJECTORY_ARC_MAX));
-    MEM_Info(ConcatStrings("Drop-off after (ms): ", toStringf(drawForce)));
     FF_ApplyOnceExtData(dropProjectile, roundf(drawForce), 1, rBody); // When to hit the projectile with gravity
     bowDrawOnset = MEM_Timer.totalTime; // Reset draw timer
     MEM_WriteInt(rBody+236, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod)); // Set gravity (but not enabled)
@@ -628,5 +649,63 @@ func void projectileCollectable() {
         MEM_WriteInt(ESP+8, _@(ARROWAI_REDIRECT)); // Divert the actual "return" value
     } else if (MEM_ReadInt(arrowAI+56) == -1073741824) { // Marked as positive hit on npc: do not keep alive
         MEM_WriteInt(arrowAI+56, FLOATNULL); // oCAIArrow.lifeTime
+    };
+};
+
+/* Detect headshot and increase initial damage. Modify the damage in freeAimGetHeadshotMultiplier() */
+func void headshotDetection() {
+    var int damagePtr; damagePtr = ESP+428-200; // esp+1ACh+C8h
+    var int target; target = MEM_ReadInt(ESP+428-400); // esp+1ACh+190h
+    var int projectile; projectile = MEM_ReadInt(EBP+88); // ebp+58h
+    // Get model from target npc
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL__thiscall(_@(target), oCNpc__GetModel);
+        call = CALL_End();
+    };
+    var int model; model = CALL_RetValAsPtr();
+    // Get head node from target model
+    var int node; node = _@s("BIP01 HEAD");
+    const int call2 = 0;
+    if (CALL_Begin(call2)) {
+        CALL_PtrParam(_@(node));
+        CALL__thiscall(_@(model), zCModel__SearchNode);
+        call2 = CALL_End();
+    };
+    var int head; head = CALL_RetValAsPtr();
+    if (!head) { return; }; // I think some monsters don't have a head node!
+    // Get the bbox of the head (although the zCModelNodeInst class has a zTBBox3D property, it is necessary this way)
+    CALL_PtrParam(head);
+    CALL_RetValIsStruct(24); // sizeof_zTBBox3D // No recyclable call possible
+    CALL__thiscall(model, zCModel__GetBBox3DNodeWorld);
+    var int headBBox; headBBox = CALL_RetValAsPtr();
+    // Get the 3dsphere of the head (necessary, since the bbox of the head is too small, working with spheres is easier)
+    CALL_RetValIsStruct(16); // sizeof_zTBSphere3D // No recyclable call possible
+    CALL__thiscall(headBBox, zTBBox3D__GetSphere3D);
+    var int headSphere; headSphere = CALL_RetValAsPtr();
+    MEM_WriteInt(headSphere+12, mulf(MEM_ReadInt(headSphere+12), castToIntf(1.75))); // Scale it up
+    //CALL_PtrParam(_@(zCOLOR_RED)); CALL__thiscall(headSphere, /*0x5441F0 zTBSphere3D__Draw*/5521904); // Visualization
+    // Copy and enlarge the projectile bbox as well
+    var int projectileBBox; projectileBBox = MEM_Alloc(24); // sizeof_zTBBox3D
+    MEM_CopyWords(projectile+124, projectileBBox, 6);
+    var int bboxScale; bboxScale = castToIntf(1.5); // The projectile bbox is only detected if it is also enlarged a bit
+    const int call5 = 0;
+    if (CALL_Begin(call5)) {
+        CALL_FloatParam(_@(bboxScale));
+        CALL__thiscall(_@(projectileBBox), zTBBox3D__Scale);
+        call5 = CALL_End();
+    };
+    // Check intersection between projectile bbox and head 3dsphere (most reliable method)
+    const int call4 = 0;
+    if (CALL_Begin(call4)) {
+        CALL_PtrParam(_@(headSphere));
+        CALL__thiscall(_@(projectileBBox), zTBBox3D__IsIntersecting);
+        call4 = CALL_End();
+    };
+    var int intersection; intersection = CALL_RetValAsInt();
+    MEM_Free(projectileBBox); MEM_Free(headBBox); MEM_Free(headSphere); // Free the memory
+    if (intersection) {
+        freeAimHeadshotEvent(); // Use this function to add an event when getting a headshot, e.g. a print or a sound
+        MEM_WriteInt(damagePtr, mulf(MEM_ReadInt(damagePtr), freeAimGetHeadshotMultiplier()));
     };
 };
