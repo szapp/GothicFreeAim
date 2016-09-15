@@ -453,71 +453,12 @@ func void catchICAni() {
     MEM_WriteInt(ESP+8, angleY);
 };
 
-/* Rotate a vector around a rotation vector */
-func void rotateAroundVector(var int rotVecPtr, var int posVecPtr, var int angle) {
-    if (angle == FLOATNULL) { return; };
-    var int u; u = MEM_ReadInt(rotVecPtr+0);
-    var int v; v = MEM_ReadInt(rotVecPtr+1);
-    var int w; w = MEM_ReadInt(rotVecPtr+2);
-    var int x; x = MEM_ReadInt(posVecPtr+0);
-    var int y; y = MEM_ReadInt(posVecPtr+1);
-    var int z; z = MEM_ReadInt(posVecPtr+2);
-    var int a; var int xS; var int yS; var int zS;
-    SinCosApprox(Print_ToRadian(angle));
-    a = mulf(addf(addf(mulf(u,x),mulf(v,y)),mulf(w,z)),subf(FLOATONE,cosApprox)); // a = (u*x+v*y+w*z)*(1-cos)
-    xS = addf(addf(mulf(u,a),mulf(x,cosApprox)),mulf(subf(mulf(v,z),mulf(w,y)),sinApprox)); // u*a+x*cos+(v*z-w*y)*sin
-    yS = addf(addf(mulf(v,a),mulf(y,cosApprox)),mulf(subf(mulf(w,x),mulf(u,z)),sinApprox)); // v*a+y*cos+(w*x-u*z)*sin
-    zS = addf(addf(mulf(w,a),mulf(z,cosApprox)),mulf(subf(mulf(u,y),mulf(v,x)),sinApprox)); // w*a+z*cos+(u*y-v*x)*sin
-    MEM_WriteInt(posVecPtr+0, xS);
-    MEM_WriteInt(posVecPtr+1, yS);
-    MEM_WriteInt(posVecPtr+2, zS);
-};
-
-func void rodriguesRotation(var int vPtr, var int kPtr, var int angle) {
-    // v' = v * cos + (k x v) * sin + k * (k * v) * (1 - cos)
-    if (angle == FLOATNULL) { return; };
-    var int v[3]; v[0] = MEM_ReadInt(vPtr+0); v[1] = MEM_ReadInt(vPtr+1); v[2] = MEM_ReadInt(vPtr+2);
-    var int k[3]; k[0] = MEM_ReadInt(kPtr+0); k[1] = MEM_ReadInt(kPtr+1); k[2] = MEM_ReadInt(kPtr+2);
-    SinCosApprox(Print_ToRadian(angle));
-
-    var int part1[3]; // v * cos
-    part1[0] = mulf(v[0], cosApprox);
-    part1[1] = mulf(v[1], cosApprox);
-    part1[2] = mulf(v[2], cosApprox);
-
-    var int part2[3]; // (k x v)
-    part2[0] = subf(mulf(k[1], v[2]), mulf(k[2], v[1]));
-    part2[1] = subf(mulf(k[2], v[0]), mulf(k[0], v[2]));
-    part2[2] = subf(mulf(k[0], v[1]), mulf(k[1], v[0]));
-    // (k x v) * sin
-    part2[0] = mulf(part2[0], sinApprox);
-    part2[1] = mulf(part2[1], sinApprox);
-    part2[2] = mulf(part2[2], sinApprox);
-
-    var int dotProd; // (k * v)
-    dotProd = addf(addf(mulf(k[0], v[0]), mulf(k[1], v[1])), mulf(k[2], v[2]));
-
-    var int part3[3]; // k * (k * v) * (1 - cos)
-    part3[0] = mulf(mulf(k[0], dotProd), subf(FLOATONE, cosApprox));
-    part3[1] = mulf(mulf(k[1], dotProd), subf(FLOATONE, cosApprox));
-    part3[2] = mulf(mulf(k[2], dotProd), subf(FLOATONE, cosApprox));
-
-    var int result[3];
-    result[0] = addf(addf(part1[0], part2[0]), part3[0]);
-    result[1] = addf(addf(part1[1], part2[1]), part3[1]);
-    result[2] = addf(addf(part1[2], part2[2]), part3[2]);
-
-    MEM_WriteInt(vPtr+0, result[0]);
-    MEM_WriteInt(vPtr+1, result[1]);
-    MEM_WriteInt(vPtr+2, result[2]);
-};
-
 /* Hook oCAIArrow::SetupAIVob */
 func void shootTarget() {
     var int projectile; projectile = MEM_ReadInt(ESP+4);  // First argument is the projectile
     var C_NPC shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
     if (!Npc_IsPlayer(shooter)) || (!isFreeAimActive()) { return; }; // Only for the player
-    var int distance; var int pos[3]; aimRay(FREEAIM_MAX_DIST, 0, _@(pos), 0, _@(distance)); // Trace ray intersection
+    var int distance; aimRay(FREEAIM_MAX_DIST, 0, 0, 0, _@(distance)); // Trace ray intersection
     var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB"); // Arrow needs target vob
     if (!vobPtr) {
         vobPtr = MEM_Alloc(sizeof_zCVob); // Will never delete this vob (it will be re-used on the next shot)
@@ -533,19 +474,22 @@ func void shootTarget() {
     var int angleMax; angleMax = roundf(mulf(mulf(fracf(1, accuracy), castToIntf(FREEAIM_SCATTER_DEG)), mkf(1000)));
     var int angleY; angleY = fracf(r_MinMax(-angleMax, angleMax), 1000); // Degrees around y-axis
     angleMax = roundf(sqrtf(subf(sqrf(mkf(angleMax)), sqrf(mulf(angleY, mkf(1000)))))); // sqrt(angleMax^2-angleY^2)
-    var int angleX; angleX = fracf(r_MinMax(-angleMax, angleMax), 1000); // Degrees around x-axis
+    var int angleX; angleX = fracf(r_MinMax(-angleMax, angleMax), 1000); // Degrees around x-axis (restrict to circle)
     var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60); //0=right, 2=out, 3=pos
-    var int rotVec[3]; // UpVec
-    rotVec[0] = camPos.v0[1];
-    rotVec[1] = camPos.v1[1];
-    rotVec[2] = camPos.v2[1];
-    //pos[0] = subf(pos[0], camPos.v0[3]); pos[1] = subf(pos[1], camPos.v1[3]); pos[2] = subf(pos[2], camPos.v2[3]);
-    rodriguesRotation(_@(pos), _@(rotVec), angleY);
-    //rotateAroundVector(_@(rotVec), _@(pos), angleY); // Rotate around local y-axis
-    //rotateAroundVector(_@(rotVec), _@(pos), angleX); // Rotate around local x-axis
-    //pos[0] = addf(camPos.v0[3], pos[0]); pos[1] = addf(camPos.v1[3], pos[1]); pos[2] = addf(camPos.v2[3], pos[2]);
-    MEM_Info(ConcatStrings(ConcatStrings(ConcatStrings(ConcatStrings(ConcatStrings(
-        "degY=", toStringf(angleY)), ", degX="), toStringf(angleX)), ", angleMax="), IntToString(angleMax)));
+    var int pos[3]; pos[0] = FLOATNULL; pos[1] = FLOATNULL; pos[2] = distance;
+    SinCosApprox(Print_ToRadian(angleX)); // Rotate around x-axis (up-down scatter)
+    pos[1] = mulf(negf(pos[2]), sinApprox); // y*cosθ − z*sinθ = y'
+    pos[2] = mulf(pos[2], cosApprox);       // y*sinθ + z*cosθ = z'
+    SinCosApprox(Print_ToRadian(angleY)); // Rotate around y-axis (left-right scatter)
+    pos[0] = mulf(pos[2], sinApprox); //  x*cosθ + z*sinθ = x'
+    pos[2] = mulf(pos[2], cosApprox); // −x*sinθ + z*cosθ = z'
+    var int newPos[3]; // Rotation (translation into local coordinate system of camera)
+    newPos[0] = addf(addf(mulf(camPos.v0[0], pos[0]), mulf(camPos.v0[1], pos[1])), mulf(camPos.v0[2], pos[2]));
+    newPos[1] = addf(addf(mulf(camPos.v1[0], pos[0]), mulf(camPos.v1[1], pos[1])), mulf(camPos.v1[2], pos[2]));
+    newPos[2] = addf(addf(mulf(camPos.v2[0], pos[0]), mulf(camPos.v2[1], pos[1])), mulf(camPos.v2[2], pos[2]));
+    pos[0] = addf(camPos.v0[3], newPos[0]);
+    pos[1] = addf(camPos.v1[3], newPos[1]);
+    pos[2] = addf(camPos.v2[3], newPos[2]);
     // Set position to aim vob
     var int posPtr; posPtr = _@(pos);
     const int call = 0;
