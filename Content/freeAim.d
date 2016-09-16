@@ -11,8 +11,8 @@
  *  - Collectible projectiles (yes/no):    FREEAIM_PROJECTILE_COLLECTABLE
  *  - Draw force (drop-off) calculation:   freeAimGetDrawForce()
  *  - Accuracy calculation:                freeAimGetAccuracy()
- *  - Headshot damage multiplier:          freeAimGetHeadshotMultiplier()
- *  - Headshot event:                      freeAimHeadshotEvent()
+ *  - Headshot damage multiplier:          freeAimGetHeadshotMultiplier(var C_NPC target)
+ *  - Headshot event:                      freeAimHeadshotEvent(var C_NPC target)
  * Advanced (modification not recommended):
  *  - Scatter radius for accuracy:         FREEAIM_SCATTER_DEG
  *  - Camera view (shoulder view):         FREEAIM_CAMERA, FREEAIM_CAMERA_X_SHIFT
@@ -80,8 +80,12 @@ const int mouseUpdate                             = 5062907; //0x4D40FB // Hook
 
 /* Modify this function to alter the draw force calculation. Scaled between 0 and 100 (percent) */
 func int freeAimGetDrawForce() {
-    // Scale draw time between 0 and 100
-    var int drawForce; drawForce = MEM_Timer.totalTime - bowDrawOnset; // Check for how long the bow was drawn
+    var C_Item weapon; // The weapon can also be considered (e.g. weapon specific damage). Make use of 'weapon' for that
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
+    else { MEM_Error("freeAimGetAccuracy: No valid weapon equipped/readied!"); return -1; }; // Should never happen
+    // Check for how long the bow was drawn
+    var int drawForce; drawForce = MEM_Timer.totalTime - bowDrawOnset;
     if (drawForce > FREEAIM_DRAWTIME_MAX) { drawForce = 100; } // Fully drawn
     else if (drawForce < FREEAIM_DRAWTIME_MIN) { drawForce = 0; } // No negative numbers
     else { // Calculate the percentage [0, 100]
@@ -119,15 +123,31 @@ func int freeAimGetAccuracy() {
 };
 
 /* Modify this function to set the headshot multiplier. Caution: Return value is a float */
-func int freeAimGetHeadshotMultiplier() {
+func int freeAimGetHeadshotMultiplier(var C_NPC target) {
     var int multiplier;
-    // Possibly incorporate weapon-specific stats, headshot talent, dependency on accuracy, ...
-    multiplier = castToIntf(2.0); // For now it is just a fixed multiplier
+    // Possibly incorporate weapon-specific stats, headshot talent, dependecy on target, ...
+    // The multiplier may depent on the target npc (e.g. different damage for monsters). Make use of 'target' argument
+    // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
+    // INFO: Monsters don't have a dedicated head visual: No way of detecting headshots for monsters at this time!
+    var C_Item weapon; // The weapon can also be considered (e.g. weapon specific damage). Make use of 'weapon' for that
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
+    // Caution: Weapon may have been unequipped already at this time!
+    // if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
+    multiplier = castToIntf(2.0); // For now, it is just a fixed multiplier
     return multiplier; // Caution: This only multiplies the base damage (damage of the weapon), not the final damage!
 };
 
 /* Use this function to create an event when getting a headshot, e.g. a print or a sound jingle, leave blank for none */
-func void freeAimHeadshotEvent() {
+func void freeAimHeadshotEvent(var C_NPC target) {
+    // The event may depent on the target npc (e.g. different sound for monsters). Make use of 'target' argument
+    // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
+    // INFO: Monsters don't have a dedicated head visual: No way of detecting headshots for monsters at this time!
+    var C_Item weapon; // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
+    // Caution: Weapon may have been unequipped already at this time!
+    // if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
     Snd_Play("FORGE_ANVIL_A1");
     PrintS("Kritischer Treffer"); // "Critical hit"
 };
@@ -694,8 +714,8 @@ func void headshotDetection() {
         call2 = CALL_End();
     };
     var int head; head = CALL_RetValAsPtr();
-    if (!head) { return; }; // I think some monsters don't have a head node!
-    // Get the bbox of the head (although the zCModelNodeInst class has a zTBBox3D property, it is necessary this way)
+    if (!head) { return; }; // There should be no npc without head node. But just in case
+    // Get the bbox of the head (although zCModelNodeInst has a zTBBox3D property, it is empty the first time)
     CALL_PtrParam(head);
     CALL_RetValIsStruct(24); // sizeof_zTBBox3D // No recyclable call possible
     CALL__thiscall(model, zCModel__GetBBox3DNodeWorld);
@@ -705,11 +725,13 @@ func void headshotDetection() {
     CALL__thiscall(headBBox, zTBBox3D__GetSphere3D);
     var int headSphere; headSphere = CALL_RetValAsPtr();
     MEM_WriteInt(headSphere+12, mulf(MEM_ReadInt(headSphere+12), castToIntf(1.75))); // Scale it up
-    //CALL_PtrParam(_@(zCOLOR_RED)); CALL__thiscall(headSphere, /*0x5441F0 zTBSphere3D__Draw*/5521904); // Visualization
+    CALL_PtrParam(_@(zCOLOR_GREEN)); CALL__thiscall(headBBox, /*0x545EE0 zTBBox3D__Draw*/5529312); // Visualize
+    CALL_PtrParam(_@(zCOLOR_RED)); CALL__thiscall(headSphere, /*0x5441F0 zTBSphere3D__Draw*/5521904); // Visualize
+    // Monsters don't have a dedicated head visual: The bbox is "empty". No way of detecting headshots for monsters.
     // Copy and enlarge the projectile bbox as well
     var int projectileBBox; projectileBBox = MEM_Alloc(24); // sizeof_zTBBox3D
     MEM_CopyWords(projectile+124, projectileBBox, 6);
-    var int bboxScale; bboxScale = castToIntf(1.5); // The projectile bbox is only detected if it is also enlarged a bit
+    var int bboxScale; bboxScale = castToIntf(1.2); // The projectile bbox is only detected if it is also enlarged a bit
     const int call5 = 0;
     if (CALL_Begin(call5)) {
         CALL_FloatParam(_@(bboxScale));
@@ -726,7 +748,8 @@ func void headshotDetection() {
     var int intersection; intersection = CALL_RetValAsInt();
     MEM_Free(projectileBBox); MEM_Free(headBBox); MEM_Free(headSphere); // Free the memory
     if (intersection) {
-        freeAimHeadshotEvent(); // Use this function to add an event when getting a headshot, e.g. a print or a sound
-        MEM_WriteInt(damagePtr, mulf(MEM_ReadInt(damagePtr), freeAimGetHeadshotMultiplier())); // BASE damage!
+        var C_NPC targetNpc; targetNpc = _^(target);
+        freeAimHeadshotEvent(targetNpc); // Use this function to add an event on headshot, e.g. a print or a sound
+        MEM_WriteInt(damagePtr, mulf(MEM_ReadInt(damagePtr), freeAimGetHeadshotMultiplier(targetNpc))); // BASE damage!
     };
 };
