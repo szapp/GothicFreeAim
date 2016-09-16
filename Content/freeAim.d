@@ -4,12 +4,22 @@
  * Written by mud-freak (2016)
  *
  * Requirements:
- *  - Ikarus (>= 1.2 +floats)
- *  - LeGo (>= 2.3.2 LeGo_FrameFunctions | LeGo_HookEngine)
+ *  - Ikarus >= 1.2 (floats)
+ *  - LeGo >= 2.3.2 (LeGo_FrameFunctions | LeGo_HookEngine)
+ *
+ * Customizability:
+ *  - Collectible projectiles (yes/no):    FREEAIM_PROJECTILE_COLLECTABLE
+ *  - Draw force (drop-off) calculation:   freeAimGetDrawForce()
+ *  - Accuracy calculation:                freeAimGetAccuracy()
+ *  - Headshot damage multiplier:          freeAimGetHeadshotMultiplier()
+ *  - Headshot event:                      freeAimHeadshotEvent()
+ * Advanced (modification not recommended):
+ *  - Scatter radius for accuracy:         FREEAIM_SCATTER_DEG
+ *  - Camera view (shoulder view):         FREEAIM_CAMERA, FREEAIM_CAMERA_X_SHIFT
+ *  - Time before projectile drop-off:     FREEAIM_TRAJECTORY_ARC_MAX
  */
 
-/* Free aim settings */
-const int    FREEAIM_FOCUS_ACTIVATED              = 1;      // Enable/Disable focus collection (disable for performance)
+/* Free aim settings, only modify those listed above */
 const int    FREEAIM_CAMERA_X_SHIFT               = 0;      // Set to 1, if camera is in shoulder view (not recommended)
 const int    FREEAIM_MAX_DIST                     = 5000;   // 50 meters. For shooting and crosshair adjustments
 const int    FREEAIM_DRAWTIME_MIN                 = 1110;   // Minimum draw time (ms). Do not change - tied to animation
@@ -30,10 +40,7 @@ const string FREEAIM_TRAIL_FX            = "freeAim_TRAIL"; // Trailstrip FX. Sh
 var   int    crosshairHndl;                                 // Holds the crosshair handle
 var   int    bowDrawOnset;                                  // Time onset of drawing the bow
 
-/* These are all addresses (a.o.) used. Of course for gothic 2 as LeGo only supports gothic 2 */
-const int sizeof_zCVob                            = 288; // Gothic 1: 256
-const int oCNpc_anictrl_offset                    = 2432; // Gothic 1: 2488
-const int oCNpc_focus_vob_offset                  = 2476; // Gothic 1: 2532
+/* These are all addresses used. Of course for gothic 2 as LeGo only supports gothic 2 */
 const int zCVob__zCVob                            = 6283744; //0x5FE1E0
 const int zCVob__SetPositionWorld                 = 6404976; //0x61BB70
 const int zCWorld__AddVobAsChild                  = 6440352; //0x6245A0
@@ -111,18 +118,49 @@ func int freeAimGetAccuracy() {
     return accuracy[0];
 };
 
-/* Modify this function to set the headshot multiplier. Caution return value is a float */
+/* Modify this function to set the headshot multiplier. Caution: Return value is a float */
 func int freeAimGetHeadshotMultiplier() {
     var int multiplier;
     // Possibly incorporate weapon-specific stats, headshot talent, dependency on accuracy, ...
     multiplier = castToIntf(2.0); // For now it is just a fixed multiplier
-    return multiplier; // Caution: This is only multiplies the base damage (damage of the weapon), not the final damage!
+    return multiplier; // Caution: This only multiplies the base damage (damage of the weapon), not the final damage!
 };
 
-/* Use this function to create an event when getting a headshot, e.g. a print or a sound jingle */
+/* Use this function to create an event when getting a headshot, e.g. a print or a sound jingle, leave blank for none */
 func void freeAimHeadshotEvent() {
-    Snd_Play("FORGE_ANVIL_A1"); // "HAMMER"
-    PrintS("Kritischer Treffer");
+    Snd_Play("FORGE_ANVIL_A1");
+    PrintS("Kritischer Treffer"); // "Critical hit"
+};
+
+/********************************************** DO NO CROSS THIS LINE **************************************************
+
+  WARNING: All necessary adjustments can be performed above. You should not need to edited anything below.
+  Proceed at your own risk: On modifying the functions below free aiming will most certainly become unstable.
+
+*********************************************** DO NO CROSS THIS LINE *************************************************/
+
+/* Initialize free aim framework */
+func void Init_FreeAim() {
+    const int hookFreeAim = 0;
+    if (!hookFreeAim) {
+        HookEngineF(oCAniCtrl_Human__InterpolateCombineAni, 5, catchICAni); // Updates aiming animation
+        HookEngineF(oCAIArrow__SetupAIVob, 6, shootTarget); // Sets projectile direction and trajectory
+        HookEngineF(oCAIHuman__BowMode, 6, manageCrosshair); // Manages the crosshair (style, on/off)
+        HookEngineF(oCNpcFocus__SetFocusMode, 7, manageCrosshair); // Called when changing focus mode (several times)
+        HookEngineF(oCAIHuman__MagicMode, 7, manageCrosshair); // Manages the crosshair (style, on/off)
+        HookEngineF(mouseUpdate, 5, manualRotation); // Updates the player model rotation by mouse input
+        HookEngineF(oCAIArrowBase__DoAI, 7, projectileCollectable); // AI loop for each projectile
+        HookEngineF(onArrowDamagePtr, 7, headshotDetection); // Headshot detection
+        if (FREEAIM_PROJECTILE_COLLECTABLE) { // Because of balancing issues, this is a constant and not a variable
+            HookEngineF(onArrowHitNpcPtr, 5, onArrowHitNpc); // Puts projectile into inventory
+            HookEngineF(onArrowHitVobPtr, 5, onArrowGetStuck); // Keeps projectile alive when stuck in world
+            HookEngineF(onArrowHitStatPtr, 5, onArrowGetStuck); // Keeps projectile alive when stuck in world
+        };
+        MemoryProtectionOverride(alternativeHitchanceAdr, 10); // Enable overwriting hit chance
+        r_DefaultInit(); // Start rng for aiming accuracy
+        hookFreeAim = 1;
+    };
+    MEM_Info("Free aim initialized.");
 };
 
 /* Hit chance of 100%. Taken from http://forum.worldofplayers.de/forum/threads/1475456?p=25080651#post25080651 */
@@ -145,31 +183,7 @@ func void resetHitchance() {
     MEM_WriteByte(alternativeHitchanceAdr+5, 0);
 };
 
-/* Initialize free aim framework */
-func void Init_FreeAim() {
-    const int hookFreeAim = 0;
-    if (!hookFreeAim) {
-        HookEngineF(oCAniCtrl_Human__InterpolateCombineAni, 5, catchICAni);
-        HookEngineF(oCAIArrow__SetupAIVob, 6, shootTarget);
-        HookEngineF(oCAIHuman__BowMode, 6, manageCrosshair); // Called continuously
-        HookEngineF(oCNpcFocus__SetFocusMode, 7, manageCrosshair); // Called when changing focus mode (several times)
-        HookEngineF(oCAIHuman__MagicMode, 7, manageCrosshair); // Called continuously
-        HookEngineF(mouseUpdate, 5, manualRotation);
-        HookEngineF(oCAIArrowBase__DoAI, 7, projectileCollectable); // Called for projectile
-        HookEngineF(onArrowDamagePtr, 7, headshotDetection); // Headshot detection
-        if (FREEAIM_PROJECTILE_COLLECTABLE) {
-            HookEngineF(onArrowHitNpcPtr, 5, onArrowHitNpc);
-            HookEngineF(onArrowHitVobPtr, 5, onArrowGetStuck);
-            HookEngineF(onArrowHitStatPtr, 5, onArrowGetStuck);
-        };
-        MemoryProtectionOverride(alternativeHitchanceAdr, 10); // Enable overwriting hit chance
-        r_DefaultInit(); // Start rng for aiming accuracy
-        hookFreeAim = 1;
-    };
-    MEM_Info("Free aim initialized.");
-};
-
-/* Update internal settings when turning free aim on/off in the options. Outsourced for performance */
+/* Update internal settings when turning free aim on/off in the options */
 func void updateFreeAimSetting(var int on) {
     MEM_Info("Updating internal free aiming settings");
     if (on) {
@@ -189,21 +203,21 @@ func void updateFreeAimSetting(var int on) {
     };
 };
 
-/* Check whether free aim should be activated */
+/* Check whether free aiming should be activated */
 func int isFreeAimActive() {
     if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled"))) // Free aiming is disabled in the menu
     || (!MEM_ReadInt(mouseEnabled)) // Mouse controls are disabled
     || (!MEM_ReadInt(oCGame__s_bUseOldControls)) { // Classic gothic 1 controls are disabled
-        if (FREEAIM_ACTIVE_PREVFRAME != -1) { updateFreeAimSetting(0); }; // Set internal settings
+        if (FREEAIM_ACTIVE_PREVFRAME != -1) { updateFreeAimSetting(0); }; // Update internal settings (turn off)
         return 0;
     };
-    if (FREEAIM_ACTIVE_PREVFRAME != 1) { updateFreeAimSetting(1); }; // Set internal settings
+    if (FREEAIM_ACTIVE_PREVFRAME != 1) { updateFreeAimSetting(1); }; // Update internal settings (turn on)
     // Everything below is only reached if free aiming is enabled (but not necessarily active)
     if (MEM_Game.pause_screen) { return 0; }; // Only when playing
     if (!InfoManager_HasFinished()) { return 0; }; // Not in dialogs
     if (!Npc_IsInFightMode(hero, FMODE_FAR)) { return 0; }; // Only while using bow/crossbow
     // Everything below is only reached if free aiming is enabled and active (player is in respective fight mode)
-    var int keyStateAction1; keyStateAction1 = MEM_KeyState(MEM_GetKey("keyAction")); // A bit much, but needed later
+    var int keyStateAction1; keyStateAction1 = MEM_KeyState(MEM_GetKey("keyAction")); // A bit much, but needed below
     var int keyStateAction2; keyStateAction2 = MEM_KeyState(MEM_GetSecondaryKey("keyAction"));
     if (keyStateAction1 != KEY_PRESSED) && (keyStateAction1 != KEY_HOLD) // Only while pressing the action button
     && (keyStateAction2 != KEY_PRESSED) && (keyStateAction2 != KEY_HOLD) { return 0; };
@@ -221,7 +235,9 @@ func void removeCrosshair() {
 func void insertCrosshair(var int crosshairStyle, var int size) {
     if (crosshairStyle > 1) {
         var string crosshairTex;
-        if (!Hlp_IsValidHandle(crosshairHndl)) {
+        if (size < CROSSHAIR_MIN_SIZE) { size = CROSSHAIR_MIN_SIZE; }
+        else if (size > CROSSHAIR_MAX_SIZE) { size = CROSSHAIR_MAX_SIZE; };
+        if (!Hlp_IsValidHandle(crosshairHndl)) { // Create crosshair if it does not exist
             Print_GetScreenSize();
             crosshairHndl = View_CreateCenterPxl(Print_Screen[PS_X]/2, Print_Screen[PS_Y]/2, size, size);
             crosshairTex = MEM_ReadStatStringArr(crosshair, crosshairStyle);
@@ -234,9 +250,7 @@ func void insertCrosshair(var int crosshairStyle, var int size) {
             if (!Hlp_StrCmp(View_GetTexture(crosshairHndl), crosshairTex)) {
                 View_SetTexture(crosshairHndl, crosshairTex);
             };
-            if (size < CROSSHAIR_MIN_SIZE) { size = CROSSHAIR_MIN_SIZE; }
-            else if (size > CROSSHAIR_MAX_SIZE) { size = CROSSHAIR_MAX_SIZE; };
-            if (crsHr.psizex != size) {
+            if (crsHr.psizex != size) { // Update its size
                 View_ResizePxl(crosshairHndl, size, size);
                 View_MoveToPxl(crosshairHndl, Print_Screen[PS_X]/2-(size/2), Print_Screen[PS_Y]/2-(size/2));
             };
@@ -251,7 +265,11 @@ func void manageCrosshair() {
 
 /* Check whether free aim should collect focus */
 func int getFreeAimFocus() {
-    if (!FREEAIM_FOCUS_ACTIVATED) { return 0; }; // More performance friendly
+    if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusEnabled"))) { // No focus collection (performance) not recommended
+        if (!MEM_GothOptExists("FREEAIM", "focusEnabled")) {
+            MEM_SetGothOpt("FREEAIM", "focusEnabled", "1"); // Turn on by default
+        } else { return 0; };
+    };
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { return 1; }; // Only while using bow/crossbow
     return 0;
 };
@@ -262,7 +280,7 @@ func void manualRotation() {
     var int deltaX; deltaX = mulf(mkf(MEM_ReadInt(mouseDeltaX)), MEM_ReadInt(mouseSensX)); // Get mouse change in x
     if (deltaX == FLOATNULL) { return; }; // Only rotate if there was movement along x position
     deltaX = mulf(deltaX, castToIntf(FREEAIM_ROTATION_SCALE)); // Turn rate
-    var int hAniCtrl; hAniCtrl = MEM_ReadInt(_@(hero)+oCNpc_anictrl_offset); // oCNpc.anictrl
+    var int hAniCtrl; hAniCtrl = MEM_ReadInt(_@(hero)+2432); // oCNpc.anictrl
     const int call = 0; var int null;
     if (CALL_Begin(call)) {
         CALL_IntParam(_@(null)); // 0 = disable turn animation (there is none while aiming anyways)
@@ -272,7 +290,7 @@ func void manualRotation() {
     };
 };
 
-/* Shoot aim-tailored trace ray. Do no use for other things. This function is customized for aiming. */
+/* Shoot aim-tailored trace ray. Do no use for other purposes. This function is customized for aiming. */
 func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPtr, var int trueDistPtr) {
     var int flags; flags = (1<<0) | (1<<14) | (1<<9);
     // (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_VOB_IGNORE_PROJECTILES | zTRACERAY_POLY_TEST_WATER)
@@ -325,7 +343,7 @@ func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPt
     };
     var int found; found = CALL_RetValAsInt(); // Did the trace ray hit
     var int foundFocus; foundFocus = 0; // Is the focus vob in the trace ray vob list
-    var int potentialVob; potentialVob = MEM_ReadInt(herPtr+oCNpc_focus_vob_offset); // Focus vob by focus collection
+    var int potentialVob; potentialVob = MEM_ReadInt(herPtr+2476); // oCNpc.focus_vob // Focus vob by focus collection
     if (potentialVob) && (Hlp_Is_oCNpc(potentialVob)) { // Now check if the collected focus was hit by the trace ray
         var C_NPC target; target = _^(potentialVob);  // Do not allow focussing npcs that are down
         if (!Npc_IsInState(target, ZS_Unconscious)) && (!Npc_IsInState(target, ZS_MagicSleep)) && (!Npc_IsDead(target)){
@@ -393,7 +411,7 @@ func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPt
     return found;
 };
 
-/* Hook oCAniCtrl_Human::InterpolateCombineAni. Set target position to update aim animation */
+/* Set target position to update aim animation. Hook oCAniCtrl_Human::InterpolateCombineAni */
 func void catchICAni() {
     if (!isFreeAimActive()) { return; };
     var int herPtr; herPtr = _@(hero);
@@ -515,7 +533,7 @@ func void catchICAni() {
     MEM_WriteInt(ESP+8, angleY);
 };
 
-/* Hook oCAIArrow::SetupAIVob */
+/* Set the projectile direction and trajectory. Hook oCAIArrow::SetupAIVob */
 func void shootTarget() {
     var int projectile; projectile = MEM_ReadInt(ESP+4);  // First argument is the projectile
     var C_NPC shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
@@ -523,7 +541,7 @@ func void shootTarget() {
     var int distance; aimRay(FREEAIM_MAX_DIST, 0, 0, 0, _@(distance)); // Trace ray intersection
     var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB"); // Arrow needs target vob
     if (!vobPtr) {
-        vobPtr = MEM_Alloc(sizeof_zCVob); // Will never delete this vob (it will be re-used on the next shot)
+        vobPtr = MEM_Alloc(288); // sizeof_zCVob // Will never delete this vob (it will be re-used on the next shot)
         CALL__thiscall(vobPtr, zCVob__zCVob);
         MEM_WriteString(vobPtr+16, "AIMVOB"); // zCVob._zCObject_objectName
         CALL_PtrParam(_@(MEM_Vobtree));
@@ -587,7 +605,7 @@ func void shootTarget() {
 
 /* This function is timed by draw force and is responsible for applying gravity to a projectile */
 func void dropProjectile(var int rigidBody) {
-    if (!rigidBody) { return; };
+    if (!rigidBody) || (!MEM_ReadInt(rigidBody)) { return; };
     if (MEM_ReadInt(rigidBody+188) == FLOATNULL) // zCRigidBody.velocity[3]
     && (MEM_ReadInt(rigidBody+192) == FLOATNULL)
     && (MEM_ReadInt(rigidBody+196) == FLOATNULL) { return; }; // Do not add gravity if projectile already stopped moving
@@ -600,6 +618,8 @@ func void onArrowHitNpc() {
     var C_NPC victim; victim = _^(EDI);
     var int munitionInst; munitionInst = projectile.instanz; // May change munitionInst here, e.g. into "used arrow"
     CreateInvItems(victim, munitionInst, 1); // Put respective munition instance into the inventory
+    if (FF_ActiveData(dropProjectile, _@(projectile._zCVob_rigidBody))) {
+        FF_RemoveData(dropProjectile, _@(projectile._zCVob_rigidBody)); };
     MEM_WriteInt(ESI+56, -1073741824); // oCAIArrow.lifeTime (mark this AI for projectileCollectable)
 };
 
@@ -616,6 +636,8 @@ func void onArrowGetStuck() {
     };
     projectile.flags = projectile.flags &~ ITEM_NFOCUS; // Focusable (collectable)
     projectile._zCVob_callback_ai = 0; // Release vob from AI
+    if (FF_ActiveData(dropProjectile, _@(projectile._zCVob_rigidBody))) {
+        FF_RemoveData(dropProjectile, _@(projectile._zCVob_rigidBody)); };
     // Have projectile not go to deep in. Might not make sense but trust me. (RightVec will be multiplied later)
     projectile._zCVob_trafoObjToWorld[0] = mulf(projectile._zCVob_trafoObjToWorld[0], -1096111445);
     projectile._zCVob_trafoObjToWorld[4] = mulf(projectile._zCVob_trafoObjToWorld[4], -1096111445);
@@ -635,6 +657,8 @@ func void projectileCollectable() {
     if (!FREEAIM_PROJECTILE_COLLECTABLE) { return; }; // Normal projectile handling
     // If the projectile stopped moving (and did not hit npc), release its AI
     if (MEM_ReadInt(arrowAI+56) != -1073741824) && !(projectile._zCVob_bitfield[0] & zCVob_bitfield0_physicsEnabled) {
+        if (FF_ActiveData(dropProjectile, _@(projectile._zCVob_rigidBody))) {
+            FF_RemoveData(dropProjectile, _@(projectile._zCVob_rigidBody)); };
         if (Hlp_StrCmp(projectile.effect, FREEAIM_TRAIL_FX)) { // Remove trail strip fx
             const int call2 = 0;
             if (CALL_Begin(call2)) {
@@ -706,6 +730,6 @@ func void headshotDetection() {
     MEM_Free(projectileBBox); MEM_Free(headBBox); MEM_Free(headSphere); // Free the memory
     if (intersection) {
         freeAimHeadshotEvent(); // Use this function to add an event when getting a headshot, e.g. a print or a sound
-        MEM_WriteInt(damagePtr, mulf(MEM_ReadInt(damagePtr), freeAimGetHeadshotMultiplier()));
+        MEM_WriteInt(damagePtr, mulf(MEM_ReadInt(damagePtr), freeAimGetHeadshotMultiplier())); // BASE damage!
     };
 };
