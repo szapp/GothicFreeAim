@@ -416,9 +416,7 @@ func void catchICAni() {
     if (!isFreeAimActive()) { return; };
     var int herPtr; herPtr = _@(hero);
 
-
-
-    // Strafing
+/*    // Strafing
     var int keyState_strafeL1; keyState_strafeL1 = MEM_KeyState(MEM_GetKey("keyStrafeLeft"));
     var int keyState_strafeL2; keyState_strafeL2 = MEM_KeyState(MEM_GetSecondaryKey("keyStrafeLeft"));
     var int keyState_strafeR1; keyState_strafeR1 = MEM_KeyState(MEM_GetKey("keyStrafeRight"));
@@ -473,8 +471,7 @@ func void catchICAni() {
             CALL_zStringPtrParam("T_FREEAIMBACK");
             CALL__thiscall(model, zCModel__StopAnimation);
         };
-    };
-
+    };*/
 
     var int size; size = CROSSHAIR_MAX_SIZE; // Start out with the maximum size of crosshair (adjust below)
     if (getFreeAimFocus()) { // Set focus npc if there is a valid one under the crosshair
