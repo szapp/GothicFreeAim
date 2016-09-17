@@ -60,9 +60,7 @@ const int alternativeHitchanceAdr                 = 6953494; //0x6A1A10
 const int oCNpc__GetModel                         = 7571232; //0x738720
 const int zCModel__SearchNode                     = 5758960; //0x57DFF0
 const int zCModel__GetBBox3DNodeWorld             = 5738736; //0x5790F0
-const int zTBBox3D__GetSphere3D                   = 5528768; //0x545CC0
-const int zTBBox3D__Scale                         = 5528560; //0x545BF0
-const int zTBBox3D__IsIntersecting                = 6115184; //0x5D4F70
+const int zCModel__GetNodePositionWorld           = 5738816; //0x579140
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
 const int mouseDeltaX                             = 9246300; //0x8D165C
@@ -77,6 +75,20 @@ const int onArrowDamagePtr                        = 6953621; //0x6A1A95 // Hook
 const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook
+
+var int pos1[6]; var int line1[6];
+func void drawHeadBB() {
+    if (pos1[0] != 0) {
+        CALL_PtrParam(_@(zCOLOR_GREEN)); CALL__thiscall(_@(pos1), /*0x545EE0 zTBBox3D__Draw*/5529312);
+    };
+    if (line1[0] != 0) {
+        CALL_IntParam(0);
+        CALL_PtrParam(_@(zCOLOR_RED));
+        CALL_PtrParam(_@(line1)+12);
+        CALL_PtrParam(_@(line1));
+        CALL__thiscall(/*0x8D42F8 zlineCache*/9257720, /*0x50B450 zCLineCache__Line3D*/5289040);
+    };
+};
 
 /* Modify this function to alter the draw force calculation. Scaled between 0 and 100 (percent) */
 func int freeAimGetDrawForce() {
@@ -128,7 +140,6 @@ func int freeAimGetHeadshotMultiplier(var C_NPC target) {
     // Possibly incorporate weapon-specific stats, headshot talent, dependecy on target, ...
     // The multiplier may depent on the target npc (e.g. different damage for monsters). Make use of 'target' argument
     // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
-    // INFO: Monsters don't have a dedicated head visual: No way of detecting headshots for monsters at this time!
     var C_Item weapon; // The weapon can also be considered (e.g. weapon specific damage). Make use of 'weapon' for that
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
     else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
@@ -142,7 +153,6 @@ func int freeAimGetHeadshotMultiplier(var C_NPC target) {
 func void freeAimHeadshotEvent(var C_NPC target) {
     // The event may depent on the target npc (e.g. different sound for monsters). Make use of 'target' argument
     // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
-    // INFO: Monsters don't have a dedicated head visual: No way of detecting headshots for monsters at this time!
     var C_Item weapon; // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
     else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
@@ -433,6 +443,7 @@ func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPt
 
 /* Set target position to update aim animation. Hook oCAniCtrl_Human::InterpolateCombineAni */
 func void catchICAni() {
+    drawHeadBB(); // Debug by visualization
     if (!isFreeAimActive()) { return; };
     var int herPtr; herPtr = _@(hero);
 
@@ -715,38 +726,66 @@ func void headshotDetection() {
     };
     var int head; head = CALL_RetValAsPtr();
     if (!head) { return; }; // There should be no npc without head node. But just in case
-    // Get the bbox of the head (although zCModelNodeInst has a zTBBox3D property, it is empty the first time)
-    CALL_PtrParam(head);
-    CALL_RetValIsStruct(24); // sizeof_zTBBox3D // No recyclable call possible
-    CALL__thiscall(model, zCModel__GetBBox3DNodeWorld);
-    var int headBBox; headBBox = CALL_RetValAsPtr();
-    // Get the 3dsphere of the head (necessary, since the bbox of the head is too small, working with spheres is easier)
-    CALL_RetValIsStruct(16); // sizeof_zTBSphere3D // No recyclable call possible
-    CALL__thiscall(headBBox, zTBBox3D__GetSphere3D);
-    var int headSphere; headSphere = CALL_RetValAsPtr();
-    MEM_WriteInt(headSphere+12, mulf(MEM_ReadInt(headSphere+12), castToIntf(1.75))); // Scale it up
-    CALL_PtrParam(_@(zCOLOR_GREEN)); CALL__thiscall(headBBox, /*0x545EE0 zTBBox3D__Draw*/5529312); // Visualize
-    CALL_PtrParam(_@(zCOLOR_RED)); CALL__thiscall(headSphere, /*0x5441F0 zTBSphere3D__Draw*/5521904); // Visualize
-    // Monsters don't have a dedicated head visual: The bbox is "empty". No way of detecting headshots for monsters.
-    // Copy and enlarge the projectile bbox as well
-    var int projectileBBox; projectileBBox = MEM_Alloc(24); // sizeof_zTBBox3D
-    MEM_CopyWords(projectile+124, projectileBBox, 6);
-    var int bboxScale; bboxScale = castToIntf(1.2); // The projectile bbox is only detected if it is also enlarged a bit
-    const int call5 = 0;
-    if (CALL_Begin(call5)) {
-        CALL_FloatParam(_@(bboxScale));
-        CALL__thiscall(_@(projectileBBox), zTBBox3D__Scale);
-        call5 = CALL_End();
+    var int headBBox[6]; // zTBBox3D
+    if (MEM_ReadInt(head+8)) { // head->nodeVisual // If the head has a dedicated visual (humans only), retrieve bbox
+        // Get the bbox of the head (although zCModelNodeInst has a zTBBox3D property, it is empty the first time)
+        CALL_PtrParam(head); CALL_RetValIsStruct(24); // sizeof_zTBBox3D // No recyclable call possible
+        CALL__thiscall(model, zCModel__GetBBox3DNodeWorld);
+        var int headBBoxPtr; headBBoxPtr = CALL_RetValAsPtr();
+        MEM_CopyWords(headBBoxPtr, _@(headBBox), 6);
+        MEM_Free(headBBoxPtr); // Free memory
+    } else { // Monsters don't have a dedicated head visual: Headshot detection less accurate
+        var int headSize; headSize = mkf(30); // Need to guess the head size (set it to 60x60cm)
+        MEM_Info(ConcatStrings("headshotDetection: No head visual. Guessing head size: 2x", toStringf(headSize)));
+        // Get the pos of the head (although zCModelNodeInst has a position property, it is empty the first time)
+        CALL_PtrParam(head); CALL_RetValIsStruct(12); // sizeof_zVEC3 // No recyclable call possible
+        CALL__thiscall(model, zCModel__GetNodePositionWorld);
+        var int headPosPtr; headPosPtr = CALL_RetValAsInt();
+        var int headPos[3]; MEM_CopyWords(headPosPtr, _@(headPos), 3);
+        MEM_Free(headPosPtr); // Free memory
+        headBBox[0] = subf(headPos[0], headSize);
+        headBBox[1] = subf(headPos[1], headSize);
+        headBBox[2] = subf(headPos[2], headSize);
+        headBBox[3] = addf(headPos[0], headSize);
+        headBBox[4] = addf(headPos[1], headSize);
+        headBBox[5] = addf(headPos[2], headSize);
     };
-    // Check intersection between projectile bbox and head 3dsphere (most reliable method)
-    const int call4 = 0;
-    if (CALL_Begin(call4)) {
-        CALL_PtrParam(_@(headSphere));
-        CALL__thiscall(_@(projectileBBox), zTBBox3D__IsIntersecting);
-        call4 = CALL_End();
-    };
-    var int intersection; intersection = CALL_RetValAsInt();
-    MEM_Free(projectileBBox); MEM_Free(headBBox); MEM_Free(headSphere); // Free the memory
+    // The internal engine functions are not accurate enough for detecting a headshot.
+    // Instead check here if "any" point along the line of projectile direction lies inside the bbox of the head.
+    var int pos[3]; var int dir[3]; // Start position and direction of collision line
+    dir[0] = MEM_ReadInt(projectile+60); // This is the right-vector of the projectile (projectile flies sideways)
+    dir[1] = MEM_ReadInt(projectile+76);
+    dir[2] = MEM_ReadInt(projectile+92);
+    pos[0] = addf(MEM_ReadInt(projectile+ 72), mulf(dir[0], mkf(100))); // Start line 1meter behind the projectile
+    pos[1] = addf(MEM_ReadInt(projectile+ 88), mulf(dir[1], mkf(100)));
+    pos[2] = addf(MEM_ReadInt(projectile+104), mulf(dir[2], mkf(100)));
+    var int intersection; intersection = 0; // Head shot detected
+    var int i; i=0; var int iter; iter = 700/5; // 7meters: Max distance from model bbox edge to head bbox (e.g. troll)
+    while(i <= iter); // Walk along the line in steps of 5cm
+        var int line[3]; i += 1;
+        line[0] = subf(pos[0], mulf(dir[0], mkf(i*5))); // Next point a long the collision line
+        line[1] = subf(pos[1], mulf(dir[1], mkf(i*5)));
+        line[2] = subf(pos[2], mulf(dir[2], mkf(i*5)));
+        if (lef(headBBox[0], line[0])) // Is the point along the collision line inside the head bbox
+        && (lef(headBBox[1], line[1]))
+        && (lef(headBBox[2], line[2]))
+        && (gef(headBBox[3], line[0]))
+        && (gef(headBBox[4], line[1]))
+        && (gef(headBBox[5], line[2])) {
+            intersection = 1;
+            break;
+        };
+    end;
+
+    // Debug by visualization
+    line1[0] = pos[0];
+    line1[1] = pos[1];
+    line1[2] = pos[2];
+    line1[3] = subf(pos[0], mulf(dir[0], mkf(iter*5)));
+    line1[4] = subf(pos[1], mulf(dir[1], mkf(iter*5)));
+    line1[5] = subf(pos[2], mulf(dir[2], mkf(iter*5)));
+    MEM_CopyWords(_@(headBBox), _@(pos1), 6);
+
     if (intersection) {
         var C_NPC targetNpc; targetNpc = _^(target);
         freeAimHeadshotEvent(targetNpc); // Use this function to add an event on headshot, e.g. a print or a sound
