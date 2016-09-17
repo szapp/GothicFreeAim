@@ -76,20 +76,6 @@ const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook
 
-var int pos1[6]; var int line1[6];
-func void drawHeadBB() {
-    if (pos1[0] != 0) {
-        CALL_PtrParam(_@(zCOLOR_GREEN)); CALL__thiscall(_@(pos1), /*0x545EE0 zTBBox3D__Draw*/5529312);
-    };
-    if (line1[0] != 0) {
-        CALL_IntParam(0);
-        CALL_PtrParam(_@(zCOLOR_RED));
-        CALL_PtrParam(_@(line1)+12);
-        CALL_PtrParam(_@(line1));
-        CALL__thiscall(/*0x8D42F8 zlineCache*/9257720, /*0x50B450 zCLineCache__Line3D*/5289040);
-    };
-};
-
 /* Modify this function to alter the draw force calculation. Scaled between 0 and 100 (percent) */
 func int freeAimGetDrawForce() {
     var C_Item weapon; // The weapon can also be considered (e.g. weapon specific damage). Make use of 'weapon' for that
@@ -443,7 +429,6 @@ func int aimRay(var int distance, var int vobPtr, var int posPtr, var int distPt
 
 /* Set target position to update aim animation. Hook oCAniCtrl_Human::InterpolateCombineAni */
 func void catchICAni() {
-    drawHeadBB(); // Debug by visualization
     if (!isFreeAimActive()) { return; };
     var int herPtr; herPtr = _@(hero);
 
@@ -776,17 +761,7 @@ func void headshotDetection() {
             break;
         };
     end;
-
-    // Debug by visualization
-    line1[0] = pos[0];
-    line1[1] = pos[1];
-    line1[2] = pos[2];
-    line1[3] = subf(pos[0], mulf(dir[0], mkf(iter*5)));
-    line1[4] = subf(pos[1], mulf(dir[1], mkf(iter*5)));
-    line1[5] = subf(pos[2], mulf(dir[2], mkf(iter*5)));
-    MEM_CopyWords(_@(headBBox), _@(pos1), 6);
-
-    if (intersection) {
+    if (intersection) { // Headshot detected
         var C_NPC targetNpc; targetNpc = _^(target);
         freeAimHeadshotEvent(targetNpc); // Use this function to add an event on headshot, e.g. a print or a sound
         MEM_WriteInt(damagePtr, mulf(MEM_ReadInt(damagePtr), freeAimGetHeadshotMultiplier(targetNpc))); // BASE damage!
