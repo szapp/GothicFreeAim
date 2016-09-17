@@ -16,12 +16,13 @@
  *
  * Customizability:
  *  - Collect and re-use shot projectiles (yes/no):   FREEAIM_REUSE_PROJECTILES
- *  - Draw force (drop-off) calculation:              freeAimGetDrawForce()
- *  - Accuracy calculation:                           freeAimGetAccuracy()
- *  - Reticle style and size:                         freeAimGetReticle(), FREEAIM_RETICLE_BOW, FREEAIM_RETICLE_CROSSBOW
- *  - Headshot damage calculation:                    freeAimGetHeadshotDamage(var int damage, var C_NPC target)
- *  - Headshot event (print, sound, xp, ...):         freeAimHeadshotEvent(var C_NPC target)
- *  - Head sizes for headshot detection on monsters:  freeAimGetHeadSize(var C_NPC monster)
+ *  - Draw force (drop-off) calculation:              freeAimGetDrawForce(weapon, talent)
+ *  - Accuracy calculation:                           freeAimGetAccuracy(weapon, talent)
+ *  - Reticle style:                                  freeAimGetReticleStyle(weapon, talent)
+ *  - Reticle size:                                   freeAimGetReticleSize(size, weapon, talent)
+ *  - Headshot damage calculation:                    freeAimGetHeadshotDamage(damage, target)
+ *  - Headshot event (print, sound, xp, ...):         freeAimHeadshotEvent(target)
+ *  - Head sizes for headshot detection on monsters:  freeAimGetHeadSize(monster)
  * Advanced (modification not recommended):
  *  - Scatter radius for accuracy:                    FREEAIM_SCATTER_DEG
  *  - Camera view (shoulder view):                    FREEAIM_CAMERA and FREEAIM_CAMERA_X_SHIFT
@@ -42,8 +43,6 @@ const float  FREEAIM_SCATTER_DEG          = 2.2;             // Maximum scatter 
 const int    FREEAIM_RETICLE_MIN_SIZE     = 16;              // Smallest reticle size in pixels (longest range)
 const int    FREEAIM_RETICLE_MED_SIZE     = 20;              // Medium reticle size in pixels (for disabled focus)
 const int    FREEAIM_RETICLE_MAX_SIZE     = 32;              // Biggest reticle size in pixels (closest range)
-const int    FREEAIM_RETICLE_BOW          = POINTY_RETICLE;  // Reticle texture definitions are in Constants.d
-const int    FREEAIM_RETICLE_CROSSBOW     = POINTY_RETICLE;  // Reticle texture definitions are in Constants.d
 const string FREEAIM_CAMERA               = "CamModRngeFA";  // CCamSys_Def script instance for free aim
 const string FREEAIM_TRAIL_FX             = "freeAim_TRAIL"; // Trailstrip FX. Should not be changed
 const float  FREEAIM_PROJECTILE_GRAVITY   = 0.1;             // The gravity decides how fast the projectile drops
@@ -55,86 +54,63 @@ var   int    freeAimReticleHndl;                             // Holds the handle
 var   int    freeAimBowDrawOnset;                            // Time onset of drawing the bow
 
 /* Modify this function to alter the draw force calculation. Scaled between 0 and 100 (percent) */
-func int freeAimGetDrawForce() {
-    var C_Item weapon; // The weapon can also be considered (e.g. weapon specific damage). Make use of 'weapon' for that
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
-    else { MEM_Error("freeAimGetDrawForce: No valid weapon equipped/readied!"); return -1; }; // Should never happen
-    // Check for how long the bow was drawn
-    var int drawForce; drawForce = MEM_Timer.totalTime - freeAimBowDrawOnset;
-    // Set drawForce by draw time scaled between min and max times
-    drawForce = (100 * (drawForce - FREEAIM_DRAWTIME_MIN))/(FREEAIM_DRAWTIME_MAX - FREEAIM_DRAWTIME_MIN);
+func int freeAimGetDrawForce(var C_Item weapon, var int talent) {
+    var int drawTime; drawTime = MEM_Timer.totalTime - freeAimBowDrawOnset;
     // Possibly incorporate more factors like e.g. a quick-draw talent, weapon-specific stats, ...
-    if (drawForce > 100) { drawForce = 100; } else if (drawForce < 0) { drawForce = 0; }; // Must be in [0, 100]
+    // Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW)
+    // For now set drawForce by draw time scaled between min and max times:
+    var int drawForce; drawForce = (100 * (drawTime-FREEAIM_DRAWTIME_MIN))/(FREEAIM_DRAWTIME_MAX-FREEAIM_DRAWTIME_MIN);
+    if (drawForce > 100) { drawForce = 100; } else if (drawForce < 0) { drawForce = 0; }; // Respect the ranges
     return drawForce;
 };
 
 /* Modify this function to alter accuracy calculation. Scaled between 0 and 100 (percent) */
-func int freeAimGetAccuracy() {
-    // Right now there is two factors running into accuracy: (1) character talent, (2) draw force
-    // Factor 1: Talent (keep in mind that it might be greater than 100)
-    var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
-    else { MEM_Error("freeAimGetAccuracy: No valid weapon equipped/readied!"); return -1; };
-    if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
-    else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
-    else { MEM_Error("freeAimGetAccuracy: No valid weapon equipped/readied!"); return -1; };
-    // Factor 2: Draw force
-    var int drawForce; drawForce = freeAimGetDrawForce(); // Already scaled between [0, 100], see freeAimGetDrawForce()
-    // Factor X: Add any other factors here e.g. weapon-specific accuracy stats, weapon spread, accuracy talent, ...
-    // Calculate overall accuracy: From all factors (modify the following lines to change the calculation)
+func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
+    // Add any other factors here e.g. weapon-specific accuracy stats, weapon spread, accuracy talent, ...
+    // Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW)
     // Here the talent is scaled by draw force: draw force=100% => accuracy=talent; draw force=0% => accuracy=talent/2
+    var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent); // Already scaled to [0, 100]
     if (drawForce < talent) { drawForce = talent; }; // Decrease impact of draw force on talent
     var int accuracy; accuracy = (talent * drawForce)/100;
-    // Final accuracy needs to be in [0, 100]
-    if (accuracy > 100) { accuracy = 100; } else if (accuracy < 0) { accuracy = 0; };
+    if (accuracy > 100) { accuracy = 100; } else if (accuracy < 0) { accuracy = 0; }; // Respect the ranges
     return accuracy;
 };
 
-/* Modify this function to alter the reticle style and size. By draw force, weapon-specific stats, talent, ... */
-func int freeAimGetReticle(var int sizePtr) {
-    var int reticleStyle; var int reticleSize; reticleSize = MEM_ReadInt(sizePtr);
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) {
-        var C_Item weapon; weapon = Npc_GetReadiedWeapon(hero); // Get readied ranged weapon
-        // Modify these lines to include special cases for certain weapons
-        if (weapon.flags & ITEM_BOW) { reticleStyle = FREEAIM_RETICLE_BOW; } // Bow readied
-        else if (weapon.flags & ITEM_CROSSBOW) { reticleStyle = FREEAIM_RETICLE_CROSSBOW; } // Crossbow readied
-        else { MEM_Error("freeAimGetReticle: No valid weapon readied!"); return -1; };
-    } else { MEM_Error("freeAimGetReticle: No valid weapon readied!"); return -1; };
-    // The reticle size comes precalculated by aiming distance. It can be changed by overwriting it
-    // var int scale; scale = -freeAimGetDrawForce()+100; // E.g. scale with draw force instead
-    // var int scale; scale = -freeAimGetAccuracy()+100; // or scale with accuracy
-    // reticleSize = (((FREEAIM_RETICLE_MAX_SIZE-FREEAIM_RETICLE_MIN_SIZE)*(scale))/100)+FREEAIM_RETICLE_MIN_SIZE;
-    // The size should not exceed the ranges
-    if (reticleSize < FREEAIM_RETICLE_MIN_SIZE) { reticleSize = FREEAIM_RETICLE_MIN_SIZE; }
-    else if (reticleSize > FREEAIM_RETICLE_MAX_SIZE) { reticleSize = FREEAIM_RETICLE_MAX_SIZE; };
-    MEM_WriteInt(sizePtr, reticleSize); // Overwrite reticle size
-    return reticleStyle;
+/* Modify this function to alter the reticle style. By draw force, weapon-specific stats, talent, ... */
+func int freeAimGetReticleStyle(var C_Item weapon, var int talent) {
+    if (weapon.flags & ITEM_BOW) { return POINTY_RETICLE; }; // Bow readied
+    if (weapon.flags & ITEM_CROSSBOW) { return POINTY_RETICLE; }; // Crossbow readied
+    return NORMAL_RETICLE;
+};
+
+/* Modify this function to alter the reticle size. By draw force, weapon-specific stats, talent, ... */
+func int freeAimGetReticleSize(var int size, var int weapon, var int talent) {
+    // The argument 'size' comes precalculated by aiming distance
+    // var int scale; scale = -freeAimGetDrawForce(weapon, talent)+100; // E.g. scale with draw force instead
+    // var int scale; scale = -freeAimGetAccuracy(weapon, talent)+100; // or scale with accuracy
+    // size = (((FREEAIM_RETICLE_MAX_SIZE-FREEAIM_RETICLE_MIN_SIZE)*(scale))/100)+FREEAIM_RETICLE_MIN_SIZE;
+    return size; // For now leave it scaled by distance
 };
 
 /* Modify this function to set the headshot damage. Caution: damage is a float and should be returned as such */
-func int freeAimGetHeadshotDamage(var int damage, var C_NPC target) {
+func int freeAimGetHeadshotDamage(var int damage, var C_NPC target, var C_Item weapon) {
     // Possibly incorporate weapon-specific stats, headshot talent, dependecy on target, ...
     // The damage may depent on the target npc (e.g. different damage for monsters). Make use of 'target' argument
     // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
-    var C_Item weapon; // The weapon can also be considered (e.g. weapon specific damage). Make use of 'weapon' for that
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
-    // Caution: Weapon may have been unequipped already at this time!
+    // The weapon can also be considered (e.g. weapon specific damage). Make use of 'weapon' for that
+    // Caution: Weapon may have been unequipped already at this time! Use Hlp_IsValidItem(weapon)
     // if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
     damage = mulf(damage, castToIntf(2.0)); // For now, just double the base damage
-    return damage; // This sets a new base damage (damage of weapon), not the final damage!
+    return damage; // This sets a new base damage (excl. strength, ...). This is not the final damage!
 };
 
 /* Use this function to create an event when getting a headshot, e.g. a print or a sound jingle, leave blank for none */
-func void freeAimHeadshotEvent(var C_NPC target) {
+func void freeAimHeadshotEvent(var C_NPC target, var C_Item weapon) {
     // The event may depent on the target npc (e.g. different sound for monsters). Make use of 'target' argument
     // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
-    var C_Item weapon; // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
-    // Caution: Weapon may have been unequipped already at this time!
+    // The headshots could also be counted here to give an xp reward after 25 headshots
+    // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
+    // Caution: Weapon may have been unequipped already at this time! Use Hlp_IsValidItem(weapon)
     // if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
     Snd_Play("FORGE_ANVIL_A1");
     PrintS("Kritischer Treffer"); // "Critical hit"
@@ -217,6 +193,72 @@ func void freeAim_Init() {
         hookFreeAim = 1;
     };
     MEM_Info("Free aim initialized.");
+};
+
+/* Internal helper function for freeAimGetDrawForce() */
+func int freeAimGetDrawForce_() {
+    var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
+    else { MEM_Error("freeAimGetDrawForce_: No valid weapon equipped/readied!"); return -1; }; // Should never happen
+    if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
+    else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
+    else { MEM_Error("freeAimGetDrawForce_: No valid weapon equipped/readied!"); return -1; };
+    var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent);
+    if (drawForce > 100) { drawForce = 100; } else if (drawForce < 0) { drawForce = 0; }; // Must be in [0, 100]
+    return drawForce;
+};
+
+/* Internal helper function for freeAimGetAccuracy() */
+func int freeAimGetAccuracy_() {
+    var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
+    else { MEM_Error("freeAimGetAccuracy_: No valid weapon equipped/readied!"); return -1; }; // Should never happen
+    if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
+    else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
+    else { MEM_Error("freeAimGetAccuracy_: No valid weapon equipped/readied!"); return -1; };
+    var int accuracy; accuracy = freeAimGetAccuracy(weapon, talent);
+    if (accuracy > 100) { accuracy = 100; } else if (accuracy < 0) { accuracy = 0; }; // Limit to [0, 100]
+    return accuracy;
+};
+
+/* Internal helper function for freeAimGetReticleSize() and freeAimGetReticleStyle() */
+func int freeAimGetReticle(var int sizePtr) {
+    var int reticleStyle; var int reticleSize; reticleSize = MEM_ReadInt(sizePtr);
+    var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
+    else { MEM_Error("freeAimGetReticle_: No valid weapon equipped/readied!"); return -1; }; // Should never happen
+    if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
+    else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
+    else { MEM_Error("freeAimGetReticle_: No valid weapon equipped/readied!"); return -1; };
+    reticleStyle = freeAimGetReticleStyle(weapon, talent);
+    reticleSize = freeAimGetReticleSize(reticleSize, weapon, talent);
+    if (reticleSize < FREEAIM_RETICLE_MIN_SIZE) { reticleSize = FREEAIM_RETICLE_MIN_SIZE; }
+    else if (reticleSize > FREEAIM_RETICLE_MAX_SIZE) { reticleSize = FREEAIM_RETICLE_MAX_SIZE; };
+    if (reticleStyle < 0) || (reticleStyle >= MAX_RETICLE) {
+        MEM_Error("freeAimGetReticle_: Invalid reticleStyle!"); reticleStyle = NO_RETICLE; };
+    MEM_WriteInt(sizePtr, reticleSize); // Overwrite reticle size
+    return reticleStyle;
+};
+
+/* Internal helper function for freeAimGetHeadshotDamage() */
+func int freeAimGetHeadshotDamage_(var int damage, var C_NPC target) {
+    var C_Item weapon; // Caution: Weapon may have been unequipped already at this time
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
+    damage = freeAimGetHeadshotDamage(damage, target, weapon);
+    if (lf(damage, FLOATNULL)) { damage = FLOATNULL; };
+    return damage; // This sets a new base damage (damage of weapon), not the final damage!
+};
+
+/* Internal helper function for freeAimHeadshotEvent() */
+func void freeAimHeadshotEvent_(var C_NPC target) {
+    var C_Item weapon; // Caution: Weapon may have been unequipped already at this time
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
+    freeAimHeadshotEvent(target, weapon);
 };
 
 /* Hit chance of 100%. Taken from http://forum.worldofplayers.de/forum/threads/1475456?p=25080651#post25080651 */
@@ -538,7 +580,7 @@ func void freeAimSetupProjectile() {
         CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
     };
     // Manipulate aiming position (scatter/accuracy): Rotate target position around y and x axes (left/right, up/down)
-    var int accuracy; accuracy = freeAimGetAccuracy(); // Change the accuracy calculation in that function, not here!
+    var int accuracy; accuracy = freeAimGetAccuracy_(); // Change the accuracy calculation in that function, not here!
     if (accuracy > 100) { accuracy = 100; } else if (accuracy < 1) { accuracy = 1; }; // Prevent devision by zero
     var int angleMax; angleMax = roundf(mulf(mulf(fracf(1, accuracy), castToIntf(FREEAIM_SCATTER_DEG)), FLOAT1K));
     var int angleY; angleY = fracf(r_MinMax(-angleMax, angleMax), 1000); // Degrees around y-axis
@@ -574,7 +616,7 @@ func void freeAimSetupProjectile() {
         call2 = CALL_End();
     };
     var int rBody; rBody = CALL_RetValAsInt(); // zCRigidBody*
-    var int drawForce; drawForce = freeAimGetDrawForce(); // Modify the draw force in that function, not here!
+    var int drawForce; drawForce = freeAimGetDrawForce_(); // Modify the draw force in that function, not here!
     var int gravityMod; gravityMod = FLOATONE; // Gravity only modified on short draw time
     if (drawForce < 25) { gravityMod = mkf(3); }; // Very short draw time increases gravity
     drawForce = mulf(fracf(drawForce, 100), mkf(FREEAIM_TRAJECTORY_ARC_MAX));
@@ -738,7 +780,7 @@ func void freeAimDetectHeadshot() {
         };
     end;
     if (intersection) { // Headshot detected
-        freeAimHeadshotEvent(targetNpc); // Use this function to add an event on headshot, e.g. a print or a sound
-        MEM_WriteInt(damagePtr, freeAimGetHeadshotDamage(MEM_ReadInt(damagePtr), targetNpc)); // Base damage not final
+        freeAimHeadshotEvent_(targetNpc); // Use this function to add an event on headshot, e.g. a print or a sound
+        MEM_WriteInt(damagePtr, freeAimGetHeadshotDamage_(MEM_ReadInt(damagePtr), targetNpc)); // Base damage not final
     };
 };
