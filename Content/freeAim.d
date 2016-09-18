@@ -167,6 +167,7 @@ const int onArrowHitNpcAddr                       = 6949832; //0x6A0BC8 // Hook 
 const int onArrowHitVobAddr                       = 6949929; //0x6A0C29 // Hook length 5
 const int onArrowHitStatAddr                      = 6949460; //0x6A0A54 // Hook length 5
 const int onArrowDamageAddr                       = 6953621; //0x6A1A95 // Hook length 7
+const int onDmgAnimationAddr                      = 6774593; //0x675F41 // Hook length 9
 const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook length 7
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook length 7
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook length 5
@@ -183,6 +184,7 @@ func void freeAim_Init() {
         HookEngineF(mouseUpdate, 5, freeAimManualRotation); // Update the player model rotation by mouse input
         HookEngineF(oCAIArrowBase__DoAI, 7, freeAimWatchProjectile); // AI loop for each projectile
         HookEngineF(onArrowDamageAddr, 7, freeAimDetectHeadshot); // Headshot detection
+        HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation);
         if (FREEAIM_REUSE_PROJECTILES) { // Because of balancing issues, this is a constant and not a variable
             HookEngineF(onArrowHitNpcAddr, 5, freeAimOnArrowHitNpc); // Put projectile into inventory
             HookEngineF(onArrowHitVobAddr, 5, freeAimOnArrowGetStuck); // Keep projectile alive when stuck in vob
@@ -704,6 +706,12 @@ func void freeAimWatchProjectile() {
     } else if (MEM_ReadInt(arrowAI+56) == -1073741824) { // Marked as positive hit on npc: do not keep alive
         MEM_WriteInt(arrowAI+56, FLOATNULL); // oCAIArrow.lifeTime
     };
+};
+
+/* Disable damage animation. Taken from http://forum.worldofplayers.de/forum/threads/1474431?p=25057480#post25057480 */
+func void freeAimDmgAnimation() {
+    var oCNpc victim; victim = _^(ECX);
+    if (Npc_IsPlayer(victim)) && (freeAimIsActive()) { EAX = 0; }; // Disable damage animation while aiming
 };
 
 /* Detect headshot and increase initial damage. Modify the damage in freeAimGetHeadshotDamage() */
