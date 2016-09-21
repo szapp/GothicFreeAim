@@ -45,22 +45,39 @@ const int    FREEAIM_RETICLE_MED_SIZE     = 20;              // Medium reticle s
 const int    FREEAIM_RETICLE_MAX_SIZE     = 32;              // Biggest reticle size in pixels (closest range)
 const string FREEAIM_CAMERA               = "CamModRngeFA";  // CCamSys_Def script instance for free aim
 const string FREEAIM_TRAIL_FX             = "freeAim_TRAIL"; // Trailstrip FX. Should not be changed
+const int    FREEAIM_DEBUG_WEAKSPOT       = 0;               // Visualize weakspot bbox and trajectory
+const int    FREEAIM_DEBUG_CONSOLE        = 1;               // Console command for debugging. Turn off in final mod
 const float  FREEAIM_PROJECTILE_GRAVITY   = 0.1;             // The gravity decides how fast the projectile drops
 const int    FREEAIM_MAX_DIST             = 5000;            // 50m. Shooting/reticle adjustments. Do not change
 const int    FREEAIM_ACTIVE_PREVFRAME     = 0;               // Internal. Do not change
 const int    FREEAIM_ARROWAI_REDIRECT     = 0;               // Used to redirect call-by-reference argument
 const int    FLOAT1K                      = 1148846080;      // 1000 as float
+var   int    freeAimDebugBBox[6];                            // Boundingbox for debug visualization
+var   int    freeAimDebugTrj[6];                             // Projectile trajectory for debug visualization
 var   int    freeAimReticleHndl;                             // Holds the handle of the reticle
 var   int    freeAimBowDrawOnset;                            // Time onset of drawing the bow
 
+/* Enter onset/offset frame numbers of drawing animations of weapons here (start and end of pulling the string) */
+func int freeAimGetAniDrawFrame(var string aniName, var int onset) { // Onset: onset = 1, offset: onset = 0
+    // These numbers need to be present for every animation that is used. The standard animations are already added
+    // When adding a new animation, keep in mind that the frame numbers must be greater than or equal to one
+    if (Hlp_StrCmp(aniName, "S_BOWAIM")) { if (onset) { return 1; }; return 2; }; // All frames
+    if (Hlp_StrCmp(aniName, "T_BOWRUN_2_BOWAIM")) { if (onset) { return 1; }; return 9; }; // Frames 1 to 9
+    if (Hlp_StrCmp(aniName, "T_BOWWALK_2_BOWAIM")) { if (onset) { return 1; }; return 9; }; // Frames 1 to 9
+    if (Hlp_StrCmp(aniName, "T_BOWRELOAD")) { if (onset) { return 20; }; return 36; }; // Frames 20 to 36
+    // Add any other possible draw animation here
+    return -1; // Reaching this line will yield an error. Add ALL possible drawing animations above!
+};
+
 /* Modify this function to alter the draw force calculation. Scaled between 0 and 100 (percent) */
 func int freeAimGetDrawForce(var C_Item weapon, var int talent) {
-    var int drawTime; drawTime = MEM_Timer.totalTime - freeAimBowDrawOnset;
-    // Possibly incorporate more factors like e.g. a quick-draw talent, weapon-specific stats, ...
+    MEM_CallByString(STR_Upper("freeAimGetDrawPercent")); // Ignore these two lines
+    var int drawPercent; drawPercent = MEM_PopIntResult(); // Get the draw animation progress in percent [0, 100]
+    // Possibly incorporate factors like e.g. a quick-draw talent, weapon-specific stats, ...
     // Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW)
-    // For now set drawForce by draw time scaled between min and max times:
-    var int drawForce; drawForce = (100 * (drawTime-FREEAIM_DRAWTIME_MIN))/(FREEAIM_DRAWTIME_MAX-FREEAIM_DRAWTIME_MIN);
-    if (drawForce > 100) { drawForce = 100; } else if (drawForce < 0) { drawForce = 0; }; // Respect the ranges
+    var int drawForce; drawForce = drawPercent; // For now just set the draw force to the progress of the draw animation
+    // In the end make sure the return value is in the range of [0, 100]
+    if (drawForce < 0) { drawForce = 0; } else if (drawForce > 100) { drawForce = 100; }; // Respect the ranges
     return drawForce;
 };
 
@@ -72,7 +89,7 @@ func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
     var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent); // Already scaled to [0, 100]
     if (drawForce < talent) { drawForce = talent; }; // Decrease impact of draw force on talent
     var int accuracy; accuracy = (talent * drawForce)/100;
-    if (accuracy > 100) { accuracy = 100; } else if (accuracy < 0) { accuracy = 0; }; // Respect the ranges
+    if (accuracy < 0) { accuracy = 0; } else if (accuracy < 100) { accuracy = 100; }; // Respect the ranges
     return accuracy;
 };
 
@@ -138,27 +155,35 @@ func int freeAimGetHeadSize(var C_NPC monster) {
 /* All addresses used (gothic2). In case of a gothic1 port: There are a lot of hardcoded address offsets in the code! */
 const int zCVob__zCVob                            = 6283744; //0x5FE1E0
 const int zCVob__SetPositionWorld                 = 6404976; //0x61BB70
-const int zCWorld__AddVobAsChild                  = 6440352; //0x6245A0
-const int oCAniCtrl_Human__Turn                   = 7005504; //0x6AE540
-const int oCNpc__GetAngles                        = 6820528; //0x6812B0
-const int zCWorld__TraceRayNearestHit_Vob         = 6430624; //0x621FA0
+const int zCVob__GetRigidBody                     = 6285664; //0x5FE960
 const int zCVob__TraceRay                         = 6291008; //0x5FFE40
+const int zCWorld__TraceRayNearestHit_Vob         = 6430624; //0x621FA0
+const int zCWorld__AddVobAsChild                  = 6440352; //0x6245A0
 const int zCArray_zCVob__IsInList                 = 7159168; //0x6D3D80
+const int zSTRING__zSTRING                        = 4198592; //0x4010C0
+const int zString_CamModRanged                    = 9234704; //0x8CE910
+const int oCAniCtrl_Human__Turn                   = 7005504; //0x6AE540
+const int oCAniCtrl_Human__GetLayerAni            = 7011712; //0x6AFD80
+const int oCNpc__GetAngles                        = 6820528; //0x6812B0
 const int oCNpc__SetFocusVob                      = 7547744; //0x732B60
 const int oCNpc__SetEnemy                         = 7556032; //0x734BC0
-const int zCVob__GetRigidBody                     = 6285664; //0x5FE960
+const int oCNpc__GetModel                         = 7571232; //0x738720
 const int oCItem__InsertEffect                    = 7416896; //0x712C40
 const int oCItem__RemoveEffect                    = 7416832; //0x712C00
-const int oCGame__s_bUseOldControls               = 9118144; //0x8B21C0
-const int zString_CamModRanged                    = 9234704; //0x8CE910
-const int alternativeHitchanceAddr                = 6953494; //0x6A1A10
-const int oCNpc__GetModel                         = 7571232; //0x738720
 const int zCModel__SearchNode                     = 5758960; //0x57DFF0
 const int zCModel__GetBBox3DNodeWorld             = 5738736; //0x5790F0
 const int zCModel__GetNodePositionWorld           = 5738816; //0x579140
+const int oCGame__s_bUseOldControls               = 9118144; //0x8B21C0
+const int zTBBox3D__Draw                          = 5529312; //0x545EE0
+const int zCLineCache__Line3D                     = 5289040; //0x50B450
+const int zlineCache                              = 9257720; //0x8D42F8
+const int zCConsole__Register                     = 7875296; //0x782AE0
+const int strUnknownCommand_0                     = 9120600; //0x8B2B58
+const int alternativeHitchanceAddr                = 6953494; //0x6A1A10
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
 const int mouseDeltaX                             = 9246300; //0x8D165C
+const int zCWorld__AdvanceClock                   = 6447328; //0x6260E0 // Hook length 10
 const int oCAniCtrl_Human__InterpolateCombineAni  = 7037296; //0x6B6170 // Hook length 5
 const int oCAIArrow__SetupAIVob                   = 6951136; //0x6A10E0 // Hook length 6
 const int oCAIHuman__BowMode                      = 6905600; //0x695F00 // Hook length 6
@@ -184,7 +209,16 @@ func void freeAim_Init() {
         HookEngineF(mouseUpdate, 5, freeAimManualRotation); // Update the player model rotation by mouse input
         HookEngineF(oCAIArrowBase__DoAI, 7, freeAimWatchProjectile); // AI loop for each projectile
         HookEngineF(onArrowDamageAddr, 7, freeAimDetectHeadshot); // Headshot detection
-        HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation);
+        HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aming
+        if (FREEAIM_DEBUG_CONSOLE) { // Enable console command for debugging
+            CALL_zStringPtrParam("turn debug visualization on/off");
+            CALL_zStringPtrParam("debug weakspot");
+            CALL__thiscall(zcon_address, zCConsole__Register);
+            HookEngineF(/*0x6CFE44*/ 7142980, 6, freeAimConsoleListener);
+        };
+        if (FREEAIM_DEBUG_CONSOLE) || (FREEAIM_DEBUG_WEAKSPOT) { // Visualization of weakspot for debugging
+            HookEngineF(zCWorld__AdvanceClock, 10, freeAimVisualizeWeakspot); // FrameFunction hooks too early
+        };
         if (FREEAIM_REUSE_PROJECTILES) { // Because of balancing issues, this is a constant and not a variable
             HookEngineF(onArrowHitNpcAddr, 5, freeAimOnArrowHitNpc); // Put projectile into inventory
             HookEngineF(onArrowHitVobAddr, 5, freeAimOnArrowGetStuck); // Keep projectile alive when stuck in vob
@@ -195,6 +229,42 @@ func void freeAim_Init() {
         hookFreeAim = 1;
     };
     MEM_Info("Free aim initialized.");
+};
+
+
+func string regConsoleFunc(var string command) {
+    FREEAIM_DEBUG_WEAKSPOT = !FREEAIM_DEBUG_WEAKSPOT;
+    if (FREEAIM_DEBUG_WEAKSPOT) { return "Debug weak spot on."; } else { return "Debug weak spot off."; };
+};
+
+/* Execute custom console commands */
+func void freeAimConsoleListener() {
+    var string command; command = MEM_ReadString(MEM_ReadInt(ESP+4));
+    var string answer; answer = MEM_ReadString(MEM_ReadInt(ESP+8));
+    const string strUnknownCommand = "";
+    if (Hlp_StrCmp(strUnknownCommand, "")) { // Retrieve the unknown command response
+        CALL_PtrParam(strUnknownCommand_0);
+        CALL__thiscall(_@s(strUnknownCommand), zSTRING__zSTRING);
+    };
+    if (STR_Len(answer) < STR_Len(strUnknownCommand)) { return; }; // Answer too short
+    if (Hlp_StrCmp(STR_Prefix(answer, STR_Len(strUnknownCommand)), strUnknownCommand)) {
+
+    var int funcPtr; funcPtr = MEM_GetFuncPtr(regConsoleFunc);
+    var string target; var string ret;
+    //foreach registered command {
+        target = "DEBUG WEAKSPOT";
+        if (STR_Len(target) >= STR_Len(target))
+        && (Hlp_StrCmp(STR_Prefix(target, STR_Len(target)), target)) {
+            MEMINT_StackPushString(command);
+            MEM_CallByPtr(funcPtr);
+            ret = MEMINT_PopString();
+            if (!Hlp_StrCmp(ret, "")) {
+                MEM_WriteInt(ESP+8, _@s(ret)); // Overwrite the console output (answer) - Does not work yet!
+                return;
+            };
+        };
+    //}
+    };
 };
 
 /* Internal helper function for freeAimGetDrawForce() */
@@ -261,6 +331,35 @@ func void freeAimHeadshotEvent_(var C_NPC target) {
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
     else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
     freeAimHeadshotEvent(target, weapon);
+};
+
+/* Visualize the bounding box of the weakspot and the projectile trajectory for debugging */
+func void freeAimVisualizeWeakspot() {
+    if (!FREEAIM_DEBUG_WEAKSPOT) { return; };
+    if (freeAimDebugBBox[0]) { // Visualize weak spot bounding box
+        var int cGreenPtr; cGreenPtr = _@(zCOLOR_GREEN);
+        var int bboxPtr; bboxPtr = _@(freeAimDebugBBox);
+        const int call = 0;
+        if (CALL_Begin(call)) {
+            CALL_PtrParam(_@(cGreenPtr));
+            CALL__thiscall(_@(bboxPtr), zTBBox3D__Draw);
+            call = CALL_End();
+        };
+    };
+    if (freeAimDebugTrj[0]) { // Visualize projectile trajectory
+        var int cRedPtr; cRedPtr = _@(zCOLOR_RED);
+        var int pos1Ptr; pos1Ptr = _@(freeAimDebugTrj);
+        var int pos2Ptr; pos2Ptr = _@(freeAimDebugTrj)+12;
+        const int call2 = 0; var int null; null = 0;
+        if (CALL_Begin(call2)) {
+            CALL_IntParam(_@(null));
+            CALL_PtrParam(_@(cRedPtr));
+            CALL_PtrParam(_@(pos2Ptr));
+            CALL_PtrParam(_@(pos1Ptr));
+            CALL__thiscall(_@(zlineCache), zCLineCache__Line3D);
+            call2 = CALL_End();
+        };
+    };
 };
 
 /* Hit chance of 100%. Taken from http://forum.worldofplayers.de/forum/threads/1475456?p=25080651#post25080651 */
@@ -566,6 +665,31 @@ func void freeAimAnimation() {
     MEM_WriteInt(ESP+8, angleY);
 };
 
+/* Retrieve the percentage of drawing the weapon by animation */
+func int freeAimGetDrawPercent() {
+    var int hAniCtrl; hAniCtrl = MEM_ReadInt(_@(hero)+2432); // oCNpc.anictrl
+    var int one; one = 1; const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL_IntParam(_@(one)); // Layer one
+        CALL__thiscall(_@(hAniCtrl), oCAniCtrl_Human__GetLayerAni);
+        call = CALL_End();
+    };
+    var int ani; ani = CALL_RetValAsInt(); // zCModelAniActive*
+    if (!ani) { MEM_Error("freeAimGetDrawPercent: No active animation found!"); return 0; };
+    if (!MEM_ReadInt(ani)) { MEM_Error("freeAimGetDrawPercent: No active animation found!"); return 0; }; // Separate if
+    var string aniName; aniName = STR_Upper(MEM_ReadString(MEM_ReadInt(ani)+36)); // zCModelAni*->name
+    var int currentFrame; currentFrame = roundf(MEM_ReadInt(ani+12)); // zCModelAniActive*->actFrame
+    var int onsetFrame; onsetFrame = freeAimGetAniDrawFrame(aniName, 1); // Drawing starts
+    var int offsetFrame; offsetFrame = freeAimGetAniDrawFrame(aniName, 0); // Drawing ends
+    if (onsetFrame == -1) || (offsetFrame == -1) {
+        MEM_Error("freeAimGetDrawPercent: Animation not found!"); return 0; };
+    if (onsetFrame <= 0) || (offsetFrame <= 0) || (onsetFrame == offsetFrame) {
+        MEM_Error("freeAimGetDrawPercent: Animation onset/offset invalid!"); return 0; };
+    var int drawPercent; drawPercent = (100*(currentFrame - onsetFrame))/(offsetFrame - onsetFrame); // Draw progress
+    if (drawPercent < 0) { drawPercent = 0; } else if (drawPercent > 100) { drawPercent = 100; }; // Respect the ranges
+    return drawPercent;
+};
+
 /* Set the projectile direction and trajectory. Hook oCAIArrow::SetupAIVob */
 func void freeAimSetupProjectile() {
     var int projectile; projectile = MEM_ReadInt(ESP+4);  // First argument is the projectile
@@ -737,13 +861,12 @@ func void freeAimDetectHeadshot() {
     };
     var int head; head = CALL_RetValAsPtr();
     if (!head) { return; }; // There should be no npc without head node. But just in case
-    var int headBBox[6]; // zTBBox3D
     if (MEM_ReadInt(head+8)) { // head->nodeVisual // If the head has a dedicated visual (humans only), retrieve bbox
         // Get the bbox of the head (although zCModelNodeInst has a zTBBox3D property, it is empty the first time)
         CALL_PtrParam(head); CALL_RetValIsStruct(24); // sizeof_zTBBox3D // No recyclable call possible bc of structure
         CALL__thiscall(model, zCModel__GetBBox3DNodeWorld);
         var int headBBoxPtr; headBBoxPtr = CALL_RetValAsPtr();
-        MEM_CopyWords(headBBoxPtr, _@(headBBox), 6);
+        MEM_CopyWords(headBBoxPtr, _@(freeAimDebugBBox), 6); // zTBBox3D
         MEM_Free(headBBoxPtr); // Free memory
     } else { // Monsters don't have a dedicated head visual: Headshot detection less accurate
         var int headSize; headSize = mkf(freeAimGetHeadSize(targetNpc)/2); // Need to guess the head size
@@ -754,38 +877,32 @@ func void freeAimDetectHeadshot() {
         var int headPosPtr; headPosPtr = CALL_RetValAsInt();
         var int headPos[3]; MEM_CopyWords(headPosPtr, _@(headPos), 3);
         MEM_Free(headPosPtr); // Free memory
-        headBBox[0] = subf(headPos[0], headSize); // Build an own bbox by the guessed head size
-        headBBox[1] = subf(headPos[1], headSize);
-        headBBox[2] = subf(headPos[2], headSize);
-        headBBox[3] = addf(headPos[0], headSize);
-        headBBox[4] = addf(headPos[1], headSize);
-        headBBox[5] = addf(headPos[2], headSize);
+        freeAimDebugBBox[0] = subf(headPos[0], headSize); // Build an own bbox by the guessed head size
+        freeAimDebugBBox[1] = subf(headPos[1], headSize);
+        freeAimDebugBBox[2] = subf(headPos[2], headSize);
+        freeAimDebugBBox[3] = addf(headPos[0], headSize);
+        freeAimDebugBBox[4] = addf(headPos[1], headSize);
+        freeAimDebugBBox[5] = addf(headPos[2], headSize);
     };
     // The internal engine functions are not accurate enough for detecting a headshot
     // Instead check here if "any" point along the line of projectile direction lies inside the bbox of the head.
-    var int pos[3]; var int dir[3]; // Startposition and direction of collision line
-    dir[0] = MEM_ReadInt(projectile+60); // This is the right-vector of the projectile (projectile flies sideways)
-    dir[1] = MEM_ReadInt(projectile+76);
-    dir[2] = MEM_ReadInt(projectile+92);
-    pos[0] = addf(MEM_ReadInt(projectile+ 72), mulf(dir[0], mkf(100))); // Start the line 1meter behind the projectile
-    pos[1] = addf(MEM_ReadInt(projectile+ 88), mulf(dir[1], mkf(100)));
-    pos[2] = addf(MEM_ReadInt(projectile+104), mulf(dir[2], mkf(100)));
+    var int dir[3]; // Direction of collision line along the right-vector of the projectile (projectile flies sideways)
+    dir[0] = MEM_ReadInt(projectile+60); dir[1] = MEM_ReadInt(projectile+76); dir[2] = MEM_ReadInt(projectile+92);
+    freeAimDebugTrj[0] = addf(MEM_ReadInt(projectile+ 72), mulf(dir[0], mkf(100))); // Start 1m behind the projectile
+    freeAimDebugTrj[1] = addf(MEM_ReadInt(projectile+ 88), mulf(dir[1], mkf(100)));
+    freeAimDebugTrj[2] = addf(MEM_ReadInt(projectile+104), mulf(dir[2], mkf(100)));
     var int intersection; intersection = 0; // Head shot detected
     var int i; i=0; var int iter; iter = 700/5; // 7meters: Max distance from model bbox edge to head bbox (e.g. troll)
-    while(i <= iter); // Walk along the line in steps of 5cm
-        var int line[3]; i += 1;
-        line[0] = subf(pos[0], mulf(dir[0], mkf(i*5))); // Next point a long the collision line
-        line[1] = subf(pos[1], mulf(dir[1], mkf(i*5)));
-        line[2] = subf(pos[2], mulf(dir[2], mkf(i*5)));
-        if (lef(headBBox[0], line[0])) // Is the current point along the collision line inside the head bbox
-        && (lef(headBBox[1], line[1]))
-        && (lef(headBBox[2], line[2]))
-        && (gef(headBBox[3], line[0]))
-        && (gef(headBBox[4], line[1]))
-        && (gef(headBBox[5], line[2])) {
-            intersection = 1;
-            break;
-        };
+    while(i <= iter); i += 1; // Walk along the line in steps of 5cm
+        freeAimDebugTrj[3] = subf(freeAimDebugTrj[0], mulf(dir[0], mkf(i*5))); // Next point along the collision line
+        freeAimDebugTrj[4] = subf(freeAimDebugTrj[1], mulf(dir[1], mkf(i*5)));
+        freeAimDebugTrj[5] = subf(freeAimDebugTrj[2], mulf(dir[2], mkf(i*5)));
+        if (lef(freeAimDebugBBox[0], freeAimDebugTrj[3])) // Is current point inside the head bbox
+        && (lef(freeAimDebugBBox[1], freeAimDebugTrj[4]))
+        && (lef(freeAimDebugBBox[2], freeAimDebugTrj[5]))
+        && (gef(freeAimDebugBBox[3], freeAimDebugTrj[3]))
+        && (gef(freeAimDebugBBox[4], freeAimDebugTrj[4]))
+        && (gef(freeAimDebugBBox[5], freeAimDebugTrj[5])) { intersection = 1; }; // Stay in loop for debugging the line
     end;
     if (intersection) { // Headshot detected
         freeAimHeadshotEvent_(targetNpc); // Use this function to add an event on headshot, e.g. a print or a sound
