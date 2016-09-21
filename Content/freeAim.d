@@ -197,6 +197,22 @@ const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook 
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook length 7
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook length 5
 
+/* Register a new command for the console */
+func void CC_Register(var string evalFunc, var string commandPrefix, var string description) {
+    const int hook = 0;
+    if (!hook) { HookEngineF(/*0x6CFE44*/ 7142980, 6, _CC_Hook); hook = 1; };
+    var int descPtr; descPtr = _@s(description);
+    var int comPtr; comPtr = _@s(commandPrefix);
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL_PtrParam(_@(descPtr));
+        CALL_PtrParam(_@(comPtr));
+        CALL__thiscall(_@(zcon_address), zCConsole__Register);
+        call = CALL_End();
+    };
+    // Add evalFunc and commandPrefix to the group of registered functions
+};
+
 /* Initialize free aim framework */
 func void freeAim_Init() {
     const int hookFreeAim = 0;
@@ -211,10 +227,7 @@ func void freeAim_Init() {
         HookEngineF(onArrowDamageAddr, 7, freeAimDetectHeadshot); // Headshot detection
         HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aming
         if (FREEAIM_DEBUG_CONSOLE) { // Enable console command for debugging
-            CALL_zStringPtrParam("turn debug visualization on/off");
-            CALL_zStringPtrParam("debug weakspot");
-            CALL__thiscall(zcon_address, zCConsole__Register);
-            HookEngineF(/*0x6CFE44*/ 7142980, 6, freeAimConsoleListener);
+            CC_Register("regConsoleFunc", "debug weakspot", "turn debug visualization on/off");
         };
         if (FREEAIM_DEBUG_CONSOLE) || (FREEAIM_DEBUG_WEAKSPOT) { // Visualization of weakspot for debugging
             HookEngineF(zCWorld__AdvanceClock, 10, freeAimVisualizeWeakspot); // FrameFunction hooks too early
@@ -231,40 +244,49 @@ func void freeAim_Init() {
     MEM_Info("Free aim initialized.");
 };
 
-
-func string regConsoleFunc(var string command) {
-    FREEAIM_DEBUG_WEAKSPOT = !FREEAIM_DEBUG_WEAKSPOT;
-    if (FREEAIM_DEBUG_WEAKSPOT) { return "Debug weak spot on."; } else { return "Debug weak spot off."; };
-};
-
-/* Execute custom console commands */
-func void freeAimConsoleListener() {
+/* Check for custom console commands */
+func void _CC_Hook() {
     var string command; command = MEM_ReadString(MEM_ReadInt(ESP+4));
     var string answer; answer = MEM_ReadString(MEM_ReadInt(ESP+8));
     const string strUnknownCommand = "";
-    if (Hlp_StrCmp(strUnknownCommand, "")) { // Retrieve the unknown command response
+    if (Hlp_StrCmp(strUnknownCommand, "")) { // Retrieve the "unknown command" string
         CALL_PtrParam(strUnknownCommand_0);
         CALL__thiscall(_@s(strUnknownCommand), zSTRING__zSTRING);
     };
-    if (STR_Len(answer) < STR_Len(strUnknownCommand)) { return; }; // Answer too short
-    if (Hlp_StrCmp(STR_Prefix(answer, STR_Len(strUnknownCommand)), strUnknownCommand)) {
-
-    var int funcPtr; funcPtr = MEM_GetFuncPtr(regConsoleFunc);
-    var string target; var string ret;
-    //foreach registered command {
-        target = "DEBUG WEAKSPOT";
-        if (STR_Len(target) >= STR_Len(target))
-        && (Hlp_StrCmp(STR_Prefix(target, STR_Len(target)), target)) {
-            MEMINT_StackPushString(command);
-            MEM_CallByPtr(funcPtr);
-            ret = MEMINT_PopString();
+    if (STR_Len(answer) < STR_Len(strUnknownCommand)) || (Hlp_StrCmp(command, "")) { return; }; // Answer too short
+    if (Hlp_StrCmp(STR_Prefix(answer, STR_Len(strUnknownCommand)), strUnknownCommand)) { // Command unknown
+        var int funcPtr; funcPtr = MEM_GetFuncPtr(regConsoleFunc); // Temporary
+        var string ret;
+        //foreach registered cc {
+            MEM_PushIntParam(funcPtr /*CCItem@*/);
+            MEM_PushStringParam(command);
+            //MEM_GetFuncID(ConsoleCommand);
+            MEM_Call(ConsoleCommand);
+            ret = MEM_PopStringResult();
             if (!Hlp_StrCmp(ret, "")) {
                 MEM_WriteInt(ESP+8, _@s(ret)); // Overwrite the console output (answer) - Does not work yet!
-                return;
+            } else {
+                //MEM_StackPos.position = foreachHndl_ptr;
             };
-        };
-    //}
+        //}
     };
+};
+
+/* Execute custom console commands */
+func string ConsoleCommand(var int funcPtr, var string command) {
+    var string target; target = "DEBUG WEAKSPOT"; // Should be passed as argument
+    if (STR_Len(target) >= STR_Len(target)) && (Hlp_StrCmp(STR_Prefix(target, STR_Len(target)), target)) {
+        MEM_PushStringParam(command);
+        MEM_CallByPtr(funcPtr); // Call eval functions
+        return MEM_PopStringResult();
+    };
+    return "";
+};
+
+/* Console function to enable/disable weak spot debug output */
+func string regConsoleFunc(var string command) {
+    FREEAIM_DEBUG_WEAKSPOT = !FREEAIM_DEBUG_WEAKSPOT;
+    if (FREEAIM_DEBUG_WEAKSPOT) { return "Debug weak spot on."; } else { return "Debug weak spot off."; };
 };
 
 /* Internal helper function for freeAimGetDrawForce() */
