@@ -72,7 +72,7 @@ func void CC_Register(var func function, var string commandPrefix, var string de
 //========================================
 func void CC_Remove(var func function) {
     _CC_Symbol = MEM_GetFuncPtr(function);
-    foreachHndl(FFItem@, _CC_RemoveL);
+    foreachHndl(CCItem@, _CC_RemoveL);
 };
 
 func int _CC_RemoveL(var int hndl) {
