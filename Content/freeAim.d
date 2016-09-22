@@ -20,9 +20,8 @@
  *  - Accuracy calculation:                           freeAimGetAccuracy(weapon, talent)
  *  - Reticle style:                                  freeAimGetReticleStyle(weapon, talent)
  *  - Reticle size:                                   freeAimGetReticleSize(size, weapon, talent)
- *  - Headshot damage calculation:                    freeAimGetHeadshotDamage(damage, target)
- *  - Headshot event (print, sound, xp, ...):         freeAimHeadshotEvent(target)
- *  - Head sizes for headshot detection on monsters:  freeAimGetHeadSize(monster)
+ *  - Critical hit (position, damage) calculation:    freeAimGetWeakspot(target, weapon, damage)
+ *  - Critical hit event (print, sound, xp, ...):     freeAimCriticalHitEvent(target, weapon)
  * Advanced (modification not recommended):
  *  - Scatter radius for accuracy:                    FREEAIM_SCATTER_DEG
  *  - Camera view (shoulder view):                    FREEAIM_CAMERA and FREEAIM_CAMERA_X_SHIFT
@@ -56,6 +55,7 @@ var   int    freeAimDebugBBox[6];                            // Boundingbox for 
 var   int    freeAimDebugTrj[6];                             // Projectile trajectory for debug visualization
 var   int    freeAimReticleHndl;                             // Holds the handle of the reticle
 var   int    freeAimBowDrawOnset;                            // Time onset of drawing the bow
+class Weakspot { var string node; var int dimX; var int dimY; var int bDmg; }; // For readability
 
 /* Enter onset/offset frame numbers of drawing animations of weapons here (start and end of pulling the string) */
 func int freeAimGetAniDrawFrame(var string aniName, var int onset) { // Onset: onset = 1, offset: onset = 0
@@ -109,40 +109,47 @@ func int freeAimGetReticleSize(var int size, var int weapon, var int talent) {
     return size; // For now leave it scaled by distance
 };
 
-/* Modify this function to set the headshot damage. Caution: damage is a float and should be returned as such */
-func int freeAimGetHeadshotDamage(var int damage, var C_NPC target, var C_Item weapon) {
+/* Modify this function to define a critical hit by weak spot (e.g. head node for headshot), its size and the damage */
+func void freeAimGetWeakspot(var C_NPC target, var C_Item weapon, var int damage, var int returnPtr) {
+    var Weakspot weakspot; weakspot = _^(returnPtr);
+    // This function is dynamic: It is called on every hit and the weakspot and damage can be calculated individually
     // Possibly incorporate weapon-specific stats, headshot talent, dependecy on target, ...
     // The damage may depent on the target npc (e.g. different damage for monsters). Make use of 'target' argument
     // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
     // The weapon can also be considered (e.g. weapon specific damage). Make use of 'weapon' for that
-    // Caution: Weapon may have been unequipped already at this time! Use Hlp_IsValidItem(weapon)
+    // Caution: Weapon may have been unequipped already at this time! Use Hlp_IsValidItem(weapon) to check
     // if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
-    damage = mulf(damage, castToIntf(2.0)); // For now, just double the base damage
-    return damage; // This sets a new base damage (excl. strength, ...). This is not the final damage!
+    // The damage is a float and represents the new base damage (damage of weapon), not the final damage!
+    if (target.guild < GIL_SEPERATOR_HUM) { // Humans: head shot
+        weakspot.node = "Bip01 Head"; // Upper/lower case is not important, but spelling and spaces are
+        weakspot.dimX = -1; // Retrieve from model (works only on humans and only for head node!)
+        weakspot.dimY = -1;
+        weakspot.bDmg = mulf(damage, castToIntf(2.0)); // Double the base damage. This is a float
+    // } else if (target.aivar[AIV_MM_REAL_ID] == ID_TROLL) {
+    //    weakspot.node = "Bip01 R Finger0"; // Difficult to hit when the troll attacks
+    //    weakspot.dimX = 100; // 100x100cm size
+    //    weakspot.dimY = 100;
+    //    weakspot.bDmg = mulf(damage, castToIntf(1.75));
+    // } else if (target.aivar[AIV_MM_REAL_ID] == ...
+    //    ...
+    } else { // Default
+        weakspot.node = "Bip01 Head";
+        weakspot.dimX = 60;
+        weakspot.dimY = 60;
+        weakspot.bDmg = mulf(damage, castToIntf(2.0)); // Double the base damage. This is a float
+    };
 };
 
-/* Use this function to create an event when getting a headshot, e.g. a print or a sound jingle, leave blank for none */
-func void freeAimHeadshotEvent(var C_NPC target, var C_Item weapon) {
+/* Use this function to create an event when getting a critical hit, e.g. print or sound jingle, leave blank for none */
+func void freeAimCriticalHitEvent(var C_NPC target, var C_Item weapon) {
     // The event may depent on the target npc (e.g. different sound for monsters). Make use of 'target' argument
     // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
     // The headshots could also be counted here to give an xp reward after 25 headshots
     // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
-    // Caution: Weapon may have been unequipped already at this time! Use Hlp_IsValidItem(weapon)
+    // Caution: Weapon may have been unequipped already at this time! Use Hlp_IsValidItem(weapon) to check
     // if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
     Snd_Play("FORGE_ANVIL_A1");
     PrintS("Kritischer Treffer"); // "Critical hit"
-};
-
-/* Modify this function to assign more appropriate head sizes for headshot detection: Only called for non-human npcs */
-func int freeAimGetHeadSize(var C_NPC monster) {
-    // if (monster.aivar[AIV_MM_REAL_ID] == ID_TROLL) { // Head size for trolls
-    //    return 120; // 120x120cm
-    // } else if (monster.aivar[AIV_MM_REAL_ID] == ...
-    //     ...
-    // } else {
-    //     return 60; // Default head size is 60x60cm
-    // };
-    return 60; // Default is 60x60cm
 };
 
 /********************************************** DO NO CROSS THIS LINE **************************************************
@@ -205,7 +212,7 @@ func void freeAim_Init() {
         HookEngineF(oCAIHuman__MagicMode, 7, freeAimManageReticle); // Manage the reticle (style, on/off)
         HookEngineF(mouseUpdate, 5, freeAimManualRotation); // Update the player model rotation by mouse input
         HookEngineF(oCAIArrowBase__DoAI, 7, freeAimWatchProjectile); // AI loop for each projectile
-        HookEngineF(onArrowDamageAddr, 7, freeAimDetectHeadshot); // Headshot detection
+        HookEngineF(onArrowDamageAddr, 7, freeAimDetectCriticalHit); // Critical hit detection
         HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aming
         if (FREEAIM_DEBUG_CONSOLE) { // Enable console command for debugging
             CC_Register(freeAimDebugWeakspot, "debug weakspot", "turn debug visualization on/off");
@@ -223,12 +230,6 @@ func void freeAim_Init() {
         hookFreeAim = 1;
     };
     MEM_Info("Free aim initialized.");
-};
-
-/* Console function to enable/disable weak spot debug output */
-func string freeAimDebugWeakspot(var string command) {
-    FREEAIM_DEBUG_WEAKSPOT = !FREEAIM_DEBUG_WEAKSPOT;
-    if (FREEAIM_DEBUG_WEAKSPOT) { return "Debug weak spot on."; } else { return "Debug weak spot off."; };
 };
 
 /* Internal helper function for freeAimGetDrawForce() */
@@ -277,24 +278,6 @@ func int freeAimGetReticle(var int sizePtr) {
         MEM_Error("freeAimGetReticle_: Invalid reticleStyle!"); reticleStyle = NO_RETICLE; };
     MEM_WriteInt(sizePtr, reticleSize); // Overwrite reticle size
     return reticleStyle;
-};
-
-/* Internal helper function for freeAimGetHeadshotDamage() */
-func int freeAimGetHeadshotDamage_(var int damage, var C_NPC target) {
-    var C_Item weapon; // Caution: Weapon may have been unequipped already at this time
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
-    damage = freeAimGetHeadshotDamage(damage, target, weapon);
-    if (lf(damage, FLOATNULL)) { damage = FLOATNULL; };
-    return damage; // This sets a new base damage (damage of weapon), not the final damage!
-};
-
-/* Internal helper function for freeAimHeadshotEvent() */
-func void freeAimHeadshotEvent_(var C_NPC target) {
-    var C_Item weapon; // Caution: Weapon may have been unequipped already at this time
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
-    freeAimHeadshotEvent(target, weapon);
 };
 
 /* Visualize the bounding box of the weakspot and the projectile trajectory for debugging */
@@ -802,8 +785,32 @@ func void freeAimDmgAnimation() {
     if (Npc_IsPlayer(victim)) && (freeAimIsActive()) { EAX = 0; }; // Disable damage animation while aiming
 };
 
-/* Detect headshot and increase initial damage. Modify the damage in freeAimGetHeadshotDamage() */
-func void freeAimDetectHeadshot() {
+/* Internal helper function for freeAimCriticalHitEvent() */
+func void freeAimCriticalHitEvent_(var C_NPC target) {
+    var C_Item weapon; // Caution: Weapon may have been unequipped already at this time
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
+    freeAimCriticalHitEvent(target, weapon);
+};
+
+/* Internal helper function for freeAimGetWeakspot() */
+func void freeAimGetWeakspot_(var C_NPC target, var int damagePtr, var int returnPtr) {
+    var C_Item weapon; // Caution: Weapon may have been unequipped already at this time
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
+    freeAimGetWeakspot(target, weapon, MEM_ReadInt(damagePtr), returnPtr);
+    MEM_WriteString(returnPtr, STR_Upper(MEM_ReadString(returnPtr))); // Nodes are always upper case
+    if (lf(MEM_ReadInt(returnPtr+28), FLOATNULL)) { MEM_WriteInt(returnPtr+28, FLOATNULL); }; // Correct negative damage
+};
+
+/* Console function to enable/disable weak spot debug output */
+func string freeAimDebugWeakspot(var string command) {
+    FREEAIM_DEBUG_WEAKSPOT = !FREEAIM_DEBUG_WEAKSPOT;
+    if (FREEAIM_DEBUG_WEAKSPOT) { return "Debug weak spot on."; } else { return "Debug weak spot off."; };
+};
+
+/* Detect critical hits and increase base damage. Modify the weak spot in freeAimGetWeakspot() */
+func void freeAimDetectCriticalHit() {
     var int damagePtr; damagePtr = ESP+228; // esp+1ACh+C8h // int*
     var int target; target = MEM_ReadInt(ESP+28); // esp+1ACh+190h // oCNpc*
     var int projectile; projectile = MEM_ReadInt(EBP+88); // ebp+58h // oCItem*
@@ -815,61 +822,68 @@ func void freeAimDetectHeadshot() {
         call = CALL_End();
     };
     var int model; model = CALL_RetValAsPtr();
-    // Get head node from target model
-    var int node; node = _@s("BIP01 HEAD"); // Needs to be upper case
+    // Get weak spot node from target model
+    var int autoAlloc[8]; var Weakspot weakspot; weakspot = _^(_@(autoAlloc)); // Gothic takes care of freeing this ptr
+    freeAimGetWeakspot_(targetNpc, damagePtr, _@(weakspot)); // Retrieve weakspot specs
+    var int nodeStrPtr; nodeStrPtr = _@(weakspot);
     const int call2 = 0;
     if (CALL_Begin(call2)) {
-        CALL_PtrParam(_@(node));
+        CALL_PtrParam(_@(nodeStrPtr));
         CALL__thiscall(_@(model), zCModel__SearchNode);
         call2 = CALL_End();
     };
-    var int head; head = CALL_RetValAsPtr();
-    if (!head) { return; }; // There should be no npc without head node. But just in case
-    if (MEM_ReadInt(head+8)) { // head->nodeVisual // If the head has a dedicated visual (humans only), retrieve bbox
-        // Get the bbox of the head (although zCModelNodeInst has a zTBBox3D property, it is empty the first time)
-        CALL_PtrParam(head); CALL_RetValIsStruct(24); // sizeof_zTBBox3D // No recyclable call possible bc of structure
-        CALL__thiscall(model, zCModel__GetBBox3DNodeWorld);
-        var int headBBoxPtr; headBBoxPtr = CALL_RetValAsPtr();
-        MEM_CopyWords(headBBoxPtr, _@(freeAimDebugBBox), 6); // zTBBox3D
-        MEM_Free(headBBoxPtr); // Free memory
-    } else { // Monsters don't have a dedicated head visual: Headshot detection less accurate
-        var int headSize; headSize = mkf(freeAimGetHeadSize(targetNpc)/2); // Need to guess the head size
-        MEM_Info(ConcatStrings("freeAimDetectHeadshot: No head visual. Set head size to 2*", toStringf(headSize)));
-        // Get the position of the head (although zCModelNodeInst has a position property, it is empty the first time)
-        CALL_PtrParam(head); CALL_RetValIsStruct(12); // sizeof_zVEC3 // No recyclable call possible bc of structure
+    var int node; node = CALL_RetValAsPtr();
+    if (!node) { MEM_Error("freeAimDetectCriticalHit: Node not found!"); return; };
+    if (weakspot.dimX == -1) && (weakspot.dimY == -1) { // Retrieve the bbox by model
+        if (MEM_ReadInt(node+8)) { // node->nodeVisual // If the node has a dedicated visual, retrieve bbox
+            // Get the bbox of the node (although zCModelNodeInst has a zTBBox3D property, it is empty the first time)
+            CALL_PtrParam(node); CALL_RetValIsStruct(24); // sizeof_zTBBox3D // No recyclable call possible
+            CALL__thiscall(model, zCModel__GetBBox3DNodeWorld);
+            var int nodeBBoxPtr; nodeBBoxPtr = CALL_RetValAsPtr();
+            MEM_CopyWords(nodeBBoxPtr, _@(freeAimDebugBBox), 6); // zTBBox3D
+            MEM_Free(nodeBBoxPtr); // Free memory
+        } else {
+            MEM_Error("freeAimDetectCriticalHit: Node has no boundingbox!");
+            return;
+        };
+    } else if (weakspot.dimX < 0) && (weakspot.dimY < 0) { // Bbox dimensions must be positive
+        MEM_Error("freeAimDetectCriticalHit: Boundingbox dimensions illegal!");
+        return;
+    } else { // Create bbox by dimensions
+        weakspot.dimX /= 2; weakspot.dimY /= 2;
+        // Get the position of the node (although zCModelNodeInst has a position property, it is empty the first time)
+        CALL_PtrParam(node); CALL_RetValIsStruct(12); // sizeof_zVEC3 // No recyclable call possible bc of structure
         CALL__thiscall(model, zCModel__GetNodePositionWorld);
-        var int headPosPtr; headPosPtr = CALL_RetValAsInt();
-        var int headPos[3]; MEM_CopyWords(headPosPtr, _@(headPos), 3);
-        MEM_Free(headPosPtr); // Free memory
-        freeAimDebugBBox[0] = subf(headPos[0], headSize); // Build an own bbox by the guessed head size
-        freeAimDebugBBox[1] = subf(headPos[1], headSize);
-        freeAimDebugBBox[2] = subf(headPos[2], headSize);
-        freeAimDebugBBox[3] = addf(headPos[0], headSize);
-        freeAimDebugBBox[4] = addf(headPos[1], headSize);
-        freeAimDebugBBox[5] = addf(headPos[2], headSize);
+        var int nodPosPtr; nodPosPtr = CALL_RetValAsInt();
+        var int nodePos[3]; MEM_CopyWords(nodPosPtr, _@(nodePos), 3);
+        MEM_Free(nodPosPtr); // Free memory
+        freeAimDebugBBox[0] = subf(nodePos[0], mkf(weakspot.dimX)); // Build an own bbox by the passed node dimensions
+        freeAimDebugBBox[1] = subf(nodePos[1], mkf(weakspot.dimY));
+        freeAimDebugBBox[2] = subf(nodePos[2], mkf(weakspot.dimX));
+        freeAimDebugBBox[3] = addf(nodePos[0], mkf(weakspot.dimX));
+        freeAimDebugBBox[4] = addf(nodePos[1], mkf(weakspot.dimY));
+        freeAimDebugBBox[5] = addf(nodePos[2], mkf(weakspot.dimX));
     };
-    // The internal engine functions are not accurate enough for detecting a headshot
-    // Instead check here if "any" point along the line of projectile direction lies inside the bbox of the head.
+    // The internal engine functions are not accurate enough for detecting a shot through a bbox
+    // Instead check here if "any" point along the line of projectile direction lies inside the bbox of the node
     var int dir[3]; // Direction of collision line along the right-vector of the projectile (projectile flies sideways)
     dir[0] = MEM_ReadInt(projectile+60); dir[1] = MEM_ReadInt(projectile+76); dir[2] = MEM_ReadInt(projectile+92);
     freeAimDebugTrj[0] = addf(MEM_ReadInt(projectile+ 72), mulf(dir[0], mkf(100))); // Start 1m behind the projectile
     freeAimDebugTrj[1] = addf(MEM_ReadInt(projectile+ 88), mulf(dir[1], mkf(100)));
     freeAimDebugTrj[2] = addf(MEM_ReadInt(projectile+104), mulf(dir[2], mkf(100)));
-    var int intersection; intersection = 0; // Head shot detected
-    var int i; i=0; var int iter; iter = 700/5; // 7meters: Max distance from model bbox edge to head bbox (e.g. troll)
+    var int intersection; intersection = 0; // Critical hit detected
+    var int i; i=0; var int iter; iter = 700/5; // 7meters: Max distance from model bbox edge to node bbox (e.g. troll)
     while(i <= iter); i += 1; // Walk along the line in steps of 5cm
         freeAimDebugTrj[3] = subf(freeAimDebugTrj[0], mulf(dir[0], mkf(i*5))); // Next point along the collision line
         freeAimDebugTrj[4] = subf(freeAimDebugTrj[1], mulf(dir[1], mkf(i*5)));
         freeAimDebugTrj[5] = subf(freeAimDebugTrj[2], mulf(dir[2], mkf(i*5)));
-        if (lef(freeAimDebugBBox[0], freeAimDebugTrj[3])) // Is current point inside the head bbox
-        && (lef(freeAimDebugBBox[1], freeAimDebugTrj[4]))
-        && (lef(freeAimDebugBBox[2], freeAimDebugTrj[5]))
-        && (gef(freeAimDebugBBox[3], freeAimDebugTrj[3]))
-        && (gef(freeAimDebugBBox[4], freeAimDebugTrj[4]))
-        && (gef(freeAimDebugBBox[5], freeAimDebugTrj[5])) { intersection = 1; }; // Stay in loop for debugging the line
+        if (lef(freeAimDebugBBox[0], freeAimDebugTrj[3])) && (lef(freeAimDebugBBox[1], freeAimDebugTrj[4]))
+        && (lef(freeAimDebugBBox[2], freeAimDebugTrj[5])) && (gef(freeAimDebugBBox[3], freeAimDebugTrj[3]))
+        && (gef(freeAimDebugBBox[4], freeAimDebugTrj[4])) && (gef(freeAimDebugBBox[5], freeAimDebugTrj[5])) {
+            intersection = 1; }; // Current point is inside the node bbox, but stay in loop for debugging the line
     end;
-    if (intersection) { // Headshot detected
-        freeAimHeadshotEvent_(targetNpc); // Use this function to add an event on headshot, e.g. a print or a sound
-        MEM_WriteInt(damagePtr, freeAimGetHeadshotDamage_(MEM_ReadInt(damagePtr), targetNpc)); // Base damage not final
+    if (intersection) { // Critical hit detected
+        freeAimCriticalHitEvent_(targetNpc); // Use this function to add an event, e.g. a print or a sound
+        MEM_WriteInt(damagePtr, weakspot.bDmg); // Base damage not final damage
     };
 };
