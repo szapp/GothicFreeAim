@@ -160,7 +160,6 @@ const int zCVob__TraceRay                         = 6291008; //0x5FFE40
 const int zCWorld__TraceRayNearestHit_Vob         = 6430624; //0x621FA0
 const int zCWorld__AddVobAsChild                  = 6440352; //0x6245A0
 const int zCArray_zCVob__IsInList                 = 7159168; //0x6D3D80
-const int zSTRING__zSTRING                        = 4198592; //0x4010C0
 const int zString_CamModRanged                    = 9234704; //0x8CE910
 const int oCAniCtrl_Human__Turn                   = 7005504; //0x6AE540
 const int oCAniCtrl_Human__GetLayerAni            = 7011712; //0x6AFD80
@@ -178,11 +177,11 @@ const int zTBBox3D__Draw                          = 5529312; //0x545EE0
 const int zCLineCache__Line3D                     = 5289040; //0x50B450
 const int zlineCache                              = 9257720; //0x8D42F8
 const int zCConsole__Register                     = 7875296; //0x782AE0
-const int strUnknownCommand_0                     = 9120600; //0x8B2B58
 const int alternativeHitchanceAddr                = 6953494; //0x6A1A10
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
 const int mouseDeltaX                             = 9246300; //0x8D165C
+const int zCConsoleOutputOverwriteAddr            = 7142904; //0x6CFDF8 // Hook length 9
 const int zCWorld__AdvanceClock                   = 6447328; //0x6260E0 // Hook length 10
 const int oCAniCtrl_Human__InterpolateCombineAni  = 7037296; //0x6B6170 // Hook length 5
 const int oCAIArrow__SetupAIVob                   = 6951136; //0x6A10E0 // Hook length 6
@@ -200,7 +199,7 @@ const int mouseUpdate                             = 5062907; //0x4D40FB // Hook 
 /* Register a new command for the console */
 func void CC_Register(var string evalFunc, var string commandPrefix, var string description) {
     const int hook = 0;
-    if (!hook) { HookEngineF(/*0x6CFE44*/ 7142980, 6, _CC_Hook); hook = 1; };
+    if (!hook) { HookEngineF(zCConsoleOutputOverwriteAddr, 9, _CC_Hook); hook = 1; };
     var int descPtr; descPtr = _@s(description);
     var int comPtr; comPtr = _@s(commandPrefix);
     const int call = 0;
@@ -246,39 +245,32 @@ func void freeAim_Init() {
 
 /* Check for custom console commands */
 func void _CC_Hook() {
-    var string command; command = MEM_ReadString(MEM_ReadInt(ESP+4));
-    var string answer; answer = MEM_ReadString(MEM_ReadInt(ESP+8));
-    const string strUnknownCommand = "";
-    if (Hlp_StrCmp(strUnknownCommand, "")) { // Retrieve the "unknown command" string
-        CALL_PtrParam(strUnknownCommand_0);
-        CALL__thiscall(_@s(strUnknownCommand), zSTRING__zSTRING);
-    };
-    if (STR_Len(answer) < STR_Len(strUnknownCommand)) || (Hlp_StrCmp(command, "")) { return; }; // Answer too short
-    if (Hlp_StrCmp(STR_Prefix(answer, STR_Len(strUnknownCommand)), strUnknownCommand)) { // Command unknown
-        var int funcPtr; funcPtr = MEM_GetFuncPtr(regConsoleFunc); // Temporary
-        var string ret;
-        //foreach registered cc {
-            MEM_PushIntParam(funcPtr /*CCItem@*/);
-            MEM_PushStringParam(command);
-            //MEM_GetFuncID(ConsoleCommand);
-            MEM_Call(ConsoleCommand);
-            ret = MEM_PopStringResult();
-            if (!Hlp_StrCmp(ret, "")) {
-                MEM_WriteInt(ESP+8, _@s(ret)); // Overwrite the console output (answer) - Does not work yet!
-            } else {
-                //MEM_StackPos.position = foreachHndl_ptr;
-            };
-        //}
-    };
+    var string command; command = MEM_ReadString(MEM_ReadInt(ESP+1064)); // esp+424h+4h
+    var int funcPtr; funcPtr = MEM_GetFuncPtr(regConsoleFunc); // Temporary
+    var string ret;
+    //foreach registered cc {
+        MEM_PushIntParam(funcPtr /*CCItem@*/);
+        MEM_PushStringParam(command);
+        //MEM_GetFuncID(ConsoleCommand);
+        MEM_Call(ConsoleCommand);
+        ret = MEM_PopStringResult();
+        if (!Hlp_StrCmp(ret, "")) {
+            MEM_WriteString(EAX, ret); // Overwrite the console output (answer)
+        } else {
+            //MEM_StackPos.position = foreachHndl_ptr;
+        };
+    //}
 };
 
 /* Execute custom console commands */
 func string ConsoleCommand(var int funcPtr, var string command) {
     var string target; target = "DEBUG WEAKSPOT"; // Should be passed as argument
-    if (STR_Len(target) >= STR_Len(target)) && (Hlp_StrCmp(STR_Prefix(target, STR_Len(target)), target)) {
-        MEM_PushStringParam(command);
-        MEM_CallByPtr(funcPtr); // Call eval functions
-        return MEM_PopStringResult();
+    if (STR_Len(command) >= STR_Len(target)) {
+        if (Hlp_StrCmp(STR_Prefix(command, STR_Len(target)), target)) {
+            MEM_PushStringParam(command);
+            MEM_CallByPtr(funcPtr); // Call eval functions
+            return MEM_PopStringResult();
+        };
     };
     return "";
 };
