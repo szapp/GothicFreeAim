@@ -176,12 +176,10 @@ const int oCGame__s_bUseOldControls               = 9118144; //0x8B21C0
 const int zTBBox3D__Draw                          = 5529312; //0x545EE0
 const int zCLineCache__Line3D                     = 5289040; //0x50B450
 const int zlineCache                              = 9257720; //0x8D42F8
-const int zCConsole__Register                     = 7875296; //0x782AE0
 const int alternativeHitchanceAddr                = 6953494; //0x6A1A10
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
 const int mouseDeltaX                             = 9246300; //0x8D165C
-const int zCConsoleOutputOverwriteAddr            = 7142904; //0x6CFDF8 // Hook length 9
 const int zCWorld__AdvanceClock                   = 6447328; //0x6260E0 // Hook length 10
 const int oCAniCtrl_Human__InterpolateCombineAni  = 7037296; //0x6B6170 // Hook length 5
 const int oCAIArrow__SetupAIVob                   = 6951136; //0x6A10E0 // Hook length 6
@@ -195,22 +193,6 @@ const int onDmgAnimationAddr                      = 6774593; //0x675F41 // Hook 
 const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook length 7
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook length 7
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook length 5
-
-/* Register a new command for the console */
-func void CC_Register(var string evalFunc, var string commandPrefix, var string description) {
-    const int hook = 0;
-    if (!hook) { HookEngineF(zCConsoleOutputOverwriteAddr, 9, _CC_Hook); hook = 1; };
-    var int descPtr; descPtr = _@s(description);
-    var int comPtr; comPtr = _@s(commandPrefix);
-    const int call = 0;
-    if (CALL_Begin(call)) {
-        CALL_PtrParam(_@(descPtr));
-        CALL_PtrParam(_@(comPtr));
-        CALL__thiscall(_@(zcon_address), zCConsole__Register);
-        call = CALL_End();
-    };
-    // Add evalFunc and commandPrefix to the group of registered functions
-};
 
 /* Initialize free aim framework */
 func void freeAim_Init() {
@@ -226,7 +208,7 @@ func void freeAim_Init() {
         HookEngineF(onArrowDamageAddr, 7, freeAimDetectHeadshot); // Headshot detection
         HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aming
         if (FREEAIM_DEBUG_CONSOLE) { // Enable console command for debugging
-            CC_Register("regConsoleFunc", "debug weakspot", "turn debug visualization on/off");
+            CC_Register(freeAimDebugWeakspot, "debug weakspot", "turn debug visualization on/off");
         };
         if (FREEAIM_DEBUG_CONSOLE) || (FREEAIM_DEBUG_WEAKSPOT) { // Visualization of weakspot for debugging
             HookEngineF(zCWorld__AdvanceClock, 10, freeAimVisualizeWeakspot); // FrameFunction hooks too early
@@ -243,40 +225,8 @@ func void freeAim_Init() {
     MEM_Info("Free aim initialized.");
 };
 
-/* Check for custom console commands */
-func void _CC_Hook() {
-    var string command; command = MEM_ReadString(MEM_ReadInt(ESP+1064)); // esp+424h+4h
-    var int funcPtr; funcPtr = MEM_GetFuncPtr(regConsoleFunc); // Temporary
-    var string ret;
-    //foreach registered cc {
-        MEM_PushIntParam(funcPtr /*CCItem@*/);
-        MEM_PushStringParam(command);
-        //MEM_GetFuncID(ConsoleCommand);
-        MEM_Call(ConsoleCommand);
-        ret = MEM_PopStringResult();
-        if (!Hlp_StrCmp(ret, "")) {
-            MEM_WriteString(EAX, ret); // Overwrite the console output (answer)
-        } else {
-            //MEM_StackPos.position = foreachHndl_ptr;
-        };
-    //}
-};
-
-/* Execute custom console commands */
-func string ConsoleCommand(var int funcPtr, var string command) {
-    var string target; target = "DEBUG WEAKSPOT"; // Should be passed as argument
-    if (STR_Len(command) >= STR_Len(target)) {
-        if (Hlp_StrCmp(STR_Prefix(command, STR_Len(target)), target)) {
-            MEM_PushStringParam(command);
-            MEM_CallByPtr(funcPtr); // Call eval functions
-            return MEM_PopStringResult();
-        };
-    };
-    return "";
-};
-
 /* Console function to enable/disable weak spot debug output */
-func string regConsoleFunc(var string command) {
+func string freeAimDebugWeakspot(var string command) {
     FREEAIM_DEBUG_WEAKSPOT = !FREEAIM_DEBUG_WEAKSPOT;
     if (FREEAIM_DEBUG_WEAKSPOT) { return "Debug weak spot on."; } else { return "Debug weak spot off."; };
 };
