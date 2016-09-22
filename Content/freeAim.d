@@ -16,6 +16,7 @@
  *
  * Customizability:
  *  - Collect and re-use shot projectiles (yes/no):   FREEAIM_REUSE_PROJECTILES
+ *  - Projectile instance for re-using                freeAimGetUsedProjectileInstance(instance, targetNpc)
  *  - Draw force (drop-off) calculation:              freeAimGetDrawForce(weapon, talent)
  *  - Accuracy calculation:                           freeAimGetAccuracy(weapon, talent)
  *  - Reticle style:                                  freeAimGetReticleStyle(weapon, talent)
@@ -144,12 +145,32 @@ func void freeAimGetWeakspot(var C_NPC target, var C_Item weapon, var int damage
 func void freeAimCriticalHitEvent(var C_NPC target, var C_Item weapon) {
     // The event may depent on the target npc (e.g. different sound for monsters). Make use of 'target' argument
     // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
-    // The headshots could also be counted here to give an xp reward after 25 headshots
+    // The critical hits could also be counted here to give an xp reward after 25 headshots
     // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
     // Caution: Weapon may have been unequipped already at this time! Use Hlp_IsValidItem(weapon) to check
     // if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
     Snd_Play("FORGE_ANVIL_A1");
     PrintS("Kritischer Treffer"); // "Critical hit"
+};
+
+/* Modify this function to alter the projectile instance after shooting for re-using, e.g. used arrow */
+func int freeAimGetUsedProjectileInstance(var int projectileInst, var C_NPC inventoryNpc) {
+    // By returning zero, the projectile is completely removed (e.g. retrieve-projectile-talent not learned yet)
+    // The argument inventoryNpc holds the npc in whose inventory it will be put, or is empty if it landed in the world
+    // if (projectileInst == Hlp_GetInstanceID(ItRw_Arrow)) { // Exchange the instance for a "used" one
+    //     if (!Hlp_IsValidItem(ItRw_UsedArrow)) { Wld_InsertItem(ItRw_UsedArrow, MEM_FARFARAWAY); }; // Initialize!
+    //     projectileInst = Hlp_GetInstanceID(ItRw_UsedArrow);
+    // };
+    if (Hlp_IsValidNpc(inventoryNpc)) { // Projectile hit npc and will be put into their inventory
+        if (Npc_IsPlayer(inventoryNpc)) { return 0; }; // Do not put projectiles in player inventory
+        // if (inventoryNpc.guild < GIL_SEPERATOR_HUM) { return 0; }; // Remove projectile when it hits humans
+        // if (PLAYER_TALENT_TAKEANIMALTROPHY[REUSE_Arrow] == FALSE) { return 0; }; // Retrieve-projectile-talent
+        // if (!Npc_HasItems(hero, ItMi_ArrowTool)) { return 0; }; // Player needs tool to remove the projectile
+        return projectileInst; // For now it is just preserved (is put in the inventory as is)
+    } else { // Projectile did not hit npc and landed in world
+        // if (PLAYER_TALENT_REUSE_ARROW == FALSE) { return 0; }; // Reuse-projectile-talent
+        return projectileInst; // For now it is just preserved (leave it in the world as is)
+    };
 };
 
 /********************************************** DO NO CROSS THIS LINE **************************************************
@@ -174,6 +195,7 @@ const int oCNpc__GetAngles                        = 6820528; //0x6812B0
 const int oCNpc__SetFocusVob                      = 7547744; //0x732B60
 const int oCNpc__SetEnemy                         = 7556032; //0x734BC0
 const int oCNpc__GetModel                         = 7571232; //0x738720
+const int oCItem__InitByScript                    = 7412688; //0x711BD0
 const int oCItem__InsertEffect                    = 7416896; //0x712C40
 const int oCItem__RemoveEffect                    = 7416832; //0x712C00
 const int zCModel__SearchNode                     = 5758960; //0x57DFF0
@@ -297,7 +319,7 @@ func void freeAimVisualizeWeakspot() {
         var int cRedPtr; cRedPtr = _@(zCOLOR_RED);
         var int pos1Ptr; pos1Ptr = _@(freeAimDebugTrj);
         var int pos2Ptr; pos2Ptr = _@(freeAimDebugTrj)+12;
-        const int call2 = 0; var int null; null = 0;
+        const int call2 = 0; var int null;
         if (CALL_Begin(call2)) {
             CALL_IntParam(_@(null));
             CALL_PtrParam(_@(cRedPtr));
@@ -720,7 +742,8 @@ func void freeAimDropProjectile(var int rigidBody) {
 func void freeAimOnArrowHitNpc() {
     var oCItem projectile; projectile = _^(MEM_ReadInt(ESI+88));
     var C_NPC victim; victim = _^(EDI);
-    CreateInvItems(victim, projectile.instanz, 1); // Put respective munition instance into the inventory
+    var int projInst; projInst = freeAimGetUsedProjectileInstance(projectile.instanz, victim); // Get "used" instance
+    if (projInst > 0) { CreateInvItem(victim, projInst); }; // Put respective instance in inventory
     if (FF_ActiveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody))) {
         FF_RemoveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody)); };
     MEM_WriteInt(ESI+56, -1073741824); // oCAIArrow.lifeTime // Mark this AI for freeAimWatchProjectile()
@@ -730,15 +753,6 @@ func void freeAimOnArrowHitNpc() {
 func void freeAimOnArrowGetStuck() {
     var int projectilePtr; projectilePtr = MEM_ReadInt(ESI+88);
     var oCItem projectile; projectile = _^(projectilePtr);
-    if (Hlp_StrCmp(projectile.effect, FREEAIM_TRAIL_FX)) { // Remove trail strip fx
-        const int call = 0;
-        if (CALL_Begin(call)) {
-            CALL__thiscall(_@(projectilePtr), oCItem__RemoveEffect);
-            call = CALL_End();
-        };
-    };
-    projectile.flags = projectile.flags &~ ITEM_NFOCUS; // Focusable
-    projectile._zCVob_callback_ai = 0; // Release vob from AI
     if (FF_ActiveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody))) {
         FF_RemoveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody)); };
     // Have projectile not go to deep in. Might not make sense but trust me. (RightVec will be multiplied later)
@@ -769,11 +783,24 @@ func void freeAimWatchProjectile() {
                 call2 = CALL_End();
             };
         };
-        projectile.flags = projectile.flags &~ ITEM_NFOCUS; // Focusable
-        projectile._zCVob_callback_ai = 0; // Release vob from AI
-        MEM_WriteInt(arrowAI+56, FLOATONE); // oCAIArrow.lifeTime // Set high lifetime to ensure item visibility
-        MEM_WriteInt(removePtr, 0); // Do not remove vob on AI destruction
-        MEM_WriteInt(ESP+8, _@(FREEAIM_ARROWAI_REDIRECT)); // Divert the actual "return" value
+        var C_NPC emptyNpc;
+        var int projInst; projInst = freeAimGetUsedProjectileInstance(projectile.instanz, emptyNpc); // "Used" instance
+        if (projInst > 0) { // Will be -1 on invalid item
+            if (projInst != projectile.instanz) { // Only change the instance if different
+                const int call3 = 0; const int one = 1;
+                if (CALL_Begin(call3)) {
+                    CALL_IntParam(_@(one)); // Amount
+                    CALL_PtrParam(_@(projInst)); // Instance ID
+                    CALL__thiscall(_@(projectilePtr), oCItem__InitByScript);
+                    call3 = CALL_End();
+                };
+            };
+            projectile._zCVob_callback_ai = 0; // Release vob from AI
+            projectile.flags = projectile.flags &~ ITEM_NFOCUS; // Focusable
+            MEM_WriteInt(arrowAI+56, FLOATONE); // oCAIArrow.lifeTime // Set high lifetime to ensure item visibility
+            MEM_WriteInt(removePtr, 0); // Do not remove vob on AI destruction
+            MEM_WriteInt(ESP+8, _@(FREEAIM_ARROWAI_REDIRECT)); // Divert the actual "return" value
+        };
     } else if (MEM_ReadInt(arrowAI+56) == -1073741824) { // Marked as positive hit on npc: do not keep alive
         MEM_WriteInt(arrowAI+56, FLOATNULL); // oCAIArrow.lifeTime
     };
