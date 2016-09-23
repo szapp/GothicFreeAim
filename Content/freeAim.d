@@ -17,11 +17,11 @@
  * Customizability:
  *  - Collect and re-use shot projectiles (yes/no):   FREEAIM_REUSE_PROJECTILES
  *  - Projectile instance for re-using                freeAimGetUsedProjectileInstance(instance, targetNpc)
- *  - Draw force (drop-off) calculation:              freeAimGetDrawForce(weapon, talent)
+ *  - Draw force (gravity/drop-off) calculation:      freeAimGetDrawForce(weapon, talent)
  *  - Accuracy calculation:                           freeAimGetAccuracy(weapon, talent)
  *  - Reticle style:                                  freeAimGetReticleStyle(weapon, talent)
  *  - Reticle size:                                   freeAimGetReticleSize(size, weapon, talent)
- *  - Critical hit (position, damage) calculation:    freeAimGetWeakspot(target, weapon, damage)
+ *  - Critical hit calculation (position, damage):    freeAimCriticalHitDef(target, weapon, damage)
  *  - Critical hit event (print, sound, xp, ...):     freeAimCriticalHitEvent(target, weapon)
  * Advanced (modification not recommended):
  *  - Scatter radius for accuracy:                    FREEAIM_SCATTER_DEG
@@ -111,7 +111,7 @@ func int freeAimGetReticleSize(var int size, var int weapon, var int talent) {
 };
 
 /* Modify this function to define a critical hit by weak spot (e.g. head node for headshot), its size and the damage */
-func void freeAimGetWeakspot(var C_Npc target, var C_Item weapon, var int damage, var int returnPtr) {
+func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int damage, var int returnPtr) {
     var Weakspot weakspot; weakspot = _^(returnPtr);
     // This function is dynamic: It is called on every hit and the weakspot and damage can be calculated individually
     // Possibly incorporate weapon-specific stats, headshot talent, dependecy on target, ...
@@ -204,7 +204,6 @@ const int zCModel__GetNodePositionWorld           = 5738816; //0x579140
 const int zTBBox3D__Draw                          = 5529312; //0x545EE0
 const int zCLineCache__Line3D                     = 5289040; //0x50B450
 const int zlineCache                              = 9257720; //0x8D42F8
-const int alternativeHitchanceAddr                = 6953494; //0x6A1A10
 const int oCGame__s_bUseOldControls               = 9118144; //0x8B21C0
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
@@ -217,6 +216,7 @@ const int oCAIArrowBase__DoAI                     = 6948416; //0x6A0640 // Hook 
 const int onArrowHitNpcAddr                       = 6949832; //0x6A0BC8 // Hook length 5
 const int onArrowHitVobAddr                       = 6949929; //0x6A0C29 // Hook length 5
 const int onArrowHitStatAddr                      = 6949460; //0x6A0A54 // Hook length 5
+const int onArrowHitChanceAddr                    = 6953483; //0x6A1A0B // Hook length 5
 const int onArrowDamageAddr                       = 6953621; //0x6A1A95 // Hook length 7
 const int onDmgAnimationAddr                      = 6774593; //0x675F41 // Hook length 9
 const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook length 7
@@ -235,6 +235,7 @@ func void freeAim_Init() {
         HookEngineF(mouseUpdate, 5, freeAimManualRotation); // Update the player model rotation by mouse input
         HookEngineF(oCAIArrowBase__DoAI, 7, freeAimWatchProjectile); // AI loop for each projectile
         HookEngineF(onArrowDamageAddr, 7, freeAimDetectCriticalHit); // Critical hit detection
+        HookEngineF(onArrowHitChanceAddr, 5, freeAimDoNpcHit); // Decide whether a projectile hits or not
         HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aming
         if (FREEAIM_DEBUG_CONSOLE) { // Enable console command for debugging
             CC_Register(freeAimDebugWeakspot, "debug weakspot", "turn debug visualization on/off");
@@ -247,108 +248,10 @@ func void freeAim_Init() {
             HookEngineF(onArrowHitVobAddr, 5, freeAimOnArrowGetStuck); // Keep projectile alive when stuck in vob
             HookEngineF(onArrowHitStatAddr, 5, freeAimOnArrowGetStuck); // Keep projectile alive when stuck in world
         };
-        MemoryProtectionOverride(alternativeHitchanceAddr, 10); // Enable overwriting hit chance
         r_DefaultInit(); // Start rng for aiming accuracy
         hookFreeAim = 1;
     };
     MEM_Info("Free aim initialized.");
-};
-
-/* Internal helper function for freeAimGetDrawForce() */
-func int freeAimGetDrawForce_() {
-    var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
-    else { MEM_Error("freeAimGetDrawForce_: No valid weapon equipped/readied!"); return -1; }; // Should never happen
-    if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
-    else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
-    else { MEM_Error("freeAimGetDrawForce_: No valid weapon equipped/readied!"); return -1; };
-    var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent);
-    if (drawForce > 100) { drawForce = 100; } else if (drawForce < 0) { drawForce = 0; }; // Must be in [0, 100]
-    return drawForce;
-};
-
-/* Internal helper function for freeAimGetAccuracy() */
-func int freeAimGetAccuracy_() {
-    var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
-    else { MEM_Error("freeAimGetAccuracy_: No valid weapon equipped/readied!"); return -1; }; // Should never happen
-    if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
-    else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
-    else { MEM_Error("freeAimGetAccuracy_: No valid weapon equipped/readied!"); return -1; };
-    var int accuracy; accuracy = freeAimGetAccuracy(weapon, talent);
-    if (accuracy < 1) { accuracy = 1; } else if (accuracy > 100) { accuracy = 100; }; // Limit to [1, 100] // Div by 0!
-    return accuracy;
-};
-
-/* Internal helper function for freeAimGetReticleSize() and freeAimGetReticleStyle() */
-func int freeAimGetReticle(var int sizePtr) {
-    var int reticleStyle; var int reticleSize; reticleSize = MEM_ReadInt(sizePtr);
-    var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
-    else { MEM_Error("freeAimGetReticle_: No valid weapon equipped/readied!"); return -1; }; // Should never happen
-    if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
-    else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
-    else { MEM_Error("freeAimGetReticle_: No valid weapon equipped/readied!"); return -1; };
-    reticleStyle = freeAimGetReticleStyle(weapon, talent);
-    reticleSize = freeAimGetReticleSize(reticleSize, weapon, talent);
-    if (reticleSize < FREEAIM_RETICLE_MIN_SIZE) { reticleSize = FREEAIM_RETICLE_MIN_SIZE; }
-    else if (reticleSize > FREEAIM_RETICLE_MAX_SIZE) { reticleSize = FREEAIM_RETICLE_MAX_SIZE; };
-    if (reticleStyle < 0) || (reticleStyle >= MAX_RETICLE) {
-        MEM_Error("freeAimGetReticle_: Invalid reticleStyle!"); reticleStyle = NO_RETICLE; };
-    MEM_WriteInt(sizePtr, reticleSize); // Overwrite reticle size
-    return reticleStyle;
-};
-
-/* Visualize the bounding box of the weakspot and the projectile trajectory for debugging */
-func void freeAimVisualizeWeakspot() {
-    if (!FREEAIM_DEBUG_WEAKSPOT) { return; };
-    if (freeAimDebugBBox[0]) { // Visualize weak spot bounding box
-        var int cGreenPtr; cGreenPtr = _@(zCOLOR_GREEN);
-        var int bboxPtr; bboxPtr = _@(freeAimDebugBBox);
-        const int call = 0;
-        if (CALL_Begin(call)) {
-            CALL_PtrParam(_@(cGreenPtr));
-            CALL__thiscall(_@(bboxPtr), zTBBox3D__Draw);
-            call = CALL_End();
-        };
-    };
-    if (freeAimDebugTrj[0]) { // Visualize projectile trajectory
-        var int cRedPtr; cRedPtr = _@(zCOLOR_RED);
-        var int pos1Ptr; pos1Ptr = _@(freeAimDebugTrj);
-        var int pos2Ptr; pos2Ptr = _@(freeAimDebugTrj)+12;
-        const int call2 = 0; var int null;
-        if (CALL_Begin(call2)) {
-            CALL_IntParam(_@(null));
-            CALL_PtrParam(_@(cRedPtr));
-            CALL_PtrParam(_@(pos2Ptr));
-            CALL_PtrParam(_@(pos1Ptr));
-            CALL__thiscall(_@(zlineCache), zCLineCache__Line3D);
-            call2 = CALL_End();
-        };
-    };
-};
-
-/* Hit chance of 100%. Taken from http://forum.worldofplayers.de/forum/threads/1475456?p=25080651#post25080651 */
-func void freeAimAltHitchance() {
-    MEM_WriteByte(alternativeHitchanceAddr, ASMINT_OP_nop);
-    MEM_WriteByte(alternativeHitchanceAddr+1, ASMINT_OP_nop);
-    MEM_WriteByte(alternativeHitchanceAddr+2, ASMINT_OP_nop);
-    MEM_WriteByte(alternativeHitchanceAddr+3, ASMINT_OP_nop);
-    MEM_WriteByte(alternativeHitchanceAddr+4, ASMINT_OP_nop);
-    MEM_WriteByte(alternativeHitchanceAddr+5, ASMINT_OP_nop);
-};
-
-/* Restore default hit chance calculation (by talent) */
-func void freeAimResetHitchance() {
-    MEM_WriteByte(alternativeHitchanceAddr, 15);
-    MEM_WriteByte(alternativeHitchanceAddr+1, 141);
-    MEM_WriteByte(alternativeHitchanceAddr+2, 157);
-    MEM_WriteByte(alternativeHitchanceAddr+3, 1);
-    MEM_WriteByte(alternativeHitchanceAddr+4, 0);
-    MEM_WriteByte(alternativeHitchanceAddr+5, 0);
 };
 
 /* Update internal settings when turning free aim on/off in the options */
@@ -359,14 +262,12 @@ func void freeAimUpdateSettings(var int on) {
         Focus_Ranged.npc_elevup = 15.0;
         Focus_Ranged.npc_elevdo = -10.0;
         MEM_WriteString(zString_CamModRanged, STR_Upper(FREEAIM_CAMERA)); // New camera mode, upper case is important
-        freeAimAltHitchance(); // Always hit; Hit-chance/accuracy will be calculated in freeAimGetAccuracy()
         FREEAIM_ACTIVE_PREVFRAME = 1;
     } else {
         Focus_Ranged.npc_azi =  45.0; // Reset ranged focus collection to standard
         Focus_Ranged.npc_elevup =  90.0;
         Focus_Ranged.npc_elevdo =  -85.0;
         MEM_WriteString(zString_CamModRanged, "CAMMODRANGED"); // Restore camera mode, upper case is important
-        freeAimResetHitchance(); // Restore default hit chance
         FREEAIM_ACTIVE_PREVFRAME = -1;
     };
 };
@@ -580,6 +481,26 @@ func int freeAimRay(var int distance, var int vobPtr, var int posPtr, var int di
     return found;
 };
 
+/* Internal helper function for freeAimGetReticleSize() and freeAimGetReticleStyle() */
+func int freeAimGetReticle(var int sizePtr) {
+    var int reticleStyle; var int reticleSize; reticleSize = MEM_ReadInt(sizePtr);
+    var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
+    else { MEM_Error("freeAimGetReticle: No valid weapon equipped/readied!"); return -1; }; // Should never happen
+    if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
+    else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
+    else { MEM_Error("freeAimGetReticle: No valid weapon equipped/readied!"); return -1; };
+    reticleStyle = freeAimGetReticleStyle(weapon, talent);
+    reticleSize = freeAimGetReticleSize(reticleSize, weapon, talent);
+    if (reticleSize < FREEAIM_RETICLE_MIN_SIZE) { reticleSize = FREEAIM_RETICLE_MIN_SIZE; }
+    else if (reticleSize > FREEAIM_RETICLE_MAX_SIZE) { reticleSize = FREEAIM_RETICLE_MAX_SIZE; };
+    if (reticleStyle < 0) || (reticleStyle >= MAX_RETICLE) {
+        MEM_Error("freeAimGetReticle: Invalid reticleStyle!"); reticleStyle = NO_RETICLE; };
+    MEM_WriteInt(sizePtr, reticleSize); // Overwrite reticle size
+    return reticleStyle;
+};
+
 /* Update aiming animation. Hook oCAniCtrl_Human::InterpolateCombineAni */
 func void freeAimAnimation() {
     if (!freeAimIsActive()) { return; };
@@ -659,11 +580,39 @@ func int freeAimGetDrawPercent() {
     return drawPercent;
 };
 
+/* Internal helper function for freeAimGetDrawForce() */
+func int freeAimGetDrawForce_() {
+    var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
+    else { MEM_Error("freeAimGetDrawForce_: No valid weapon equipped/readied!"); return -1; }; // Should never happen
+    if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
+    else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
+    else { MEM_Error("freeAimGetDrawForce_: No valid weapon equipped/readied!"); return -1; };
+    var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent);
+    if (drawForce > 100) { drawForce = 100; } else if (drawForce < 0) { drawForce = 0; }; // Must be in [0, 100]
+    return drawForce;
+};
+
+/* Internal helper function for freeAimGetAccuracy() */
+func int freeAimGetAccuracy_() {
+    var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
+    else { MEM_Error("freeAimGetAccuracy_: No valid weapon equipped/readied!"); return -1; }; // Should never happen
+    if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
+    else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
+    else { MEM_Error("freeAimGetAccuracy_: No valid weapon equipped/readied!"); return -1; };
+    var int accuracy; accuracy = freeAimGetAccuracy(weapon, talent);
+    if (accuracy < 1) { accuracy = 1; } else if (accuracy > 100) { accuracy = 100; }; // Limit to [1, 100] // Div by 0!
+    return accuracy;
+};
+
 /* Set the projectile direction and trajectory. Hook oCAIArrow::SetupAIVob */
 func void freeAimSetupProjectile() {
     var int projectile; projectile = MEM_ReadInt(ESP+4);  // First argument is the projectile
     var C_Npc shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
-    if (!Npc_IsPlayer(shooter)) || (!freeAimIsActive()) { return; }; // Only for the player
+    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { return; }; // Only for player and when fa active
     // 1st: Set projectile drop-off (by draw force)
     const int call2 = 0;
     if (CALL_Begin(call2)) {
@@ -720,6 +669,7 @@ func void freeAimSetupProjectile() {
         CALL_PtrParam(vobPtr);
         CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
     };
+    var int posPtr; posPtr = _@(pos);
     const int call4 = 0; // Set position to aim vob
     if (CALL_Begin(call4)) {
         CALL_PtrParam(_@(posPtr)); // Update aim vob position
@@ -736,6 +686,13 @@ func void freeAimDropProjectile(var int rigidBody) {
     && (MEM_ReadInt(rigidBody+192) == FLOATNULL)
     && (MEM_ReadInt(rigidBody+196) == FLOATNULL) { return; }; // Do not add gravity if projectile already stopped moving
     MEM_WriteByte(rigidBody+256, 1); // Turn on gravity (zCRigidBody.bitfield)
+};
+
+/* Determine the hit chance. For the player it's always 100%. True hit chance is calcualted in freeAimGetAccuracy() */
+func void freeAimDoNpcHit() {
+    var int hitChance; hitChance = MEM_ReadInt(ESP+24); // esp+1ACh+194h
+    var C_Npc shooter; shooter = _^(MEM_ReadInt(EBP+92)); // ebp+5Ch // oCNpc*
+    if (FREEAIM_ACTIVE_PREVFRAME) && (Npc_IsPlayer(shooter)) { MEM_WriteInt(ESP+24, 100); }; // Player always hits
 };
 
 /* Arrow gets stuck in npc: put projectile instance into inventory and let ai die */
@@ -812,6 +769,35 @@ func void freeAimDmgAnimation() {
     if (Npc_IsPlayer(victim)) && (freeAimIsActive()) { EAX = 0; }; // Disable damage animation while aiming
 };
 
+/* Visualize the bounding box of the weakspot and the projectile trajectory for debugging */
+func void freeAimVisualizeWeakspot() {
+    if (!FREEAIM_DEBUG_WEAKSPOT) { return; };
+    if (freeAimDebugBBox[0]) { // Visualize weak spot bounding box
+        var int cGreenPtr; cGreenPtr = _@(zCOLOR_GREEN);
+        var int bboxPtr; bboxPtr = _@(freeAimDebugBBox);
+        const int call = 0;
+        if (CALL_Begin(call)) {
+            CALL_PtrParam(_@(cGreenPtr));
+            CALL__thiscall(_@(bboxPtr), zTBBox3D__Draw);
+            call = CALL_End();
+        };
+    };
+    if (freeAimDebugTrj[0]) { // Visualize projectile trajectory
+        var int cRedPtr; cRedPtr = _@(zCOLOR_RED);
+        var int pos1Ptr; pos1Ptr = _@(freeAimDebugTrj);
+        var int pos2Ptr; pos2Ptr = _@(freeAimDebugTrj)+12;
+        const int call2 = 0; var int null;
+        if (CALL_Begin(call2)) {
+            CALL_IntParam(_@(null));
+            CALL_PtrParam(_@(cRedPtr));
+            CALL_PtrParam(_@(pos2Ptr));
+            CALL_PtrParam(_@(pos1Ptr));
+            CALL__thiscall(_@(zlineCache), zCLineCache__Line3D);
+            call2 = CALL_End();
+        };
+    };
+};
+
 /* Internal helper function for freeAimCriticalHitEvent() */
 func void freeAimCriticalHitEvent_(var C_Npc target) {
     var C_Item weapon; // Caution: Weapon may have been unequipped already at this time
@@ -820,12 +806,12 @@ func void freeAimCriticalHitEvent_(var C_Npc target) {
     freeAimCriticalHitEvent(target, weapon);
 };
 
-/* Internal helper function for freeAimGetWeakspot() */
-func void freeAimGetWeakspot_(var C_Npc target, var int damagePtr, var int returnPtr) {
+/* Internal helper function for freeAimCriticalHitDef() */
+func void freeAimCriticalHitDef_(var C_Npc target, var int damagePtr, var int returnPtr) {
     var C_Item weapon; // Caution: Weapon may have been unequipped already at this time
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
     else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
-    freeAimGetWeakspot(target, weapon, MEM_ReadInt(damagePtr), returnPtr);
+    freeAimCriticalHitDef(target, weapon, MEM_ReadInt(damagePtr), returnPtr);
     MEM_WriteString(returnPtr, STR_Upper(MEM_ReadString(returnPtr))); // Nodes are always upper case
     if (lf(MEM_ReadInt(returnPtr+28), FLOATNULL)) { MEM_WriteInt(returnPtr+28, FLOATNULL); }; // Correct negative damage
 };
@@ -836,11 +822,13 @@ func string freeAimDebugWeakspot(var string command) {
     if (FREEAIM_DEBUG_WEAKSPOT) { return "Debug weak spot on."; } else { return "Debug weak spot off."; };
 };
 
-/* Detect critical hits and increase base damage. Modify the weak spot in freeAimGetWeakspot() */
+/* Detect critical hits and increase base damage. Modify the weak spot in freeAimCriticalHitDef() */
 func void freeAimDetectCriticalHit() {
     var int damagePtr; damagePtr = ESP+228; // esp+1ACh+C8h // int*
     var int target; target = MEM_ReadInt(ESP+28); // esp+1ACh+190h // oCNpc*
     var int projectile; projectile = MEM_ReadInt(EBP+88); // ebp+58h // oCItem*
+    var C_Npc shooter; shooter = _^(MEM_ReadInt(EBP+92)); // ebp+5Ch // oCNpc*
+    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { return; }; // Only for player and when fa active
     var C_Npc targetNpc; targetNpc = _^(target);
     // Get model from target npc
     const int call = 0;
@@ -851,7 +839,7 @@ func void freeAimDetectCriticalHit() {
     var int model; model = CALL_RetValAsPtr();
     // Get weak spot node from target model
     var int autoAlloc[8]; var Weakspot weakspot; weakspot = _^(_@(autoAlloc)); // Gothic takes care of freeing this ptr
-    freeAimGetWeakspot_(targetNpc, damagePtr, _@(weakspot)); // Retrieve weakspot specs
+    freeAimCriticalHitDef_(targetNpc, damagePtr, _@(weakspot)); // Retrieve weakspot specs
     var int nodeStrPtr; nodeStrPtr = _@(weakspot);
     const int call2 = 0;
     if (CALL_Begin(call2)) {
