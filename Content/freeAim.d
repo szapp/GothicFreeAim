@@ -18,7 +18,7 @@
  *  - Collect and re-use shot projectiles (yes/no):   FREEAIM_REUSE_PROJECTILES
  *  - Projectile instance for re-using                freeAimGetUsedProjectileInstance(instance, targetNpc)
  *  - Draw force (drop-off) calculation:              freeAimGetDrawForce(weapon, talent)
- *  - Accuracy calculation:                           freeAimGetAccuracy(slf, weapon, talent)
+ *  - Accuracy calculation:                           freeAimGetAccuracy(weapon, talent)
  *  - Reticle style:                                  freeAimGetReticleStyle(weapon, talent)
  *  - Reticle size:                                   freeAimGetReticleSize(size, weapon, talent)
  *  - Critical hit (position, damage) calculation:    freeAimGetWeakspot(target, weapon, damage)
@@ -82,19 +82,14 @@ func int freeAimGetDrawForce(var C_Item weapon, var int talent) {
     return drawForce;
 };
 
-/* Modify this function to alter accuracy calculation. (For player and npcs!) Scaled between 0 and 100 (percent) */
-func int freeAimGetAccuracy(var C_Npc slf, var C_Item weapon, var int talent) {
-    var int accuracy;
-    if (Npc_IsPlayer(slf)) { // Shooter is player
-        // Add any other factors here e.g. weapon-specific accuracy stats, weapon spread, accuracy talent, ...
-        // Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW)
-        // Here: talent scaled by draw force: draw force=100% => accuracy=talent; draw force=0% => accuracy=talent/2
-        var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent); // Already scaled to [0, 100]
-        if (drawForce < talent) { drawForce = talent; }; // Decrease impact of draw force on talent
-        accuracy = (talent * drawForce)/100;
-    } else { // Shooter is npc
-        accuracy = talent; // Not so sophisitcated: Npcs are not actually having free aim!
-    };
+/* Modify this function to alter accuracy calculation. Scaled between 0 and 100 (percent) */
+func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
+    // Add any other factors here e.g. weapon-specific accuracy stats, weapon spread, accuracy talent, ...
+    // Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW)
+    // Here the talent is scaled by draw force: draw force=100% => accuracy=talent; draw force=0% => accuracy=talent/2
+    var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent); // Already scaled to [0, 100]
+    if (drawForce < talent) { drawForce = talent; }; // Decrease impact of draw force on talent
+    var int accuracy; accuracy = (talent * drawForce)/100;
     if (accuracy < 0) { accuracy = 0; } else if (accuracy > 100) { accuracy = 100; }; // Respect the ranges
     return accuracy;
 };
@@ -274,15 +269,15 @@ func int freeAimGetDrawForce_() {
 };
 
 /* Internal helper function for freeAimGetAccuracy() */
-func int freeAimGetAccuracy_(var C_Npc slf) {
+func int freeAimGetAccuracy_() {
     var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
-    if (Npc_IsInFightMode(slf, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(slf); }
-    else if (Npc_HasEquippedRangedWeapon(slf)) { weapon = Npc_GetEquippedRangedWeapon(slf); }
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
     else { MEM_Error("freeAimGetAccuracy_: No valid weapon equipped/readied!"); return -1; }; // Should never happen
-    if (weapon.flags & ITEM_BOW) { talent = slf.HitChance[NPC_TALENT_BOW]; } // Bow talent
-    else if (weapon.flags & ITEM_CROSSBOW) { talent = slf.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
+    if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
+    else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
     else { MEM_Error("freeAimGetAccuracy_: No valid weapon equipped/readied!"); return -1; };
-    var int accuracy; accuracy = freeAimGetAccuracy(slf, weapon, talent);
+    var int accuracy; accuracy = freeAimGetAccuracy(weapon, talent);
     if (accuracy < 1) { accuracy = 1; } else if (accuracy > 100) { accuracy = 100; }; // Limit to [1, 100] // Div by 0!
     return accuracy;
 };
@@ -668,76 +663,53 @@ func int freeAimGetDrawPercent() {
 func void freeAimSetupProjectile() {
     var int projectile; projectile = MEM_ReadInt(ESP+4);  // First argument is the projectile
     var C_Npc shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
-    var int target; target = MEM_ReadInt(ESP+12); // Third argument is target (if present)
-    var zMAT4 origin; var int pos[3]; var int posPtr; posPtr = _@(pos); var int distance;
-    var int angleX; var int angleY;
-    if (!Npc_IsPlayer(shooter)) && (FREEAIM_ACTIVE_PREVFRAME) { // Npcs need accuracy manipulation as well
-        if (!target) { return; };
-        var int autoAlloc[16]; MEM_CopyWords(_@(shooter)+60, _@(autoAlloc), 16); // Gothic will free this ptr
-        var int originPtr; originPtr = _@(autoAlloc); origin = _^(originPtr);
-        var int dist[3]; var int distPtr; distPtr = _@(dist);
-        dist[0] = subf(MEM_ReadInt(target+72), origin.v0[3]);
-        dist[1] = subf(MEM_ReadInt(target+88), origin.v1[3]);
-        dist[2] = subf(MEM_ReadInt(target+104), origin.v2[3]);
-        distance = sqrtf(addf(addf(sqrf(dist[0]), sqrf(dist[1])), sqrf(dist[2]))); // Distance shooter-target
-        // Aiming angle != Model rotation
-        const int zVEC3__Normalize = 4787872; //0x490EA0
-        const int call = 0;
-        if (CALL_Begin(call)) { CALL__thiscall(_@(distPtr), zVEC3__Normalize); call = CALL_End(); };
-        origin.v0[0] = FLOATONE; origin.v1[0] = FLOATNULL; origin.v1[0] = FLOATNULL;
-        origin.v0[1] = FLOATNULL; origin.v1[1] = FLOATONE; origin.v1[1] = FLOATNULL;
-        origin.v0[2] = dist[0]; origin.v1[2] = dist[1]; origin.v1[2] = dist[2];
-        const int zMAT4__MakeOrthonormal = 5337904; //0x517330
-        const int call1 = 0;
-        if (CALL_Begin(call1)) { CALL__thiscall(_@(originPtr), zMAT4__MakeOrthonormal); call1 = CALL_End(); };
-    } else if (freeAimIsActive()) { // Different handling for player (only if free aim ins enabled)
-        // Set projectile drop-off (by draw force)
-        const int call2 = 0;
-        if (CALL_Begin(call2)) {
-            CALL__thiscall(_@(projectile), zCVob__GetRigidBody); // Get ridigBody this way, it will be properly created
-            call2 = CALL_End();
-        };
-        var int rBody; rBody = CALL_RetValAsInt(); // zCRigidBody*
-        var int drawForce; drawForce = freeAimGetDrawForce_(); // Modify the draw force in that function, not here!
-        var int gravityMod; gravityMod = FLOATONE; // Gravity only modified on short draw time
-        if (drawForce < 25) { gravityMod = mkf(3); }; // Very short draw time increases gravity
-        drawForce = mulf(fracf(drawForce, 100), mkf(FREEAIM_TRAJECTORY_ARC_MAX));
-        FF_ApplyOnceExtData(freeAimDropProjectile, roundf(drawForce), 1, rBody); // When to apply gravity to projectile
-        freeAimBowDrawOnset = MEM_Timer.totalTime; // Reset draw timer
-        MEM_WriteInt(rBody+236, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod)); // Set gravity (don't enable)
-        if (Hlp_Is_oCItem(projectile)) && (Hlp_StrCmp(MEM_ReadString(projectile+564), "")) { // Projectile has no FX
-            MEM_WriteString(projectile+564, FREEAIM_TRAIL_FX); // Set trail strip fx for better visibility
-            const int call3 = 0;
-            if (CALL_Begin(call3)) {
-                CALL__thiscall(_@(projectile), oCItem__InsertEffect);
-                call3 = CALL_End();
-            };
-        };
-        freeAimRay(FREEAIM_MAX_DIST, 0, 0, 0, _@(distance)); // Trace ray intersection
-        origin = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60); // 0=right, 1=up, 2=out, 3=pos
-    } else {
-        return; // If free aim is not active
+    if (!Npc_IsPlayer(shooter)) || (!freeAimIsActive()) { return; }; // Only for the player
+    // 1st: Set projectile drop-off (by draw force)
+    const int call2 = 0;
+    if (CALL_Begin(call2)) {
+        CALL__thiscall(_@(projectile), zCVob__GetRigidBody); // Get ridigBody this way, it will be properly created
+        call2 = CALL_End();
     };
-    pos[0] = FLOATNULL; pos[1] = FLOATNULL; pos[2] = distance; // Aim position
-    // Manipulate aiming accuracy (scatter): Rotate target position (azimuth, elevation); For player and npcs!
-    var int accuracy; accuracy = freeAimGetAccuracy_(shooter); // Change accuracy calculation in that function, not here
+    var int rBody; rBody = CALL_RetValAsInt(); // zCRigidBody*
+    var int drawForce; drawForce = freeAimGetDrawForce_(); // Modify the draw force in that function, not here!
+    var int gravityMod; gravityMod = FLOATONE; // Gravity only modified on short draw time
+    if (drawForce < 25) { gravityMod = mkf(3); }; // Very short draw time increases gravity
+    drawForce = mulf(fracf(drawForce, 100), mkf(FREEAIM_TRAJECTORY_ARC_MAX));
+    FF_ApplyOnceExtData(freeAimDropProjectile, roundf(drawForce), 1, rBody); // When to hit the projectile with gravity
+    freeAimBowDrawOnset = MEM_Timer.totalTime; // Reset draw timer
+    MEM_WriteInt(rBody+236, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod)); // Set gravity (but not enabled)
+    if (Hlp_Is_oCItem(projectile)) && (Hlp_StrCmp(MEM_ReadString(projectile+564), "")) { // Projectile has no FX
+        MEM_WriteString(projectile+564, FREEAIM_TRAIL_FX); // Set trail strip fx for better visibility
+        const int call3 = 0;
+        if (CALL_Begin(call3)) {
+            CALL__thiscall(_@(projectile), oCItem__InsertEffect);
+            call3 = CALL_End();
+        };
+    };
+    // 2nd: Manipulate aiming accuracy (scatter): Rotate target position (azimuth, elevation)
+    var int distance; freeAimRay(FREEAIM_MAX_DIST, 0, 0, 0, _@(distance)); // Trace ray intersection
+    var int accuracy; accuracy = freeAimGetAccuracy_(); // Change the accuracy calculation in that function, not here!
+    if (accuracy > 100) { accuracy = 100; } else if (accuracy < 1) { accuracy = 1; }; // Prevent devision by zero
     var int angleMax; angleMax = roundf(mulf(mulf(fracf(1, accuracy), castToIntf(FREEAIM_SCATTER_DEG)), FLOAT1K));
-    angleY = fracf(r_MinMax(-angleMax, angleMax), 1000); // Degrees azimuth
+    var int angleY; angleY = fracf(r_MinMax(-angleMax, angleMax), 1000); // Degrees azimuth
     angleMax = roundf(sqrtf(subf(sqrf(mkf(angleMax)), sqrf(mulf(angleY, FLOAT1K))))); // sqrt(angleMax^2-angleY^2)
-    angleX = fracf(r_MinMax(-angleMax, angleMax), 1000); // Degrees elevation (restrict to circle)
+    var int angleX; angleX = fracf(r_MinMax(-angleMax, angleMax), 1000); // Degrees elevation (restrict to circle)
+    var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60); //0=right, 2=out, 3=pos
+    var int pos[3]; pos[0] = FLOATNULL; pos[1] = FLOATNULL; pos[2] = distance;
     SinCosApprox(Print_ToRadian(angleX)); // Rotate around x-axis (elevation scatter)
-    pos[1] = mulf(negf(pos[2]), sinApprox); // y*cosθ − z*sinθ = y'
-    pos[2] = mulf(pos[2], cosApprox);       // y*sinθ + z*cosθ = z'
+    pos[1] = mulf(negf(pos[2]), sinApprox); // y*cos - z*sin = y'
+    pos[2] = mulf(pos[2], cosApprox);       // y*sin + z*cos = z'
     SinCosApprox(Print_ToRadian(angleY)); // Rotate around y-axis (azimuth scatter)
-    pos[0] = mulf(pos[2], sinApprox); //  x*cosθ + z*sinθ = x'
-    pos[2] = mulf(pos[2], cosApprox); // −x*sinθ + z*cosθ = z'
-    var int newPos[3]; // Rotation (translation into local coordinate system of camera/model)
-    newPos[0] = addf(addf(mulf(origin.v0[0], pos[0]), mulf(origin.v0[1], pos[1])), mulf(origin.v0[2], pos[2]));
-    newPos[1] = addf(addf(mulf(origin.v1[0], pos[0]), mulf(origin.v1[1], pos[1])), mulf(origin.v1[2], pos[2]));
-    newPos[2] = addf(addf(mulf(origin.v2[0], pos[0]), mulf(origin.v2[1], pos[1])), mulf(origin.v2[2], pos[2]));
-    pos[0] = addf(origin.v0[3], newPos[0]);
-    pos[1] = addf(origin.v1[3], newPos[1]);
-    pos[2] = addf(origin.v2[3], newPos[2]);
+    pos[0] = mulf(pos[2], sinApprox); //  x*cos + z*sin = x'
+    pos[2] = mulf(pos[2], cosApprox); // -x*sin + z*cos = z'
+    var int newPos[3]; // Rotation (translation into local coordinate system of camera)
+    newPos[0] = addf(addf(mulf(camPos.v0[0], pos[0]), mulf(camPos.v0[1], pos[1])), mulf(camPos.v0[2], pos[2]));
+    newPos[1] = addf(addf(mulf(camPos.v1[0], pos[0]), mulf(camPos.v1[1], pos[1])), mulf(camPos.v1[2], pos[2]));
+    newPos[2] = addf(addf(mulf(camPos.v2[0], pos[0]), mulf(camPos.v2[1], pos[1])), mulf(camPos.v2[2], pos[2]));
+    pos[0] = addf(camPos.v0[3], newPos[0]);
+    pos[1] = addf(camPos.v1[3], newPos[1]);
+    pos[2] = addf(camPos.v2[3], newPos[2]);
+    // 3rd: Setup the aim vob
     var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB"); // Arrow needs target vob
     if (!vobPtr) { // Does not exist
         MEM_Info("freeAimSetupProjectile: Creating aim vob."); // Should be printed only once ever
