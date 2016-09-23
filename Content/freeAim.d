@@ -140,7 +140,7 @@ func void freeAimGetWeakspot(var C_Npc target, var C_Item weapon, var int damage
     //    ...
     } else { // Default
         weakspot.node = "Bip01 Head";
-        weakspot.dimX = 60;
+        weakspot.dimX = 60; // 60x60cm size
         weakspot.dimY = 60;
         weakspot.bDmg = mulf(damage, castToIntf(2.0)); // Double the base damage. This is a float
     };
@@ -186,13 +186,13 @@ func int freeAimGetUsedProjectileInstance(var int projectileInst, var C_Npc inve
 *********************************************** DO NO CROSS THIS LINE *************************************************/
 
 /* All addresses used (gothic2). In case of a gothic1 port: There are a lot of hardcoded address offsets in the code! */
-const int zCVob__zCVob                            = 6283744; //0x5FE1E0
+const int zCVob___CreateNewInstance               = 6281536; //0x5FD940
 const int zCVob__SetPositionWorld                 = 6404976; //0x61BB70
 const int zCVob__GetRigidBody                     = 6285664; //0x5FE960
 const int zCVob__TraceRay                         = 6291008; //0x5FFE40
+const int zCArray_zCVob__IsInList                 = 7159168; //0x6D3D80
 const int zCWorld__TraceRayNearestHit_Vob         = 6430624; //0x621FA0
 const int zCWorld__AddVobAsChild                  = 6440352; //0x6245A0
-const int zCArray_zCVob__IsInList                 = 7159168; //0x6D3D80
 const int zString_CamModRanged                    = 9234704; //0x8CE910
 const int oCAniCtrl_Human__Turn                   = 7005504; //0x6AE540
 const int oCAniCtrl_Human__GetLayerAni            = 7011712; //0x6AFD80
@@ -206,11 +206,11 @@ const int oCItem__RemoveEffect                    = 7416832; //0x712C00
 const int zCModel__SearchNode                     = 5758960; //0x57DFF0
 const int zCModel__GetBBox3DNodeWorld             = 5738736; //0x5790F0
 const int zCModel__GetNodePositionWorld           = 5738816; //0x579140
-const int oCGame__s_bUseOldControls               = 9118144; //0x8B21C0
 const int zTBBox3D__Draw                          = 5529312; //0x545EE0
 const int zCLineCache__Line3D                     = 5289040; //0x50B450
 const int zlineCache                              = 9257720; //0x8D42F8
 const int alternativeHitchanceAddr                = 6953494; //0x6A1A10
+const int oCGame__s_bUseOldControls               = 9118144; //0x8B21C0
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
 const int mouseDeltaX                             = 9246300; //0x8D165C
@@ -673,43 +673,23 @@ func void freeAimSetupProjectile() {
     var int angleX; var int angleY;
     if (!Npc_IsPlayer(shooter)) && (FREEAIM_ACTIVE_PREVFRAME) { // Npcs need accuracy manipulation as well
         if (!target) { return; };
-        return; // Temporary
+        var int autoAlloc[16]; MEM_CopyWords(_@(shooter)+60, _@(autoAlloc), 16); // Gothic will free this ptr
+        var int originPtr; originPtr = _@(autoAlloc); origin = _^(originPtr);
+        var int dist[3]; var int distPtr; distPtr = _@(dist);
+        dist[0] = subf(MEM_ReadInt(target+72), origin.v0[3]);
+        dist[1] = subf(MEM_ReadInt(target+88), origin.v1[3]);
+        dist[2] = subf(MEM_ReadInt(target+104), origin.v2[3]);
+        distance = sqrtf(addf(addf(sqrf(dist[0]), sqrf(dist[1])), sqrf(dist[2]))); // Distance shooter-target
         // Aiming angle != Model rotation
-        //pos[0] = MEM_ReadInt(target+72);
-        //pos[1] = MEM_ReadInt(target+88);
-        //pos[2] = MEM_ReadInt(target+104);
-        //var int shooterPtr; shooterPtr;
-        //var int angleX; var int angXptr; angXptr = _@(angleX);
-        //var int angleY; var int angYptr; angYptr = _@(angleY);
-        //const int call = 0;
-        //if (CALL_Begin(call)) {
-        //    CALL_PtrParam(_@(angYptr));
-        //    CALL_PtrParam(_@(angXptr));
-        //    CALL_PtrParam(_@(posPtr));
-        //    CALL__thiscall(_@(shooterPtr), oCNpc__GetAngles);
-        //    call = CALL_End();
-        //};
-
-        //var int autoAlloc[64]; MEM_CopyWords(shooterPtr+60, _@(autoAlloc), 16); // Gothic will free this ptr
-        //origin = _^(_@(autoAlloc)); // oCNpc.trafoObjToWorld
-        //distance = sqrtf(addf(addf( // Distance between shooter and target
-        //    sqrf(subf(MEM_ReadInt(target+72), origin.v0[3])),
-        //    sqrf(subf(MEM_ReadInt(target+88), origin.v1[3]))),
-        //    sqrf(subf(MEM_ReadInt(target+104), origin.v2[3]))));
-        //origin.v0[0] = FLOATONE;  origin.v0[1] = FLOATNULL; origin.v0[2] = FLOATNULL;
-        //origin.v1[0] = FLOATNULL; origin.v1[1] = FLOATONE;  origin.v1[2] = FLOATNULL;
-        //origin.v2[0] = FLOATNULL; origin.v2[1] = FLOATNULL; origin.v2[2] = FLOATONE;
-        //SinCosApprox(Print_ToRadian(angleX)); // Rotate around x-axis (elevation scatter)
-        //pos[1] = mulf(negf(pos[2]), sinApprox); // y*cosθ − z*sinθ = y'
-        //pos[2] = mulf(pos[2], cosApprox);       // y*sinθ + z*cosθ = z'
-        //SinCosApprox(Print_ToRadian(angleY)); // Rotate around y-axis (azimuth scatter)
-        //pos[0] = mulf(pos[2], sinApprox); //  x*cosθ + z*sinθ = x'
-        //pos[2] = mulf(pos[2], cosApprox); // −x*sinθ + z*cosθ = z'
-        //var int newPos[3]; // Rotation (translation into local coordinate system of camera/model)
-        //newPos[0] = addf(addf(mulf(origin.v0[0], pos[0]), mulf(origin.v0[1], pos[1])), mulf(origin.v0[2], pos[2]));
-        //newPos[1] = addf(addf(mulf(origin.v1[0], pos[0]), mulf(origin.v1[1], pos[1])), mulf(origin.v1[2], pos[2]));
-        //newPos[2] = addf(addf(mulf(origin.v2[0], pos[0]), mulf(origin.v2[1], pos[1])), mulf(origin.v2[2], pos[2]));
-        //pos[0] = FLOATNULL; pos[1] = FLOATNULL; pos[2] = distance; // Aim position
+        const int zVEC3__Normalize = 4787872; //0x490EA0
+        const int call = 0;
+        if (CALL_Begin(call)) { CALL__thiscall(_@(distPtr), zVEC3__Normalize); call = CALL_End(); };
+        origin.v0[0] = FLOATONE; origin.v1[0] = FLOATNULL; origin.v1[0] = FLOATNULL;
+        origin.v0[1] = FLOATNULL; origin.v1[1] = FLOATONE; origin.v1[1] = FLOATNULL;
+        origin.v0[2] = dist[0]; origin.v1[2] = dist[1]; origin.v1[2] = dist[2];
+        const int zMAT4__MakeOrthonormal = 5337904; //0x517330
+        const int call1 = 0;
+        if (CALL_Begin(call1)) { CALL__thiscall(_@(originPtr), zMAT4__MakeOrthonormal); call1 = CALL_End(); };
     } else if (freeAimIsActive()) { // Different handling for player (only if free aim ins enabled)
         // Set projectile drop-off (by draw force)
         const int call2 = 0;
@@ -734,11 +714,11 @@ func void freeAimSetupProjectile() {
             };
         };
         freeAimRay(FREEAIM_MAX_DIST, 0, 0, 0, _@(distance)); // Trace ray intersection
-        pos[0] = FLOATNULL; pos[1] = FLOATNULL; pos[2] = distance; // Aim position
         origin = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60); // 0=right, 1=up, 2=out, 3=pos
     } else {
         return; // If free aim is not active
     };
+    pos[0] = FLOATNULL; pos[1] = FLOATNULL; pos[2] = distance; // Aim position
     // Manipulate aiming accuracy (scatter): Rotate target position (azimuth, elevation); For player and npcs!
     var int accuracy; accuracy = freeAimGetAccuracy_(shooter); // Change accuracy calculation in that function, not here
     var int angleMax; angleMax = roundf(mulf(mulf(fracf(1, accuracy), castToIntf(FREEAIM_SCATTER_DEG)), FLOAT1K));
@@ -758,17 +738,15 @@ func void freeAimSetupProjectile() {
     pos[0] = addf(origin.v0[3], newPos[0]);
     pos[1] = addf(origin.v1[3], newPos[1]);
     pos[2] = addf(origin.v2[3], newPos[2]);
-    const int vobPtr = 0; // Arrow needs target vob
-    if (!vobPtr) { // Remembered from last shot (same session)
-        vobPtr = MEM_SearchVobByName("AIMVOB"); // Remembered from last shot (last session)
-        if (!vobPtr) { // Does not exist (new session, never shot before)
-            vobPtr = MEM_Alloc(288); // sizeof_zCVob // Will never delete this vob (it will be re-used)
-            CALL__thiscall(vobPtr, zCVob__zCVob);
-            MEM_WriteString(vobPtr+16, "AIMVOB"); // zCVob._zCObject_objectName
-            CALL_PtrParam(_@(MEM_Vobtree));
-            CALL_PtrParam(vobPtr);
-            CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
-        };
+    var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB"); // Arrow needs target vob
+    if (!vobPtr) { // Does not exist
+        MEM_Info("freeAimSetupProjectile: Creating aim vob."); // Should be printed only once ever
+        CALL__cdecl(zCVob___CreateNewInstance); // This actually allocates the memory, so no need to care about freeing
+        vobPtr = CALL_RetValAsPtr();
+        MEM_WriteString(vobPtr+16, "AIMVOB"); // zCVob._zCObject_objectName
+        CALL_PtrParam(_@(MEM_Vobtree));
+        CALL_PtrParam(vobPtr);
+        CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
     };
     const int call4 = 0; // Set position to aim vob
     if (CALL_Begin(call4)) {
