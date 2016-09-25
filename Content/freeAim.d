@@ -58,26 +58,13 @@ var   int    freeAimReticleHndl;                             // Holds the handle
 var   int    freeAimBowDrawOnset;                            // Time onset of drawing the bow
 class Weakspot { var string node; var int dimX; var int dimY; var int bDmg; }; // For readability
 
-/* Enter onset/offset frame numbers of drawing animations of weapons here (start and end of pulling the string) */
-func int freeAimGetAniDrawFrame(var string aniName, var int onset) { // Onset: onset = 1, offset: onset = 0
-    // These numbers need to be present for every animation that is used. The standard animations are already added
-    // When adding a new animation, keep in mind that the frame numbers must be greater than or equal to one
-    if (Hlp_StrCmp(aniName, "S_BOWAIM")) { if (onset) { return 1; }; return 2; }; // All frames
-    if (Hlp_StrCmp(aniName, "T_BOWRUN_2_BOWAIM")) { if (onset) { return 1; }; return 9; }; // Frames 1 to 9
-    if (Hlp_StrCmp(aniName, "T_BOWWALK_2_BOWAIM")) { if (onset) { return 1; }; return 9; }; // Frames 1 to 9
-    if (Hlp_StrCmp(aniName, "T_BOWRELOAD")) { if (onset) { return 20; }; return 36; }; // Frames 20 to 36
-    // Add any other possible draw animation here
-    return -1; // Reaching this line will yield an error. Add ALL possible drawing animations above!
-};
-
 /* Modify this function to alter the draw force calculation. Scaled between 0 and 100 (percent) */
 func int freeAimGetDrawForce(var C_Item weapon, var int talent) {
-    MEM_CallByString(STR_Upper("freeAimGetDrawPercent")); // Ignore these two lines
-    var int drawPercent; drawPercent = MEM_PopIntResult(); // Get the draw animation progress in percent [0, 100]
-    // Possibly incorporate factors like e.g. a quick-draw talent, weapon-specific stats, ...
+    var int drawTime; drawTime = MEM_Timer.totalTime - freeAimBowDrawOnset;
+    // Possibly incorporate more factors like e.g. a quick-draw talent, weapon-specific stats, ...
     // Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW)
-    var int drawForce; drawForce = drawPercent; // For now just set the draw force to the progress of the draw animation
-    // In the end make sure the return value is in the range of [0, 100]
+    // For now set drawForce by draw time scaled between min and max times:
+    var int drawForce; drawForce = (100 * (drawTime-FREEAIM_DRAWTIME_MIN))/(FREEAIM_DRAWTIME_MAX-FREEAIM_DRAWTIME_MIN);
     if (drawForce < 0) { drawForce = 0; } else if (drawForce > 100) { drawForce = 100; }; // Respect the ranges
     return drawForce;
 };
@@ -555,31 +542,6 @@ func void freeAimAnimation() {
     MEM_WriteInt(ESP+8, angleY);
 };
 
-/* Retrieve the percentage of drawing the weapon by animation */
-func int freeAimGetDrawPercent() {
-    var int hAniCtrl; hAniCtrl = MEM_ReadInt(_@(hero)+2432); // oCNpc.anictrl
-    var int one; one = 1; const int call = 0;
-    if (CALL_Begin(call)) {
-        CALL_IntParam(_@(one)); // Layer one
-        CALL__thiscall(_@(hAniCtrl), oCAniCtrl_Human__GetLayerAni);
-        call = CALL_End();
-    };
-    var int ani; ani = CALL_RetValAsInt(); // zCModelAniActive*
-    if (!ani) { MEM_Error("freeAimGetDrawPercent: No active animation found!"); return 0; };
-    if (!MEM_ReadInt(ani)) { MEM_Error("freeAimGetDrawPercent: No active animation found!"); return 0; }; // Separate if
-    var string aniName; aniName = STR_Upper(MEM_ReadString(MEM_ReadInt(ani)+36)); // zCModelAni*->name
-    var int currentFrame; currentFrame = roundf(MEM_ReadInt(ani+12)); // zCModelAniActive*->actFrame
-    var int onsetFrame; onsetFrame = freeAimGetAniDrawFrame(aniName, 1); // Drawing starts
-    var int offsetFrame; offsetFrame = freeAimGetAniDrawFrame(aniName, 0); // Drawing ends
-    if (onsetFrame == -1) || (offsetFrame == -1) {
-        MEM_Error("freeAimGetDrawPercent: Animation not found!"); return 0; };
-    if (onsetFrame <= 0) || (offsetFrame <= 0) || (onsetFrame == offsetFrame) {
-        MEM_Error("freeAimGetDrawPercent: Animation onset/offset invalid!"); return 0; };
-    var int drawPercent; drawPercent = (100*(currentFrame - onsetFrame))/(offsetFrame - onsetFrame); // Draw progress
-    if (drawPercent < 0) { drawPercent = 0; } else if (drawPercent > 100) { drawPercent = 100; }; // Respect the ranges
-    return drawPercent;
-};
-
 /* Internal helper function for freeAimGetDrawForce() */
 func int freeAimGetDrawForce_() {
     var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
@@ -623,8 +585,8 @@ func void freeAimSetupProjectile() {
     var int drawForce; drawForce = freeAimGetDrawForce_(); // Modify the draw force in that function, not here!
     var int gravityMod; gravityMod = FLOATONE; // Gravity only modified on short draw time
     if (drawForce < 25) { gravityMod = mkf(3); }; // Very short draw time increases gravity
-    drawForce = mulf(fracf(drawForce, 100), mkf(FREEAIM_TRAJECTORY_ARC_MAX));
-    FF_ApplyOnceExtData(freeAimDropProjectile, roundf(drawForce), 1, rBody); // When to hit the projectile with gravity
+    drawForce = (drawForce*(FREEAIM_TRAJECTORY_ARC_MAX*100))/10000;
+    FF_ApplyOnceExtData(freeAimDropProjectile, drawForce, 1, rBody); // When to hit the projectile with gravity
     freeAimBowDrawOnset = MEM_Timer.totalTime; // Reset draw timer
     MEM_WriteInt(rBody+236, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod)); // Set gravity (but not enabled)
     if (Hlp_Is_oCItem(projectile)) && (Hlp_StrCmp(MEM_ReadString(projectile+564), "")) { // Projectile has no FX
