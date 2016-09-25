@@ -57,6 +57,7 @@ var   int    freeAimDebugTrj[6];                             // Projectile traje
 var   int    freeAimReticleHndl;                             // Holds the handle of the reticle
 var   int    freeAimBowDrawOnset;                            // Time onset of drawing the bow
 class Weakspot { var string node; var int dimX; var int dimY; var int bDmg; }; // For readability
+class Reticle { var string texture; var int size; var int color; }; // For readability
 
 /* Modify this function to alter the draw force calculation. Scaled between 0 and 100 (percent) */
 func int freeAimGetDrawForce(var C_Item weapon, var int talent) {
@@ -71,7 +72,7 @@ func int freeAimGetDrawForce(var C_Item weapon, var int talent) {
 
 /* Modify this function to alter accuracy calculation. Scaled between 0 and 100 (percent) */
 func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
-    // Add any other factors here e.g. weapon-specific accuracy stats, weapon spread, accuracy talent, ...
+    // Add any other factors here e.g. weafpon-specific accuracy stats, weapon spread, accuracy talent, ...
     // Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW)
     // Here the talent is scaled by draw force: draw force=100% => accuracy=talent; draw force=0% => accuracy=talent/2
     var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent); // Already scaled to [0, 100]
@@ -81,20 +82,27 @@ func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
     return accuracy;
 };
 
-/* Modify this function to alter the reticle style. By draw force, weapon-specific stats, talent, ... */
-func int freeAimGetReticleStyle(var C_Item weapon, var int talent) {
-    if (weapon.flags & ITEM_BOW) { return POINTY_RETICLE; }; // Bow readied
-    if (weapon.flags & ITEM_CROSSBOW) { return POINTY_RETICLE; }; // Crossbow readied
-    return NORMAL_RETICLE;
-};
-
-/* Modify this function to alter the reticle size. By draw force, weapon-specific stats, talent, ... */
-func int freeAimGetReticleSize(var int size, var int weapon, var int talent) {
-    // The argument 'size' comes precalculated by aiming distance
+/* Modify this function to alter the reticle texture, color and size (scaled between 0 and 100). */
+func void freeAimGetReticle(var C_Npc target, var int weapon, var int talent, var int proximity, var int returnPtr) {
+    var Reticle reticle; reticle = _^(returnPtr);
+    // Texture
+    if (weapon.flags & ITEM_BOW) { reticle.texture = POINTY_RETICLE; } // Bow readied
+    else if (weapon.flags & ITEM_CROSSBOW) { reticle.texture = POINTY_RETICLE; } // Crossbow readied
+    else { reticle.texture = NORMAL_RETICLE; };
+    // Color
+    if (Hlp_IsValidNpc(target)) { // The argument 'target' might be empty!
+        var int att; att = Npc_GetPermAttitude(hero, target);
+        if (att == ATT_FRIENDLY) { reticle.color = Focusnames_Color_Friendly(); }
+        else if (att == ATT_NEUTRAL) { reticle.color = Focusnames_Color_Neutral();  }
+        else if (att == ATT_ANGRY) { reticle.color = Focusnames_Color_Angry();    }
+        else if (att == ATT_HOSTILE) { reticle.color = Focusnames_Color_Hostile();  }
+        else { reticle.color = Focusnames_Color_Neutral(); };
+    } else { reticle.color = Focusnames_Color_Neutral(); };
+    // Size
+    Reticle.size = proximity; // Proximity is higher for closer range: 100 for closest, 0 for most distance
     // var int scale; scale = -freeAimGetDrawForce(weapon, talent)+100; // E.g. scale with draw force instead
     // var int scale; scale = -freeAimGetAccuracy(weapon, talent)+100; // or scale with accuracy
     // size = (((FREEAIM_RETICLE_MAX_SIZE-FREEAIM_RETICLE_MIN_SIZE)*(scale))/100)+FREEAIM_RETICLE_MIN_SIZE;
-    return size; // For now leave it scaled by distance
 };
 
 /* Modify this function to define a critical hit by weak spot (e.g. head node for headshot), its size and the damage */
@@ -469,21 +477,20 @@ func int freeAimRay(var int distance, var int vobPtr, var int posPtr, var int di
 };
 
 /* Internal helper function for freeAimGetReticleSize() and freeAimGetReticleStyle() */
-func int freeAimGetReticle(var int sizePtr) {
-    var int reticleStyle; var int reticleSize; reticleSize = MEM_ReadInt(sizePtr);
+func int freeAimGetReticle_(var int target, var int proximity) {
+    var int reticle[7];
     var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
     else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
-    else { MEM_Error("freeAimGetReticle: No valid weapon equipped/readied!"); return -1; }; // Should never happen
+    else { MEM_Error("freeAimGetReticle_: No valid weapon equipped/readied!"); return -1; }; // Should never happen
     if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
     else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
-    else { MEM_Error("freeAimGetReticle: No valid weapon equipped/readied!"); return -1; };
-    reticleStyle = freeAimGetReticleStyle(weapon, talent);
-    reticleSize = freeAimGetReticleSize(reticleSize, weapon, talent);
+    else { MEM_Error("freeAimGetReticle_: No valid weapon equipped/readied!"); return -1; };
+    freeAimGetReticle(target, weapon, talent, proximity, _@(reticle));
     if (reticleSize < FREEAIM_RETICLE_MIN_SIZE) { reticleSize = FREEAIM_RETICLE_MIN_SIZE; }
     else if (reticleSize > FREEAIM_RETICLE_MAX_SIZE) { reticleSize = FREEAIM_RETICLE_MAX_SIZE; };
     if (reticleStyle < 0) || (reticleStyle >= MAX_RETICLE) {
-        MEM_Error("freeAimGetReticle: Invalid reticleStyle!"); reticleStyle = NO_RETICLE; };
+        MEM_Error("freeAimGetReticle_: Invalid reticleStyle!"); reticleStyle = NO_RETICLE; };
     MEM_WriteInt(sizePtr, reticleSize); // Overwrite reticle size
     return reticleStyle;
 };
@@ -492,12 +499,12 @@ func int freeAimGetReticle(var int sizePtr) {
 func void freeAimAnimation() {
     if (!freeAimIsActive()) { return; };
     var int herPtr; herPtr = _@(hero);
-    var int size; size = FREEAIM_RETICLE_MAX_SIZE; // Start out with the maximum size of reticle (adjust below)
+    var int proximity; proximity = 75;
     if (freeAimGetCollectFocus()) { // Set focus npc if there is a valid one under the reticle
        var int distance; freeAimRay(FREEAIM_MAX_DIST, 0, 0, _@(distance), 0); // Shoot ray and retrieve aim distance
+       proximity = divf(distance, mkf(FREEAIM_MAX_DIST));
        size -= roundf(mulf(divf(distance, mkf(FREEAIM_MAX_DIST)), mkf(size))); // Adjust reticle size
     } else { // More performance friendly. Here, there will be NO focus, otherwise it gets stuck on npcs.
-        size = FREEAIM_RETICLE_MED_SIZE; // Set default reticle size. Here, it is not dynamic
         const int call4 = 0; var int null; // Set the focus vob properly: reference counter
         if (CALL_Begin(call4)) {
             CALL_PtrParam(_@(null)); // This will remove the focus
@@ -511,7 +518,12 @@ func void freeAimAnimation() {
             call5 = CALL_End();
         };
     };
-    freeAimInsertReticle(freeAimGetReticle(_@(size)), size); // Draw/update reticle
+    freeAimGetReticle_();
+    // Default reticle
+    // Reticle.texture =  zCTexture__zTEX_DEFAULT_TEXTURE_FIL; //0x99B2C0
+    // Reticle.color = RGBA(255, 255, 255, 255);
+    // Reticle.size = 50;
+    freeAimInsertReticle(); // Draw/update reticle
     var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60); //0=right, 2=out, 3=pos
     var int pos[3]; // The position is calculated from the camera, not the player model
     pos[0] = addf(camPos.v0[3], mulf(camPos.v0[2], mkf(FREEAIM_MAX_DIST)));
