@@ -16,7 +16,7 @@
  *
  * Customizability:
  *  - Collect and re-use shot projectiles (yes/no):   FREEAIM_REUSE_PROJECTILES
- *  - Projectile instance for re-using                freeAimGetUsedProjectileInstance(instance, targetNpc)
+ *  - Projectile instance for re-using                freeAimGetUsedProjectileInstance(instance, targetNpc, weapon)
  *  - Draw force (gravity/drop-off) calculation:      freeAimGetDrawForce(weapon, talent)
  *  - Accuracy calculation:                           freeAimGetAccuracy(weapon, talent)
  *  - Reticle style (texture, color, size):           freeAimGetReticle(target, weapon, talent, distance)
@@ -114,7 +114,7 @@ func int freeAimHitRegistration(var C_Npc target, var C_Item weapon) {
     if (target.aivar[AIV_PARTYMEMBER]) && (target.aivar[AIV_LASTTARGET] != Hlp_GetInstanceID(hero)) { // No friendlyfire
         return FALSE; };
     // The weapon can also be considered (e.g. ineffective weapons). Make use of 'weapon' for that
-    // Caution: Weapon may have been unequipped already at this time! Use Hlp_IsValidItem(weapon) to check
+    // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon) to check
     // if (Hlp_IsValidItem(weapon)) && (weapon.ineffective) { return FALSE; }; // E.g. special case for weapon property
     return TRUE; // Default: Register the hit
 };
@@ -127,7 +127,7 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int dam
     // The damage may depent on the target npc (e.g. different damage for monsters). Make use of 'target' argument
     // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
     // The weapon can also be considered (e.g. weapon specific damage). Make use of 'weapon' for that
-    // Caution: Weapon may have been unequipped already at this time! Use Hlp_IsValidItem(weapon) to check
+    // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon) to check
     // if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
     // The damage is a float and represents the new base damage (damage of weapon), not the final damage!
     if (target.guild < GIL_SEPERATOR_HUM) { // Humans: head shot
@@ -156,14 +156,14 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon) {
     // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
     // The critical hits could also be counted here to give an xp reward after 25 headshots
     // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
-    // Caution: Weapon may have been unequipped already at this time! Use Hlp_IsValidItem(weapon) to check
+    // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon) to check
     // if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
     Snd_Play("FORGE_ANVIL_A1");
     PrintS("Kritischer Treffer"); // "Critical hit"
 };
 
-/* Modify this function to alter the projectile instance after shooting for re-using, e.g. used arrow */
-func int freeAimGetUsedProjectileInstance(var int projectileInst, var C_Npc inventoryNpc) {
+/* Modify this function to exchange (or remove) the projectile after shooting for re-using, e.g. used arrow */
+func int freeAimGetUsedProjectileInstance(var int projectileInst, var C_Npc inventoryNpc, var C_Item weapon) {
     // By returning zero, the projectile is completely removed (e.g. retrieve-projectile-talent not learned yet)
     // The argument inventoryNpc holds the npc in whose inventory it will be put, or is empty if it landed in the world
     // if (projectileInst == Hlp_GetInstanceID(ItRw_Arrow)) { // Exchange the instance for a "used" one
@@ -176,6 +176,8 @@ func int freeAimGetUsedProjectileInstance(var int projectileInst, var C_Npc inve
         // if (PLAYER_TALENT_TAKEANIMALTROPHY[REUSE_Arrow] == FALSE) { return 0; }; // Retrieve-projectile-talent
         // if (!Npc_HasItems(hero, ItMi_ArrowTool)) { return 0; }; // Player needs tool to remove the projectile
         // if (Hlp_Random(100) < 50) { return 0; }; // Chance of retrieval
+        // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
+        // if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
         return projectileInst; // For now it is just preserved (is put in the inventory as is)
     } else { // Projectile did not hit npc and landed in world
         // if (PLAYER_TALENT_REUSE_ARROW == FALSE) { return 0; }; // Reuse-projectile-talent
@@ -679,7 +681,8 @@ func void freeAimDropProjectile(var int rigidBody) {
 func int freeAimHitRegistration_(var int targetPtr) {
     var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
+    else { weapon = MEM_NullToInst(); }; // Deadalus pseudo locals
     var C_Npc target; target = _^(targetPtr);
     return !!freeAimHitRegistration(target, weapon); // Make sure it is either one or zero
 };
@@ -716,11 +719,20 @@ func void freeAimDoNpcHit() {
     MEM_WriteInt(ESP+24, hit);
 };
 
+/* Internal helper function for freeAimGetUsedProjectileInstance() */
+func int freeAimGetUsedProjectileInstance_(var int projectileInst, var C_Npc victim) {
+    var C_Item weapon; // Caution: Weapon may have been unequipped already at this time (unlikely)
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
+    else { weapon = MEM_NullToInst(); }; // Deadalus pseudo locals
+    return freeAimGetUsedProjectileInstance(projectileInst, victim, weapon);
+};
+
 /* Arrow gets stuck in npc: put projectile instance into inventory and let ai die */
 func void freeAimOnArrowHitNpc() {
     var oCItem projectile; projectile = _^(MEM_ReadInt(ESI+88));
     var C_Npc victim; victim = _^(EDI);
-    var int projInst; projInst = freeAimGetUsedProjectileInstance(projectile.instanz, victim); // Get "used" instance
+    var int projInst; projInst = freeAimGetUsedProjectileInstance_(projectile.instanz, victim); // Get "used" instance
     if (projInst > 0) { CreateInvItem(victim, projInst); }; // Put respective instance in inventory
     if (FF_ActiveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody))) {
         FF_RemoveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody)); };
@@ -762,7 +774,7 @@ func void freeAimWatchProjectile() {
             };
         };
         var C_Npc emptyNpc; emptyNpc = MEM_NullToInst();
-        var int projInst; projInst = freeAimGetUsedProjectileInstance(projectile.instanz, emptyNpc); // "Used" instance
+        var int projInst; projInst = freeAimGetUsedProjectileInstance_(projectile.instanz, emptyNpc); // "Used" instance
         if (projInst > 0) { // Will be -1 on invalid item
             if (projInst != projectile.instanz) { // Only change the instance if different
                 const int call3 = 0; const int one = 1;
@@ -821,17 +833,19 @@ func void freeAimVisualizeWeakspot() {
 
 /* Internal helper function for freeAimCriticalHitEvent() */
 func void freeAimCriticalHitEvent_(var C_Npc target) {
-    var C_Item weapon; // Caution: Weapon may have been unequipped already at this time
+    var C_Item weapon; // Caution: Weapon may have been unequipped already at this time (unlikely)
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
+    else { weapon = MEM_NullToInst(); }; // Deadalus pseudo locals
     freeAimCriticalHitEvent(target, weapon);
 };
 
 /* Internal helper function for freeAimCriticalHitDef() */
 func void freeAimCriticalHitDef_(var C_Npc target, var int damagePtr, var int returnPtr) {
-    var C_Item weapon; // Caution: Weapon may have been unequipped already at this time
+    var C_Item weapon; // Caution: Weapon may have been unequipped already at this time (unlikely)
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
+    else { weapon = MEM_NullToInst(); }; // Deadalus pseudo locals
     freeAimCriticalHitDef(target, weapon, MEM_ReadInt(damagePtr), returnPtr);
     MEM_WriteString(returnPtr, STR_Upper(MEM_ReadString(returnPtr))); // Nodes are always upper case
     if (lf(MEM_ReadInt(returnPtr+28), FLOATNULL)) { MEM_WriteInt(returnPtr+28, FLOATNULL); }; // Correct negative damage
