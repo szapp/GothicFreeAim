@@ -688,13 +688,34 @@ func int freeAimHitRegistration_(var int targetPtr) {
 func void freeAimDoNpcHit() {
     var int target; target = MEM_ReadInt(ESP+28); // esp+1ACh+190h // oCNpc*
     var int hitChance; hitChance = MEM_ReadInt(ESP+24); // esp+1ACh+194h
-    //var int arrowAI; arrowAI = MEM_ReadInt(EBP); // oCAIArrow*
     var C_Npc shooter; shooter = _^(MEM_ReadInt(EBP+92)); // ebp+5Ch // oCNpc*
+    var int projectile; projectile = MEM_ReadInt(EBP+88); // ebp+58h // oCItem*
     if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { return; }; // Default hitchance for npc/disabled fa
     // Copy bbox-line intersection code and apply it to target bbox and arrowAI line
-    var int lineIntersectsTarget; lineIntersectsTarget = TRUE;
-    var int hit; hit = -1;
-    if (lineIntersectsTarget) { hit = 100*freeAimHitRegistration_(target); }; // Player always hits = 100%
+    var zTBBox3D targetBBox; targetBBox = _^(target+124); // oCNpc.bbox3D
+    // The internal engine functions are not accurate enough for detecting a shot through a bbox
+    // Instead check here if "any" point along the line of projectile direction lies inside the bbox
+    var int dir[3]; // Direction of collision line along the right-vector of the projectile (projectile flies sideways)
+    dir[0] = MEM_ReadInt(projectile+60); dir[1] = MEM_ReadInt(projectile+76); dir[2] = MEM_ReadInt(projectile+92);
+    var int line[6]; // Collision line
+    line[0] = addf(MEM_ReadInt(projectile+ 72), mulf(dir[0], FLOAT1C)); // Start 1m behind the projectile
+    line[1] = addf(MEM_ReadInt(projectile+ 88), mulf(dir[1], FLOAT1C));
+    line[2] = addf(MEM_ReadInt(projectile+104), mulf(dir[2], FLOAT1C));
+    var int intersection; intersection = 0; // Critical hit detected
+    var int i; i=0; var int iter; iter = 700/5; // 7meters
+    while(i <= iter); i += 1; // Walk along the line in steps of 5cm
+        line[3] = subf(line[0], mulf(dir[0], mkf(i*5))); // Next point along the collision line
+        line[4] = subf(line[1], mulf(dir[1], mkf(i*5)));
+        line[5] = subf(line[2], mulf(dir[2], mkf(i*5)));
+        if (lef(targetBBox.mins[0], line[3])) && (lef(targetBBox.mins[1], line[4]))
+        && (lef(targetBBox.mins[2], line[5])) && (gef(targetBBox.maxs[0], line[3]))
+        && (gef(targetBBox.maxs[1], line[4])) && (gef(targetBBox.maxs[2], line[5])) {
+            intersection = 1; // Current point is inside the bbox
+            break;
+        };
+    end;
+    var int hit; hit = 0;
+    if (intersection) { hit = 100*freeAimHitRegistration_(target); }; // Player always hits = 100%
     MEM_WriteInt(ESP+24, hit);
 };
 
