@@ -20,6 +20,7 @@
  *  - Draw force (gravity/drop-off) calculation:      freeAimGetDrawForce(weapon, talent)
  *  - Accuracy calculation:                           freeAimGetAccuracy(weapon, talent)
  *  - Reticle style (texture, color, size):           freeAimGetReticle(target, weapon, talent, distance)
+ *  - Disable hit registration (e.g. friendly-fire):  freeAimHitRegistration(target, weapon)
  *  - Critical hit calculation (position, damage):    freeAimCriticalHitDef(target, weapon, damage)
  *  - Critical hit event (print, sound, xp, ...):     freeAimCriticalHitEvent(target, weapon)
  * Advanced (modification not recommended):
@@ -95,16 +96,27 @@ func void freeAimGetReticle(var C_Npc target, var C_Item weapon, var int talent,
     else { reticle.texture = NORMAL_RETICLE; };
     // Color (do not set the color to preserve the original texture color)
     if (Hlp_IsValidNpc(target)) { // The argument 'target' might be empty!
-        var int att; att = Npc_GetPermAttitude(hero, target);
+        var int att; att = Npc_GetAttitude(target, hero);
         if (att == ATT_FRIENDLY) { reticle.color = Focusnames_Color_Friendly(); }
-        else if (att == ATT_ANGRY) { reticle.color = Focusnames_Color_Angry(); }
         else if (att == ATT_HOSTILE) { reticle.color = Focusnames_Color_Hostile(); };
+        //else if (att == ATT_ANGRY) { reticle.color = Focusnames_Color_Angry(); }; // Never happens?
     };
     // Size (scale between [0, 100]: 0 is smallest, 100 is biggest)
     reticle.size = -distance+100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
     // reticle.size = -freeAimGetDrawForce(weapon, talent)+100; // Or inverse draw force: bigger for less draw force
     // reticle.size = -freeAimGetAccuracy(weapon, talent)+100; // Or inverse accuracy: bigger with lower accuracy
     // More sophisticated customization is also possible: change the texture by draw force, the size by accuracy, ...
+};
+
+/* Modify this function to disable hit registration. E.g. 'ineffective' ranged weapons, disable friendly-fire, ... */
+func int freeAimHitRegistration(var C_Npc target, var C_Item weapon) {
+    // The hit registration may depent on the target npc. Make use of 'target' argument
+    if (target.aivar[AIV_PARTYMEMBER]) && (target.aivar[AIV_LASTTARGET] != Hlp_GetInstanceID(hero)) { // No friendlyfire
+        return FALSE; };
+    // The weapon can also be considered (e.g. ineffective weapons). Make use of 'weapon' for that
+    // Caution: Weapon may have been unequipped already at this time! Use Hlp_IsValidItem(weapon) to check
+    // if (Hlp_IsValidItem(weapon)) && (weapon.ineffective) { return FALSE; }; // E.g. special case for weapon property
+    return TRUE; // Default: Register the hit
 };
 
 /* Modify this function to define a critical hit by weak spot (e.g. head node for headshot), its size and the damage */
@@ -663,11 +675,27 @@ func void freeAimDropProjectile(var int rigidBody) {
     MEM_WriteByte(rigidBody+256, 1); // Turn on gravity (zCRigidBody.bitfield)
 };
 
+/* Internal helper function for freeAimHitRegistration() */
+func int freeAimHitRegistration_(var int targetPtr) {
+    var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
+    var C_Npc target; target = _^(targetPtr);
+    return !!freeAimHitRegistration(target, weapon); // Make sure it is either one or zero
+};
+
 /* Determine the hit chance. For the player it's always 100%. True hit chance is calcualted in freeAimGetAccuracy() */
 func void freeAimDoNpcHit() {
+    var int target; target = MEM_ReadInt(ESP+28); // esp+1ACh+190h // oCNpc*
     var int hitChance; hitChance = MEM_ReadInt(ESP+24); // esp+1ACh+194h
+    //var int arrowAI; arrowAI = MEM_ReadInt(EBP); // oCAIArrow*
     var C_Npc shooter; shooter = _^(MEM_ReadInt(EBP+92)); // ebp+5Ch // oCNpc*
-    if (FREEAIM_ACTIVE_PREVFRAME) && (Npc_IsPlayer(shooter)) { MEM_WriteInt(ESP+24, 100); }; // Player always hits
+    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { return; }; // Default hitchance for npc/disabled fa
+    // Copy bbox-line intersection code and apply it to target bbox and arrowAI line
+    var int lineIntersectsTarget; lineIntersectsTarget = TRUE;
+    var int hit; hit = -1;
+    if (lineIntersectsTarget) { hit = 100*freeAimHitRegistration_(target); }; // Player always hits = 100%
+    MEM_WriteInt(ESP+24, hit);
 };
 
 /* Arrow gets stuck in npc: put projectile instance into inventory and let ai die */
@@ -799,7 +827,7 @@ func string freeAimDebugWeakspot(var string command) {
 
 /* Detect critical hits and increase base damage. Modify the weak spot in freeAimCriticalHitDef() */
 func void freeAimDetectCriticalHit() {
-    var int damagePtr; damagePtr = ESP+228; // esp+1ACh+C8h // int*
+    var int damagePtr; damagePtr = ESP+228; // esp+1ACh+C8h // zREAL*
     var int target; target = MEM_ReadInt(ESP+28); // esp+1ACh+190h // oCNpc*
     var int projectile; projectile = MEM_ReadInt(EBP+88); // ebp+58h // oCItem*
     var C_Npc shooter; shooter = _^(MEM_ReadInt(EBP+92)); // ebp+5Ch // oCNpc*
