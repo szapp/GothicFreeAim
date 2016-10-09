@@ -19,8 +19,7 @@
  *  - Projectile instance for re-using                freeAimGetUsedProjectileInstance(instance, targetNpc)
  *  - Draw force (gravity/drop-off) calculation:      freeAimGetDrawForce(weapon, talent)
  *  - Accuracy calculation:                           freeAimGetAccuracy(weapon, talent)
- *  - Reticle style:                                  freeAimGetReticleStyle(weapon, talent)
- *  - Reticle size:                                   freeAimGetReticleSize(size, weapon, talent)
+ *  - Reticle style (texture, color, size):           freeAimGetReticle(target, weapon, talent, distance)
  *  - Critical hit calculation (position, damage):    freeAimCriticalHitDef(target, weapon, damage)
  *  - Critical hit event (print, sound, xp, ...):     freeAimCriticalHitEvent(target, weapon)
  * Advanced (modification not recommended):
@@ -50,7 +49,9 @@ const int    FREEAIM_DEBUG_CONSOLE        = 1;               // Console command 
 const float  FREEAIM_PROJECTILE_GRAVITY   = 0.1;             // The gravity decides how fast the projectile drops
 const int    FREEAIM_MAX_DIST             = 5000;            // 50m. Shooting/reticle adjustments. Do not change
 const int    FREEAIM_ACTIVE_PREVFRAME     = 0;               // Internal. Do not change
+const int    FREEAIM_FOCUS_COLLECTION     = 1;               // Internal. Do not change
 const int    FREEAIM_ARROWAI_REDIRECT     = 0;               // Used to redirect call-by-reference argument
+const int    FLOAT1C                      = 1120403456;      // 100 as float
 const int    FLOAT1K                      = 1148846080;      // 1000 as float
 var   int    freeAimDebugBBox[6];                            // Boundingbox for debug visualization
 var   int    freeAimDebugTrj[6];                             // Projectile trajectory for debug visualization
@@ -83,26 +84,27 @@ func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
 };
 
 /* Modify this function to alter the reticle texture, color and size (scaled between 0 and 100). */
-func void freeAimGetReticle(var C_Npc target, var int weapon, var int talent, var int proximity, var int returnPtr) {
+const string SIMPLE_RETICLE = "RETICLESIMPLE.TGA";
+const string NORMAL_RETICLE = "RETICLE.TGA";
+const string POINTY_RETICLE = "RETICLEARCHER.TGA";
+func void freeAimGetReticle(var C_Npc target, var C_Item weapon, var int talent, var int distance, var int returnPtr) {
     var Reticle reticle; reticle = _^(returnPtr);
-    // Texture
+    // Texture (needs to be set, otherwise reticle will not be displayed)
     if (weapon.flags & ITEM_BOW) { reticle.texture = POINTY_RETICLE; } // Bow readied
     else if (weapon.flags & ITEM_CROSSBOW) { reticle.texture = POINTY_RETICLE; } // Crossbow readied
     else { reticle.texture = NORMAL_RETICLE; };
-    // Color
+    // Color (do not set the color to preserve the original texture color)
     if (Hlp_IsValidNpc(target)) { // The argument 'target' might be empty!
         var int att; att = Npc_GetPermAttitude(hero, target);
         if (att == ATT_FRIENDLY) { reticle.color = Focusnames_Color_Friendly(); }
-        else if (att == ATT_NEUTRAL) { reticle.color = Focusnames_Color_Neutral();  }
-        else if (att == ATT_ANGRY) { reticle.color = Focusnames_Color_Angry();    }
-        else if (att == ATT_HOSTILE) { reticle.color = Focusnames_Color_Hostile();  }
-        else { reticle.color = Focusnames_Color_Neutral(); };
-    } else { reticle.color = Focusnames_Color_Neutral(); };
-    // Size
-    Reticle.size = proximity; // Proximity is higher for closer range: 100 for closest, 0 for most distance
-    // var int scale; scale = -freeAimGetDrawForce(weapon, talent)+100; // E.g. scale with draw force instead
-    // var int scale; scale = -freeAimGetAccuracy(weapon, talent)+100; // or scale with accuracy
-    // size = (((FREEAIM_RETICLE_MAX_SIZE-FREEAIM_RETICLE_MIN_SIZE)*(scale))/100)+FREEAIM_RETICLE_MIN_SIZE;
+        else if (att == ATT_ANGRY) { reticle.color = Focusnames_Color_Angry(); }
+        else if (att == ATT_HOSTILE) { reticle.color = Focusnames_Color_Hostile(); };
+    };
+    // Size (scale between [0, 100]: 0 is smallest, 100 is biggest)
+    reticle.size = -distance+100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
+    // reticle.size = -freeAimGetDrawForce(weapon, talent)+100; // Or inverse draw force: bigger for less draw force
+    // reticle.size = -freeAimGetAccuracy(weapon, talent)+100; // Or inverse accuracy: bigger with lower accuracy
+    // More sophisticated customization is also possible: change the texture by draw force, the size by accuracy, ...
 };
 
 /* Modify this function to define a critical hit by weak spot (e.g. head node for headshot), its size and the damage */
@@ -161,6 +163,7 @@ func int freeAimGetUsedProjectileInstance(var int projectileInst, var C_Npc inve
         // if (inventoryNpc.guild < GIL_SEPERATOR_HUM) { return 0; }; // Remove projectile when it hits humans
         // if (PLAYER_TALENT_TAKEANIMALTROPHY[REUSE_Arrow] == FALSE) { return 0; }; // Retrieve-projectile-talent
         // if (!Npc_HasItems(hero, ItMi_ArrowTool)) { return 0; }; // Player needs tool to remove the projectile
+        // if (Hlp_Random(100) < 50) { return 0; }; // Chance of retrieval
         return projectileInst; // For now it is just preserved (is put in the inventory as is)
     } else { // Projectile did not hit npc and landed in world
         // if (PLAYER_TALENT_REUSE_ARROW == FALSE) { return 0; }; // Reuse-projectile-talent
@@ -243,6 +246,11 @@ func void freeAim_Init() {
             HookEngineF(onArrowHitVobAddr, 5, freeAimOnArrowGetStuck); // Keep projectile alive when stuck in vob
             HookEngineF(onArrowHitStatAddr, 5, freeAimOnArrowGetStuck); // Keep projectile alive when stuck in world
         };
+        if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusEnabled"))) { // No focuscollection (performance) not recommended
+            if (!MEM_GothOptExists("FREEAIM", "focusEnabled")) {
+                MEM_SetGothOpt("FREEAIM", "focusEnabled", "1"); // Turn on by default
+            } else { FREEAIM_FOCUS_COLLECTION = 0; };
+        };
         r_DefaultInit(); // Start rng for aiming accuracy
         hookFreeAim = 1;
     };
@@ -297,28 +305,31 @@ func void freeAimRemoveReticle() {
 };
 
 /* Draw reticle */
-func void freeAimInsertReticle(var int reticleStyle, var int size) {
-    if (reticleStyle > 1) {
-        var string reticleTex;
-        if (size < FREEAIM_RETICLE_MIN_SIZE) { size = FREEAIM_RETICLE_MIN_SIZE; }
-        else if (size > FREEAIM_RETICLE_MAX_SIZE) { size = FREEAIM_RETICLE_MAX_SIZE; };
+func void freeAimInsertReticle(var int reticlePtr) {
+    var Reticle reticle; reticle = _^(reticlePtr); var int size;
+    if (!Hlp_StrCmp(reticle.texture, "")) {
+        size = (((FREEAIM_RETICLE_MAX_SIZE-FREEAIM_RETICLE_MIN_SIZE)*(reticle.size))/100)+FREEAIM_RETICLE_MIN_SIZE;
+        if (size > FREEAIM_RETICLE_MAX_SIZE) { size = FREEAIM_RETICLE_MAX_SIZE; }
+        else if (size < FREEAIM_RETICLE_MIN_SIZE) { size = FREEAIM_RETICLE_MIN_SIZE; };
         if (!Hlp_IsValidHandle(freeAimReticleHndl)) { // Create reticle if it does not exist
             Print_GetScreenSize();
             freeAimReticleHndl = View_CreateCenterPxl(Print_Screen[PS_X]/2, Print_Screen[PS_Y]/2, size, size);
-            reticleTex = MEM_ReadStatStringArr(reticle, reticleStyle);
-            View_SetTexture(freeAimReticleHndl, reticleTex);
+            View_SetTexture(freeAimReticleHndl, reticle.texture);
+            View_SetColor(freeAimReticleHndl, reticle.color);
             View_Open(freeAimReticleHndl);
         } else {
-            var zCView crsHr; crsHr = _^(getPtr(freeAimReticleHndl));
-            if (!crsHr.isOpen) { View_Open(freeAimReticleHndl); };
-            reticleTex = MEM_ReadStatStringArr(reticle, reticleStyle);
-            if (!Hlp_StrCmp(View_GetTexture(freeAimReticleHndl), reticleTex)) {
-                View_SetTexture(freeAimReticleHndl, reticleTex);
+            if (!Hlp_StrCmp(View_GetTexture(freeAimReticleHndl), reticle.texture)) { // Update its texture
+                View_SetTexture(freeAimReticleHndl, reticle.texture);
             };
-            if (crsHr.psizex != size) { // Update its size
+            if (View_GetColor(freeAimReticleHndl) != reticle.color) { // Update its color
+                View_SetColor(freeAimReticleHndl, reticle.color);
+            };
+            if (crsHr.psizex != size) { // Update its size and re-position it to the center of the screen
                 View_ResizePxl(freeAimReticleHndl, size, size);
                 View_MoveToPxl(freeAimReticleHndl, Print_Screen[PS_X]/2-(size/2), Print_Screen[PS_Y]/2-(size/2));
             };
+            var zCView crsHr; crsHr = _^(getPtr(freeAimReticleHndl));
+            if (!crsHr.isOpen) { View_Open(freeAimReticleHndl); };
         };
     } else { freeAimRemoveReticle(); };
 };
@@ -330,12 +341,7 @@ func void freeAimManageReticle() {
 
 /* Check whether free aiming should collect focus */
 func int freeAimGetCollectFocus() {
-    if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusEnabled"))) { // No focus collection (performance) not recommended
-        if (!MEM_GothOptExists("FREEAIM", "focusEnabled")) {
-            MEM_SetGothOpt("FREEAIM", "focusEnabled", "1"); // Turn on by default
-        } else { return 0; };
-    };
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) { return 1; }; // Only while using bow/crossbow
+    if (FREEAIM_FOCUS_COLLECTION) && (Npc_IsInFightMode(hero, FMODE_FAR)) { return 1; }; // Only when using bow/crossbow
     return 0;
 };
 
@@ -476,34 +482,27 @@ func int freeAimRay(var int distance, var int vobPtr, var int posPtr, var int di
     return found;
 };
 
-/* Internal helper function for freeAimGetReticleSize() and freeAimGetReticleStyle() */
-func int freeAimGetReticle_(var int target, var int proximity) {
-    var int reticle[7];
-    var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
+/* Internal helper function for freeAimGetReticle() */
+func void freeAimGetReticle_(var int target, var int distance, var int returnPtr) {
+    var C_Npc targetNpc; var int talent; var C_Item weapon; // Retrieve target npc, weapon and talent
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
     else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
-    else { MEM_Error("freeAimGetReticle_: No valid weapon equipped/readied!"); return -1; }; // Should never happen
+    else { MEM_Error("freeAimGetReticle_: No valid weapon equipped/readied!"); return; }; // Should never happen
     if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
     else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
-    else { MEM_Error("freeAimGetReticle_: No valid weapon equipped/readied!"); return -1; };
-    freeAimGetReticle(target, weapon, talent, proximity, _@(reticle));
-    if (reticleSize < FREEAIM_RETICLE_MIN_SIZE) { reticleSize = FREEAIM_RETICLE_MIN_SIZE; }
-    else if (reticleSize > FREEAIM_RETICLE_MAX_SIZE) { reticleSize = FREEAIM_RETICLE_MAX_SIZE; };
-    if (reticleStyle < 0) || (reticleStyle >= MAX_RETICLE) {
-        MEM_Error("freeAimGetReticle_: Invalid reticleStyle!"); reticleStyle = NO_RETICLE; };
-    MEM_WriteInt(sizePtr, reticleSize); // Overwrite reticle size
-    return reticleStyle;
+    else { MEM_Error("freeAimGetReticle_: No valid weapon equipped/readied!"); return; };
+    if (Hlp_Is_oCNpc(target)) { targetNpc = _^(target); } else { targetNpc = MEM_NullToInst(); };
+    freeAimGetReticle(targetNpc, weapon, talent, distance, returnPtr);
 };
 
 /* Update aiming animation. Hook oCAniCtrl_Human::InterpolateCombineAni */
 func void freeAimAnimation() {
     if (!freeAimIsActive()) { return; };
     var int herPtr; herPtr = _@(hero);
-    var int proximity; proximity = 75;
+    var int distance; var int target;
     if (freeAimGetCollectFocus()) { // Set focus npc if there is a valid one under the reticle
-       var int distance; freeAimRay(FREEAIM_MAX_DIST, 0, 0, _@(distance), 0); // Shoot ray and retrieve aim distance
-       proximity = divf(distance, mkf(FREEAIM_MAX_DIST));
-       size -= roundf(mulf(divf(distance, mkf(FREEAIM_MAX_DIST)), mkf(size))); // Adjust reticle size
+        freeAimRay(FREEAIM_MAX_DIST, _@(target), 0, _@(distance), 0); // Shoot ray and retrieve info
+        distance = roundf(divf(mulf(distance, FLOAT1C), mkf(FREEAIM_MAX_DIST))); // Distance scaled between [0, 100]
     } else { // More performance friendly. Here, there will be NO focus, otherwise it gets stuck on npcs.
         const int call4 = 0; var int null; // Set the focus vob properly: reference counter
         if (CALL_Begin(call4)) {
@@ -517,13 +516,15 @@ func void freeAimAnimation() {
             CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
             call5 = CALL_End();
         };
+        distance = 25; // No distance check ever. Set it to medium distance
+        target = 0; // No focus target ever
     };
-    freeAimGetReticle_();
-    // Default reticle
-    // Reticle.texture =  zCTexture__zTEX_DEFAULT_TEXTURE_FIL; //0x99B2C0
-    // Reticle.color = RGBA(255, 255, 255, 255);
-    // Reticle.size = 50;
-    freeAimInsertReticle(); // Draw/update reticle
+    var int autoAlloc[7]; var Reticle reticle; reticle = _^(_@(autoAlloc)); // Gothic takes care of freeing this ptr
+    reticle.texture = ""; // Do not show reticle by default
+    reticle.color = -1; // Do not set color by default
+    reticle.size = 75; // Medium size by default
+    freeAimGetReticle_(target, distance, _@(reticle)); // Retrieve reticle specs
+    freeAimInsertReticle(_@(reticle)); // Draw/update reticle
     var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60); //0=right, 2=out, 3=pos
     var int pos[3]; // The position is calculated from the camera, not the player model
     pos[0] = addf(camPos.v0[3], mulf(camPos.v0[2], mkf(FREEAIM_MAX_DIST)));
@@ -714,7 +715,7 @@ func void freeAimWatchProjectile() {
                 call2 = CALL_End();
             };
         };
-        var C_Npc emptyNpc;
+        var C_Npc emptyNpc; emptyNpc = MEM_NullToInst();
         var int projInst; projInst = freeAimGetUsedProjectileInstance(projectile.instanz, emptyNpc); // "Used" instance
         if (projInst > 0) { // Will be -1 on invalid item
             if (projInst != projectile.instanz) { // Only change the instance if different
@@ -857,9 +858,9 @@ func void freeAimDetectCriticalHit() {
     // Instead check here if "any" point along the line of projectile direction lies inside the bbox of the node
     var int dir[3]; // Direction of collision line along the right-vector of the projectile (projectile flies sideways)
     dir[0] = MEM_ReadInt(projectile+60); dir[1] = MEM_ReadInt(projectile+76); dir[2] = MEM_ReadInt(projectile+92);
-    freeAimDebugTrj[0] = addf(MEM_ReadInt(projectile+ 72), mulf(dir[0], mkf(100))); // Start 1m behind the projectile
-    freeAimDebugTrj[1] = addf(MEM_ReadInt(projectile+ 88), mulf(dir[1], mkf(100)));
-    freeAimDebugTrj[2] = addf(MEM_ReadInt(projectile+104), mulf(dir[2], mkf(100)));
+    freeAimDebugTrj[0] = addf(MEM_ReadInt(projectile+ 72), mulf(dir[0], FLOAT1C)); // Start 1m behind the projectile
+    freeAimDebugTrj[1] = addf(MEM_ReadInt(projectile+ 88), mulf(dir[1], FLOAT1C));
+    freeAimDebugTrj[2] = addf(MEM_ReadInt(projectile+104), mulf(dir[2], FLOAT1C));
     var int intersection; intersection = 0; // Critical hit detected
     var int i; i=0; var int iter; iter = 700/5; // 7meters: Max distance from model bbox edge to node bbox (e.g. troll)
     while(i <= iter); i += 1; // Walk along the line in steps of 5cm
