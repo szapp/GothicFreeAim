@@ -691,10 +691,9 @@ func void freeAimDoNpcHit() {
     var C_Npc shooter; shooter = _^(MEM_ReadInt(EBP+92)); // ebp+5Ch // oCNpc*
     var int projectile; projectile = MEM_ReadInt(EBP+88); // ebp+58h // oCItem*
     if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { return; }; // Default hitchance for npc/disabled fa
-    // Copy bbox-line intersection code and apply it to target bbox and arrowAI line
-    var zTBBox3D targetBBox; targetBBox = _^(target+124); // oCNpc.bbox3D
     // The internal engine functions are not accurate enough for detecting a shot through a bbox
     // Instead check here if "any" point along the line of projectile direction lies inside the bbox
+    var zTBBox3D targetBBox; targetBBox = _^(target+124); // oCNpc.bbox3D
     var int dir[3]; // Direction of collision line along the right-vector of the projectile (projectile flies sideways)
     dir[0] = MEM_ReadInt(projectile+60); dir[1] = MEM_ReadInt(projectile+76); dir[2] = MEM_ReadInt(projectile+92);
     var int line[6]; // Collision line
@@ -710,9 +709,7 @@ func void freeAimDoNpcHit() {
         if (lef(targetBBox.mins[0], line[3])) && (lef(targetBBox.mins[1], line[4]))
         && (lef(targetBBox.mins[2], line[5])) && (gef(targetBBox.maxs[0], line[3]))
         && (gef(targetBBox.maxs[1], line[4])) && (gef(targetBBox.maxs[2], line[5])) {
-            intersection = 1; // Current point is inside the bbox
-            break;
-        };
+            intersection = 1; break; }; // Current point is inside the bbox
     end;
     var int hit; hit = 0;
     if (intersection) { hit = 100*freeAimHitRegistration_(target); }; // Player always hits = 100%
