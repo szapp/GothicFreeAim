@@ -23,40 +23,31 @@
  *  - Disable hit registration (e.g. friendly-fire):  freeAimHitRegistration(target, weapon)
  *  - Critical hit calculation (position, damage):    freeAimCriticalHitDef(target, weapon, damage)
  *  - Critical hit event (print, sound, xp, ...):     freeAimCriticalHitEvent(target, weapon)
+ *  - Show weakspot debug visualization by default    FREEAIM_DEBUG_WEAKSPOT
+ *  - Allow console commands (cheats)                 FREEAIM_DEBUG_CONSOLE
  * Advanced (modification not recommended):
  *  - Scatter radius for accuracy:                    FREEAIM_SCATTER_DEG
  *  - Camera view (shoulder view):                    FREEAIM_CAMERA and FREEAIM_CAMERA_X_SHIFT
+ *  - Maximum bow draw time:                          FREEAIM_DRAWTIME_MAX
  *  - Max time before projectile drop-off:            FREEAIM_TRAJECTORY_ARC_MAX
+ *  - Gravity of projectile after drop-off:           FREEAIM_PROJECTILE_GRAVITY
+ *  - Turn speed while aiming:                        FREEAIM_ROTATION_SCALE
  *
  * Usage:
  *  - Initialize after Ikarus and LeGo (LeGo_FrameFunctions | LeGo_HookEngine) in INIT_GLOBAL() with freeAim_Init();
  */
 
-/* Free aim settings, only modify those listed above */
+/* Free aim settings, only modify with caution */
 const int    FREEAIM_REUSE_PROJECTILES    = 1;               // Enable collection and re-using of shot projectiles
-const int    FREEAIM_CAMERA_X_SHIFT       = 0;               // One, if camera is set to shoulderview (not recommended)
-const int    FREEAIM_DRAWTIME_MIN         = 1110;            // Min draw time (ms): Do not change - tied to animation
-const int    FREEAIM_DRAWTIME_MAX         = 2500;            // Max draw time (ms): When is bow/crossbow fully drawn
+const int    FREEAIM_DRAWTIME_MAX         = 1500;            // Max draw time (ms): When is the bow fully drawn
 const int    FREEAIM_TRAJECTORY_ARC_MAX   = 400;             // Max time (ms) after which the trajectory drops off
 const float  FREEAIM_ROTATION_SCALE       = 0.16;            // Turn rate. Non-weapon mode is 0.2 (zMouseRotationScale)
 const float  FREEAIM_SCATTER_DEG          = 2.2;             // Maximum scatter radius in degrees
-const int    FREEAIM_RETICLE_MIN_SIZE     = 16;              // Smallest reticle size in pixels (longest range)
-const int    FREEAIM_RETICLE_MED_SIZE     = 20;              // Medium reticle size in pixels (for disabled focus)
-const int    FREEAIM_RETICLE_MAX_SIZE     = 32;              // Biggest reticle size in pixels (closest range)
 const string FREEAIM_CAMERA               = "CamModRngeFA";  // CCamSys_Def script instance for free aim
-const string FREEAIM_TRAIL_FX             = "freeAim_TRAIL"; // Trailstrip FX. Should not be changed
+const int    FREEAIM_CAMERA_X_SHIFT       = 0;               // One, if camera is set to shoulderview (not recommended)
 const int    FREEAIM_DEBUG_WEAKSPOT       = 0;               // Visualize weakspot bbox and trajectory
 const int    FREEAIM_DEBUG_CONSOLE        = 1;               // Console command for debugging. Turn off in final mod
 const float  FREEAIM_PROJECTILE_GRAVITY   = 0.1;             // The gravity decides how fast the projectile drops
-const int    FREEAIM_MAX_DIST             = 5000;            // 50m. Shooting/reticle adjustments. Do not change
-const int    FREEAIM_ACTIVE_PREVFRAME     = 0;               // Internal. Do not change
-const int    FREEAIM_FOCUS_COLLECTION     = 1;               // Internal. Do not change
-const int    FREEAIM_ARROWAI_REDIRECT     = 0;               // Used to redirect call-by-reference argument
-const int    FLOAT1C                      = 1120403456;      // 100 as float
-const int    FLOAT1K                      = 1148846080;      // 1000 as float
-var   int    freeAimDebugBBox[6];                            // Boundingbox for debug visualization
-var   int    freeAimDebugTrj[6];                             // Projectile trajectory for debug visualization
-var   int    freeAimReticleHndl;                             // Holds the handle of the reticle
 var   int    freeAimBowDrawOnset;                            // Time onset of drawing the bow
 class Weakspot { var string node; var int dimX; var int dimY; var int bDmg; }; // For readability
 class Reticle { var string texture; var int size; var int color; }; // For readability
@@ -65,9 +56,9 @@ class Reticle { var string texture; var int size; var int color; }; // For reada
 func int freeAimGetDrawForce(var C_Item weapon, var int talent) {
     var int drawTime; drawTime = MEM_Timer.totalTime - freeAimBowDrawOnset;
     // Possibly incorporate more factors like e.g. a quick-draw talent, weapon-specific stats, ...
-    // Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW)
+    if (weapon.flags & ITEM_CROSSBOW) { return 100; }; // Always full draw force on crossbows
     // For now set drawForce by draw time scaled between min and max times:
-    var int drawForce; drawForce = (100 * (drawTime-FREEAIM_DRAWTIME_MIN))/(FREEAIM_DRAWTIME_MAX-FREEAIM_DRAWTIME_MIN);
+    var int drawForce; drawForce = (100 * drawTime) / FREEAIM_DRAWTIME_MAX;
     if (drawForce < 0) { drawForce = 0; } else if (drawForce > 100) { drawForce = 100; }; // Respect the ranges
     return drawForce;
 };
@@ -192,6 +183,23 @@ func int freeAimGetUsedProjectileInstance(var int projectileInst, var C_Npc inve
 
 *********************************************** DO NO CROSS THIS LINE *************************************************/
 
+/* Free aim internal settings, do not modify */
+const int    FREEAIM_DRAWTIME_READY       = 650;             // Time offset for readying the bow - fixed by animation
+const int    FREEAIM_DRAWTIME_RELOAD      = 1110;            // Time offset for reloading the bow - fixed by animation
+const int    FREEAIM_RETICLE_MIN_SIZE     = 16;              // Smallest reticle size in pixels (longest range)
+const int    FREEAIM_RETICLE_MED_SIZE     = 20;              // Medium reticle size in pixels (for disabled focus)
+const int    FREEAIM_RETICLE_MAX_SIZE     = 32;              // Biggest reticle size in pixels (closest range)
+const string FREEAIM_TRAIL_FX             = "freeAim_TRAIL"; // Trailstrip FX. Should not be changed
+const int    FREEAIM_MAX_DIST             = 5000;            // 50m. Shooting/reticle adjustments. Do not change
+const int    FREEAIM_ACTIVE_PREVFRAME     = 0;               // Internal. Do not change
+const int    FREEAIM_FOCUS_COLLECTION     = 1;               // Internal. Do not change (change in ini-file)
+const int    FREEAIM_ARROWAI_REDIRECT     = 0;               // Used to redirect call-by-reference var. Do not change
+const int    FLOAT1C                      = 1120403456;      // 100 as float
+const int    FLOAT1K                      = 1148846080;      // 1000 as float
+var   int    freeAimDebugBBox[6];                            // Boundingbox for debug visualization
+var   int    freeAimDebugTrj[6];                             // Projectile trajectory for debug visualization
+var   int    freeAimReticleHndl;                             // Holds the handle of the reticle
+
 /* All addresses used (gothic2). In case of a gothic1 port: There are a lot of hardcoded address offsets in the code! */
 const int zCVob___CreateNewInstance               = 6281536; //0x5FD940
 const int zCVob__SetPositionWorld                 = 6404976; //0x61BB70
@@ -309,7 +317,7 @@ func int freeAimIsActive() {
     && (keyStateAction2 != KEY_PRESSED) && (keyStateAction2 != KEY_HOLD) { return 0; };
     // Get onset for drawing the bow - right when pressing down the action key
     if (keyStateAction1 == KEY_PRESSED) || (keyStateAction2 == KEY_PRESSED) {
-        freeAimBowDrawOnset = MEM_Timer.totalTime; };
+        freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_READY; };
     return 1;
 };
 
@@ -338,11 +346,11 @@ func void freeAimInsertReticle(var int reticlePtr) {
             if (View_GetColor(freeAimReticleHndl) != reticle.color) { // Update its color
                 View_SetColor(freeAimReticleHndl, reticle.color);
             };
+            var zCView crsHr; crsHr = _^(getPtr(freeAimReticleHndl));
             if (crsHr.psizex != size) { // Update its size and re-position it to the center of the screen
                 View_ResizePxl(freeAimReticleHndl, size, size);
                 View_MoveToPxl(freeAimReticleHndl, Print_Screen[PS_X]/2-(size/2), Print_Screen[PS_Y]/2-(size/2));
             };
-            var zCView crsHr; crsHr = _^(getPtr(freeAimReticleHndl));
             if (!crsHr.isOpen) { View_Open(freeAimReticleHndl); };
         };
     } else { freeAimRemoveReticle(); };
@@ -614,7 +622,7 @@ func void freeAimSetupProjectile() {
     if (drawForce < 25) { gravityMod = mkf(3); }; // Very short draw time increases gravity
     drawForce = (drawForce*(FREEAIM_TRAJECTORY_ARC_MAX*100))/10000;
     FF_ApplyOnceExtData(freeAimDropProjectile, drawForce, 1, rBody); // When to hit the projectile with gravity
-    freeAimBowDrawOnset = MEM_Timer.totalTime; // Reset draw timer
+    freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_RELOAD; // Reset draw timer
     MEM_WriteInt(rBody+236, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod)); // Set gravity (but not enabled)
     if (Hlp_Is_oCItem(projectile)) && (Hlp_StrCmp(MEM_ReadString(projectile+564), "")) { // Projectile has no FX
         MEM_WriteString(projectile+564, FREEAIM_TRAIL_FX); // Set trail strip fx for better visibility
