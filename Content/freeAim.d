@@ -16,7 +16,7 @@
  *
  * Customizability:
  *  - Collect and re-use shot projectiles (yes/no):   FREEAIM_REUSE_PROJECTILES
- *  - Projectile instance for re-using                freeAimGetUsedProjectileInstance(instance, targetNpc, weapon)
+ *  - Projectile instance for re-using                freeAimGetUsedProjectileInstance(instance, targetNpc)
  *  - Draw force (gravity/drop-off) calculation:      freeAimGetDrawForce(weapon, talent)
  *  - Accuracy calculation:                           freeAimGetAccuracy(weapon, talent)
  *  - Reticle style (texture, color, size):           freeAimGetReticle(target, weapon, talent, distance)
@@ -154,7 +154,7 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon) {
 };
 
 /* Modify this function to exchange (or remove) the projectile after shooting for re-using, e.g. used arrow */
-func int freeAimGetUsedProjectileInstance(var int projectileInst, var C_Npc inventoryNpc, var C_Item weapon) {
+func int freeAimGetUsedProjectileInstance(var int projectileInst, var C_Npc inventoryNpc) {
     // By returning zero, the projectile is completely removed (e.g. retrieve-projectile-talent not learned yet)
     // The argument inventoryNpc holds the npc in whose inventory it will be put, or is empty if it landed in the world
     // if (projectileInst == Hlp_GetInstanceID(ItRw_Arrow)) { // Exchange the instance for a "used" one
@@ -167,8 +167,6 @@ func int freeAimGetUsedProjectileInstance(var int projectileInst, var C_Npc inve
         // if (PLAYER_TALENT_TAKEANIMALTROPHY[REUSE_Arrow] == FALSE) { return 0; }; // Retrieve-projectile-talent
         // if (!Npc_HasItems(hero, ItMi_ArrowTool)) { return 0; }; // Player needs tool to remove the projectile
         // if (Hlp_Random(100) < 50) { return 0; }; // Chance of retrieval
-        // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
-        // if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
         return projectileInst; // For now it is just preserved (is put in the inventory as is)
     } else { // Projectile did not hit npc and landed in world
         // if (PLAYER_TALENT_REUSE_ARROW == FALSE) { return 0; }; // Reuse-projectile-talent
@@ -727,20 +725,11 @@ func void freeAimDoNpcHit() {
     MEM_WriteInt(ESP+24, hit);
 };
 
-/* Internal helper function for freeAimGetUsedProjectileInstance() */
-func int freeAimGetUsedProjectileInstance_(var int projectileInst, var C_Npc victim) {
-    var C_Item weapon; // Caution: Weapon may have been unequipped already at this time (unlikely)
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
-    else { weapon = MEM_NullToInst(); }; // Deadalus pseudo locals
-    return freeAimGetUsedProjectileInstance(projectileInst, victim, weapon);
-};
-
 /* Arrow gets stuck in npc: put projectile instance into inventory and let ai die */
 func void freeAimOnArrowHitNpc() {
     var oCItem projectile; projectile = _^(MEM_ReadInt(ESI+88));
     var C_Npc victim; victim = _^(EDI);
-    var int projInst; projInst = freeAimGetUsedProjectileInstance_(projectile.instanz, victim); // Get "used" instance
+    var int projInst; projInst = freeAimGetUsedProjectileInstance(projectile.instanz, victim); // Get "used" instance
     if (projInst > 0) { CreateInvItem(victim, projInst); }; // Put respective instance in inventory
     if (FF_ActiveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody))) {
         FF_RemoveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody)); };
@@ -782,7 +771,7 @@ func void freeAimWatchProjectile() {
             };
         };
         var C_Npc emptyNpc; emptyNpc = MEM_NullToInst();
-        var int projInst; projInst = freeAimGetUsedProjectileInstance_(projectile.instanz, emptyNpc); // "Used" instance
+        var int projInst; projInst = freeAimGetUsedProjectileInstance(projectile.instanz, emptyNpc); // "Used" instance
         if (projInst > 0) { // Will be -1 on invalid item
             if (projInst != projectile.instanz) { // Only change the instance if different
                 const int call3 = 0; const int one = 1;
