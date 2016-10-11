@@ -20,7 +20,7 @@
  *  - Draw force (gravity/drop-off) calculation:      freeAimGetDrawForce(weapon, talent)
  *  - Accuracy calculation:                           freeAimGetAccuracy(weapon, talent)
  *  - Reticle style (texture, color, size):           freeAimGetReticle(target, weapon, talent, distance)
- *  - Disable hit registration (e.g. friendly-fire):  freeAimHitRegistration(target, weapon)
+ *  - Disable hit registration (e.g. friendly-fire):  freeAimHitRegistration(target, weapon, material)
  *  - Critical hit calculation (position, damage):    freeAimCriticalHitDef(target, weapon, damage)
  *  - Critical hit event (print, sound, xp, ...):     freeAimCriticalHitEvent(target, weapon)
  *  - Show weakspot debug visualization by default    FREEAIM_DEBUG_WEAKSPOT
@@ -100,14 +100,40 @@ func void freeAimGetReticle(var C_Npc target, var C_Item weapon, var int talent,
 };
 
 /* Modify this function to disable hit registration. E.g. 'ineffective' ranged weapons, disable friendly-fire, ... */
-func int freeAimHitRegistration(var C_Npc target, var C_Item weapon) {
-    // The hit registration may depent on the target npc. Make use of 'target' argument
-    if (target.aivar[AIV_PARTYMEMBER]) && (target.aivar[AIV_LASTTARGET] != Hlp_GetInstanceID(hero)) { // No friendlyfire
-        return FALSE; };
-    // The weapon can also be considered (e.g. ineffective weapons). Make use of 'weapon' for that
-    // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon) to check
-    // if (Hlp_IsValidItem(weapon)) && (weapon.ineffective) { return FALSE; }; // E.g. special case for weapon property
-    return TRUE; // Default: Register the hit
+func int freeAimHitRegistration(var C_Npc target, var C_Item weapon, var int material) {
+    // Valid return values are:
+    const int DESTROY = 0; // No hit reg (no damage), projectile is destroyed
+    const int COLLIDE = 1; // Hit reg, projectile is put into inventory (npc), or is stuck in the surface (world)
+    const int DEFLECT = 2; // No hit reg (no damage), projectile is repelled
+    // The argument 'material' holds the material of the target surface
+    // If the target surface is an npc, the material will be that of the armor, -1 for no armor equipped
+    // To check if it is an npc that is hit, use Hlp_IsValidNpc(target). In other cases target will be empty!
+    if (Hlp_IsValidNpc(target)) { // Target is an npc
+        // For armors of npcs the materials are as defined in Constants.d (MAT_METAL, MAT_WOOD, ...)
+        // Disable friendly-fire
+        if (target.aivar[AIV_PARTYMEMBER]) && (target.aivar[AIV_LASTTARGET] != Hlp_GetInstanceID(hero)) {
+            return DESTROY; };
+        //if (material == MAT_METAL) && (Hlp_Random(100) < 20) { return DEFLECT; }; // Metal armors may be more durable
+        // The weapon can also be considered (e.g. ineffective weapons). Make use of 'weapon' for that
+        // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
+        // if (Hlp_IsValidItem(weapon)) && (weapon.ineffective) { return DEFLECT; }; // Special case for weapon property
+        return COLLIDE; // Usually all shots on npcs should be registered, see freeAimGetAccuracy() above
+    } else { // Target is not an npc (might be a vob or a surface in the static world)
+        // The material indices for the objects in the world are different:
+        const int METAL = 1;
+        const int STONE = 2;
+        const int WOOD  = 3;
+        const int EARTH = 4;
+        const int WATER = 5;
+        const int SNOW  = 6;
+        const int UNDEF = 0;
+        if (material == WOOD) {
+            return COLLIDE; // Projectiles stay stuck in wood (For some reason wood in the world uses leather material)
+        };
+        // if (material == STONE) && (Hlp_Random(100) < 5) { return DESTROY; }; // The projectile might break on impact
+        // The example in the previous line can also be treated in freeAimGetUsedProjectileInstance() below
+        return DEFLECT; // Projectiles deflect from all other surfaces
+    };
 };
 
 /* Modify this function to define a critical hit by weak spot (e.g. head node for headshot), its size and the damage */
@@ -206,6 +232,7 @@ const int zCVob__TraceRay                         = 6291008; //0x5FFE40
 const int zCArray_zCVob__IsInList                 = 7159168; //0x6D3D80
 const int zCWorld__TraceRayNearestHit_Vob         = 6430624; //0x621FA0
 const int zCWorld__AddVobAsChild                  = 6440352; //0x6245A0
+const int zCMaterial__vtbl                        = 8593940; //0x832214
 const int zString_CamModRanged                    = 9234704; //0x8CE910
 const int oCAniCtrl_Human__Turn                   = 7005504; //0x6AE540
 const int oCAniCtrl_Human__GetLayerAni            = 7011712; //0x6AFD80
@@ -226,6 +253,7 @@ const int oCGame__s_bUseOldControls               = 9118144; //0x8B21C0
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
 const int mouseDeltaX                             = 9246300; //0x8D165C
+const int projectileDeflectOffNpcAddr             = 6949734; //0x6A0B66
 const int zCWorld__AdvanceClock                   = 6447328; //0x6260E0 // Hook length 10
 const int oCAniCtrl_Human__InterpolateCombineAni  = 7037296; //0x6B6170 // Hook length 5
 const int oCAIArrow__SetupAIVob                   = 6951136; //0x6A10E0 // Hook length 6
@@ -234,6 +262,8 @@ const int oCAIArrowBase__DoAI                     = 6948416; //0x6A0640 // Hook 
 const int onArrowHitNpcAddr                       = 6949832; //0x6A0BC8 // Hook length 5
 const int onArrowHitVobAddr                       = 6949929; //0x6A0C29 // Hook length 5
 const int onArrowHitStatAddr                      = 6949460; //0x6A0A54 // Hook length 5
+const int onArrowCollVobAddr                      = 6949440; //0x6A0C18 // Hook length 5
+const int onArrowCollStatAddr                     = 6949912; //0x6A0A40 // Hook length 5
 const int onArrowHitChanceAddr                    = 6953483; //0x6A1A0B // Hook length 5
 const int onArrowDamageAddr                       = 6953621; //0x6A1A95 // Hook length 7
 const int onDmgAnimationAddr                      = 6774593; //0x675F41 // Hook length 9
@@ -254,6 +284,9 @@ func void freeAim_Init() {
         HookEngineF(oCAIArrowBase__DoAI, 7, freeAimWatchProjectile); // AI loop for each projectile
         HookEngineF(onArrowDamageAddr, 7, freeAimDetectCriticalHit); // Critical hit detection
         HookEngineF(onArrowHitChanceAddr, 5, freeAimDoNpcHit); // Decide whether a projectile hits or not
+        MemoryProtectionOverride(projectileDeflectOffNpcAddr, 2); // Collision behavior on npcs
+        HookEngineF(onArrowCollVobAddr, 5, freeAimOnArrowCollide); // Collision behavior on non-npc vob material
+        HookEngineF(onArrowCollStatAddr, 5, freeAimOnArrowCollide); // Collision behavior on static world material
         HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aming
         if (FREEAIM_DEBUG_CONSOLE) { // Enable console command for debugging
             CC_Register(freeAimDebugWeakspot, "debug weakspot", "turn debug visualization on/off");
@@ -291,6 +324,8 @@ func void freeAimUpdateSettings(var int on) {
         Focus_Ranged.npc_elevup =  90.0;
         Focus_Ranged.npc_elevdo =  -85.0;
         MEM_WriteString(zString_CamModRanged, "CAMMODRANGED"); // Restore camera mode, upper case is important
+        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to projectile collision behavior on npcs
+        MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59); // jz to 0x6A0BA3
         FREEAIM_ACTIVE_PREVFRAME = -1;
     };
 };
@@ -684,25 +719,27 @@ func void freeAimDropProjectile(var int rigidBody) {
 };
 
 /* Internal helper function for freeAimHitRegistration() */
-func int freeAimHitRegistration_(var int targetPtr) {
-    var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
+func int freeAimHitRegistration_(var C_Npc target, var int material) {
+    var C_Item weapon; weapon = MEM_NullToInst(); // Deadalus pseudo locals
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
-    else { weapon = MEM_NullToInst(); }; // Deadalus pseudo locals
-    var C_Npc target; target = _^(targetPtr);
-    return !!freeAimHitRegistration(target, weapon); // Make sure it is either one or zero
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
+    return freeAimHitRegistration(target, weapon, material);
 };
 
 /* Determine the hit chance. For the player it's always 100%. True hit chance is calcualted in freeAimGetAccuracy() */
 func void freeAimDoNpcHit() {
-    var int target; target = MEM_ReadInt(ESP+28); // esp+1ACh+190h // oCNpc*
     var int hitChance; hitChance = MEM_ReadInt(ESP+24); // esp+1ACh+194h
+    var C_Npc target; target = _^(MEM_ReadInt(ESP+28)); // esp+1ACh+190h // oCNpc*
     var C_Npc shooter; shooter = _^(MEM_ReadInt(EBP+92)); // ebp+5Ch // oCNpc*
     var int projectile; projectile = MEM_ReadInt(EBP+88); // ebp+58h // oCItem*
-    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { return; }; // Default hitchance for npc/disabled fa
+    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { // Default hitchance for npc/disabled fa
+        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to projectile collision behavior on npcs
+        MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59); // jz to 0x6A0BA3
+        return;
+    };
     // The internal engine functions are not accurate enough for detecting a shot through a bbox
     // Instead check here if "any" point along the line of projectile direction lies inside the bbox
-    var zTBBox3D targetBBox; targetBBox = _^(target+124); // oCNpc.bbox3D
+    var zTBBox3D targetBBox; targetBBox = _^(_@(target)+124); // oCNpc.bbox3D
     var int dir[3]; // Direction of collision line along the right-vector of the projectile (projectile flies sideways)
     dir[0] = MEM_ReadInt(projectile+60); dir[1] = MEM_ReadInt(projectile+76); dir[2] = MEM_ReadInt(projectile+92);
     var int line[6]; // Collision line
@@ -720,9 +757,54 @@ func void freeAimDoNpcHit() {
         && (gef(targetBBox.maxs[1], line[4])) && (gef(targetBBox.maxs[2], line[5])) {
             intersection = 1; break; }; // Current point is inside the bbox
     end;
-    var int hit; hit = 0;
-    if (intersection) { hit = 100*freeAimHitRegistration_(target); }; // Player always hits = 100%
-    MEM_WriteInt(ESP+24, hit);
+    var int hit;
+    if (intersection) {
+        var int material; material = -1; // No armor
+        if (Npc_HasEquippedArmor(target)) {
+            var C_Item armor; armor = Npc_GetEquippedArmor(target);
+            material = armor.material;
+        };
+        var int collision; collision = freeAimHitRegistration_(target, material); // 0 = destroy, 1 = stuck, 2 = deflect
+        if (collision == 2) { // Deflect (no damage)
+            MEM_WriteByte(projectileDeflectOffNpcAddr, ASMINT_OP_nop);
+            MEM_WriteByte(projectileDeflectOffNpcAddr + 1, ASMINT_OP_nop);
+            hit = FALSE;
+        } else {
+            MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116);
+            MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*60*/ 96); // jz to 0x6A0BC8
+            if (!collision) { // Destroy (no damage)
+                hit = FALSE;
+                MEM_WriteInt(projectile+816, -1); // Delete item instance (it will not be put into the directory)
+            } else { // Collide (damage)
+                hit = TRUE;
+            };
+        };
+    } else { // Destroy the projectile if it did not physically hit
+        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116);
+        MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*60*/ 96); // jz to 0x6A0BC8
+        hit = FALSE;
+    };
+    MEM_WriteInt(ESP+24, hit*100); // Player always hits = 100%
+};
+
+/* Arrow collides with world (static or non-npc vob). Either destroy, deflect or collide */
+func void freeAimOnArrowCollide() {
+    var oCItem projectile; projectile = _^(MEM_ReadInt(ESI+60)); // esi+3Ch
+    var int matobj; matobj = MEM_ReadInt(ECX); // zCMaterial* or zCPolygon*
+    if (MEM_ReadInt(matobj) != zCMaterial__vtbl) { matobj = MEM_ReadInt(matobj+24); }; // Static world: Read zCPolygon
+    var int material; material = MEM_ReadInt(matobj+64);
+    var C_Npc emptyNpc; emptyNpc = MEM_NullToInst();
+    var int collision; collision = freeAimHitRegistration_(emptyNpc, material); // 0 = destroy, 1 = stuck, 2 = deflect
+    if (collision == 1) { // Collide
+        EDI = material; // Sets the condition at 0x6A0A45 and 0x6A0C1A to true: Projectile stays
+    } else {
+        EDI = -1;  // Sets the condition at 0x6A0A45 and 0x6A0C1A to false: Projectile deflects
+        if (!collision) && (FREEAIM_REUSE_PROJECTILES) { // Destroy
+            if (FF_ActiveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody))) {
+                FF_RemoveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody)); };
+            MEM_WriteInt(ESI+56, -1073741824); // oCAIArrow.lifeTime // Mark this AI for freeAimWatchProjectile()
+        };
+    };
 };
 
 /* Arrow gets stuck in npc: put projectile instance into inventory and let ai die */
@@ -830,19 +912,17 @@ func void freeAimVisualizeWeakspot() {
 
 /* Internal helper function for freeAimCriticalHitEvent() */
 func void freeAimCriticalHitEvent_(var C_Npc target) {
-    var C_Item weapon; // Caution: Weapon may have been unequipped already at this time (unlikely)
+    var C_Item weapon; weapon = MEM_NullToInst(); // Deadalus pseudo locals
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
-    else { weapon = MEM_NullToInst(); }; // Deadalus pseudo locals
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
     freeAimCriticalHitEvent(target, weapon);
 };
 
 /* Internal helper function for freeAimCriticalHitDef() */
 func void freeAimCriticalHitDef_(var C_Npc target, var int damagePtr, var int returnPtr) {
-    var C_Item weapon; // Caution: Weapon may have been unequipped already at this time (unlikely)
+    var C_Item weapon; weapon = MEM_NullToInst(); // Deadalus pseudo locals
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
-    else { weapon = MEM_NullToInst(); }; // Deadalus pseudo locals
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
     freeAimCriticalHitDef(target, weapon, MEM_ReadInt(damagePtr), returnPtr);
     MEM_WriteString(returnPtr, STR_Upper(MEM_ReadString(returnPtr))); // Nodes are always upper case
     if (lf(MEM_ReadInt(returnPtr+28), FLOATNULL)) { MEM_WriteInt(returnPtr+28, FLOATNULL); }; // Correct negative damage
