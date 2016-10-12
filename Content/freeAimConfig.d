@@ -1,0 +1,186 @@
+/*
+ * Gothic 2 Free Aiming
+ *
+ * Written by mud-freak (2016)
+ *
+ * Customizability:
+ *  - Show weakspot debug visualization by default    FREEAIM_DEBUG_WEAKSPOT
+ *  - Allow freeAim console commands (cheats)         FREEAIM_DEBUG_CONSOLE
+ *  - Collect and re-use shot projectiles (yes/no):   FREEAIM_REUSE_PROJECTILES
+ *  - Projectile instance for re-using                freeAimGetUsedProjectileInstance(instance, targetNpc)
+ *  - Draw force (gravity/drop-off) calculation:      freeAimGetDrawForce(weapon, talent)
+ *  - Accuracy calculation:                           freeAimGetAccuracy(weapon, talent)
+ *  - Reticle style (texture, color, size):           freeAimGetReticle(target, weapon, talent, distance)
+ *  - Disable hit registration (e.g. friendly-fire):  freeAimHitRegistration(target, weapon, material)
+ *  - Critical hit calculation (position, damage):    freeAimCriticalHitDef(target, weapon, damage)
+ *  - Critical hit event (print, sound, xp, ...):     freeAimCriticalHitEvent(target, weapon)
+ * Advanced (modification not recommended):
+ *  - Scatter radius for accuracy:                    FREEAIM_SCATTER_DEG
+ *  - Camera view (shoulder view):                    FREEAIM_CAMERA and FREEAIM_CAMERA_X_SHIFT
+ *  - Maximum bow draw time:                          FREEAIM_DRAWTIME_MAX
+ *  - Max time before projectile drop-off:            FREEAIM_TRAJECTORY_ARC_MAX
+ *  - Gravity of projectile after drop-off:           FREEAIM_PROJECTILE_GRAVITY
+ *  - Turn speed while aiming:                        FREEAIM_ROTATION_SCALE
+ */
+
+/* Initialize fixed settings. This function is called once at the beginning of each session. Set the constants here */
+func void freeAimInitConstants() {
+    // These are the default values. If you want to change them uncomment the respective line
+    // FREEAIM_REUSE_PROJECTILES    = 1;               // Enable collection and re-using of shot projectiles
+    // FREEAIM_DEBUG_WEAKSPOT       = 0;               // Visualize weakspot bbox and trajectory
+    // FREEAIM_DEBUG_CONSOLE        = 1;               // Console command for debugging. Turn off in final mod
+    // Modifing anything below is not recommended!
+    // FREEAIM_SCATTER_DEG          = 2.2;             // Maximum scatter radius in degrees
+    // FREEAIM_DRAWTIME_MAX         = 1500;            // Max draw time (ms): When is the bow fully drawn
+    // FREEAIM_TRAJECTORY_ARC_MAX   = 400;             // Max time (ms) after which the trajectory drops off
+    // FREEAIM_PROJECTILE_GRAVITY   = 0.1;             // The gravity decides how fast the projectile drops
+    // FREEAIM_CAMERA               = "CamModRngeFA";  // CCamSys_Def script instance for free aim
+    // FREEAIM_CAMERA_X_SHIFT       = 0;               // One, if camera is set to shoulderview (not recommended)
+    // FREEAIM_ROTATION_SCALE       = 0.16;            // Turn rate. Non-weapon mode is 0.2 (zMouseRotationScale)
+};
+
+/* Modify this function to alter the draw force calculation. Scaled between 0 and 100 (percent) */
+func int freeAimGetDrawForce(var C_Item weapon, var int talent) {
+    var int drawTime; drawTime = MEM_Timer.totalTime - freeAimBowDrawOnset;
+    // Possibly incorporate more factors like e.g. a quick-draw talent, weapon-specific stats, ...
+    if (weapon.flags & ITEM_CROSSBOW) { return 100; }; // Always full draw force on crossbows
+    // For now set drawForce by draw time scaled between min and max times:
+    var int drawForce; drawForce = (100 * drawTime) / FREEAIM_DRAWTIME_MAX;
+    if (drawForce < 0) { drawForce = 0; } else if (drawForce > 100) { drawForce = 100; }; // Respect the ranges
+    return drawForce;
+};
+
+/* Modify this function to alter accuracy calculation. Scaled between 0 and 100 (percent) */
+func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
+    // Add any other factors here e.g. weafpon-specific accuracy stats, weapon spread, accuracy talent, ...
+    // Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW)
+    // Here the talent is scaled by draw force: draw force=100% => accuracy=talent; draw force=0% => accuracy=talent/2
+    var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent); // Already scaled to [0, 100]
+    if (drawForce < talent) { drawForce = talent; }; // Decrease impact of draw force on talent
+    var int accuracy; accuracy = (talent * drawForce)/100;
+    if (accuracy < 0) { accuracy = 0; } else if (accuracy > 100) { accuracy = 100; }; // Respect the ranges
+    return accuracy;
+};
+
+/* Modify this function to alter the reticle texture, color and size (scaled between 0 and 100). */
+const string SIMPLE_RETICLE = "RETICLESIMPLE.TGA";
+const string NORMAL_RETICLE = "RETICLE.TGA";
+const string POINTY_RETICLE = "RETICLEARCHER.TGA";
+func void freeAimGetReticle(var C_Npc target, var C_Item weapon, var int talent, var int distance, var int returnPtr) {
+    var Reticle reticle; reticle = _^(returnPtr);
+    // Texture (needs to be set, otherwise reticle will not be displayed)
+    if (weapon.flags & ITEM_BOW) { reticle.texture = POINTY_RETICLE; } // Bow readied
+    else if (weapon.flags & ITEM_CROSSBOW) { reticle.texture = POINTY_RETICLE; } // Crossbow readied
+    else { reticle.texture = NORMAL_RETICLE; };
+    // Color (do not set the color to preserve the original texture color)
+    if (Hlp_IsValidNpc(target)) { // The argument 'target' might be empty!
+        var int att; att = Npc_GetAttitude(target, hero);
+        if (att == ATT_FRIENDLY) { reticle.color = Focusnames_Color_Friendly(); }
+        else if (att == ATT_HOSTILE) { reticle.color = Focusnames_Color_Hostile(); };
+        //else if (att == ATT_ANGRY) { reticle.color = Focusnames_Color_Angry(); }; // Never happens?
+    };
+    // Size (scale between [0, 100]: 0 is smallest, 100 is biggest)
+    reticle.size = -distance+100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
+    // reticle.size = -freeAimGetDrawForce(weapon, talent)+100; // Or inverse draw force: bigger for less draw force
+    // reticle.size = -freeAimGetAccuracy(weapon, talent)+100; // Or inverse accuracy: bigger with lower accuracy
+    // More sophisticated customization is also possible: change the texture by draw force, the size by accuracy, ...
+};
+
+/* Modify this function to disable hit registration. E.g. 'ineffective' ranged weapons, disable friendly-fire, ... */
+func int freeAimHitRegistration(var C_Npc target, var C_Item weapon, var int material) {
+    // Valid return values are:
+    const int DESTROY = 0; // No hit reg (no damage), projectile is destroyed
+    const int COLLIDE = 1; // Hit reg, projectile is put into inventory (npc), or is stuck in the surface (world)
+    const int DEFLECT = 2; // No hit reg (no damage), projectile is repelled
+    // The argument 'material' holds the material of the target surface
+    // If the target surface is an npc, the material will be that of the armor, -1 for no armor equipped
+    // To check if it is an npc that is hit, use Hlp_IsValidNpc(target). In other cases target will be empty!
+    if (Hlp_IsValidNpc(target)) { // Target is an npc
+        // For armors of npcs the materials are defined as in Constants.d (MAT_METAL, MAT_WOOD, ...)
+        // Disable friendly-fire
+        if (target.aivar[AIV_PARTYMEMBER]) && (target.aivar[AIV_LASTTARGET] != Hlp_GetInstanceID(hero)) {
+            return DESTROY; };
+        //if (material == MAT_METAL) && (Hlp_Random(100) < 20) { return DEFLECT; }; // Metal armors may be more durable
+        // The weapon can also be considered (e.g. ineffective weapons). Make use of 'weapon' for that
+        // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
+        // if (Hlp_IsValidItem(weapon)) && (weapon.ineffective) { return DEFLECT; }; // Special case for weapon property
+        return COLLIDE; // Usually all shots on npcs should be registered, see freeAimGetAccuracy() above
+    } else { // Target is not an npc (might be a vob or a surface in the static world)
+        // The materials of the world are defined differently (than that of armors):
+        const int METAL = 1;
+        const int STONE = 2;
+        const int WOOD  = 3;
+        const int EARTH = 4;
+        const int WATER = 5;
+        const int SNOW  = 6;
+        const int UNDEF = 0;
+        if (material == WOOD) { return COLLIDE; }; // Projectiles stay stuck in wood (default in gothic)
+        // if (material == STONE) && (Hlp_Random(100) < 5) { return DESTROY; }; // The projectile might break on impact
+        // The example in the previous line can also be treated in freeAimGetUsedProjectileInstance() below
+        return DEFLECT; // Projectiles deflect off of all other surfaces
+    };
+};
+
+/* Modify this function to define a critical hit by weak spot (e.g. head node for headshot), its size and the damage */
+func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int damage, var int returnPtr) {
+    var Weakspot weakspot; weakspot = _^(returnPtr);
+    // This function is dynamic: It is called on every hit and the weakspot and damage can be calculated individually
+    // Possibly incorporate weapon-specific stats, headshot talent, dependecy on target, ...
+    // The damage may depent on the target npc (e.g. different damage for monsters). Make use of 'target' argument
+    // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
+    // The weapon can also be considered (e.g. weapon specific damage). Make use of 'weapon' for that
+    // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon) to check
+    // if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
+    // The damage is a float and represents the new base damage (damage of weapon), not the final damage!
+    if (target.guild < GIL_SEPERATOR_HUM) { // Humans: head shot
+        weakspot.node = "Bip01 Head"; // Upper/lower case is not important, but spelling and spaces are
+        weakspot.dimX = -1; // Retrieve from model (works only on humans and only for head node!)
+        weakspot.dimY = -1;
+        weakspot.bDmg = mulf(damage, castToIntf(2.0)); // Double the base damage. This is a float
+    // } else if (target.aivar[AIV_MM_REAL_ID] == ID_TROLL) {
+    //    weakspot.node = "Bip01 R Finger0"; // Difficult to hit when the troll attacks
+    //    weakspot.dimX = 100; // 100x100cm size
+    //    weakspot.dimY = 100;
+    //    weakspot.bDmg = mulf(damage, castToIntf(1.75));
+    // } else if (target.aivar[AIV_MM_REAL_ID] == ...
+    //    ...
+    } else { // Default
+        weakspot.node = "Bip01 Head";
+        weakspot.dimX = 60; // 60x60cm size
+        weakspot.dimY = 60;
+        weakspot.bDmg = mulf(damage, castToIntf(2.0)); // Double the base damage. This is a float
+    };
+};
+
+/* Use this function to create an event when getting a critical hit, e.g. print or sound jingle, leave blank for none */
+func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon) {
+    // The event may depent on the target npc (e.g. different sound for monsters). Make use of 'target' argument
+    // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
+    // The critical hits could also be counted here to give an xp reward after 25 headshots
+    // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
+    // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon) to check
+    // if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
+    Snd_Play("FORGE_ANVIL_A1");
+    PrintS("Kritischer Treffer"); // "Critical hit"
+};
+
+/* Modify this function to exchange (or remove) the projectile after shooting for re-using, e.g. used arrow */
+func int freeAimGetUsedProjectileInstance(var int projectileInst, var C_Npc inventoryNpc) {
+    // By returning zero, the projectile is completely removed (e.g. retrieve-projectile-talent not learned yet)
+    // The argument inventoryNpc holds the npc in whose inventory it will be put, or is empty if it landed in the world
+    // if (projectileInst == Hlp_GetInstanceID(ItRw_Arrow)) { // Exchange the instance for a "used" one
+    //     if (!Hlp_IsValidItem(ItRw_UsedArrow)) { Wld_InsertItem(ItRw_UsedArrow, MEM_FARFARAWAY); }; // Initialize!
+    //     projectileInst = Hlp_GetInstanceID(ItRw_UsedArrow);
+    // };
+    if (Hlp_IsValidNpc(inventoryNpc)) { // Projectile hit npc and will be put into their inventory
+        if (Npc_IsPlayer(inventoryNpc)) { return 0; }; // Do not put projectiles in player inventory
+        // if (inventoryNpc.guild < GIL_SEPERATOR_HUM) { return 0; }; // Remove projectile when it hits humans
+        // if (PLAYER_TALENT_TAKEANIMALTROPHY[REUSE_Arrow] == FALSE) { return 0; }; // Retrieve-projectile-talent
+        // if (!Npc_HasItems(hero, ItMi_ArrowTool)) { return 0; }; // Player needs tool to remove the projectile
+        // if (Hlp_Random(100) < 50) { return 0; }; // Chance of retrieval
+        return projectileInst; // For now it is just preserved (is put in the inventory as is)
+    } else { // Projectile did not hit npc and landed in world
+        // if (PLAYER_TALENT_REUSE_ARROW == FALSE) { return 0; }; // Reuse-projectile-talent
+        return projectileInst; // For now it is just preserved (leave it in the world as is)
+    };
+};
