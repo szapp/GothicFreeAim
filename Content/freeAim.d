@@ -545,7 +545,13 @@ func void freeAimGetReticle_(var int target, var int distance, var int returnPtr
     else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
     else { MEM_Error("freeAimGetReticle_: No valid weapon equipped/readied!"); return; };
     if (Hlp_Is_oCNpc(target)) { targetNpc = _^(target); } else { targetNpc = MEM_NullToInst(); };
-    freeAimGetReticle(targetNpc, weapon, talent, distance, returnPtr);
+    // Call customized function
+    MEM_PushInstParam(targetNpc);
+    MEM_PushInstParam(weapon);
+    MEM_PushIntParam(talent);
+    MEM_PushIntParam(distance);
+    MEM_PushIntParam(returnPtr);
+    MEM_Call(freeAimGetReticle); // freeAimGetReticle(targetNpc, weapon, talent, distance, returnPtr);
 };
 
 /* Update aiming animation. Hook oCAniCtrl_Human::InterpolateCombineAni */
@@ -617,7 +623,11 @@ func int freeAimGetDrawForce_() {
     if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
     else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
     else { MEM_Error("freeAimGetDrawForce_: No valid weapon equipped/readied!"); return -1; };
-    var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent);
+    // Call customized function
+    MEM_PushInstParam(weapon);
+    MEM_PushIntParam(talent);
+    MEM_Call(freeAimGetDrawForce); // freeAimGetDrawForce(weapon, talent);
+    var int drawForce; drawForce = MEM_PopIntResult();
     if (drawForce > 100) { drawForce = 100; } else if (drawForce < 0) { drawForce = 0; }; // Must be in [0, 100]
     return drawForce;
 };
@@ -631,7 +641,11 @@ func int freeAimGetAccuracy_() {
     if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
     else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
     else { MEM_Error("freeAimGetAccuracy_: No valid weapon equipped/readied!"); return -1; };
-    var int accuracy; accuracy = freeAimGetAccuracy(weapon, talent);
+    // Call customized function
+    MEM_PushInstParam(weapon);
+    MEM_PushIntParam(talent);
+    MEM_Call(freeAimGetAccuracy); // freeAimGetAccuracy(weapon, talent);
+    var int accuracy; accuracy = MEM_PopIntResult();
     if (accuracy < 1) { accuracy = 1; } else if (accuracy > 100) { accuracy = 100; }; // Limit to [1, 100] // Div by 0!
     return accuracy;
 };
@@ -721,7 +735,12 @@ func int freeAimHitRegistration_(var C_Npc target, var int material) {
     var C_Item weapon; weapon = MEM_NullToInst(); // Deadalus pseudo locals
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
     else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
-    return freeAimHitRegistration(target, weapon, material);
+    // Call customized function
+    MEM_PushInstParam(target);
+    MEM_PushInstParam(weapon);
+    MEM_PushIntParam(material);
+    MEM_Call(freeAimHitRegistration); // freeAimHitRegistration(target, weapon, material);
+    return MEM_PopIntResult();
 };
 
 /* Determine the hit chance. For the player it's always 100%. True hit chance is calcualted in freeAimGetAccuracy() */
@@ -809,7 +828,11 @@ func void freeAimOnArrowCollide() {
 func void freeAimOnArrowHitNpc() {
     var oCItem projectile; projectile = _^(MEM_ReadInt(ESI+88));
     var C_Npc victim; victim = _^(EDI);
-    var int projInst; projInst = freeAimGetUsedProjectileInstance(projectile.instanz, victim); // Get "used" instance
+    // Call customized function
+    MEM_PushIntParam(projectile.instanz);
+    MEM_PushInstParam(victim);
+    MEM_Call(freeAimGetUsedProjectileInstance); // freeAimGetUsedProjectileInstance(projectile.instanz, victim);
+    var int projInst; projInst = MEM_PopIntResult();
     if (projInst > 0) { CreateInvItem(victim, projInst); }; // Put respective instance in inventory
     if (FF_ActiveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody))) {
         FF_RemoveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody)); };
@@ -851,7 +874,11 @@ func void freeAimWatchProjectile() {
             };
         };
         var C_Npc emptyNpc; emptyNpc = MEM_NullToInst();
-        var int projInst; projInst = freeAimGetUsedProjectileInstance(projectile.instanz, emptyNpc); // "Used" instance
+        // Call customized function
+        MEM_PushIntParam(projectile.instanz);
+        MEM_PushInstParam(emptyNpc);
+        MEM_Call(freeAimGetUsedProjectileInstance); // freeAimGetUsedProjectileInstance(projectile.instanz, emptyNpc);
+        var int projInst; projInst = MEM_PopIntResult();
         if (projInst > 0) { // Will be -1 on invalid item
             if (projInst != projectile.instanz) { // Only change the instance if different
                 const int call3 = 0; const int one = 1;
@@ -912,7 +939,10 @@ func void freeAimCriticalHitEvent_(var C_Npc target) {
     var C_Item weapon; weapon = MEM_NullToInst(); // Deadalus pseudo locals
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
     else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
-    freeAimCriticalHitEvent(target, weapon);
+    // Call customized function
+    MEM_PushInstParam(target);
+    MEM_PushInstParam(weapon);
+    MEM_Call(freeAimCriticalHitEvent); // freeAimCriticalHitEvent(target, weapon);
 };
 
 /* Internal helper function for freeAimCriticalHitDef() */
@@ -920,7 +950,12 @@ func void freeAimCriticalHitDef_(var C_Npc target, var int damagePtr, var int re
     var C_Item weapon; weapon = MEM_NullToInst(); // Deadalus pseudo locals
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
     else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
-    freeAimCriticalHitDef(target, weapon, MEM_ReadInt(damagePtr), returnPtr);
+    // Call customized function
+    MEM_PushInstParam(target);
+    MEM_PushInstParam(weapon);
+    MEM_PushIntParam(MEM_ReadInt(damagePtr));
+    MEM_PushIntParam(returnPtr);
+    MEM_Call(freeAimCriticalHitDef); // freeAimCriticalHitDef(target, weapon, MEM_ReadInt(damagePtr), returnPtr);
     MEM_WriteString(returnPtr, STR_Upper(MEM_ReadString(returnPtr))); // Nodes are always upper case
     if (lf(MEM_ReadInt(returnPtr+28), FLOATNULL)) { MEM_WriteInt(returnPtr+28, FLOATNULL); }; // Correct negative damage
 };
