@@ -109,7 +109,7 @@ func int freeAimHitRegistration(var C_Npc target, var C_Item weapon, var int mat
     // If the target surface is an npc, the material will be that of the armor, -1 for no armor equipped
     // To check if it is an npc that is hit, use Hlp_IsValidNpc(target). In other cases target will be empty!
     if (Hlp_IsValidNpc(target)) { // Target is an npc
-        // For armors of npcs the materials are as defined in Constants.d (MAT_METAL, MAT_WOOD, ...)
+        // For armors of npcs the materials are defined as in Constants.d (MAT_METAL, MAT_WOOD, ...)
         // Disable friendly-fire
         if (target.aivar[AIV_PARTYMEMBER]) && (target.aivar[AIV_LASTTARGET] != Hlp_GetInstanceID(hero)) {
             return DESTROY; };
@@ -119,7 +119,7 @@ func int freeAimHitRegistration(var C_Npc target, var C_Item weapon, var int mat
         // if (Hlp_IsValidItem(weapon)) && (weapon.ineffective) { return DEFLECT; }; // Special case for weapon property
         return COLLIDE; // Usually all shots on npcs should be registered, see freeAimGetAccuracy() above
     } else { // Target is not an npc (might be a vob or a surface in the static world)
-        // The material indices for the objects in the world are different:
+        // The materials of the world are defined differently (than that of armors):
         const int METAL = 1;
         const int STONE = 2;
         const int WOOD  = 3;
@@ -127,12 +127,10 @@ func int freeAimHitRegistration(var C_Npc target, var C_Item weapon, var int mat
         const int WATER = 5;
         const int SNOW  = 6;
         const int UNDEF = 0;
-        if (material == WOOD) {
-            return COLLIDE; // Projectiles stay stuck in wood (For some reason wood in the world uses leather material)
-        };
+        if (material == WOOD) { return COLLIDE; }; // Projectiles stay stuck in wood (default in gothic)
         // if (material == STONE) && (Hlp_Random(100) < 5) { return DESTROY; }; // The projectile might break on impact
         // The example in the previous line can also be treated in freeAimGetUsedProjectileInstance() below
-        return DEFLECT; // Projectiles deflect from all other surfaces
+        return DEFLECT; // Projectiles deflect off of all other surfaces
     };
 };
 
@@ -841,7 +839,7 @@ func void freeAimWatchProjectile() {
     // Reset projectile gravity (zCRigidBody.gravity) after collision (oCAIArrow.collision)
     if (MEM_ReadInt(arrowAI+52)) { MEM_WriteInt(projectile._zCVob_rigidBody+236, FLOATONE); }; // Set gravity to default
     if (!FREEAIM_REUSE_PROJECTILES) { return; }; // Normal projectile handling
-    // If the projectile stopped moving (and did not hit npc), release its AI
+    // If the projectile stopped moving (and did not hit npc)
     if (MEM_ReadInt(arrowAI+56) != -1073741824) && !(projectile._zCVob_bitfield[0] & zCVob_bitfield0_physicsEnabled) {
         if (FF_ActiveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody))) {
             FF_RemoveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody)); };
@@ -864,7 +862,6 @@ func void freeAimWatchProjectile() {
                     call3 = CALL_End();
                 };
             };
-            projectile._zCVob_callback_ai = 0; // Release vob from AI
             projectile.flags = projectile.flags &~ ITEM_NFOCUS; // Focusable
             MEM_WriteInt(arrowAI+56, FLOATONE); // oCAIArrow.lifeTime // Set high lifetime to ensure item visibility
             MEM_WriteInt(removePtr, 0); // Do not remove vob on AI destruction
