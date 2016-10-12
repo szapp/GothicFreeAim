@@ -25,17 +25,17 @@
 
 /* Initialize fixed settings. This function is called once at the beginning of each session. Set the constants here */
 func void freeAimInitConstants() {
-    // These are the default values. If you want to change them uncomment the respective line
+    // If you want to change a setting, uncomment the respective line. These are the default values.
     // FREEAIM_REUSE_PROJECTILES    = 1;               // Enable collection and re-using of shot projectiles
-    // FREEAIM_DEBUG_WEAKSPOT       = 0;               // Visualize weakspot bbox and trajectory
-    // FREEAIM_DEBUG_CONSOLE        = 1;               // Console command for debugging. Turn off in final mod
+    // FREEAIM_DEBUG_WEAKSPOT       = 0;               // Visualize weakspot bbox and trajectory by default
+    // FREEAIM_DEBUG_CONSOLE        = 1;               // Console commands for debugging. Turn off in final mod
     // Modifing anything below is not recommended!
     // FREEAIM_SCATTER_DEG          = 2.2;             // Maximum scatter radius in degrees
     // FREEAIM_DRAWTIME_MAX         = 1500;            // Max draw time (ms): When is the bow fully drawn
     // FREEAIM_TRAJECTORY_ARC_MAX   = 400;             // Max time (ms) after which the trajectory drops off
     // FREEAIM_PROJECTILE_GRAVITY   = 0.1;             // The gravity decides how fast the projectile drops
-    // FREEAIM_CAMERA               = "CamModRngeFA";  // CCamSys_Def script instance for free aim
-    // FREEAIM_CAMERA_X_SHIFT       = 0;               // One, if camera is set to shoulderview (not recommended)
+    // FREEAIM_CAMERA               = "CamModRngeFA";  // CCamSys_Def script instance (camera) for free aim
+    // FREEAIM_CAMERA_X_SHIFT       = 0;               // One, if camera is set to shoulderview, s.a. (not recommended)
     // FREEAIM_ROTATION_SCALE       = 0.16;            // Turn rate. Non-weapon mode is 0.2 (zMouseRotationScale)
 };
 

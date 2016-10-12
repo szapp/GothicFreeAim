@@ -647,10 +647,12 @@ func void freeAimOnArrowCollide() {
         EDI = material; // Sets the condition at 0x6A0A45 and 0x6A0C1A to true: Projectile stays
     } else {
         EDI = -1;  // Sets the condition at 0x6A0A45 and 0x6A0C1A to false: Projectile deflects
-        if (!collision) && (FREEAIM_REUSE_PROJECTILES) { // Destroy
+        if (!collision) {
             if (FF_ActiveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody))) {
                 FF_RemoveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody)); };
-            MEM_WriteInt(ESI+56, -1073741824); // oCAIArrow.lifeTime // Mark this AI for freeAimWatchProjectile()
+            if (FREEAIM_REUSE_PROJECTILES) { // Destroy
+                MEM_WriteInt(ESI+56, -1073741824); // oCAIArrow.lifeTime // Mark this AI for freeAimWatchProjectile()
+            };
         };
     };
 };
