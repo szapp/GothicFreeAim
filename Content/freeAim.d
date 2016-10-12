@@ -561,10 +561,10 @@ func void freeAimDropProjectile(var int rigidBody) {
 };
 
 /* Internal helper function for freeAimHitRegistration() */
-func int freeAimHitRegistration_(var C_Npc target, var int material) {
+func int freeAimHitRegistration_(var C_Npc target, var C_Npc shooter, var int material) {
     var C_Item weapon; weapon = MEM_NullToInst(); // Deadalus pseudo locals
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
+    if (Npc_IsInFightMode(shooter, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(shooter); }
+    else if (Npc_HasEquippedRangedWeapon(shooter)) { weapon = Npc_GetEquippedRangedWeapon(shooter); };
     // Call customized function
     MEM_PushInstParam(target);
     MEM_PushInstParam(weapon);
@@ -611,7 +611,7 @@ func void freeAimDoNpcHit() {
             var C_Item armor; armor = Npc_GetEquippedArmor(target);
             material = armor.material;
         };
-        var int collision; collision = freeAimHitRegistration_(target, material); // 0 = destroy, 1 = stuck, 2 = deflect
+        var int collision; collision = freeAimHitRegistration_(target, hero, material); // 0=destroy, 1=stuck, 2=deflect
         if (collision == 2) { // Deflect (no damage)
             MEM_WriteByte(projectileDeflectOffNpcAddr, ASMINT_OP_nop);
             MEM_WriteByte(projectileDeflectOffNpcAddr + 1, ASMINT_OP_nop);
@@ -637,11 +637,12 @@ func void freeAimDoNpcHit() {
 /* Arrow collides with world (static or non-npc vob). Either destroy, deflect or collide */
 func void freeAimOnArrowCollide() {
     var oCItem projectile; projectile = _^(MEM_ReadInt(ESI+60)); // esi+3Ch
+    var C_Npc shooter; shooter = _^(MEM_ReadInt(esi+92)); // esi+5Ch
     var int matobj; matobj = MEM_ReadInt(ECX); // zCMaterial* or zCPolygon*
     if (MEM_ReadInt(matobj) != zCMaterial__vtbl) { matobj = MEM_ReadInt(matobj+24); }; // Static world: Read zCPolygon
     var int material; material = MEM_ReadInt(matobj+64);
     var C_Npc emptyNpc; emptyNpc = MEM_NullToInst();
-    var int collision; collision = freeAimHitRegistration_(emptyNpc, material); // 0 = destroy, 1 = stuck, 2 = deflect
+    var int collision; collision = freeAimHitRegistration_(emptyNpc, shooter, material); // 0=destroy, 1=stay, 2=deflect
     if (collision == 1) { // Collide
         EDI = material; // Sets the condition at 0x6A0A45 and 0x6A0C1A to true: Projectile stays
     } else {
