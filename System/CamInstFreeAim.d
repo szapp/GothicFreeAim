@@ -1,5 +1,5 @@
 ﻿/*
- * Free aim projectile trail strip for increase visibility
+ * Free aim camera mode
  *
  * G2 Free Aim - Free aiming for the video game Gothic 2 by Piranha Bytes
  * Copyright (C) 2016  mud-freak (@szapp)
@@ -23,20 +23,19 @@
  * along with G2 Free Aim.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-INSTANCE freeAim_TRAIL (CFx_Base_Proto) {
-    emFXLifeSpan            =   1.0;
-};
-
-// NPC is in focus
-INSTANCE freeAim_TRAIL_KEY_INVEST_1 (C_ParticleFxEmitKey) { }; // Never reached. Do not remove!
-
-// Projectile is shot
-INSTANCE freeAim_TRAIL_KEY_INVEST_2 (C_ParticleFxEmitKey) {
-    visname_s               = "FREEAIM_TRAIL";
-};
-
-// Projectile collides
-INSTANCE freeAim_TRAIL_KEY_INVEST_3 (C_ParticleFxEmitKey) {
-    visname_s               = ""; // Remove effect after collision
-    pfx_ppsIsLoopingChg     = 1;
+INSTANCE CamModRngeFA (CCamSys_Def)
+{
+    bestRange           = 1.8; // Decrease from 2.5
+    minRange            = 1.4;
+    maxRange            = 5.0; // Decreased from 10.0
+    bestElevation       = 23.0; // Decreased from 35.0
+    minElevation        = 0.0;
+    maxElevation        = 89.0;
+    bestAzimuth         = 0.0;
+    minAzimuth          = -90.0;
+    maxAzimuth          = 90.0;
+    rotOffsetX          = 23.0; // Increased from 20.0
+    rotOffsetY          = 0.0;
+    targetOffsetY       = 40.0;  // A little up for more visibility
+    targetOffsetX       = 15.0;  // A little to the right (make the projectile fly in a straigh line). Most important
 };
