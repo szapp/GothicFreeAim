@@ -851,7 +851,7 @@ func void freeAimDetectCriticalHit() {
         call2 = CALL_End();
     };
     var int node; node = CALL_RetValAsPtr();
-    if (!node) { MEM_Error("freeAimDetectCriticalHit: Node not found!"); return; };
+    if (!node) { MEM_Warn("freeAimDetectCriticalHit: Node not found!"); return; };
     if (weakspot.dimX == -1) && (weakspot.dimY == -1) { // Retrieve the bbox by model
         if (MEM_ReadInt(node+8)) { // node->nodeVisual // If the node has a dedicated visual, retrieve bbox
             // Get the bbox of the node (although zCModelNodeInst has a zTBBox3D property, it is empty the first time)
