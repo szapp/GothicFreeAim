@@ -23,6 +23,7 @@
  * Customizability:
  *  - Show weakspot debug visualization by default    FREEAIM_DEBUG_WEAKSPOT
  *  - Allow freeAim console commands (cheats)         FREEAIM_DEBUG_CONSOLE
+ *  - Maximum bow draw time (ms):                     FREEAIM_DRAWTIME_MAX
  *  - Collect and re-use shot projectiles (yes/no):   FREEAIM_REUSE_PROJECTILES
  *  - Projectile instance for re-using                freeAimGetUsedProjectileInstance(instance, targetNpc)
  *  - Draw force (gravity/drop-off) calculation:      freeAimGetDrawForce(weapon, talent)
@@ -34,7 +35,6 @@
  * Advanced (modification not recommended):
  *  - Scatter radius for accuracy:                    FREEAIM_SCATTER_DEG
  *  - Camera view (shoulder view):                    FREEAIM_CAMERA and FREEAIM_CAMERA_X_SHIFT
- *  - Maximum bow draw time:                          FREEAIM_DRAWTIME_MAX
  *  - Max time before projectile drop-off:            FREEAIM_TRAJECTORY_ARC_MAX
  *  - Gravity of projectile after drop-off:           FREEAIM_PROJECTILE_GRAVITY
  *  - Turn speed while aiming:                        FREEAIM_ROTATION_SCALE
@@ -44,11 +44,11 @@
 func void freeAimInitConstants() {
     // If you want to change a setting, uncomment the respective line. These are the default values.
     // FREEAIM_REUSE_PROJECTILES    = 1;               // Enable collection and re-using of shot projectiles
+    // FREEAIM_DRAWTIME_MAX         = 1200;            // Max draw time (ms): When is the bow fully drawn
+    // FREEAIM_DEBUG_CONSOLE        = 1;               // Console commands for debugging. Set to zero in final mod
     // FREEAIM_DEBUG_WEAKSPOT       = 0;               // Visualize weakspot bbox and trajectory by default
-    // FREEAIM_DEBUG_CONSOLE        = 1;               // Console commands for debugging. Turn off in final mod
     // Modifing anything below is not recommended!
     // FREEAIM_SCATTER_DEG          = 2.2;             // Maximum scatter radius in degrees
-    // FREEAIM_DRAWTIME_MAX         = 1500;            // Max draw time (ms): When is the bow fully drawn
     // FREEAIM_TRAJECTORY_ARC_MAX   = 400;             // Max time (ms) after which the trajectory drops off
     // FREEAIM_PROJECTILE_GRAVITY   = 0.1;             // The gravity decides how fast the projectile drops
     // FREEAIM_CAMERA               = "CamModRngeFA";  // CCamSys_Def script instance (camera) for free aim
@@ -61,7 +61,7 @@ func int freeAimGetDrawForce(var C_Item weapon, var int talent) {
     var int drawTime; drawTime = MEM_Timer.totalTime - freeAimBowDrawOnset;
     // Possibly incorporate more factors like e.g. a quick-draw talent, weapon-specific stats, ...
     if (weapon.flags & ITEM_CROSSBOW) { return 100; }; // Always full draw force on crossbows
-    // For now set drawForce by draw time scaled between min and max times:
+    // For now the draw time is scaled by a maximum. Replace FREEAIM_DRAWTIME_MAX by a variable for a quick-draw talent
     var int drawForce; drawForce = (100 * drawTime) / FREEAIM_DRAWTIME_MAX;
     if (drawForce < 0) { drawForce = 0; } else if (drawForce > 100) { drawForce = 100; }; // Respect the ranges
     return drawForce;
@@ -79,25 +79,9 @@ func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
     return accuracy;
 };
 
-const string RETICLE_SIMPLE  = "RETICLESIMPLE.TGA";
-const string RETICLE_NORMAL  = "RETICLENORMAL.TGA";
-const string RETICLE_NOTCH   = "RETICLENOTCH.TGA";
-const string RETICLE_NOTCH0  = "RETICLENOTCH00.TGA"; // Simulate draw force
-const string RETICLE_NOTCH1  = "RETICLENOTCH01.TGA";
-const string RETICLE_NOTCH2  = "RETICLENOTCH02.TGA";
-const string RETICLE_NOTCH3  = "RETICLENOTCH03.TGA";
-const string RETICLE_NOTCH4  = "RETICLENOTCH04.TGA";
-const string RETICLE_NOTCH5  = "RETICLENOTCH05.TGA";
-const string RETICLE_NOTCH6  = "RETICLENOTCH06.TGA";
-const string RETICLE_NOTCH7  = "RETICLENOTCH07.TGA";
-const string RETICLE_NOTCH8  = "RETICLENOTCH08.TGA";
-const string RETICLE_NOTCH9  = "RETICLENOTCH09.TGA";
-const string RETICLE_NOTCH10 = "RETICLENOTCH10.TGA";
-const string RETICLE_NOTCH11 = "RETICLENOTCH11.TGA";
-const string RETICLE_NOTCH12 = "RETICLENOTCH12.TGA";
-const string RETICLE_NOTCH13 = "RETICLENOTCH13.TGA";
-const string RETICLE_NOTCH14 = "RETICLENOTCH14.TGA";
-const string RETICLE_NOTCH15 = "RETICLENOTCH15.TGA";
+const string RETICLE_SIMPLE = "RETICLESIMPLE.TGA";
+const string RETICLE_NORMAL = "RETICLENORMAL.TGA";
+const string RETICLE_NOTCH  = "RETICLENOTCH.TGA";
 
 /* Modify this function to alter the reticle texture, color and size (scaled between 0 and 100). */
 func void freeAimGetReticle(var C_Npc target, var C_Item weapon, var int talent, var int distance, var int returnPtr) {
@@ -111,7 +95,6 @@ func void freeAimGetReticle(var C_Npc target, var C_Item weapon, var int talent,
         var int att; att = Npc_GetAttitude(target, hero);
         if (att == ATT_FRIENDLY) { reticle.color = Focusnames_Color_Friendly(); }
         else if (att == ATT_HOSTILE) { reticle.color = Focusnames_Color_Hostile(); };
-        //else if (att == ATT_ANGRY) { reticle.color = Focusnames_Color_Angry(); }; // Never happens?
     };
     // Size (scale between [0, 100]: 0 is smallest, 100 is biggest)
     reticle.size = -distance+100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
@@ -120,22 +103,22 @@ func void freeAimGetReticle(var C_Npc target, var C_Item weapon, var int talent,
     // More sophisticated customization is also possible: change the texture by draw force, the size by accuracy, ...
     if (weapon.flags & ITEM_BOW) { // Change reticle texture by drawforce (irrespective of the reticle size set above)
         var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent);
-        if (drawForce < 5) { reticle.texture = RETICLE_NOTCH0; }
-        else if (drawForce < 11) { reticle.texture = RETICLE_NOTCH1; }
-        else if (drawForce < 17) { reticle.texture = RETICLE_NOTCH2; }
-        else if (drawForce < 23) { reticle.texture = RETICLE_NOTCH3; }
-        else if (drawForce < 29) { reticle.texture = RETICLE_NOTCH4; }
-        else if (drawForce < 35) { reticle.texture = RETICLE_NOTCH5; }
-        else if (drawForce < 41) { reticle.texture = RETICLE_NOTCH6; }
-        else if (drawForce < 47) { reticle.texture = RETICLE_NOTCH7; }
-        else if (drawForce < 53) { reticle.texture = RETICLE_NOTCH8; }
-        else if (drawForce < 59) { reticle.texture = RETICLE_NOTCH9; }
-        else if (drawForce < 65) { reticle.texture = RETICLE_NOTCH10; }
-        else if (drawForce < 73) { reticle.texture = RETICLE_NOTCH11; }
-        else if (drawForce < 81) { reticle.texture = RETICLE_NOTCH12; }
-        else if (drawForce < 88) { reticle.texture = RETICLE_NOTCH13; }
-        else if (drawForce < 94) { reticle.texture = RETICLE_NOTCH14; }
-        else if (drawForce < 100) { reticle.texture = RETICLE_NOTCH15; }
+        if (drawForce < 5) { reticle.texture = "RETICLENOTCH00.TGA"; } // Simulate draw force by animating the reticle
+        else if (drawForce < 11) { reticle.texture = "RETICLENOTCH01.TGA"; }
+        else if (drawForce < 17) { reticle.texture = "RETICLENOTCH02.TGA"; }
+        else if (drawForce < 23) { reticle.texture = "RETICLENOTCH03.TGA"; }
+        else if (drawForce < 29) { reticle.texture = "RETICLENOTCH04.TGA"; }
+        else if (drawForce < 35) { reticle.texture = "RETICLENOTCH05.TGA"; }
+        else if (drawForce < 41) { reticle.texture = "RETICLENOTCH06.TGA"; }
+        else if (drawForce < 47) { reticle.texture = "RETICLENOTCH07.TGA"; }
+        else if (drawForce < 53) { reticle.texture = "RETICLENOTCH08.TGA"; }
+        else if (drawForce < 59) { reticle.texture = "RETICLENOTCH09.TGA"; }
+        else if (drawForce < 65) { reticle.texture = "RETICLENOTCH10.TGA"; }
+        else if (drawForce < 73) { reticle.texture = "RETICLENOTCH11.TGA"; }
+        else if (drawForce < 81) { reticle.texture = "RETICLENOTCH12.TGA"; }
+        else if (drawForce < 88) { reticle.texture = "RETICLENOTCH13.TGA"; }
+        else if (drawForce < 94) { reticle.texture = "RETICLENOTCH14.TGA"; }
+        else if (drawForce < 100) { reticle.texture = "RETICLENOTCH15.TGA"; }
         else { reticle.texture = RETICLE_NOTCH; };
     };
 };
