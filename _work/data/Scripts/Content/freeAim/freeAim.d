@@ -27,6 +27,7 @@
  */
 
 /* Free aim settings, do not modify! Change the settings in freeAimConfig.d */
+const string FREEAIM_VERSION              = "";              // Do not change under any circumstances
 const int    FREEAIM_REUSE_PROJECTILES    = 1;               // Enable collection and re-using of shot projectiles
 const int    FREEAIM_DRAWTIME_MAX         = 1500;            // Max draw time (ms): When is the bow fully drawn
 const int    FREEAIM_TRAJECTORY_ARC_MAX   = 400;             // Max time (ms) after which the trajectory drops off
@@ -120,6 +121,13 @@ const int mouseUpdate                             = 5062907; //0x4D40FB // Hook 
 func void freeAim_Init() {
     const int hookFreeAim = 0;
     if (!hookFreeAim) {
+        MEM_Info(""); // Copyright notice in zSpy
+        MEM_Info(ConcatStrings(ConcatStrings("     G2 Free Aim ", FREEAIM_VERSION),
+            ", Copyright (C) 2016  mud-freak (@szapp)"));
+        MEM_Info("     <http://github.com/szapp/g2freeAim>");
+        MEM_Info("     Released under the GNU General Public License.");
+        MEM_Info("     For more details see <http://www.gnu.org/licenses/>.");
+        MEM_Info("");
         MEM_Call(freeAimInitConstants); // Customized settings
         HookEngineF(oCAniCtrl_Human__InterpolateCombineAni, 5, freeAimAnimation); // Update aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Set projectile direction and trajectory
@@ -153,7 +161,7 @@ func void freeAim_Init() {
         r_DefaultInit(); // Start rng for aiming accuracy
         hookFreeAim = 1;
     };
-    MEM_Info("Free aim initialized.");
+    MEM_Info(ConcatStrings(ConcatStrings("G2 Free Aim ", FREEAIM_VERSION), " initialized successfully."));
 };
 
 /* Update internal settings when turning free aim on/off in the options */
