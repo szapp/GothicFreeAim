@@ -29,7 +29,7 @@
 /* Free aim settings, do not modify! Change the settings in freeAimConfig.d */
 const string FREEAIM_VERSION              = "";              // Do not change under any circumstances
 const int    FREEAIM_REUSE_PROJECTILES    = 1;               // Enable collection and re-using of shot projectiles
-const int    FREEAIM_DRAWTIME_MAX         = 1500;            // Max draw time (ms): When is the bow fully drawn
+const int    FREEAIM_DRAWTIME_MAX         = 1200;            // Max draw time (ms): When is the bow fully drawn
 const int    FREEAIM_TRAJECTORY_ARC_MAX   = 400;             // Max time (ms) after which the trajectory drops off
 const float  FREEAIM_ROTATION_SCALE       = 0.16;            // Turn rate. Non-weapon mode is 0.2 (zMouseRotationScale)
 const float  FREEAIM_SCATTER_DEG          = 2.2;             // Maximum scatter radius in degrees

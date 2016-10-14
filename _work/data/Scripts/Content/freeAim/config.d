@@ -79,16 +79,33 @@ func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
     return accuracy;
 };
 
+const string RETICLE_SIMPLE  = "RETICLESIMPLE.TGA";
+const string RETICLE_NORMAL  = "RETICLENORMAL.TGA";
+const string RETICLE_NOTCH   = "RETICLENOTCH.TGA";
+const string RETICLE_NOTCH0  = "RETICLENOTCH00.TGA"; // Simulate draw force
+const string RETICLE_NOTCH1  = "RETICLENOTCH01.TGA";
+const string RETICLE_NOTCH2  = "RETICLENOTCH02.TGA";
+const string RETICLE_NOTCH3  = "RETICLENOTCH03.TGA";
+const string RETICLE_NOTCH4  = "RETICLENOTCH04.TGA";
+const string RETICLE_NOTCH5  = "RETICLENOTCH05.TGA";
+const string RETICLE_NOTCH6  = "RETICLENOTCH06.TGA";
+const string RETICLE_NOTCH7  = "RETICLENOTCH07.TGA";
+const string RETICLE_NOTCH8  = "RETICLENOTCH08.TGA";
+const string RETICLE_NOTCH9  = "RETICLENOTCH09.TGA";
+const string RETICLE_NOTCH10 = "RETICLENOTCH10.TGA";
+const string RETICLE_NOTCH11 = "RETICLENOTCH11.TGA";
+const string RETICLE_NOTCH12 = "RETICLENOTCH12.TGA";
+const string RETICLE_NOTCH13 = "RETICLENOTCH13.TGA";
+const string RETICLE_NOTCH14 = "RETICLENOTCH14.TGA";
+const string RETICLE_NOTCH15 = "RETICLENOTCH15.TGA";
+
 /* Modify this function to alter the reticle texture, color and size (scaled between 0 and 100). */
-const string SIMPLE_RETICLE = "RETICLESIMPLE.TGA";
-const string NORMAL_RETICLE = "RETICLE.TGA";
-const string POINTY_RETICLE = "RETICLEARCHER.TGA";
 func void freeAimGetReticle(var C_Npc target, var C_Item weapon, var int talent, var int distance, var int returnPtr) {
     var Reticle reticle; reticle = _^(returnPtr);
     // Texture (needs to be set, otherwise reticle will not be displayed)
-    if (weapon.flags & ITEM_BOW) { reticle.texture = POINTY_RETICLE; } // Bow readied
-    else if (weapon.flags & ITEM_CROSSBOW) { reticle.texture = POINTY_RETICLE; } // Crossbow readied
-    else { reticle.texture = NORMAL_RETICLE; };
+    if (weapon.flags & ITEM_BOW) { reticle.texture = RETICLE_NOTCH; } // Bow readied (this is actually replaced below)
+    else if (weapon.flags & ITEM_CROSSBOW) { reticle.texture = RETICLE_NOTCH; } // Crossbow readied
+    else { reticle.texture = RETICLE_NORMAL; };
     // Color (do not set the color to preserve the original texture color)
     if (Hlp_IsValidNpc(target)) { // The argument 'target' might be empty!
         var int att; att = Npc_GetAttitude(target, hero);
@@ -101,6 +118,26 @@ func void freeAimGetReticle(var C_Npc target, var C_Item weapon, var int talent,
     // reticle.size = -freeAimGetDrawForce(weapon, talent)+100; // Or inverse draw force: bigger for less draw force
     // reticle.size = -freeAimGetAccuracy(weapon, talent)+100; // Or inverse accuracy: bigger with lower accuracy
     // More sophisticated customization is also possible: change the texture by draw force, the size by accuracy, ...
+    if (weapon.flags & ITEM_BOW) { // Change reticle texture by drawforce (irrespective of the reticle size set above)
+        var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent);
+        if (drawForce < 5) { reticle.texture = RETICLE_NOTCH0; }
+        else if (drawForce < 11) { reticle.texture = RETICLE_NOTCH1; }
+        else if (drawForce < 17) { reticle.texture = RETICLE_NOTCH2; }
+        else if (drawForce < 23) { reticle.texture = RETICLE_NOTCH3; }
+        else if (drawForce < 29) { reticle.texture = RETICLE_NOTCH4; }
+        else if (drawForce < 35) { reticle.texture = RETICLE_NOTCH5; }
+        else if (drawForce < 41) { reticle.texture = RETICLE_NOTCH6; }
+        else if (drawForce < 47) { reticle.texture = RETICLE_NOTCH7; }
+        else if (drawForce < 53) { reticle.texture = RETICLE_NOTCH8; }
+        else if (drawForce < 59) { reticle.texture = RETICLE_NOTCH9; }
+        else if (drawForce < 65) { reticle.texture = RETICLE_NOTCH10; }
+        else if (drawForce < 73) { reticle.texture = RETICLE_NOTCH11; }
+        else if (drawForce < 81) { reticle.texture = RETICLE_NOTCH12; }
+        else if (drawForce < 88) { reticle.texture = RETICLE_NOTCH13; }
+        else if (drawForce < 94) { reticle.texture = RETICLE_NOTCH14; }
+        else if (drawForce < 100) { reticle.texture = RETICLE_NOTCH15; }
+        else { reticle.texture = RETICLE_NOTCH; };
+    };
 };
 
 /* Modify this function to disable hit registration. E.g. 'ineffective' ranged weapons, disable friendly-fire, ... */
