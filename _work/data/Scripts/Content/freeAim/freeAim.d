@@ -1,4 +1,4 @@
-﻿/*
+/*
  * G2 Free Aim - Free aiming for the video game Gothic 2 by Piranha Bytes
  * Copyright (C) 2016  mud-freak (@szapp)
  *

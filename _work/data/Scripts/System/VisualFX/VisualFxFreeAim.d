@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Free aim projectile trail strip for increase visibility
  *
  * G2 Free Aim - Free aiming for the video game Gothic 2 by Piranha Bytes
