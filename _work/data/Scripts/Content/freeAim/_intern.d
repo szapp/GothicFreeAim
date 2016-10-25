@@ -160,6 +160,14 @@ func void freeAim_Init() {
         };
         r_DefaultInit(); // Start rng for aiming accuracy
         hookFreeAim = 1;
+
+
+        const int castSpellRuneAddr = 4680778; //0x476C4A
+        HookEngineF(castSpellRuneAddr, 5, castRuneSpell);
+
+        const int oCVisualFX__Init = 4792096; //0x491F20
+        HookEngineF(oCVisualFX__Init, 7, setupVisFX);
+
     };
     MEM_Info(ConcatStrings(FREEAIM_VERSION, " initialized successfully."));
 };
@@ -901,4 +909,20 @@ func void freeAimDetectCriticalHit() {
         freeAimCriticalHitEvent_(targetNpc); // Use this function to add an event, e.g. a print or a sound
         MEM_WriteInt(damagePtr, weakspot.bDmg); // Base damage not final damage
     };
+};
+
+
+
+
+
+func void castRuneSpell() {
+    MEM_Info("### CASTING ###");
+};
+
+func void setupVisFX() {
+    var int a1; a1 = MEM_ReadInt(ESP+4);
+    var int a2; a2 = MEM_ReadInt(ESP+8);
+    var int a3; a3 = MEM_ReadInt(ESP+12);
+    MEM_Info(ConcatStrings(ConcatStrings(ConcatStrings(ConcatStrings(ConcatStrings("### SETUP VISUALFX ### a1=",
+        IntToString(a1)), " a2="), IntToString(a2)), " a3="), IntToString(a3)));
 };
