@@ -192,16 +192,17 @@ func int freeAimIsActive() {
     // Everything below is only reached if free aiming is enabled (but not necessarily active)
     if (MEM_Game.pause_screen) { return 0; }; // Only when playing
     if (!InfoManager_HasFinished()) { return 0; }; // Not in dialogs
-    if (!Npc_IsInFightMode(hero, FMODE_FAR)) { return 0; }; // Only while using bow/crossbow
+    if (!Npc_IsInFightMode(hero, FMODE_FAR)) && (!Npc_IsInFightMode(hero, FMODE_MAGIC)) { return 0; };
     // Everything below is only reached if free aiming is enabled and active (player is in respective fight mode)
     var int keyStateAction1; keyStateAction1 = MEM_KeyState(MEM_GetKey("keyAction")); // A bit much, but needed below
     var int keyStateAction2; keyStateAction2 = MEM_KeyState(MEM_GetSecondaryKey("keyAction"));
     if (keyStateAction1 != KEY_PRESSED) && (keyStateAction1 != KEY_HOLD) // Only while pressing the action button
     && (keyStateAction2 != KEY_PRESSED) && (keyStateAction2 != KEY_HOLD) { return 0; };
+    if (Npc_IsInFightMode(hero, FMODE_MAGIC)) { return FMODE_MAGIC; };
     // Get onset for drawing the bow - right when pressing down the action key
     if (keyStateAction1 == KEY_PRESSED) || (keyStateAction2 == KEY_PRESSED) {
         freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_READY; };
-    return 1;
+    return FMODE_FAR;
 };
 
 /* Hide reticle */
@@ -408,7 +409,7 @@ func void freeAimGetReticle_(var int target, var int distance, var int returnPtr
 
 /* Update aiming animation. Hook oCAniCtrl_Human::InterpolateCombineAni */
 func void freeAimAnimation() {
-    if (!freeAimIsActive()) { return; };
+    if (freeAimIsActive() != FMODE_FAR) { return; };
     var int herPtr; herPtr = _@(hero);
     var int distance; var int target;
     if (freeAimGetCollectFocus()) { // Set focus npc if there is a valid one under the reticle
