@@ -115,6 +115,7 @@ const int onArrowDamageAddr                       = 6953621; //0x6A1A95 // Hook 
 const int onDmgAnimationAddr                      = 6774593; //0x675F41 // Hook length 9
 const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook length 7
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook length 7
+const int oCSpell__Setup_484BA9                   = 4737961; //0x484BA9 // Hook length 6
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook length 5
 
 /* Initialize free aim framework */
@@ -134,6 +135,7 @@ func void freeAim_Init() {
         HookEngineF(oCAIHuman__BowMode, 6, freeAimManageReticle); // Manage the reticle (style, on/off)
         HookEngineF(oCNpcFocus__SetFocusMode, 7, freeAimManageReticle); // Manage the reticle (style, on/off)
         HookEngineF(oCAIHuman__MagicMode, 7, freeAimManageReticle); // Manage the reticle (style, on/off)
+        HookEngineF(oCSpell__Setup_484BA9, 6, freeAimSetupSpell); // Set spell fx direction and trajectory
         HookEngineF(mouseUpdate, 5, freeAimManualRotation); // Update the player model rotation by mouse input
         HookEngineF(oCAIArrowBase__DoAI, 7, freeAimWatchProjectile); // AI loop for each projectile
         HookEngineF(onArrowDamageAddr, 7, freeAimDetectCriticalHit); // Critical hit detection
@@ -160,14 +162,6 @@ func void freeAim_Init() {
         };
         r_DefaultInit(); // Start rng for aiming accuracy
         hookFreeAim = 1;
-
-
-        const int castSpellRuneAddr = 4680778; //0x476C4A
-        HookEngineF(castSpellRuneAddr, 5, castRuneSpell);
-
-        const int oCVisualFX__Init = 4792096; //0x491F20
-        HookEngineF(oCVisualFX__Init, 7, setupVisFX);
-
     };
     MEM_Info(ConcatStrings(FREEAIM_VERSION, " initialized successfully."));
 };
@@ -911,18 +905,34 @@ func void freeAimDetectCriticalHit() {
     };
 };
 
-
-
-
-
-func void castRuneSpell() {
-    MEM_Info("### CASTING ###");
-};
-
-func void setupVisFX() {
-    var int a1; a1 = MEM_ReadInt(ESP+4);
-    var int a2; a2 = MEM_ReadInt(ESP+8);
-    var int a3; a3 = MEM_ReadInt(ESP+12);
-    MEM_Info(ConcatStrings(ConcatStrings(ConcatStrings(ConcatStrings(ConcatStrings("### SETUP VISUALFX ### a1=",
-        IntToString(a1)), " a2="), IntToString(a2)), " a3="), IntToString(a3)));
+/* Set the spell fx direction and trajectory. Hook oCSpell::Setup */
+func void freeAimSetupSpell() {
+    var int casterPtr; casterPtr = MEM_ReadInt(EBP+52); //0x0034 oCSpell.spellCasterNpc
+    if (!casterPtr) { return; }; // No caster
+    var C_Npc caster; caster = _^(casterPtr);
+    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(caster)) { return; }; // Only for player and when fa active
+    if (MEM_ReadInt(EBP+156) != TARGET_COLLECT_NONE) //0x009C oCSpell.targetCollectAlgo
+    && (MEM_ReadInt(EBP+156) != TARGET_COLLECT_FOCUS_FALLBACK_NONE) // Only if spell instance does not force a focus
+    && (MEM_ReadInt(EBP+156) != TARGET_COLLECT_ALL_FALLBACK_NONE) { return; };
+    var int pos[3]; freeAimRay(MEM_ReadInt(EBP+164), 0, _@(pos), 0, 0); //0x00A4 oCSpell.targetCollectRange
+    // Setup the aim vob
+    var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB"); // Arrow needs target vob
+    if (!vobPtr) { // Does not exist
+        MEM_Info("freeAimSetupSpell: Creating aim vob."); // Should be printed only once ever
+        CALL__cdecl(zCVob___CreateNewInstance); // This actually allocates the memory, so no need to care about freeing
+        vobPtr = CALL_RetValAsPtr();
+        MEM_WriteString(vobPtr+16, "AIMVOB"); // zCVob._zCObject_objectName
+        CALL_PtrParam(_@(MEM_Vobtree));
+        CALL_PtrParam(vobPtr);
+        CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
+    };
+    var int posPtr; posPtr = _@(pos);
+    const int call4 = 0; // Set position to aim vob
+    if (CALL_Begin(call4)) {
+        CALL_PtrParam(_@(posPtr)); // Update aim vob position
+        CALL__thiscall(_@(vobPtr), zCVob__SetPositionWorld);
+        call4 = CALL_End();
+    };
+    // Overwrite aim vob
+    MEM_WriteInt(ESP+4, vobPtr);
 };
