@@ -269,6 +269,27 @@ func void freeAimManualRotation() {
     };
 };
 
+/* Create and set aim vob to position */
+func int freeAimSetupAimVob(var int posPtr) {
+    var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB"); // Arrow needs target vob
+    if (!vobPtr) { // Does not exist
+        MEM_Info("freeAimSetupAimVob: Creating aim vob."); // Should be printed only once ever
+        CALL__cdecl(zCVob___CreateNewInstance); // This actually allocates the memory, so no need to care about freeing
+        vobPtr = CALL_RetValAsPtr();
+        MEM_WriteString(vobPtr+16, "AIMVOB"); // zCVob._zCObject_objectName
+        CALL_PtrParam(_@(MEM_Vobtree));
+        CALL_PtrParam(vobPtr);
+        CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
+    };
+    const int call4 = 0; // Set position to aim vob
+    if (CALL_Begin(call4)) {
+        CALL_PtrParam(_@(posPtr)); // Update aim vob position
+        CALL__thiscall(_@(vobPtr), zCVob__SetPositionWorld);
+        call4 = CALL_End();
+    };
+    return vobPtr;
+};
+
 /* Shoot aim-tailored trace ray. Do no use for other purposes. This function is customized for aiming. */
 func int freeAimRay(var int distance, var int vobPtr, var int posPtr, var int distPtr, var int trueDistPtr) {
     var int flags; flags = (1<<0) | (1<<14) | (1<<9);
@@ -556,23 +577,7 @@ func void freeAimSetupProjectile() {
     pos[1] = addf(camPos.v1[3], newPos[1]);
     pos[2] = addf(camPos.v2[3], newPos[2]);
     // 3rd: Setup the aim vob
-    var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB"); // Arrow needs target vob
-    if (!vobPtr) { // Does not exist
-        MEM_Info("freeAimSetupProjectile: Creating aim vob."); // Should be printed only once ever
-        CALL__cdecl(zCVob___CreateNewInstance); // This actually allocates the memory, so no need to care about freeing
-        vobPtr = CALL_RetValAsPtr();
-        MEM_WriteString(vobPtr+16, "AIMVOB"); // zCVob._zCObject_objectName
-        CALL_PtrParam(_@(MEM_Vobtree));
-        CALL_PtrParam(vobPtr);
-        CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
-    };
-    var int posPtr; posPtr = _@(pos);
-    const int call4 = 0; // Set position to aim vob
-    if (CALL_Begin(call4)) {
-        CALL_PtrParam(_@(posPtr)); // Update aim vob position
-        CALL__thiscall(_@(vobPtr), zCVob__SetPositionWorld);
-        call4 = CALL_End();
-    };
+    var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos));
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
 };
 
@@ -915,24 +920,6 @@ func void freeAimSetupSpell() {
     && (MEM_ReadInt(EBP+156) != TARGET_COLLECT_FOCUS_FALLBACK_NONE) // Only if spell instance does not force a focus
     && (MEM_ReadInt(EBP+156) != TARGET_COLLECT_ALL_FALLBACK_NONE) { return; };
     var int pos[3]; freeAimRay(MEM_ReadInt(EBP+164), 0, _@(pos), 0, 0); //0x00A4 oCSpell.targetCollectRange
-    // Setup the aim vob
-    var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB"); // Arrow needs target vob
-    if (!vobPtr) { // Does not exist
-        MEM_Info("freeAimSetupSpell: Creating aim vob."); // Should be printed only once ever
-        CALL__cdecl(zCVob___CreateNewInstance); // This actually allocates the memory, so no need to care about freeing
-        vobPtr = CALL_RetValAsPtr();
-        MEM_WriteString(vobPtr+16, "AIMVOB"); // zCVob._zCObject_objectName
-        CALL_PtrParam(_@(MEM_Vobtree));
-        CALL_PtrParam(vobPtr);
-        CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
-    };
-    var int posPtr; posPtr = _@(pos);
-    const int call4 = 0; // Set position to aim vob
-    if (CALL_Begin(call4)) {
-        CALL_PtrParam(_@(posPtr)); // Update aim vob position
-        CALL__thiscall(_@(vobPtr), zCVob__SetPositionWorld);
-        call4 = CALL_End();
-    };
-    // Overwrite aim vob
-    MEM_WriteInt(ESP+4, vobPtr);
+    var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos)); // Setup the aim vob
+    MEM_WriteInt(ESP+4, vobPtr); // Overwrite target vob
 };
