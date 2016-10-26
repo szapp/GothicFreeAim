@@ -132,9 +132,9 @@ func void freeAim_Init() {
         MEM_Call(freeAimInitConstants); // Customized settings
         HookEngineF(oCAniCtrl_Human__InterpolateCombineAni, 5, freeAimAnimation); // Update aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Set projectile direction and trajectory
-        HookEngineF(oCAIHuman__BowMode, 6, freeAimManageReticle); // Manage the reticle (style, on/off)
-        HookEngineF(oCNpcFocus__SetFocusMode, 7, freeAimManageReticle); // Manage the reticle (style, on/off)
-        HookEngineF(oCAIHuman__MagicMode, 7, freeAimManageReticle); // Manage the reticle (style, on/off)
+        HookEngineF(oCAIHuman__BowMode, 6, freeAimManageReticle); // Manage the reticle (on/off)
+        HookEngineF(oCNpcFocus__SetFocusMode, 7, freeAimManageReticle); // Manage the reticle (on/off)
+        HookEngineF(oCAIHuman__MagicMode, 7, freeAimSpellReticle); // Manage focus collection and reticle
         HookEngineF(oCSpell__Setup_484BA9, 6, freeAimSetupSpell); // Set spell fx direction and trajectory
         HookEngineF(mouseUpdate, 5, freeAimManualRotation); // Update the player model rotation by mouse input
         HookEngineF(oCAIArrowBase__DoAI, 7, freeAimWatchProjectile); // AI loop for each projectile
@@ -171,10 +171,12 @@ func void freeAimUpdateSettings(var int on) {
     MEM_Info("Updating internal free aiming settings");
     if (on) {
         Focus_Ranged.npc_azi = 15.0; // Set stricter focus collection
+        Focus_Magic.npc_azi = 15.0; // Set stricter focus collection
         MEM_WriteString(zString_CamModRanged, STR_Upper(FREEAIM_CAMERA)); // New camera mode, upper case is important
         FREEAIM_ACTIVE_PREVFRAME = 1;
     } else {
         Focus_Ranged.npc_azi =  45.0; // Reset ranged focus collection to standard
+        Focus_Magic.npc_azi =  45.0; // Reset ranged focus collection to standard
         MEM_WriteString(zString_CamModRanged, "CAMMODRANGED"); // Restore camera mode, upper case is important
         MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to projectile collision behavior on npcs
         MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59); // jz to 0x6A0BA3
@@ -249,7 +251,7 @@ func void freeAimManageReticle() {
 
 /* Check whether free aiming should collect focus */
 func int freeAimGetCollectFocus() {
-    if (FREEAIM_FOCUS_COLLECTION) && (Npc_IsInFightMode(hero, FMODE_FAR)) { return 1; }; // Only when using bow/crossbow
+    if (FREEAIM_FOCUS_COLLECTION) { return 1; };
     return 0;
 };
 
@@ -411,15 +413,15 @@ func int freeAimRay(var int distance, var int vobPtr, var int posPtr, var int di
     return found;
 };
 
-/* Internal helper function for freeAimGetReticle() */
-func void freeAimGetReticle_(var int target, var int distance, var int returnPtr) {
+/* Internal helper function for freeAimGetReticleRanged() for ranged combat */
+func void freeAimGetReticleRanged_(var int target, var int distance, var int returnPtr) {
     var C_Npc targetNpc; var int talent; var C_Item weapon; // Retrieve target npc, weapon and talent
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
     else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
-    else { MEM_Error("freeAimGetReticle_: No valid weapon equipped/readied!"); return; }; // Should never happen
+    else { MEM_Error("freeAimGetReticleRanged_: No valid weapon equipped/readied!"); return; }; // Should never happen
     if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
     else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
-    else { MEM_Error("freeAimGetReticle_: No valid weapon equipped/readied!"); return; };
+    else { MEM_Error("freeAimGetReticleRanged_: No valid weapon equipped/readied!"); return; };
     if (Hlp_Is_oCNpc(target)) { targetNpc = _^(target); } else { targetNpc = MEM_NullToInst(); };
     // Call customized function
     MEM_PushInstParam(targetNpc);
@@ -427,7 +429,7 @@ func void freeAimGetReticle_(var int target, var int distance, var int returnPtr
     MEM_PushIntParam(talent);
     MEM_PushIntParam(distance);
     MEM_PushIntParam(returnPtr);
-    MEM_Call(freeAimGetReticle); // freeAimGetReticle(targetNpc, weapon, talent, distance, returnPtr);
+    MEM_Call(freeAimGetReticleRanged); // freeAimGetReticleRanged(targetNpc, weapon, talent, distance, returnPtr);
 };
 
 /* Update aiming animation. Hook oCAniCtrl_Human::InterpolateCombineAni */
@@ -458,7 +460,7 @@ func void freeAimAnimation() {
     reticle.texture = ""; // Do not show reticle by default
     reticle.color = -1; // Do not set color by default
     reticle.size = 75; // Medium size by default
-    freeAimGetReticle_(target, distance, _@(reticle)); // Retrieve reticle specs
+    freeAimGetReticleRanged_(target, distance, _@(reticle)); // Retrieve reticle specs
     freeAimInsertReticle(_@(reticle)); // Draw/update reticle
     var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60); //0=right, 2=out, 3=pos
     var int pos[3]; // The position is calculated from the camera, not the player model
@@ -922,4 +924,54 @@ func void freeAimSetupSpell() {
     var int pos[3]; freeAimRay(MEM_ReadInt(EBP+164), 0, _@(pos), 0, 0); //0x00A4 oCSpell.targetCollectRange
     var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos)); // Setup the aim vob
     MEM_WriteInt(ESP+4, vobPtr); // Overwrite target vob
+};
+
+/* Internal helper function for freeAimGetReticleSpell() for magic combat */
+func void freeAimGetReticleSpell_(var int target, var int distance, var int returnPtr) {
+    var C_Npc targetNpc; var int spellID; var int spellLvl; var int spellCat; // Retrieve target npc, spell
+    spellID = Npc_GetActiveSpell(hero);
+    if (spellID == -1) { MEM_Error("freeAimGetReticleSpell_: No valid spell readied!"); return; }; // Should not happen
+    spellLvl = Npc_GetActiveSpellLevel(hero);
+    spellCat = Npc_GetActiveSpellCat(hero); // SPELL_BAD, SPELL_NEUTRAL, SPELL_GOOD
+    if (Hlp_Is_oCNpc(target)) { targetNpc = _^(target); } else { targetNpc = MEM_NullToInst(); };
+    // Call customized function
+    MEM_PushInstParam(targetNpc);
+    MEM_PushInstParam(spellID);
+    MEM_PushInstParam(spellLvl);
+    MEM_PushInstParam(spellCat);
+    MEM_PushIntParam(distance);
+    MEM_PushIntParam(returnPtr);
+    MEM_Call(freeAimGetReticleSpell); // freeAimGetReticleSpell(target, spellID, spellLvl, spellCat, distance, rtrnPtr);
+};
+
+/* Manage reticle style and focus collection for magic combat */
+func void freeAimSpellReticle() {
+    if (freeAimIsActive() != FMODE_MAGIC) { freeAimRemoveReticle(); return; };
+    var int herPtr; herPtr = _@(hero);
+    var int distance; var int target;
+    if (freeAimGetCollectFocus()) { // Set focus npc if there is a valid one under the reticle
+        freeAimRay(FREEAIM_MAX_DIST, _@(target), 0, _@(distance), 0); // Shoot ray and retrieve info
+        distance = roundf(divf(mulf(distance, FLOAT1C), mkf(FREEAIM_MAX_DIST))); // Distance scaled between [0, 100]
+    } else { // More performance friendly. Here, there will be NO focus, otherwise it gets stuck on npcs.
+        const int call4 = 0; var int null; // Set the focus vob properly: reference counter
+        if (CALL_Begin(call4)) {
+            CALL_PtrParam(_@(null)); // This will remove the focus
+            CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
+            call4 = CALL_End();
+        };
+        const int call5 = 0; // Remove the enemy properly: reference counter
+        if (CALL_Begin(call5)) {
+            CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. Target will be set to aimvob when shooting
+            CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
+            call5 = CALL_End();
+        };
+        distance = 25; // No distance check ever. Set it to medium distance
+        target = 0; // No focus target ever
+    };
+    var int autoAlloc[7]; var Reticle reticle; reticle = _^(_@(autoAlloc)); // Gothic takes care of freeing this ptr
+    reticle.texture = ""; // Do not show reticle by default
+    reticle.color = -1; // Do not set color by default
+    reticle.size = 75; // Medium size by default
+    freeAimGetReticleSpell_(target, distance, _@(reticle)); // Retrieve reticle specs
+    freeAimInsertReticle(_@(reticle)); // Draw/update reticle
 };
