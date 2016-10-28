@@ -29,11 +29,12 @@
 /* Free aim settings, do not modify! Change the settings in freeAim\config.d */
 const string FREEAIM_VERSION              = "G2 Free Aim";   // Do not change under any circumstances
 const int    FREEAIM_REUSE_PROJECTILES    = 1;               // Enable collection and re-using of shot projectiles
+const int    FREEAIM_DISABLE_SPELLS       = 0;               // If true, free aiming is disabled for spells
 const int    FREEAIM_DRAWTIME_MAX         = 1200;            // Max draw time (ms): When is the bow fully drawn
 const int    FREEAIM_TRAJECTORY_ARC_MAX   = 400;             // Max time (ms) after which the trajectory drops off
 const float  FREEAIM_ROTATION_SCALE       = 0.16;            // Turn rate. Non-weapon mode is 0.2 (zMouseRotationScale)
 const float  FREEAIM_SCATTER_DEG          = 2.2;             // Maximum scatter radius in degrees
-const string FREEAIM_CAMERA               = "CamModRngeFA";  // CCamSys_Def script instance for free aim
+const string FREEAIM_CAMERA               = "CamModRngeFA";  // CCamSys_Def script instance for free aim (ranged combat)
 const int    FREEAIM_CAMERA_X_SHIFT       = 0;               // One, if camera is set to shoulderview (not recommended)
 const int    FREEAIM_DEBUG_WEAKSPOT       = 0;               // Visualize weakspot bbox and trajectory
 const int    FREEAIM_DEBUG_CONSOLE        = 1;               // Console command for debugging. Turn off in final mod
@@ -46,6 +47,7 @@ const int    FREEAIM_RETICLE_MAX_SIZE     = 32;              // Biggest reticle 
 const string FREEAIM_TRAIL_FX             = "freeAim_TRAIL"; // Trailstrip FX. Should not be changed
 const int    FREEAIM_MAX_DIST             = 5000;            // 50m. Shooting/reticle adjustments. Do not change
 const int    FREEAIM_ACTIVE_PREVFRAME     = 0;               // Internal. Do not change
+const int    FREEAIM_FOCUS_SPELL_FREE     = 0;               // Internal. Do not change
 const int    FREEAIM_FOCUS_COLLECTION     = 1;               // Internal. Do not change (change in ini-file)
 const int    FREEAIM_ARROWAI_REDIRECT     = 0;               // Used to redirect call-by-reference var. Do not change
 const int    FLOAT1C                      = 1120403456;      // 100 as float
@@ -89,6 +91,7 @@ const int oCNpc__GetModel                         = 7571232; //0x738720
 const int oCItem__InitByScript                    = 7412688; //0x711BD0
 const int oCItem__InsertEffect                    = 7416896; //0x712C40
 const int oCItem__RemoveEffect                    = 7416832; //0x712C00
+const int oCMag_Book__GetSelectedSpell            = 4683648; //0x477780
 const int zCModel__SearchNode                     = 5758960; //0x57DFF0
 const int zCModel__GetBBox3DNodeWorld             = 5738736; //0x5790F0
 const int zCModel__GetNodePositionWorld           = 5738816; //0x579140
@@ -134,8 +137,6 @@ func void freeAim_Init() {
         HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Set projectile direction and trajectory
         HookEngineF(oCAIHuman__BowMode, 6, freeAimManageReticle); // Manage the reticle (on/off)
         HookEngineF(oCNpcFocus__SetFocusMode, 7, freeAimManageReticle); // Manage the reticle (on/off)
-        HookEngineF(oCAIHuman__MagicMode, 7, freeAimSpellReticle); // Manage focus collection and reticle
-        HookEngineF(oCSpell__Setup_484BA9, 6, freeAimSetupSpell); // Set spell fx direction and trajectory
         HookEngineF(mouseUpdate, 5, freeAimManualRotation); // Update the player model rotation by mouse input
         HookEngineF(oCAIArrowBase__DoAI, 7, freeAimWatchProjectile); // AI loop for each projectile
         HookEngineF(onArrowDamageAddr, 7, freeAimDetectCriticalHit); // Critical hit detection
@@ -144,6 +145,10 @@ func void freeAim_Init() {
         HookEngineF(onArrowCollVobAddr, 5, freeAimOnArrowCollide); // Collision behavior on non-npc vob material
         HookEngineF(onArrowCollStatAddr, 5, freeAimOnArrowCollide); // Collision behavior on static world material
         HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aming
+        if (FREEAIM_DISABLE_SPELLS) {
+            HookEngineF(oCAIHuman__MagicMode, 7, freeAimSpellReticle); // Manage focus collection and reticle
+            HookEngineF(oCSpell__Setup_484BA9, 6, freeAimSetupSpell); // Set spell fx direction and trajectory
+        };
         if (FREEAIM_DEBUG_CONSOLE) { // Enable console command for debugging
             CC_Register(freeAimDebugWeakspot, "debug weakspot", "turn debug visualization on/off");
         };
@@ -166,17 +171,42 @@ func void freeAim_Init() {
     MEM_Info(ConcatStrings(FREEAIM_VERSION, " initialized successfully."));
 };
 
+/* Return the active spell instance */
+func MEMINT_HelperClass freeAimGetActiveSpellInst(var C_Npc npc) {
+    var int magBookPtr; magBookPtr = MEM_ReadInt(_@(npc)+2324); //0x0914 oCNpc.mag_book
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL__thiscall(_@(magBookPtr), oCMag_Book__GetSelectedSpell);
+        call = CALL_End();
+    };
+    _^(CALL_RetValAsPtr()+128); //0x0080 oCSpell.C_Spell
+};
+
+/* Return whether a spell is eligible for free aiming */
+func int freeAimSpellEligible(var C_Spell spell) {
+    if (FREEAIM_DISABLE_SPELLS) { return FALSE; };
+    if ((spell.targetCollectAlgo != TARGET_COLLECT_NONE) // Only if spell instance does not force a focus
+    && (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS_FALLBACK_NONE)
+    && (spell.targetCollectAlgo != TARGET_COLLECT_ALL_FALLBACK_NONE))
+    || (spell.targetCollectRange <= 0) || (spell.targetCollectAzi <= 0) || (spell.targetCollectElev <= 0) // SPL_Light
+    || /*(!spell.canTurnDuringInvest) ||*/ (!spell.canChangeTargetDuringInvest) { // Overwrite canTurnDuringInvest!
+        return FALSE;
+    };
+    return TRUE; // All other cases
+};
+
 /* Update internal settings when turning free aim on/off in the options */
 func void freeAimUpdateSettings(var int on) {
     MEM_Info("Updating internal free aiming settings");
     if (on) {
         Focus_Ranged.npc_azi = 15.0; // Set stricter focus collection
-        Focus_Magic.npc_azi = 15.0; // Set stricter focus collection
         MEM_WriteString(zString_CamModRanged, STR_Upper(FREEAIM_CAMERA)); // New camera mode, upper case is important
         FREEAIM_ACTIVE_PREVFRAME = 1;
     } else {
-        Focus_Ranged.npc_azi =  45.0; // Reset ranged focus collection to standard
-        Focus_Magic.npc_azi =  45.0; // Reset ranged focus collection to standard
+        Focus_Ranged.npc_azi = 45.0; // Reset ranged focus collection to standard
+        Focus_Magic.npc_azi = 45.0; // Reset ranged focus collection to standard
+        Focus_Magic.item_prio = -1;
+        FREEAIM_FOCUS_SPELL_FREE = -1;
         MEM_WriteString(zString_CamModRanged, "CAMMODRANGED"); // Restore camera mode, upper case is important
         MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to projectile collision behavior on npcs
         MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59); // jz to 0x6A0BA3
@@ -202,7 +232,24 @@ func int freeAimIsActive() {
     var int keyStateAction2; keyStateAction2 = MEM_KeyState(MEM_GetSecondaryKey("keyAction"));
     if (keyStateAction1 != KEY_PRESSED) && (keyStateAction1 != KEY_HOLD) // Only while pressing the action button
     && (keyStateAction2 != KEY_PRESSED) && (keyStateAction2 != KEY_HOLD) { return 0; };
-    if (Npc_IsInFightMode(hero, FMODE_MAGIC)) { return FMODE_MAGIC; };
+    if (Npc_IsInFightMode(hero, FMODE_MAGIC)) {
+        if (!FREEAIM_DISABLE_SPELLS) { return 0; }; // If free aiming for spells is disabled
+        var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
+        if (!freeAimSpellEligible(spell)) { // Check if the active spell supports free aiming
+            if (FREEAIM_FOCUS_SPELL_FREE != -1) {
+                Focus_Magic.npc_azi = 45.0; // Reset ranged focus collection
+                Focus_Magic.item_prio = -1;
+                FREEAIM_FOCUS_SPELL_FREE = -1;
+            };
+            return 0;
+        };
+        if (FREEAIM_FOCUS_SPELL_FREE != 1) {
+            Focus_Magic.npc_azi = 15.0; // Set stricter focus collection
+            Focus_Magic.item_prio = 0;
+            FREEAIM_FOCUS_SPELL_FREE = 1;
+        };
+        return FMODE_MAGIC;
+    };
     // Get onset for drawing the bow - right when pressing down the action key
     if (keyStateAction1 == KEY_PRESSED) || (keyStateAction2 == KEY_PRESSED) {
         freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_READY; };
@@ -293,7 +340,8 @@ func int freeAimSetupAimVob(var int posPtr) {
 };
 
 /* Shoot aim-tailored trace ray. Do no use for other purposes. This function is customized for aiming. */
-func int freeAimRay(var int distance, var int vobPtr, var int posPtr, var int distPtr, var int trueDistPtr) {
+func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int posPtr, var int distPtr,
+        var int trueDistPtr) {
     var int flags; flags = (1<<0) | (1<<14) | (1<<9);
     // (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_VOB_IGNORE_PROJECTILES | zTRACERAY_POLY_TEST_WATER)
     var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60); //0=right, 2=out, 3=pos
@@ -346,43 +394,58 @@ func int freeAimRay(var int distance, var int vobPtr, var int posPtr, var int di
     var int found; found = CALL_RetValAsInt(); // Did the trace ray hit
     var int foundFocus; foundFocus = 0; // Is the focus vob in the trace ray vob list
     var int potentialVob; potentialVob = MEM_ReadInt(herPtr+2476); // oCNpc.focus_vob // Focus vob by focus collection
-    if (potentialVob) && (Hlp_Is_oCNpc(potentialVob)) { // Now check if the collected focus was hit by the trace ray
-        var C_Npc target; target = _^(potentialVob);  // Do not allow focussing npcs that are down
-        if (!Npc_IsInState(target, ZS_Unconscious)) && (!Npc_IsInState(target, ZS_MagicSleep)) && (!Npc_IsDead(target)){
-            var int potVobPtr; potVobPtr = _@(potentialVob);
-            var int voblist; voblist = _@(MEM_World.traceRayVobList_array);
-            const int call2 = 0;
-            if (CALL_Begin(call2)) { // Check if focus vob is in trace ray vob list
-                CALL_PtrParam(_@(potVobPtr));
-                CALL__thiscall(_@(voblist), zCArray_zCVob__IsInList);
-                call2 = CALL_End();
-            };
-            if (CALL_RetValAsInt()) { // If it is in the vob list, run a more detailed examination
-                // This is essentially taken/modified from zCWorld::TraceRayNearestHit (specifically at 0x621D82 in g2)
-                flags = (1<<0) | (1<<2); // (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_VOB_BBOX) // Important!
-                var int trRep; trRep = MEM_Alloc(40); // sizeof_zTTraceRayReport
-                const int call3 = 0;
-                if (CALL_Begin(call3)) {
-                    CALL_PtrParam(_@(trRep)); // zTTraceRayReport
-                    CALL_IntParam(_@(flags)); // Trace ray flags
-                    CALL_PtrParam(_@(dirPosPtr)); // Trace ray direction
-                    CALL_PtrParam(_@(fromPosPtr)); // Start vector
-                    CALL__thiscall(_@(potentialVob), zCVob__TraceRay); // This is a vob specific trace ray
-                    call3 = CALL_End();
+    if (potentialVob) { // Check if collected focus matches the desired focus type
+        var int runDetailedTraceRay; runDetailedTraceRay = 0; // Second trace ray only if focus vob is reasonable
+        if (focusType != TARGET_TYPE_ITEMS) && (Hlp_Is_oCNpc(potentialVob)) { // Validate focus vob, if it is an npc
+            var C_Npc target; target = _^(potentialVob);
+            MEM_PushInstParam(target); // Function is not defined yet at time of parsing:
+            MEM_Call(C_NpcIsUndead); // C_NpcIsUndead(target);
+            var int npcIsUndead; npcIsUndead = MEM_PopIntResult();
+            if ((focusType == TARGET_TYPE_NPCS) // Any npc
+            || ((focusType == TARGET_TYPE_ORCS) && target.guild > GIL_SEPERATOR_ORC) // Only focus orcs
+            || ((focusType == TARGET_TYPE_HUMANS) && target.guild < GIL_SEPERATOR_HUM) // Only focus humans
+            || ((focusType == TARGET_TYPE_UNDEAD) && npcIsUndead)) // Only focus undead npcs
+            && (!Npc_IsInState(target, ZS_Unconscious)) // Do not allow focussing npcs that are down
+            && (!Npc_IsInState(target, ZS_MagicSleep))
+            && (!Npc_IsDead(target)) {
+                var int potVobPtr; potVobPtr = _@(potentialVob);
+                var int voblist; voblist = _@(MEM_World.traceRayVobList_array);
+                const int call2 = 0;
+                if (CALL_Begin(call2)) { // More complicated for npcs: Check if npc is in trace ray vob list
+                    CALL_PtrParam(_@(potVobPtr)); // Explanation: Npcs are never HIT by a trace ray (only collected)
+                    CALL__thiscall(_@(voblist), zCArray_zCVob__IsInList);
+                    call2 = CALL_End();
                 };
-                if (CALL_RetValAsInt()) { // Got a hit: Update trace ray report
-                    MEM_World.foundVob = potentialVob;
-                    MEM_CopyWords(trRep+12, _@(MEM_World.foundIntersection), 3); // 0x0C zVEC3
-                    foundFocus = potentialVob; // Confirmed focus vob
-                };
-                MEM_Free(trRep); // Free the report
+                runDetailedTraceRay = CALL_RetValAsInt(); // Will perform detailed trace ray if npc was in vob list
             };
+        } else if (focusType <= TARGET_TYPE_ITEMS) && (Hlp_Is_oCItem(potentialVob)) {
+            runDetailedTraceRay = 1; // Will perform detailed trace ray
+        };
+        if (runDetailedTraceRay) { // If focus collection is reasonable, run a more detailed examination
+            // This is essentially taken/modified from zCWorld::TraceRayNearestHit (0x621D82 in g2)
+            flags = (1<<0) | (1<<2); // (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_VOB_BBOX) // Important!
+            var int trRep; trRep = MEM_Alloc(40); // sizeof_zTTraceRayReport
+            const int call3 = 0;
+            if (CALL_Begin(call3)) {
+                CALL_PtrParam(_@(trRep)); // zTTraceRayReport
+                CALL_IntParam(_@(flags)); // Trace ray flags
+                CALL_PtrParam(_@(dirPosPtr)); // Trace ray direction
+                CALL_PtrParam(_@(fromPosPtr)); // Start vector
+                CALL__thiscall(_@(potentialVob), zCVob__TraceRay); // This is a vob specific trace ray
+                call3 = CALL_End();
+            };
+            if (CALL_RetValAsInt()) { // Got a hit: Update trace ray report
+                MEM_World.foundVob = potentialVob;
+                MEM_CopyWords(trRep+12, _@(MEM_World.foundIntersection), 3); // 0x0C zVEC3
+                foundFocus = potentialVob; // Confirmed focus vob
+            };
+            MEM_Free(trRep); // Free the report
         };
     };
-    if (foundFocus != potentialVob) { // If focus vob changed
+    if (foundFocus != potentialVob) { // If focus vob changed by the validation above
         const int call4 = 0; // Set the focus vob properly: reference counter
         if (CALL_Begin(call4)) {
-            CALL_PtrParam(_@(foundFocus)); // If no npc was found, this will remove the focus
+            CALL_PtrParam(_@(foundFocus)); // If no valid focus was found, this will remove the focus (foundFocus == 0)
             CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
             call4 = CALL_End();
         };
@@ -438,7 +501,7 @@ func void freeAimAnimation() {
     var int herPtr; herPtr = _@(hero);
     var int distance; var int target;
     if (freeAimGetCollectFocus()) { // Set focus npc if there is a valid one under the reticle
-        freeAimRay(FREEAIM_MAX_DIST, _@(target), 0, _@(distance), 0); // Shoot ray and retrieve info
+        freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, _@(target), 0, _@(distance), 0); // Shoot ray and retrieve info
         distance = roundf(divf(mulf(distance, FLOAT1C), mkf(FREEAIM_MAX_DIST))); // Distance scaled between [0, 100]
     } else { // More performance friendly. Here, there will be NO focus, otherwise it gets stuck on npcs.
         const int call4 = 0; var int null; // Set the focus vob properly: reference counter
@@ -532,7 +595,7 @@ func int freeAimGetAccuracy_() {
 func void freeAimSetupProjectile() {
     var int projectile; projectile = MEM_ReadInt(ESP+4);  // First argument is the projectile
     var C_Npc shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
-    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { return; }; // Only for player and when fa active
+    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { return; }; // Only if player and if fa WAS active
     // 1st: Set projectile drop-off (by draw force)
     const int call2 = 0;
     if (CALL_Begin(call2)) {
@@ -556,7 +619,7 @@ func void freeAimSetupProjectile() {
         };
     };
     // 2nd: Manipulate aiming accuracy (scatter): Rotate target position (azimuth, elevation)
-    var int distance; freeAimRay(FREEAIM_MAX_DIST, 0, 0, 0, _@(distance)); // Trace ray intersection
+    var int distance; freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, _@(distance)); // Trace ray intersection
     var int accuracy; accuracy = freeAimGetAccuracy_(); // Change the accuracy calculation in that function, not here!
     if (accuracy > 100) { accuracy = 100; } else if (accuracy < 1) { accuracy = 1; }; // Prevent devision by zero
     var int angleMax; angleMax = roundf(mulf(mulf(fracf(1, accuracy), castToIntf(FREEAIM_SCATTER_DEG)), FLOAT1K));
@@ -611,7 +674,7 @@ func void freeAimDoNpcHit() {
     var C_Npc target; target = _^(MEM_ReadInt(ESP+28)); // esp+1ACh+190h // oCNpc*
     var C_Npc shooter; shooter = _^(MEM_ReadInt(EBP+92)); // ebp+5Ch // oCNpc*
     var int projectile; projectile = MEM_ReadInt(EBP+88); // ebp+58h // oCItem*
-    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { // Default hitchance for npc/disabled fa
+    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { // Default hitchance for npcs and if fa disabled
         MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to projectile collision behavior on npcs
         MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59); // jz to 0x6A0BA3
         return;
@@ -837,7 +900,7 @@ func void freeAimDetectCriticalHit() {
     var int target; target = MEM_ReadInt(ESP+28); // esp+1ACh+190h // oCNpc*
     var int projectile; projectile = MEM_ReadInt(EBP+88); // ebp+58h // oCItem*
     var C_Npc shooter; shooter = _^(MEM_ReadInt(EBP+92)); // ebp+5Ch // oCNpc*
-    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { return; }; // Only for player and when fa active
+    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { return; }; // Only if player and if fa WAS active
     var C_Npc targetNpc; targetNpc = _^(target);
     // Get model from target npc
     const int call = 0;
@@ -917,53 +980,51 @@ func void freeAimSetupSpell() {
     var int casterPtr; casterPtr = MEM_ReadInt(EBP+52); //0x0034 oCSpell.spellCasterNpc
     if (!casterPtr) { return; }; // No caster
     var C_Npc caster; caster = _^(casterPtr);
-    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(caster)) { return; }; // Only for player and when fa active
-    if (MEM_ReadInt(EBP+156) != TARGET_COLLECT_NONE) //0x009C oCSpell.targetCollectAlgo
-    && (MEM_ReadInt(EBP+156) != TARGET_COLLECT_FOCUS_FALLBACK_NONE) // Only if spell instance does not force a focus
-    && (MEM_ReadInt(EBP+156) != TARGET_COLLECT_ALL_FALLBACK_NONE) { return; };
-    var int pos[3]; freeAimRay(MEM_ReadInt(EBP+164), 0, _@(pos), 0, 0); //0x00A4 oCSpell.targetCollectRange
+    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(caster)) { return; }; // Only if player and if fa WAS active
+    var C_Spell spell; spell = _^(EBP+128); //0x0080 oCSpell.C_Spell
+    if (!freeAimSpellEligible(spell)) { return; }; // Only with eligible spells
+    var int pos[3]; freeAimRay(spell.targetCollectRange, spell.targetCollectType, 0, _@(pos), 0, 0);
     var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos)); // Setup the aim vob
     MEM_WriteInt(ESP+4, vobPtr); // Overwrite target vob
 };
 
 /* Internal helper function for freeAimGetReticleSpell() for magic combat */
-func void freeAimGetReticleSpell_(var int target, var int distance, var int returnPtr) {
-    var C_Npc targetNpc; var int spellID; var int spellLvl; var int spellCat; // Retrieve target npc, spell
+func void freeAimGetReticleSpell_(var int target, var C_Spell spellInst, var int distance, var int returnPtr) {
+    var C_Npc targetNpc; var int spellID; var int spellLvl; // Retrieve target npc, spellID, spellLvl
     spellID = Npc_GetActiveSpell(hero);
-    if (spellID == -1) { MEM_Error("freeAimGetReticleSpell_: No valid spell readied!"); return; }; // Should not happen
     spellLvl = Npc_GetActiveSpellLevel(hero);
-    spellCat = Npc_GetActiveSpellCat(hero); // SPELL_BAD, SPELL_NEUTRAL, SPELL_GOOD
     if (Hlp_Is_oCNpc(target)) { targetNpc = _^(target); } else { targetNpc = MEM_NullToInst(); };
     // Call customized function
     MEM_PushInstParam(targetNpc);
-    MEM_PushInstParam(spellID);
-    MEM_PushInstParam(spellLvl);
-    MEM_PushInstParam(spellCat);
+    MEM_PushIntParam(spellID);
+    MEM_PushInstParam(spellInst);
+    MEM_PushIntParam(spellLvl);
     MEM_PushIntParam(distance);
     MEM_PushIntParam(returnPtr);
-    MEM_Call(freeAimGetReticleSpell); // freeAimGetReticleSpell(target, spellID, spellLvl, spellCat, distance, rtrnPtr);
+    MEM_Call(freeAimGetReticleSpell); // freeAimGetReticleSpell(target, spellID, spellInst, spellLvl, dist, rtrnPtr);
 };
 
 /* Manage reticle style and focus collection for magic combat */
 func void freeAimSpellReticle() {
-    if (freeAimIsActive() != FMODE_MAGIC) { freeAimRemoveReticle(); return; };
-    var int herPtr; herPtr = _@(hero);
+    if (!freeAimIsActive()) { freeAimRemoveReticle(); return; }; // Only with eligible spells
+    var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
     var int distance; var int target;
     if (freeAimGetCollectFocus()) { // Set focus npc if there is a valid one under the reticle
-        freeAimRay(FREEAIM_MAX_DIST, _@(target), 0, _@(distance), 0); // Shoot ray and retrieve info
+        freeAimRay(spell.targetCollectRange, spell.targetCollectType, _@(target), 0, _@(distance), 0); // Shoot ray
         distance = roundf(divf(mulf(distance, FLOAT1C), mkf(FREEAIM_MAX_DIST))); // Distance scaled between [0, 100]
     } else { // More performance friendly. Here, there will be NO focus, otherwise it gets stuck on npcs.
-        const int call4 = 0; var int null; // Set the focus vob properly: reference counter
-        if (CALL_Begin(call4)) {
+        var int herPtr; herPtr = _@(hero);
+        const int call2 = 0; var int null; // Set the focus vob properly: reference counter
+        if (CALL_Begin(call2)) {
             CALL_PtrParam(_@(null)); // This will remove the focus
             CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
-            call4 = CALL_End();
+            call2 = CALL_End();
         };
-        const int call5 = 0; // Remove the enemy properly: reference counter
-        if (CALL_Begin(call5)) {
+        const int call3 = 0; // Remove the enemy properly: reference counter
+        if (CALL_Begin(call3)) {
             CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. Target will be set to aimvob when shooting
             CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
-            call5 = CALL_End();
+            call3 = CALL_End();
         };
         distance = 25; // No distance check ever. Set it to medium distance
         target = 0; // No focus target ever
@@ -972,6 +1033,6 @@ func void freeAimSpellReticle() {
     reticle.texture = ""; // Do not show reticle by default
     reticle.color = -1; // Do not set color by default
     reticle.size = 75; // Medium size by default
-    freeAimGetReticleSpell_(target, distance, _@(reticle)); // Retrieve reticle specs
+    freeAimGetReticleSpell_(target, spell, distance, _@(reticle)); // Retrieve reticle specs
     freeAimInsertReticle(_@(reticle)); // Draw/update reticle
 };

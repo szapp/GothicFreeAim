@@ -24,6 +24,7 @@
  *  - Show weakspot debug visualization by default    FREEAIM_DEBUG_WEAKSPOT
  *  - Allow freeAim console commands (cheats)         FREEAIM_DEBUG_CONSOLE
  *  - Maximum bow draw time (ms):                     FREEAIM_DRAWTIME_MAX
+ *  - Disable free aiming for spells (yes/no):        FREEAIM_DISABLE_SPELLS
  *  - Collect and re-use shot projectiles (yes/no):   FREEAIM_REUSE_PROJECTILES
  *  - Projectile instance for re-using                freeAimGetUsedProjectileInstance(instance, targetNpc)
  *  - Draw force (gravity/drop-off) calculation:      freeAimGetDrawForce(weapon, talent)
@@ -34,7 +35,7 @@
  *  - Critical hit event (print, sound, xp, ...):     freeAimCriticalHitEvent(target, weapon)
  * Advanced (modification not recommended):
  *  - Scatter radius for accuracy:                    FREEAIM_SCATTER_DEG
- *  - Camera view (shoulder view):                    FREEAIM_CAMERA and FREEAIM_CAMERA_X_SHIFT
+ *  - Camera view (shoulder view for ranged combat):  FREEAIM_CAMERA and FREEAIM_CAMERA_X_SHIFT
  *  - Max time before projectile drop-off:            FREEAIM_TRAJECTORY_ARC_MAX
  *  - Gravity of projectile after drop-off:           FREEAIM_PROJECTILE_GRAVITY
  *  - Turn speed while aiming:                        FREEAIM_ROTATION_SCALE
@@ -44,6 +45,7 @@
 func void freeAimInitConstants() {
     // If you want to change a setting, uncomment the respective line. These are the default values.
     // FREEAIM_REUSE_PROJECTILES    = 1;               // Enable collection and re-using of shot projectiles
+    // FREEAIM_DISABLE_SPELLS       = 0;               // If true, free aiming is disabled for spells (not for ranged)
     // FREEAIM_DRAWTIME_MAX         = 1200;            // Max draw time (ms): When is the bow fully drawn
     // FREEAIM_DEBUG_CONSOLE        = 1;               // Console commands for debugging. Set to zero in final mod
     // FREEAIM_DEBUG_WEAKSPOT       = 0;               // Visualize weakspot bbox and trajectory by default
@@ -51,7 +53,7 @@ func void freeAimInitConstants() {
     // FREEAIM_SCATTER_DEG          = 2.2;             // Maximum scatter radius in degrees
     // FREEAIM_TRAJECTORY_ARC_MAX   = 400;             // Max time (ms) after which the trajectory drops off
     // FREEAIM_PROJECTILE_GRAVITY   = 0.1;             // The gravity decides how fast the projectile drops
-    // FREEAIM_CAMERA               = "CamModRngeFA";  // CCamSys_Def script instance (camera) for free aim
+    // FREEAIM_CAMERA               = "CamModRngeFA";  // CCamSys_Def script instance for free aim (ranged combat)
     // FREEAIM_CAMERA_X_SHIFT       = 0;               // One, if camera is set to shoulderview, s.a. (not recommended)
     // FREEAIM_ROTATION_SCALE       = 0.16;            // Turn rate. Non-weapon mode is 0.2 (zMouseRotationScale)
 };
@@ -123,13 +125,13 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
 };
 
 /* Modify this function to alter the reticle texture, color and size (scaled between 0 and 100) for magic combat. */
-func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var int spellLevel, var int spellCat, var int dist,
-        var int rtrnPtr) {
+func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell spellInst, var int spellLevel,
+        var int dist, var int rtrnPtr) {
     var Reticle reticle; reticle = _^(rtrnPtr);
     // Texture (needs to be set, otherwise reticle will not be displayed)
-    if (spellCat == SPELL_GOOD) { reticle.texture = RETICLE_NORMAL; }
-    else if (spellCat == SPELL_NEUTRAL) { reticle.texture = RETICLE_NORMAL; }
-    else if (spellCat == SPELL_BAD) { reticle.texture = RETICLE_NORMAL; };
+    if (spellInst.spellType == SPELL_GOOD) { reticle.texture = RETICLE_NORMAL; }
+    else if (spellInst.spellType == SPELL_NEUTRAL) { reticle.texture = RETICLE_NORMAL; }
+    else if (spellInst.spellType == SPELL_BAD) { reticle.texture = RETICLE_NORMAL; };
     // Color (do not set the color to preserve the original texture color)
     if (Hlp_IsValidNpc(target)) { // The argument 'target' might be empty!
         var int att; att = Npc_GetAttitude(target, hero);
