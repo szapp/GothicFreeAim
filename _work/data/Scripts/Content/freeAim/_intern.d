@@ -145,7 +145,7 @@ func void freeAim_Init() {
         HookEngineF(onArrowCollVobAddr, 5, freeAimOnArrowCollide); // Collision behavior on non-npc vob material
         HookEngineF(onArrowCollStatAddr, 5, freeAimOnArrowCollide); // Collision behavior on static world material
         HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aming
-        if (FREEAIM_DISABLE_SPELLS) {
+        if (!FREEAIM_DISABLE_SPELLS) {
             HookEngineF(oCAIHuman__MagicMode, 7, freeAimSpellReticle); // Manage focus collection and reticle
             HookEngineF(oCSpell__Setup_484BA9, 6, freeAimSetupSpell); // Set spell fx direction and trajectory
         };
@@ -233,7 +233,7 @@ func int freeAimIsActive() {
     if (keyStateAction1 != KEY_PRESSED) && (keyStateAction1 != KEY_HOLD) // Only while pressing the action button
     && (keyStateAction2 != KEY_PRESSED) && (keyStateAction2 != KEY_HOLD) { return 0; };
     if (Npc_IsInFightMode(hero, FMODE_MAGIC)) {
-        if (!FREEAIM_DISABLE_SPELLS) { return 0; }; // If free aiming for spells is disabled
+        if (FREEAIM_DISABLE_SPELLS) { return 0; }; // If free aiming for spells is disabled
         var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
         if (!freeAimSpellEligible(spell)) { // Check if the active spell supports free aiming
             if (FREEAIM_FOCUS_SPELL_FREE != -1) {
