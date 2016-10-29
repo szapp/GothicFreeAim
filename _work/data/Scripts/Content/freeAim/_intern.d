@@ -119,6 +119,7 @@ const int onDmgAnimationAddr                      = 6774593; //0x675F41 // Hook 
 const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook length 7
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook length 7
 const int oCSpell__Setup_484BA9                   = 4737961; //0x484BA9 // Hook length 6
+const int disableSpellAutoTurn                    = 4665539; //0x4730C3 // Hook length 6
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook length 5
 
 /* Initialize free aim framework */
@@ -148,6 +149,7 @@ func void freeAim_Init() {
         if (!FREEAIM_DISABLE_SPELLS) {
             HookEngineF(oCAIHuman__MagicMode, 7, freeAimSpellReticle); // Manage focus collection and reticle
             HookEngineF(oCSpell__Setup_484BA9, 6, freeAimSetupSpell); // Set spell fx direction and trajectory
+            HookEngineF(disableSpellAutoTurn, 6, freeAimDisableSpellAutoTurn); // Prevent auto turning towards target
         };
         if (FREEAIM_DEBUG_CONSOLE) { // Enable console command for debugging
             CC_Register(freeAimDebugWeakspot, "debug weakspot", "turn debug visualization on/off");
@@ -1035,4 +1037,11 @@ func void freeAimSpellReticle() {
     reticle.size = 75; // Medium size by default
     freeAimGetReticleSpell_(target, spell, distance, _@(reticle)); // Retrieve reticle specs
     freeAimInsertReticle(_@(reticle)); // Draw/update reticle
+};
+
+/* Disable auto turning towards the target for free aiming spells */
+func void freeAimDisableSpellAutoTurn() {
+    if (freeAimIsActive()) {
+        MEM_WriteInt(EDI+144, 0); // edi+90h
+    };
 };
