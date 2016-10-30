@@ -188,8 +188,7 @@ func MEMINT_HelperClass freeAimGetActiveSpellInst(var C_Npc npc) {
 func int freeAimSpellEligible(var C_Spell spell) {
     if (FREEAIM_DISABLE_SPELLS) { return FALSE; };
     if ((spell.targetCollectAlgo != TARGET_COLLECT_NONE) // Only if spell instance does not force a focus
-    && (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS_FALLBACK_NONE)
-    && (spell.targetCollectAlgo != TARGET_COLLECT_ALL_FALLBACK_NONE))
+    && (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS_FALLBACK_NONE))
     || (spell.targetCollectRange <= 0) || (spell.targetCollectAzi <= 0) || (spell.targetCollectElev <= 0) // SPL_Light
     || /*(!spell.canTurnDuringInvest) ||*/ (!spell.canChangeTargetDuringInvest) { // Overwrite canTurnDuringInvest!
         return FALSE;
@@ -398,7 +397,9 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
     var int potentialVob; potentialVob = MEM_ReadInt(herPtr+2476); // oCNpc.focus_vob // Focus vob by focus collection
     if (potentialVob) { // Check if collected focus matches the desired focus type
         var int runDetailedTraceRay; runDetailedTraceRay = 0; // Second trace ray only if focus vob is reasonable
-        if (focusType != TARGET_TYPE_ITEMS) && (Hlp_Is_oCNpc(potentialVob)) { // Validate focus vob, if it is an npc
+        if (!focusType) { // No focus vob (still a trace ray though)
+            foundFocus = 0;
+        } else if (focusType != TARGET_TYPE_ITEMS) && (Hlp_Is_oCNpc(potentialVob)) { // Validate focus vob, if it is npc
             var C_Npc target; target = _^(potentialVob);
             MEM_PushInstParam(target); // Function is not defined yet at time of parsing:
             MEM_Call(C_NpcIsUndead); // C_NpcIsUndead(target);
@@ -985,7 +986,9 @@ func void freeAimSetupSpell() {
     if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(caster)) { return; }; // Only if player and if fa WAS active
     var C_Spell spell; spell = _^(EBP+128); //0x0080 oCSpell.C_Spell
     if (!freeAimSpellEligible(spell)) { return; }; // Only with eligible spells
-    var int pos[3]; freeAimRay(spell.targetCollectRange, spell.targetCollectType, 0, _@(pos), 0, 0);
+    var int focusType; // No focus display for TARGET_COLLECT_NONE (still focus collection though)
+    if (!spell.targetCollectAlgo) { focusType = 0; } else { focusType = spell.targetCollectType; };
+    var int pos[3]; freeAimRay(spell.targetCollectRange, focusType, 0, _@(pos), 0, 0);
     var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos)); // Setup the aim vob
     MEM_WriteInt(ESP+4, vobPtr); // Overwrite target vob
 };
@@ -1012,7 +1015,9 @@ func void freeAimSpellReticle() {
     var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
     var int distance; var int target;
     if (freeAimGetCollectFocus()) { // Set focus npc if there is a valid one under the reticle
-        freeAimRay(spell.targetCollectRange, spell.targetCollectType, _@(target), 0, _@(distance), 0); // Shoot ray
+        var int focusType; // No focus display for TARGET_COLLECT_NONE (still focus collection though)
+        if (!spell.targetCollectAlgo) { focusType = 0; } else { focusType = spell.targetCollectType; };
+        freeAimRay(spell.targetCollectRange, focusType, _@(target), 0, _@(distance), 0); // Shoot ray
         distance = roundf(divf(mulf(distance, FLOAT1C), mkf(FREEAIM_MAX_DIST))); // Distance scaled between [0, 100]
     } else { // More performance friendly. Here, there will be NO focus, otherwise it gets stuck on npcs.
         var int herPtr; herPtr = _@(hero);
