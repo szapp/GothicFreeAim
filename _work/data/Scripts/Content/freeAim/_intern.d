@@ -917,16 +917,16 @@ func void freeAimCriticalHitEvent_(var C_Npc target) {
 };
 
 /* Internal helper function for freeAimCriticalHitDef() */
-func void freeAimCriticalHitDef_(var C_Npc target, var int damagePtr, var int returnPtr) {
+func void freeAimCriticalHitDef_(var C_Npc target, var int damage, var int returnPtr) {
     var C_Item weapon; weapon = MEM_NullToInst(); // Deadalus pseudo locals
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
     else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
     // Call customized function
     MEM_PushInstParam(target);
     MEM_PushInstParam(weapon);
-    MEM_PushIntParam(MEM_ReadInt(damagePtr));
+    MEM_PushIntParam(damage);
     MEM_PushIntParam(returnPtr);
-    MEM_Call(freeAimCriticalHitDef); // freeAimCriticalHitDef(target, weapon, MEM_ReadInt(damagePtr), returnPtr);
+    MEM_Call(freeAimCriticalHitDef); // freeAimCriticalHitDef(target, weapon, damage, returnPtr);
     MEM_WriteString(returnPtr, STR_Upper(MEM_ReadString(returnPtr))); // Nodes are always upper case
     if (lf(MEM_ReadInt(returnPtr+28), FLOATNULL)) { MEM_WriteInt(returnPtr+28, FLOATNULL); }; // Correct negative damage
 };
@@ -954,7 +954,7 @@ func void freeAimDetectCriticalHit() {
     var int model; model = CALL_RetValAsPtr();
     // Get weak spot node from target model
     var int autoAlloc[8]; var Weakspot weakspot; weakspot = _^(_@(autoAlloc)); // Gothic takes care of freeing this ptr
-    freeAimCriticalHitDef_(targetNpc, damagePtr, _@(weakspot)); // Retrieve weakspot specs
+    freeAimCriticalHitDef_(targetNpc, MEM_ReadInt(damagePtr), _@(weakspot)); // Retrieve weakspot specs
     var int nodeStrPtr; nodeStrPtr = _@(weakspot);
     if (Hlp_StrCmp(MEM_ReadString(nodeStrPtr), "")) { return; }; // No critical node defined
     const int call2 = 0;
