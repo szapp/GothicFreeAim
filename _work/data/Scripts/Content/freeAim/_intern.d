@@ -455,6 +455,8 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
             CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
             call4 = CALL_End();
         };
+    };
+    if (MEM_ReadInt(herPtr+1176)) { //0x0498 oCNpc.enemy
         const int call5 = 0; var int null; // Remove the enemy properly: reference counter
         if (CALL_Begin(call5)) {
             CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. Target will be set to aimvob when shooting
@@ -1030,11 +1032,13 @@ func void freeAimSpellReticle() {
             CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
             call2 = CALL_End();
         };
-        const int call3 = 0; // Remove the enemy properly: reference counter
-        if (CALL_Begin(call3)) {
-            CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. Target will be set to aimvob when shooting
-            CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
-            call3 = CALL_End();
+        if (!MEM_ReadInt(herPtr+1176)) { //0x0498 oCNpc.enemy
+            const int call3 = 0; // Remove the enemy properly: reference counter
+            if (CALL_Begin(call3)) {
+                CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. Target will be set to aimvob when shooting
+                CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
+                call3 = CALL_End();
+            };
         };
         distance = 25; // No distance check ever. Set it to medium distance
         target = 0; // No focus target ever
