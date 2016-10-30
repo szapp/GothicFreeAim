@@ -599,12 +599,35 @@ func int freeAimGetAccuracy_() {
     return accuracy;
 };
 
+/* Internal helper function for freeAimScaleInitialDamage() */
+func int freeAimScaleInitialDamage_(var int basePointDamage) {
+    var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
+    else { MEM_Error("freeAimScaleInitialDamage_: No valid weapon equipped/readied!"); return basePointDamage; };
+    if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
+    else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
+    else { MEM_Error("freeAimScaleInitialDamage_: No valid weapon equipped/readied!"); return basePointDamage; };
+    // Call customized function
+    MEM_PushIntParam(basePointDamage);
+    MEM_PushInstParam(weapon);
+    MEM_PushIntParam(talent);
+    MEM_Call(freeAimScaleInitialDamage); // freeAimScaleInitialDamage(basePointDamage, weapon, talent);
+    basePointDamage = MEM_PopIntResult();
+    if (basePointDamage < 0) { basePointDamage = 0; }; // No negative damage
+    return basePointDamage;
+};
+
 /* Set the projectile direction and trajectory. Hook oCAIArrow::SetupAIVob */
 func void freeAimSetupProjectile() {
     var int projectile; projectile = MEM_ReadInt(ESP+4);  // First argument is the projectile
     var C_Npc shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
     if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { return; }; // Only if player and if fa WAS active
-    // 1st: Set projectile drop-off (by draw force)
+    // 1st: Set base damage of projectile // oCItem.damage[DAM_INDEX_POINT];
+    var int baseDamage; baseDamage = MEM_ReadStatArr(projectile+364, DAM_INDEX_POINT);
+    MEM_WriteStatArr(projectile+364, DAM_INDEX_POINT, freeAimScaleInitialDamage_(baseDamage));
+    MEM_Info(IntToString(MEM_ReadStatArr(projectile+364, DAM_INDEX_POINT)));
+    // 2nd: Set projectile drop-off (by draw force)
     const int call2 = 0;
     if (CALL_Begin(call2)) {
         CALL__thiscall(_@(projectile), zCVob__GetRigidBody); // Get ridigBody this way, it will be properly created
@@ -626,7 +649,7 @@ func void freeAimSetupProjectile() {
             call3 = CALL_End();
         };
     };
-    // 2nd: Manipulate aiming accuracy (scatter): Rotate target position (azimuth, elevation)
+    // 3rd: Manipulate aiming accuracy (scatter): Rotate target position (azimuth, elevation)
     var int distance; freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, _@(distance)); // Trace ray intersection
     var int accuracy; accuracy = freeAimGetAccuracy_(); // Change the accuracy calculation in that function, not here!
     if (accuracy > 100) { accuracy = 100; } else if (accuracy < 1) { accuracy = 1; }; // Prevent devision by zero
@@ -649,7 +672,7 @@ func void freeAimSetupProjectile() {
     pos[0] = addf(camPos.v0[3], newPos[0]);
     pos[1] = addf(camPos.v1[3], newPos[1]);
     pos[2] = addf(camPos.v2[3], newPos[2]);
-    // 3rd: Setup the aim vob
+    // 4rd: Setup the aim vob
     var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos));
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
 };

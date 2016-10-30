@@ -31,6 +31,7 @@
  *  - Accuracy calculation:                           freeAimGetAccuracy(weapon, talent)
  *  - Reticle style (texture, color, size):           freeAimGetReticle(target, weapon, talent, distance)
  *  - Disable hit registration (e.g. friendly-fire):  freeAimHitRegistration(target, weapon, material)
+ *  - Change the base damage at time of shooting:     freeAimScaleInitialDamage(basePointDamage, weapon, talent)
  *  - Critical hit calculation (position, damage):    freeAimCriticalHitDef(target, weapon, damage)
  *  - Critical hit event (print, sound, xp, ...):     freeAimCriticalHitEvent(target, weapon)
  * Advanced (modification not recommended):
@@ -71,12 +72,12 @@ func int freeAimGetDrawForce(var C_Item weapon, var int talent) {
 
 /* Modify this function to alter accuracy calculation. Scaled between 0 and 100 (percent) */
 func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
-    // Add any other factors here e.g. weafpon-specific accuracy stats, weapon spread, accuracy talent, ...
+    // Add any other factors here e.g. weapon-specific accuracy stats, weapon spread, accuracy talent, ...
     // Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW)
     // Here the talent is scaled by draw force: draw force=100% => accuracy=talent; draw force=0% => accuracy=talent/2
     var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent); // Already scaled to [0, 100]
     if (drawForce < talent) { drawForce = talent; }; // Decrease impact of draw force on talent
-    var int accuracy; accuracy = (talent * drawForce)/100;
+    var int accuracy; accuracy = (talent * drawForce) / 100;
     if (accuracy < 0) { accuracy = 0; } else if (accuracy > 100) { accuracy = 100; }; // Respect the ranges
     return accuracy;
 };
@@ -98,9 +99,9 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
         else if (att == ATT_HOSTILE) { reticle.color = Focusnames_Color_Hostile(); };
     };
     // Size (scale between [0, 100]: 0 is smallest, 100 is biggest)
-    reticle.size = -dist+100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
-    // reticle.size = -freeAimGetDrawForce(weapon, talent)+100; // Or inverse draw force: bigger for less draw force
-    // reticle.size = -freeAimGetAccuracy(weapon, talent)+100; // Or inverse accuracy: bigger with lower accuracy
+    reticle.size = -dist + 100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
+    // reticle.size = -freeAimGetDrawForce(weapon, talent) + 100; // Or inverse draw force: bigger for less draw force
+    // reticle.size = -freeAimGetAccuracy(weapon, talent) + 100; // Or inverse accuracy: bigger with lower accuracy
     // More sophisticated customization is also possible: change the texture by draw force, the size by accuracy, ...
     if (weapon.flags & ITEM_BOW) { // Change reticle texture by drawforce (irrespective of the reticle size set above)
         var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent);
@@ -139,7 +140,7 @@ func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell 
         else if (att == ATT_HOSTILE) { reticle.color = Focusnames_Color_Hostile(); };
     };
     // Size (scale between [0, 100]: 0 is smallest, 100 is biggest)
-    reticle.size = -dist+100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
+    reticle.size = -dist + 100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
     // More sophisticated customization is also possible: change the texture by spellID, the size by spellLevel, ...
     // if (spellID == SPL_Firebolt) { reticle.texture = RETICLE_SIMPLE; }
     // else if (spellID == SPL_InstantFireball) { reticle.texture = RETICLE_NORMAL; }
@@ -182,6 +183,17 @@ func int freeAimHitRegistration(var C_Npc target, var C_Item weapon, var int mat
         // The example in the previous line can also be treated in freeAimGetUsedProjectileInstance() below
         return DEFLECT; // Projectiles deflect off of all other surfaces
     };
+};
+
+/* Modify this function to alter the base damage of projectiles at time of shooting (only DAM_POINT) */
+func int freeAimScaleInitialDamage(var int basePointDamage, var C_Item weapon, var int talent) {
+    // This function should not be necessary, all damage specifications should be set in the item scripts. However,
+    // here the initial damage (DAM_POINT) may be scaled by draw force, accuracy, ...
+    // Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW)
+    // Here the damage is scaled by draw force: draw force=100% => baseDamage; draw force=0% => baseDamage/2
+    var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent); // Already scaled to [0, 100]
+    drawForce = 50 * drawForce / 100 + 50; // Re-scale the drawforce to [50, 100]
+    return (basePointDamage * drawForce) / 100; // Scale initial point damage by draw force
 };
 
 /* Modify this function to define a critical hit by weak spot (e.g. head node for headshot), its size and the damage */
