@@ -23,7 +23,7 @@
  * along with G2 Free Aim.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-INSTANCE CamModRngeFA (CCamSys_Def)
+INSTANCE CamModFreeAim (CCamSys_Def)
 {
     bestRange           = 1.8; // Decrease from 2.5
     minRange            = 1.4;

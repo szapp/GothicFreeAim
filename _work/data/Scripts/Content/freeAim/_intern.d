@@ -34,7 +34,7 @@ const int    FREEAIM_DRAWTIME_MAX         = 1200;            // Max draw time (m
 const int    FREEAIM_TRAJECTORY_ARC_MAX   = 400;             // Max time (ms) after which the trajectory drops off
 const float  FREEAIM_ROTATION_SCALE       = 0.16;            // Turn rate. Non-weapon mode is 0.2 (zMouseRotationScale)
 const float  FREEAIM_SCATTER_DEG          = 2.2;             // Maximum scatter radius in degrees
-const string FREEAIM_CAMERA               = "CamModRngeFA";  // CCamSys_Def script instance for free aim (ranged combat)
+const string FREEAIM_CAMERA               = "CamModFreeAim"; // CCamSys_Def script instance for free aim
 const int    FREEAIM_CAMERA_X_SHIFT       = 0;               // One, if camera is set to shoulderview (not recommended)
 const int    FREEAIM_DEBUG_WEAKSPOT       = 0;               // Visualize weakspot bbox and trajectory
 const int    FREEAIM_DEBUG_CONSOLE        = 1;               // Console command for debugging. Turn off in final mod
@@ -82,6 +82,7 @@ const int zCWorld__TraceRayNearestHit_Vob         = 6430624; //0x621FA0
 const int zCWorld__AddVobAsChild                  = 6440352; //0x6245A0
 const int zCMaterial__vtbl                        = 8593940; //0x832214
 const int zString_CamModRanged                    = 9234704; //0x8CE910
+const int zString_CamModMagic                     = 9235048; //0x8CEA68
 const int oCAniCtrl_Human__Turn                   = 7005504; //0x6AE540
 const int oCAniCtrl_Human__GetLayerAni            = 7011712; //0x6AFD80
 const int oCNpc__GetAngles                        = 6820528; //0x6812B0
@@ -202,13 +203,15 @@ func void freeAimUpdateSettings(var int on) {
     if (on) {
         Focus_Ranged.npc_azi = 15.0; // Set stricter focus collection
         MEM_WriteString(zString_CamModRanged, STR_Upper(FREEAIM_CAMERA)); // New camera mode, upper case is important
+        if (!FREEAIM_DISABLE_SPELLS) { MEM_WriteString(zString_CamModMagic, STR_Upper(FREEAIM_CAMERA)); };
         FREEAIM_ACTIVE_PREVFRAME = 1;
     } else {
         Focus_Ranged.npc_azi = 45.0; // Reset ranged focus collection to standard
-        Focus_Magic.npc_azi = 45.0; // Reset ranged focus collection to standard
+        Focus_Magic.npc_azi = 45.0;
         Focus_Magic.item_prio = -1;
         FREEAIM_FOCUS_SPELL_FREE = -1;
         MEM_WriteString(zString_CamModRanged, "CAMMODRANGED"); // Restore camera mode, upper case is important
+        MEM_WriteString(zString_CamModMagic, "CAMMODMAGIC"); // Also for spells
         MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to projectile collision behavior on npcs
         MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59); // jz to 0x6A0BA3
         FREEAIM_ACTIVE_PREVFRAME = -1;

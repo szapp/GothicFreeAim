@@ -35,7 +35,7 @@
  *  - Critical hit event (print, sound, xp, ...):     freeAimCriticalHitEvent(target, weapon)
  * Advanced (modification not recommended):
  *  - Scatter radius for accuracy:                    FREEAIM_SCATTER_DEG
- *  - Camera view (shoulder view for ranged combat):  FREEAIM_CAMERA and FREEAIM_CAMERA_X_SHIFT
+ *  - Camera view (shoulder view):                    FREEAIM_CAMERA and FREEAIM_CAMERA_X_SHIFT
  *  - Max time before projectile drop-off:            FREEAIM_TRAJECTORY_ARC_MAX
  *  - Gravity of projectile after drop-off:           FREEAIM_PROJECTILE_GRAVITY
  *  - Turn speed while aiming:                        FREEAIM_ROTATION_SCALE
@@ -53,7 +53,7 @@ func void freeAimInitConstants() {
     // FREEAIM_SCATTER_DEG          = 2.2;             // Maximum scatter radius in degrees
     // FREEAIM_TRAJECTORY_ARC_MAX   = 400;             // Max time (ms) after which the trajectory drops off
     // FREEAIM_PROJECTILE_GRAVITY   = 0.1;             // The gravity decides how fast the projectile drops
-    // FREEAIM_CAMERA               = "CamModRngeFA";  // CCamSys_Def script instance for free aim (ranged combat)
+    // FREEAIM_CAMERA               = "CamModFreeAim"; // CCamSys_Def script instance for free aim
     // FREEAIM_CAMERA_X_SHIFT       = 0;               // One, if camera is set to shoulderview, s.a. (not recommended)
     // FREEAIM_ROTATION_SCALE       = 0.16;            // Turn rate. Non-weapon mode is 0.2 (zMouseRotationScale)
 };
