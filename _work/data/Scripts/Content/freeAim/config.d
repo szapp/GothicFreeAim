@@ -30,7 +30,8 @@
  *  - Draw force (gravity/drop-off) calculation:      freeAimGetDrawForce(weapon, talent)
  *  - Accuracy calculation:                           freeAimGetAccuracy(weapon, talent)
  *  - Reticle style (texture, color, size):           freeAimGetReticle(target, weapon, talent, distance)
- *  - Disable hit registration (e.g. friendly-fire):  freeAimHitRegistration(target, weapon, material)
+ *  - Hit registration on npcs (e.g. friendly-fire):  freeAimHitRegNpc(target, weapon, material)
+ *  - Hit registration on world:                      freeAimHitRegWld(shooter, weapon, material)
  *  - Change the base damage at time of shooting:     freeAimScaleInitialDamage(basePointDamage, weapon, talent)
  *  - Critical hit calculation (position, damage):    freeAimCriticalHitDef(target, weapon, damage)
  *  - Critical hit event (print, sound, xp, ...):     freeAimCriticalHitEvent(target, weapon)
@@ -150,39 +151,46 @@ func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell 
     // else if (spellLevel >= 2) { reticle.size = 100; };
 };
 
-/* Modify this function to disable hit registration. E.g. 'ineffective' ranged weapons, disable friendly-fire, ... */
-func int freeAimHitRegistration(var C_Npc target, var C_Item weapon, var int material) {
+/* Modify this function to disable hit registration on npcs, e.g. 'ineffective' ranged weapons, no friendly-fire, ... */
+func int freeAimHitRegNpc(var C_Npc target, var C_Item weapon, var int material) {
     // Valid return values are:
     const int DESTROY = 0; // No hit reg (no damage), projectile is destroyed
-    const int COLLIDE = 1; // Hit reg, projectile is put into inventory (npc), or is stuck in the surface (world)
+    const int COLLIDE = 1; // Hit reg (damage), projectile is put into inventory
     const int DEFLECT = 2; // No hit reg (no damage), projectile is repelled
-    // The argument 'material' holds the material of the target surface
-    // If the target surface is an npc, the material will be that of the armor, -1 for no armor equipped
-    // To check if it is an npc that is hit, use Hlp_IsValidNpc(target). In other cases target will be empty!
-    if (Hlp_IsValidNpc(target)) { // Target is an npc
-        // For armors of npcs the materials are defined as in Constants.d (MAT_METAL, MAT_WOOD, ...)
-        // Disable friendly-fire
-        if (target.aivar[AIV_PARTYMEMBER]) && (target.aivar[AIV_LASTTARGET] != Hlp_GetInstanceID(hero)) {
-            return DESTROY; };
-        //if (material == MAT_METAL) && (Hlp_Random(100) < 20) { return DEFLECT; }; // Metal armors may be more durable
-        // The weapon can also be considered (e.g. ineffective weapons). Make use of 'weapon' for that
-        // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
-        // if (Hlp_IsValidItem(weapon)) && (weapon.ineffective) { return DEFLECT; }; // Special case for weapon property
-        return COLLIDE; // Usually all shots on npcs should be registered, see freeAimGetAccuracy() above
-    } else { // Target is not an npc (might be a vob or a surface in the static world)
-        // The materials of the world are defined differently (than that of armors):
-        const int METAL = 1;
-        const int STONE = 2;
-        const int WOOD  = 3;
-        const int EARTH = 4;
-        const int WATER = 5;
-        const int SNOW  = 6;
-        const int UNDEF = 0;
-        if (material == WOOD) { return COLLIDE; }; // Projectiles stay stuck in wood (default in gothic)
-        // if (material == STONE) && (Hlp_Random(100) < 5) { return DESTROY; }; // The projectile might break on impact
-        // The example in the previous line can also be treated in freeAimGetUsedProjectileInstance() below
-        return DEFLECT; // Projectiles deflect off of all other surfaces
-    };
+    // The argument 'material' holds the material of the armor (of the target), -1 for no armor equipped
+    // For armors of npcs the materials are defined as in Constants.d (MAT_METAL, MAT_WOOD, ...)
+    if (target.aivar[AIV_PARTYMEMBER]) // Disable friendly-fire
+    && (target.aivar[AIV_LASTTARGET] != Hlp_GetInstanceID(hero)) { return DESTROY; };
+    // if (material == MAT_METAL) && (Hlp_Random(100) < 20) { return DEFLECT; }; // Metal armors may be more durable
+    // The weapon can also be considered (e.g. ineffective weapons). Make use of 'weapon' for that
+    // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
+    // if (Hlp_IsValidItem(weapon)) && (weapon.ineffective) { return DEFLECT; }; // Special case for weapon property
+    return COLLIDE; // Usually all shots on npcs should be registered, see freeAimGetAccuracy() above
+};
+
+/* Modify this function to disable hit registration on the world, e.g. deflection of metal, stuck in wood, ... */
+func int freeAimHitRegWld(var C_Npc shooter, var C_Item weapon, var int material) {
+    // This function, unlike freeAimHitRegNpc() and all other functions here, is also called for npc shooters!
+    // Valid return values are:
+    const int DESTROY = 0; // Projectile is destroyed on impact
+    const int COLLIDE = 1; // Projectile gets stuck in the surface
+    const int DEFLECT = 2; // Projectile is repelled
+    // Note: The materials of the world are defined differently (than the familiar item-materials):
+    const int METAL = 1;
+    const int STONE = 2;
+    const int WOOD  = 3;
+    const int EARTH = 4;
+    const int WATER = 5;
+    const int SNOW  = 6;
+    const int UNDEF = 0;
+    if (material == WOOD) { return COLLIDE; }; // Projectiles stay stuck in wood (default in gothic)
+    // if (Npc_IsPlayer(shooter)) ... // Keep in mind that this function is also called for npc shooters
+    // if (material == STONE) && (Hlp_Random(100) < 5) { return DESTROY; }; // The projectile might break on impact
+    // The example in the previous line can also be treated in freeAimGetUsedProjectileInstance() below
+    // The weapon can also be considered (e.g. ineffective weapons). Make use of 'weapon' for that
+    // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
+    // if (Hlp_IsValidItem(weapon)) && (weapon.ineffective) { return DEFLECT; }; // Special case for weapon property
+    return DEFLECT; // Projectiles deflect off of all other surfaces
 };
 
 /* Modify this function to alter the base damage of projectiles at time of shooting (only DAM_POINT) */
@@ -219,6 +227,8 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int dam
     //    weakspot.bDmg = mulf(damage, castToIntf(1.75));
     // } else if (target.aivar[AIV_MM_REAL_ID] == ...
     //    ...
+    } else if (target.guild == GIL_BLOODFLY) { // Bloodflys don't have a head node
+        weakspot.node = ""; // Disable critical hits this way
     } else { // Default
         weakspot.node = "Bip01 Head";
         weakspot.dimX = 60; // 60x60cm size

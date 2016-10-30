@@ -212,7 +212,7 @@ func void freeAimUpdateSettings(var int on) {
         FREEAIM_FOCUS_SPELL_FREE = -1;
         MEM_WriteString(zString_CamModRanged, "CAMMODRANGED"); // Restore camera mode, upper case is important
         MEM_WriteString(zString_CamModMagic, "CAMMODMAGIC"); // Also for spells
-        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to projectile collision behavior on npcs
+        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to default collision behavior on npcs
         MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59); // jz to 0x6A0BA3
         FREEAIM_ACTIVE_PREVFRAME = -1;
     };
@@ -626,7 +626,6 @@ func void freeAimSetupProjectile() {
     // 1st: Set base damage of projectile // oCItem.damage[DAM_INDEX_POINT];
     var int baseDamage; baseDamage = MEM_ReadStatArr(projectile+364, DAM_INDEX_POINT);
     MEM_WriteStatArr(projectile+364, DAM_INDEX_POINT, freeAimScaleInitialDamage_(baseDamage));
-    MEM_Info(IntToString(MEM_ReadStatArr(projectile+364, DAM_INDEX_POINT)));
     // 2nd: Set projectile drop-off (by draw force)
     const int call2 = 0;
     if (CALL_Begin(call2)) {
@@ -686,16 +685,34 @@ func void freeAimDropProjectile(var int rigidBody) {
     MEM_WriteByte(rigidBody+256, 1); // Turn on gravity (zCRigidBody.bitfield)
 };
 
-/* Internal helper function for freeAimHitRegistration() */
-func int freeAimHitRegistration_(var C_Npc target, var C_Npc shooter, var int material) {
+/* Internal helper function for freeAimHitRegNpc() */
+func int freeAimHitRegNpc_(var C_Npc target) {
     var C_Item weapon; weapon = MEM_NullToInst(); // Deadalus pseudo locals
-    if (Npc_IsInFightMode(shooter, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(shooter); }
-    else if (Npc_HasEquippedRangedWeapon(shooter)) { weapon = Npc_GetEquippedRangedWeapon(shooter); };
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
+    var int material; material = -1; // No armor
+    if (Npc_HasEquippedArmor(target)) {
+        var C_Item armor; armor = Npc_GetEquippedArmor(target);
+        material = armor.material;
+    };
     // Call customized function
     MEM_PushInstParam(target);
     MEM_PushInstParam(weapon);
     MEM_PushIntParam(material);
-    MEM_Call(freeAimHitRegistration); // freeAimHitRegistration(target, weapon, material);
+    MEM_Call(freeAimHitRegNpc); // freeAimHitRegNpc(target, weapon, material);
+    return MEM_PopIntResult();
+};
+
+/* Internal helper function for freeAimHitRegWld() */
+func int freeAimHitRegWld_(var C_Npc shooter, var int material) {
+    var C_Item weapon; weapon = MEM_NullToInst(); // Deadalus pseudo locals
+    if (Npc_IsInFightMode(shooter, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(shooter); }
+    else if (Npc_HasEquippedRangedWeapon(shooter)) { weapon = Npc_GetEquippedRangedWeapon(shooter); };
+    // Call customized function
+    MEM_PushInstParam(shooter);
+    MEM_PushInstParam(weapon);
+    MEM_PushIntParam(material);
+    MEM_Call(freeAimHitRegWld); // freeAimHitRegWld(shooter, weapon, material);
     return MEM_PopIntResult();
 };
 
@@ -705,8 +722,8 @@ func void freeAimDoNpcHit() {
     var C_Npc target; target = _^(MEM_ReadInt(ESP+28)); // esp+1ACh+190h // oCNpc*
     var C_Npc shooter; shooter = _^(MEM_ReadInt(EBP+92)); // ebp+5Ch // oCNpc*
     var int projectile; projectile = MEM_ReadInt(EBP+88); // ebp+58h // oCItem*
-    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { // Default hitchance for npcs and if fa disabled
-        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to projectile collision behavior on npcs
+    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { // Default hitchance for npcs or if fa is disabled
+        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to default collision behavior on npcs
         MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59); // jz to 0x6A0BA3
         return;
     };
@@ -732,29 +749,25 @@ func void freeAimDoNpcHit() {
     end;
     var int hit;
     if (intersection) {
-        var int material; material = -1; // No armor
-        if (Npc_HasEquippedArmor(target)) {
-            var C_Item armor; armor = Npc_GetEquippedArmor(target);
-            material = armor.material;
-        };
-        var int collision; collision = freeAimHitRegistration_(target, hero, material); // 0=destroy, 1=stuck, 2=deflect
+        var int collision; collision = freeAimHitRegNpc_(target); // 0=destroy, 1=stuck, 2=deflect
         if (collision == 2) { // Deflect (no damage)
-            MEM_WriteByte(projectileDeflectOffNpcAddr, ASMINT_OP_nop);
+            MEM_WriteByte(projectileDeflectOffNpcAddr, ASMINT_OP_nop); // Skip npc armor collision check, deflect always
             MEM_WriteByte(projectileDeflectOffNpcAddr + 1, ASMINT_OP_nop);
             hit = FALSE;
         } else {
-            MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116);
+            MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Jump beyond armor collision check, deflect never
             MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*60*/ 96); // jz to 0x6A0BC8
             if (!collision) { // Destroy (no damage)
-                hit = FALSE;
                 MEM_WriteInt(projectile+816, -1); // Delete item instance (it will not be put into the directory)
+                hit = FALSE;
             } else { // Collide (damage)
                 hit = TRUE;
             };
         };
     } else { // Destroy the projectile if it did not physically hit
-        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116);
+        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Jump beyond the armor collision check, deflect never
         MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*60*/ 96); // jz to 0x6A0BC8
+        MEM_WriteInt(projectile+816, -1); // Delete item instance (it will not be put into the directory)
         hit = FALSE;
     };
     MEM_WriteInt(ESP+24, hit*100); // Player always hits = 100%
@@ -767,8 +780,7 @@ func void freeAimOnArrowCollide() {
     var int matobj; matobj = MEM_ReadInt(ECX); // zCMaterial* or zCPolygon*
     if (MEM_ReadInt(matobj) != zCMaterial__vtbl) { matobj = MEM_ReadInt(matobj+24); }; // Static world: Read zCPolygon
     var int material; material = MEM_ReadInt(matobj+64);
-    var C_Npc emptyNpc; emptyNpc = MEM_NullToInst();
-    var int collision; collision = freeAimHitRegistration_(emptyNpc, shooter, material); // 0=destroy, 1=stay, 2=deflect
+    var int collision; collision = freeAimHitRegWld_(shooter, material); // 0=destroy, 1=stay, 2=deflect
     if (collision == 1) { // Collide
         EDI = material; // Sets the condition at 0x6A0A45 and 0x6A0C1A to true: Projectile stays
     } else {
@@ -944,6 +956,7 @@ func void freeAimDetectCriticalHit() {
     var int autoAlloc[8]; var Weakspot weakspot; weakspot = _^(_@(autoAlloc)); // Gothic takes care of freeing this ptr
     freeAimCriticalHitDef_(targetNpc, damagePtr, _@(weakspot)); // Retrieve weakspot specs
     var int nodeStrPtr; nodeStrPtr = _@(weakspot);
+    if (Hlp_StrCmp(MEM_ReadString(nodeStrPtr), "")) { return; }; // No critical node defined
     const int call2 = 0;
     if (CALL_Begin(call2)) {
         CALL_PtrParam(_@(nodeStrPtr));
