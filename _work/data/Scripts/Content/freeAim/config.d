@@ -24,6 +24,7 @@
  *  - Show weakspot debug visualization by default    FREEAIM_DEBUG_WEAKSPOT
  *  - Allow freeAim console commands (cheats)         FREEAIM_DEBUG_CONSOLE
  *  - Maximum bow draw time (ms):                     FREEAIM_DRAWTIME_MAX
+ *  - Disable free aiming for spells (yes/no):        FREEAIM_DISABLE_SPELLS
  *  - Collect and re-use shot projectiles (yes/no):   FREEAIM_REUSE_PROJECTILES
  *  - Projectile instance for re-using                freeAimGetUsedProjectileInstance(instance, targetNpc)
  *  - Draw force (gravity/drop-off) calculation:      freeAimGetDrawForce(weapon, talent)
@@ -44,6 +45,7 @@
 func void freeAimInitConstants() {
     // If you want to change a setting, uncomment the respective line. These are the default values.
     // FREEAIM_REUSE_PROJECTILES    = 1;               // Enable collection and re-using of shot projectiles
+    // FREEAIM_DISABLE_SPELLS       = 0;               // If true, free aiming is disabled for spells (not for ranged)
     // FREEAIM_DRAWTIME_MAX         = 1200;            // Max draw time (ms): When is the bow fully drawn
     // FREEAIM_DEBUG_CONSOLE        = 1;               // Console commands for debugging. Set to zero in final mod
     // FREEAIM_DEBUG_WEAKSPOT       = 0;               // Visualize weakspot bbox and trajectory by default
@@ -51,7 +53,7 @@ func void freeAimInitConstants() {
     // FREEAIM_SCATTER_DEG          = 2.2;             // Maximum scatter radius in degrees
     // FREEAIM_TRAJECTORY_ARC_MAX   = 400;             // Max time (ms) after which the trajectory drops off
     // FREEAIM_PROJECTILE_GRAVITY   = 0.1;             // The gravity decides how fast the projectile drops
-    // FREEAIM_CAMERA               = "CamModRngeFA";  // CCamSys_Def script instance (camera) for free aim
+    // FREEAIM_CAMERA               = "CamModFreeAim"; // CCamSys_Def script instance for free aim
     // FREEAIM_CAMERA_X_SHIFT       = 0;               // One, if camera is set to shoulderview, s.a. (not recommended)
     // FREEAIM_ROTATION_SCALE       = 0.16;            // Turn rate. Non-weapon mode is 0.2 (zMouseRotationScale)
 };
@@ -83,13 +85,12 @@ const string RETICLE_SIMPLE = "RETICLESIMPLE.TGA";
 const string RETICLE_NORMAL = "RETICLENORMAL.TGA";
 const string RETICLE_NOTCH  = "RETICLENOTCH.TGA";
 
-/* Modify this function to alter the reticle texture, color and size (scaled between 0 and 100). */
-func void freeAimGetReticle(var C_Npc target, var C_Item weapon, var int talent, var int distance, var int returnPtr) {
-    var Reticle reticle; reticle = _^(returnPtr);
+/* Modify this function to alter the reticle texture, color and size (scaled between 0 and 100) for ranged combat. */
+func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int talent, var int dist, var int rtrnPtr) {
+    var Reticle reticle; reticle = _^(rtrnPtr);
     // Texture (needs to be set, otherwise reticle will not be displayed)
     if (weapon.flags & ITEM_BOW) { reticle.texture = RETICLE_NOTCH; } // Bow readied (this is actually replaced below)
-    else if (weapon.flags & ITEM_CROSSBOW) { reticle.texture = RETICLE_NOTCH; } // Crossbow readied
-    else { reticle.texture = RETICLE_NORMAL; };
+    else if (weapon.flags & ITEM_CROSSBOW) { reticle.texture = RETICLE_NOTCH; }; // Crossbow readied
     // Color (do not set the color to preserve the original texture color)
     if (Hlp_IsValidNpc(target)) { // The argument 'target' might be empty!
         var int att; att = Npc_GetAttitude(target, hero);
@@ -97,7 +98,7 @@ func void freeAimGetReticle(var C_Npc target, var C_Item weapon, var int talent,
         else if (att == ATT_HOSTILE) { reticle.color = Focusnames_Color_Hostile(); };
     };
     // Size (scale between [0, 100]: 0 is smallest, 100 is biggest)
-    reticle.size = -distance+100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
+    reticle.size = -dist+100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
     // reticle.size = -freeAimGetDrawForce(weapon, talent)+100; // Or inverse draw force: bigger for less draw force
     // reticle.size = -freeAimGetAccuracy(weapon, talent)+100; // Or inverse accuracy: bigger with lower accuracy
     // More sophisticated customization is also possible: change the texture by draw force, the size by accuracy, ...
@@ -121,6 +122,31 @@ func void freeAimGetReticle(var C_Npc target, var C_Item weapon, var int talent,
         else if (drawForce < 100) { reticle.texture = "RETICLENOTCH15.TGA"; }
         else { reticle.texture = RETICLE_NOTCH; };
     };
+};
+
+/* Modify this function to alter the reticle texture, color and size (scaled between 0 and 100) for magic combat. */
+func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell spellInst, var int spellLevel,
+        var int dist, var int rtrnPtr) {
+    var Reticle reticle; reticle = _^(rtrnPtr);
+    // Texture (needs to be set, otherwise reticle will not be displayed)
+    if (spellInst.spellType == SPELL_GOOD) { reticle.texture = RETICLE_NORMAL; }
+    else if (spellInst.spellType == SPELL_NEUTRAL) { reticle.texture = RETICLE_NORMAL; }
+    else if (spellInst.spellType == SPELL_BAD) { reticle.texture = RETICLE_NORMAL; };
+    // Color (do not set the color to preserve the original texture color)
+    if (Hlp_IsValidNpc(target)) { // The argument 'target' might be empty!
+        var int att; att = Npc_GetAttitude(target, hero);
+        if (att == ATT_FRIENDLY) { reticle.color = Focusnames_Color_Friendly(); }
+        else if (att == ATT_HOSTILE) { reticle.color = Focusnames_Color_Hostile(); };
+    };
+    // Size (scale between [0, 100]: 0 is smallest, 100 is biggest)
+    reticle.size = -dist+100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
+    // More sophisticated customization is also possible: change the texture by spellID, the size by spellLevel, ...
+    // if (spellID == SPL_Firebolt) { reticle.texture = RETICLE_SIMPLE; }
+    // else if (spellID == SPL_InstantFireball) { reticle.texture = RETICLE_NORMAL; }
+    // else if ...
+    // Size by spell level for invest spells (e.g. increase size by invest level)
+    // if (spellLevel < 2) { reticle.size = 75; }
+    // else if (spellLevel >= 2) { reticle.size = 100; };
 };
 
 /* Modify this function to disable hit registration. E.g. 'ineffective' ranged weapons, disable friendly-fire, ... */
@@ -159,8 +185,8 @@ func int freeAimHitRegistration(var C_Npc target, var C_Item weapon, var int mat
 };
 
 /* Modify this function to define a critical hit by weak spot (e.g. head node for headshot), its size and the damage */
-func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int damage, var int returnPtr) {
-    var Weakspot weakspot; weakspot = _^(returnPtr);
+func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int damage, var int rtrnPtr) {
+    var Weakspot weakspot; weakspot = _^(rtrnPtr);
     // This function is dynamic: It is called on every hit and the weakspot and damage can be calculated individually
     // Possibly incorporate weapon-specific stats, headshot talent, dependecy on target, ...
     // The damage may depent on the target npc (e.g. different damage for monsters). Make use of 'target' argument
