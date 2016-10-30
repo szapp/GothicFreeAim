@@ -119,7 +119,7 @@ const int onDmgAnimationAddr                      = 6774593; //0x675F41 // Hook 
 const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook length 7
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook length 7
 const int oCSpell__Setup_484BA9                   = 4737961; //0x484BA9 // Hook length 6
-const int disableSpellAutoTurn                    = 4665539; //0x4730C3 // Hook length 6
+const int spellAutoTurnAddr                       = 4665539; //0x4730C3 // Hook length 6
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook length 5
 
 /* Initialize free aim framework */
@@ -149,7 +149,7 @@ func void freeAim_Init() {
         if (!FREEAIM_DISABLE_SPELLS) {
             HookEngineF(oCAIHuman__MagicMode, 7, freeAimSpellReticle); // Manage focus collection and reticle
             HookEngineF(oCSpell__Setup_484BA9, 6, freeAimSetupSpell); // Set spell fx direction and trajectory
-            HookEngineF(disableSpellAutoTurn, 6, freeAimDisableSpellAutoTurn); // Prevent auto turning towards target
+            HookEngineF(spellAutoTurnAddr, 6, freeAimDisableSpellAutoTurn); // Prevent auto turning towards target
         };
         if (FREEAIM_DEBUG_CONSOLE) { // Enable console command for debugging
             CC_Register(freeAimDebugWeakspot, "debug weakspot", "turn debug visualization on/off");
@@ -190,7 +190,7 @@ func int freeAimSpellEligible(var C_Spell spell) {
     if ((spell.targetCollectAlgo != TARGET_COLLECT_NONE) // Only if spell instance does not force a focus
     && (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS_FALLBACK_NONE))
     || (spell.targetCollectRange <= 0) || (spell.targetCollectAzi <= 0) || (spell.targetCollectElev <= 0) // SPL_Light
-    || /*(!spell.canTurnDuringInvest) ||*/ (!spell.canChangeTargetDuringInvest) { // Overwrite canTurnDuringInvest!
+    || (!spell.canTurnDuringInvest) || (!spell.canChangeTargetDuringInvest) {
         return FALSE;
     };
     return TRUE; // All other cases
@@ -1046,7 +1046,13 @@ func void freeAimSpellReticle() {
 
 /* Disable auto turning towards the target for free aiming spells */
 func void freeAimDisableSpellAutoTurn() {
-    if (freeAimIsActive()) {
-        MEM_WriteInt(EDI+144, 0); // edi+90h
+    var int herPtr; herPtr = _@(hero);
+    if (freeAimIsActive() && MEM_ReadInt(herPtr+1176)) { //0x0498 oCNpc.enemy
+        const int call3 = 0; var int null; // Remove the enemy properly: reference counter
+        if (CALL_Begin(call3)) {
+            CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. Target will be set to aimvob when shooting
+            CALL__thiscall(_@(herPtr), oCNpc__SetEnemy); // This disables turning towards the target
+            call3 = CALL_End();
+        };
     };
 };
