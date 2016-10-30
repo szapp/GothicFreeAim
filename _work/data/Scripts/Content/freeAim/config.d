@@ -39,6 +39,7 @@
  *  - Max time before projectile drop-off:            FREEAIM_TRAJECTORY_ARC_MAX
  *  - Gravity of projectile after drop-off:           FREEAIM_PROJECTILE_GRAVITY
  *  - Turn speed while aiming:                        FREEAIM_ROTATION_SCALE
+ *  - Shift the aim vob:                              freeAimShiftAimVob
  */
 
 /* Initialize fixed settings. This function is called once at the beginning of each session. Set the constants here */
@@ -147,6 +148,7 @@ func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell 
     // Size by spell level for invest spells (e.g. increase size by invest level)
     // if (spellLevel < 2) { reticle.size = 75; }
     // else if (spellLevel >= 2) { reticle.size = 100; };
+    if (spellID == SPL_Blink) { reticle.texture = ""; }; // No reticle for blink
 };
 
 /* Modify this function to disable hit registration. E.g. 'ineffective' ranged weapons, disable friendly-fire, ... */
@@ -246,4 +248,10 @@ func int freeAimGetUsedProjectileInstance(var int projectileInst, var C_Npc inve
         // if (PLAYER_TALENT_REUSE_ARROW == FALSE) { return 0; }; // Reuse-projectile-talent
         return projectileInst; // For now it is just preserved (leave it in the world as is)
     };
+};
+
+/* Shift the aimvob along the camera out vector for spells (if you don't know what this is, you don't need it) */
+func int freeAimShiftAimVob(var int spellID) {
+    if (spellID == SPL_Blink) { return -100; }; // SPL_Blink visualizes the aim vob: push it away from any wall
+    return 0;
 };

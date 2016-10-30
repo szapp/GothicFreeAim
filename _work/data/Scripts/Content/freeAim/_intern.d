@@ -322,6 +322,21 @@ func void freeAimManualRotation() {
     };
 };
 
+/* Manipulate the position of the aim vob */
+func void freeAimManipulateAimVobPos(var int posPtr) {
+    var int spell; spell = Npc_GetActiveSpell(hero);
+    MEM_PushIntParam(spell);
+    MEM_Call(freeAimShiftAimVob);
+    var int pushed; pushed = MEM_PopIntResult();
+    if (pushed) {
+        pushed = mkf(pushed); // Mount to push the aim vob along the out vector of the camera
+        var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60);
+        MEM_WriteInt(posPtr+0, addf(MEM_ReadInt(posPtr+0), mulf(camPos.v0[2], pushed)));
+        MEM_WriteInt(posPtr+4, addf(MEM_ReadInt(posPtr+4), mulf(camPos.v1[2], pushed)));
+        MEM_WriteInt(posPtr+8, addf(MEM_ReadInt(posPtr+8), mulf(camPos.v2[2], pushed)));
+    };
+};
+
 /* Create and set aim vob to position */
 func int freeAimSetupAimVob(var int posPtr) {
     var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB"); // Arrow needs target vob
@@ -334,6 +349,8 @@ func int freeAimSetupAimVob(var int posPtr) {
         CALL_PtrParam(vobPtr);
         CALL__thiscall(_@(MEM_World), zCWorld__AddVobAsChild);
     };
+    MEM_CopyBytes(_@(hero)+60, vobPtr+60, 64); // Include rotation
+    freeAimManipulateAimVobPos(posPtr);
     const int call4 = 0; // Set position to aim vob
     if (CALL_Begin(call4)) {
         CALL_PtrParam(_@(posPtr)); // Update aim vob position
