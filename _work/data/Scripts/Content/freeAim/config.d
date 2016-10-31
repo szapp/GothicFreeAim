@@ -86,6 +86,8 @@ func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
 const string RETICLE_SIMPLE = "RETICLESIMPLE.TGA";
 const string RETICLE_NORMAL = "RETICLENORMAL.TGA";
 const string RETICLE_NOTCH  = "RETICLENOTCH.TGA";
+const string RETICLE_FIRE   = "RETICLEFIRE.TGA";
+const string RETICLE_WATER  = "RETICLEWATER.TGA";
 
 /* Modify this function to alter the reticle texture, color and size (scaled between 0 and 100) for ranged combat. */
 func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int talent, var int dist, var int rtrnPtr) {
