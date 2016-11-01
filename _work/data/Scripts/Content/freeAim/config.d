@@ -83,11 +83,12 @@ func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
     return accuracy;
 };
 
-const string RETICLE_SIMPLE = "RETICLESIMPLE.TGA";
-const string RETICLE_NORMAL = "RETICLENORMAL.TGA";
-const string RETICLE_NOTCH  = "RETICLENOTCH.TGA";
-const string RETICLE_FIRE   = "RETICLEFIRE.TGA";
-const string RETICLE_WATER  = "RETICLEWATER.TGA";
+const string RETICLE_DOT           = "RETICLEDOT.TGA";
+const string RETICLE_CROSSDOT      = "RETICLECROSSDOT.TGA";
+const string RETICLE_DOUBLECIRCLE  = "RETICLEDOUBLECIRCLE.TGA";       // Can be animated (rotation)  [00, 09]
+const string RETICLE_NOTCH         = "RETICLENOTCH.TGA";              // Can be animated (expanding) [00, 16]
+const string RETICLE_FRAME         = "RETICLEFRAME.TGA";
+const string RETICLE_WHIRL         = "RETICLEWHIRL.TGA";              // Can be animated (rotation)  [00, 09]
 
 /* Modify this function to alter the reticle texture, color and size (scaled between 0 and 100) for ranged combat. */
 func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int talent, var int dist, var int rtrnPtr) {
@@ -133,9 +134,9 @@ func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell 
         var int dist, var int rtrnPtr) {
     var Reticle reticle; reticle = _^(rtrnPtr);
     // Texture (needs to be set, otherwise reticle will not be displayed)
-    if (spellInst.spellType == SPELL_GOOD) { reticle.texture = RETICLE_NORMAL; }
-    else if (spellInst.spellType == SPELL_NEUTRAL) { reticle.texture = RETICLE_NORMAL; }
-    else if (spellInst.spellType == SPELL_BAD) { reticle.texture = RETICLE_NORMAL; };
+    if (spellInst.spellType == SPELL_GOOD) { reticle.texture = RETICLE_CROSSDOT; }
+    else if (spellInst.spellType == SPELL_NEUTRAL) { reticle.texture = RETICLE_CROSSDOT; }
+    else if (spellInst.spellType == SPELL_BAD) { reticle.texture = RETICLE_CROSSDOT; };
     // Color (do not set the color to preserve the original texture color)
     if (Hlp_IsValidNpc(target)) { // The argument 'target' might be empty!
         var int att; att = Npc_GetAttitude(target, hero);
@@ -146,11 +147,14 @@ func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell 
     reticle.size = -dist + 100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
     // More sophisticated customization is also possible: change the texture by spellID, the size by spellLevel, ...
     // if (spellID == SPL_Firebolt) { reticle.texture = RETICLE_SIMPLE; }
-    // else if (spellID == SPL_InstantFireball) { reticle.texture = RETICLE_NORMAL; }
+    // else if (spellID == SPL_InstantFireball) { reticle.texture = RETICLE_CROSSDOT; }
     // else if ...
     // Size by spell level for invest spells (e.g. increase size by invest level)
     // if (spellLevel < 2) { reticle.size = 75; }
     // else if (spellLevel >= 2) { reticle.size = 100; };
+    var int cycle; cycle = (MEM_Timer.totalTime % 250) / 25; // Cycles through [0, 9] in 250 ms
+    reticle.texture = ConcatStrings(ConcatStrings("RETICLEDOUBLECIRCLE0", IntToString(cycle)), ".TGA"); // Rotating
+    // reticle.texture = ConcatStrings(ConcatStrings("RETICLEWHIRL0", IntToString(cycle)), ".TGA"); // Rotating
 };
 
 /* Modify this function to disable hit registration on npcs, e.g. 'ineffective' ranged weapons, no friendly-fire, ... */
