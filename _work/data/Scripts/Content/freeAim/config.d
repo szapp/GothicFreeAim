@@ -84,11 +84,22 @@ func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
 };
 
 const string RETICLE_DOT           = "RETICLEDOT.TGA";
-const string RETICLE_CROSSDOT      = "RETICLECROSSDOT.TGA";
-const string RETICLE_DOUBLECIRCLE  = "RETICLEDOUBLECIRCLE.TGA";       // Can be animated (rotation)  [00, 09]
-const string RETICLE_NOTCH         = "RETICLENOTCH.TGA";              // Can be animated (expanding) [00, 16]
+const string RETICLE_CROSSTWO      = "RETICLECROSSTWO.TGA";
+const string RETICLE_CROSSTHREE    = "RETICLECROSSTHREE.TGA";
+const string RETICLE_CROSSFOUR     = "RETICLECROSSFOUR.TGA";
+const string RETICLE_X             = "RETICLEX.TGA";
+const string RETICLE_CIRCLE        = "RETICLECIRCLE.TGA";
+const string RETICLE_CIRCLECROSS   = "RETICLECIRCLECROSS.TGA";
+const string RETICLE_DOUBLECIRCLE  = "RETICLEDOUBLECIRCLE.TGA";       // Can be animated (rotation)  [0..9]
+const string RETICLE_NOTCH         = "RETICLENOTCH.TGA";              // Can be animated (expanding) [00..16] not auto!
+const string RETICLE_PEAK          = "RETICLEPEAK.TGA";
+const string RETICLE_TRI_IN        = "RETICLETRIIN.TGA";              // Can be animated (expanding) [00..16] not auto!
+const string RETICLE_TRI_IN_DOT    = "RETICLETRIINDOT.TGA";           // Can be animated (expanding) [00..16] not auto!
+const string RETICLE_TRI_OUT_DOT   = "RETICLETRIINDOT.TGA";           // Can be animated (expanding) [00..16] not auto!
 const string RETICLE_FRAME         = "RETICLEFRAME.TGA";
-const string RETICLE_WHIRL         = "RETICLEWHIRL.TGA";              // Can be animated (rotation)  [00, 09]
+const string RETICLE_WHIRL         = "RETICLEWHIRL.TGA";              // Can be animated (rotation)  [0..9]
+const string RETICLE_SPADES        = "RETICLESPADES.TGA";
+const string RETICLE_SQUIGGLE      = "RETICLESQUIGGLE.TGA";
 
 /* Modify this function to alter the reticle texture, color and size (scaled between 0 and 100) for ranged combat. */
 func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int talent, var int dist, var int rtrnPtr) {
@@ -109,23 +120,24 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
     // More sophisticated customization is also possible: change the texture by draw force, the size by accuracy, ...
     if (weapon.flags & ITEM_BOW) { // Change reticle texture by drawforce (irrespective of the reticle size set above)
         var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent);
-        if (drawForce < 5) { reticle.texture = "RETICLENOTCH00.TGA"; } // Simulate draw force by animating the reticle
-        else if (drawForce < 11) { reticle.texture = "RETICLENOTCH01.TGA"; }
-        else if (drawForce < 17) { reticle.texture = "RETICLENOTCH02.TGA"; }
-        else if (drawForce < 23) { reticle.texture = "RETICLENOTCH03.TGA"; }
-        else if (drawForce < 29) { reticle.texture = "RETICLENOTCH04.TGA"; }
-        else if (drawForce < 35) { reticle.texture = "RETICLENOTCH05.TGA"; }
-        else if (drawForce < 41) { reticle.texture = "RETICLENOTCH06.TGA"; }
-        else if (drawForce < 47) { reticle.texture = "RETICLENOTCH07.TGA"; }
-        else if (drawForce < 53) { reticle.texture = "RETICLENOTCH08.TGA"; }
-        else if (drawForce < 59) { reticle.texture = "RETICLENOTCH09.TGA"; }
-        else if (drawForce < 65) { reticle.texture = "RETICLENOTCH10.TGA"; }
-        else if (drawForce < 73) { reticle.texture = "RETICLENOTCH11.TGA"; }
-        else if (drawForce < 81) { reticle.texture = "RETICLENOTCH12.TGA"; }
-        else if (drawForce < 88) { reticle.texture = "RETICLENOTCH13.TGA"; }
-        else if (drawForce < 94) { reticle.texture = "RETICLENOTCH14.TGA"; }
-        else if (drawForce < 100) { reticle.texture = "RETICLENOTCH15.TGA"; }
-        else { reticle.texture = RETICLE_NOTCH; };
+        var string base; base = "RETICLENOTCH";
+        if (drawForce < 5) { reticle.texture = ConcatStrings(base, "00.TGA"); } // Simulate draw force by animation
+        else if (drawForce < 11) { reticle.texture = ConcatStrings(base, "01.TGA"); }
+        else if (drawForce < 17) { reticle.texture = ConcatStrings(base, "02.TGA"); }
+        else if (drawForce < 23) { reticle.texture = ConcatStrings(base, "03.TGA"); }
+        else if (drawForce < 29) { reticle.texture = ConcatStrings(base, "04.TGA"); }
+        else if (drawForce < 35) { reticle.texture = ConcatStrings(base, "05.TGA"); }
+        else if (drawForce < 41) { reticle.texture = ConcatStrings(base, "06.TGA"); }
+        else if (drawForce < 47) { reticle.texture = ConcatStrings(base, "07.TGA"); }
+        else if (drawForce < 53) { reticle.texture = ConcatStrings(base, "08.TGA"); }
+        else if (drawForce < 59) { reticle.texture = ConcatStrings(base, "09.TGA"); }
+        else if (drawForce < 65) { reticle.texture = ConcatStrings(base, "10.TGA"); }
+        else if (drawForce < 73) { reticle.texture = ConcatStrings(base, "11.TGA"); }
+        else if (drawForce < 81) { reticle.texture = ConcatStrings(base, "12.TGA"); }
+        else if (drawForce < 88) { reticle.texture = ConcatStrings(base, "13.TGA"); }
+        else if (drawForce < 94) { reticle.texture = ConcatStrings(base, "14.TGA"); }
+        else if (drawForce < 100) { reticle.texture = ConcatStrings(base, "15.TGA"); }
+        else { reticle.texture = ConcatStrings(base, "16.TGA"); };
     };
 };
 
@@ -134,9 +146,9 @@ func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell 
         var int dist, var int rtrnPtr) {
     var Reticle reticle; reticle = _^(rtrnPtr);
     // Texture (needs to be set, otherwise reticle will not be displayed)
-    if (spellInst.spellType == SPELL_GOOD) { reticle.texture = RETICLE_CROSSDOT; }
-    else if (spellInst.spellType == SPELL_NEUTRAL) { reticle.texture = RETICLE_CROSSDOT; }
-    else if (spellInst.spellType == SPELL_BAD) { reticle.texture = RETICLE_CROSSDOT; };
+    if (spellInst.spellType == SPELL_GOOD) { reticle.texture = RETICLE_CIRCLECROSS; }
+    else if (spellInst.spellType == SPELL_NEUTRAL) { reticle.texture = RETICLE_CIRCLECROSS; }
+    else if (spellInst.spellType == SPELL_BAD) { reticle.texture = RETICLE_CIRCLECROSS; };
     // Color (do not set the color to preserve the original texture color)
     if (Hlp_IsValidNpc(target)) { // The argument 'target' might be empty!
         var int att; att = Npc_GetAttitude(target, hero);
@@ -147,12 +159,12 @@ func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell 
     reticle.size = -dist + 100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
     // More sophisticated customization is also possible: change the texture by spellID, the size by spellLevel, ...
     // if (spellID == SPL_Firebolt) { reticle.texture = RETICLE_SIMPLE; }
-    // else if (spellID == SPL_InstantFireball) { reticle.texture = RETICLE_CROSSDOT; }
+    // else if (spellID == SPL_InstantFireball) { reticle.texture = RETICLE_CIRCLECROSS; }
     // else if ...
     // Size by spell level for invest spells (e.g. increase size by invest level)
     // if (spellLevel < 2) { reticle.size = 75; }
     // else if (spellLevel >= 2) { reticle.size = 100; };
-    reticle.texture = freeAimAnimateReticle(RETICLE_DOUBLECIRCLE, 30); // Animate reticle with 30 fps
+    reticle.texture = freeAimAnimateReticle(RETICLE_DOUBLECIRCLE, 30); // Animate reticle with 30 FPS
 };
 
 /* Modify this function to disable hit registration on npcs, e.g. 'ineffective' ranged weapons, no friendly-fire, ... */
