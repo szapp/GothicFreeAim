@@ -152,9 +152,7 @@ func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell 
     // Size by spell level for invest spells (e.g. increase size by invest level)
     // if (spellLevel < 2) { reticle.size = 75; }
     // else if (spellLevel >= 2) { reticle.size = 100; };
-    var int cycle; cycle = (MEM_Timer.totalTime % 250) / 25; // Cycles through [0, 9] in 250 ms
-    reticle.texture = ConcatStrings(ConcatStrings("RETICLEDOUBLECIRCLE0", IntToString(cycle)), ".TGA"); // Rotating
-    // reticle.texture = ConcatStrings(ConcatStrings("RETICLEWHIRL0", IntToString(cycle)), ".TGA"); // Rotating
+    reticle.texture = freeAimAnimateReticle(RETICLE_DOUBLECIRCLE, 30); // Animate reticle with 30 fps
 };
 
 /* Modify this function to disable hit registration on npcs, e.g. 'ineffective' ranged weapons, no friendly-fire, ... */

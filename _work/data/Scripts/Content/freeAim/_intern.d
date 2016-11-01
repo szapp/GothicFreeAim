@@ -259,6 +259,14 @@ func int freeAimIsActive() {
     return FMODE_FAR;
 };
 
+/* Returns the texture file name for an animated texture. Ten files must exist with the postfix _0 through _9 */
+func string freeAimAnimateReticle(var string fileName, var int fps) {
+    var int frameTime; frameTime = 1000/fps; // Time of one frame
+    var int cycle; cycle = (MEM_Timer.totalTime % (frameTime*10)) / frameTime; // Cycle through [0, 9]
+    var string prefix; prefix = STR_SubStr(fileName, 0, STR_Len(fileName)-4); // Base name (without extension)
+    return ConcatStrings(ConcatStrings(ConcatStrings(prefix, "_"), IntToString(cycle)), ".TGA");
+};
+
 /* Hide reticle */
 func void freeAimRemoveReticle() {
     if (Hlp_IsValidHandle(freeAimReticleHndl)) { View_Close(freeAimReticleHndl); };
