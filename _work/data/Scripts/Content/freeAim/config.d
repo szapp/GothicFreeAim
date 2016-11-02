@@ -83,6 +83,9 @@ func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
     return accuracy;
 };
 
+// This a list of available reticle texturs. Some of them are animated as indicated. Animated textures with "not auto!"
+// cannot be animated automatically. The others (consisting of 10 frames) can be passed to the function
+// freeAimAnimateReticle(textureFileName, framesPerSecond)
 const string RETICLE_DOT           = "RETICLEDOT.TGA";
 const string RETICLE_CROSSTWO      = "RETICLECROSSTWO.TGA";
 const string RETICLE_CROSSTHREE    = "RETICLECROSSTHREE.TGA";
@@ -91,14 +94,16 @@ const string RETICLE_X             = "RETICLEX.TGA";
 const string RETICLE_CIRCLE        = "RETICLECIRCLE.TGA";
 const string RETICLE_CIRCLECROSS   = "RETICLECIRCLECROSS.TGA";
 const string RETICLE_DOUBLECIRCLE  = "RETICLEDOUBLECIRCLE.TGA";       // Can be animated (rotation)  [0..9]
-const string RETICLE_NOTCH         = "RETICLENOTCH.TGA";              // Can be animated (expanding) [00..16] not auto!
 const string RETICLE_PEAK          = "RETICLEPEAK.TGA";
+const string RETICLE_NOTCH         = "RETICLENOTCH.TGA";              // Can be animated (expanding) [00..16] not auto!
 const string RETICLE_TRI_IN        = "RETICLETRIIN.TGA";              // Can be animated (expanding) [00..16] not auto!
 const string RETICLE_TRI_IN_DOT    = "RETICLETRIINDOT.TGA";           // Can be animated (expanding) [00..16] not auto!
-const string RETICLE_TRI_OUT_DOT   = "RETICLETRIINDOT.TGA";           // Can be animated (expanding) [00..16] not auto!
+const string RETICLE_TRI_OUT_DOT   = "RETICLETRIOUTDOT.TGA";          // Can be animated (expanding) [00..16] not auto!
+const string RETICLE_DROP          = "RETICLEDROP.TGA";               // Can be animated (expanding) [00..07] not auto!
 const string RETICLE_FRAME         = "RETICLEFRAME.TGA";
 const string RETICLE_BOWL          = "RETICLEBOWL.TGA";
-const string RETICLE_BLAZE         = "RETICLEBLAZE.TGA";              // Can be animated (rotation)  [0..9]
+const string RETICLE_HORNS         = "RETICLEHORNS.TGA";
+const string RETICLE_BLAZE         = "RETICLEBLAZE.TGA";              // Can be animated (flames)    [0..9]
 const string RETICLE_WHIRL         = "RETICLEWHIRL.TGA";              // Can be animated (rotation)  [0..9]
 const string RETICLE_SPADES        = "RETICLESPADES.TGA";
 const string RETICLE_SQUIGGLE      = "RETICLESQUIGGLE.TGA";
@@ -106,9 +111,6 @@ const string RETICLE_SQUIGGLE      = "RETICLESQUIGGLE.TGA";
 /* Modify this function to alter the reticle texture, color and size (scaled between 0 and 100) for ranged combat. */
 func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int talent, var int dist, var int rtrnPtr) {
     var Reticle reticle; reticle = _^(rtrnPtr);
-    // Texture (needs to be set, otherwise reticle will not be displayed)
-    if (weapon.flags & ITEM_BOW) { reticle.texture = RETICLE_NOTCH; } // Bow readied (this is actually replaced below)
-    else if (weapon.flags & ITEM_CROSSBOW) { reticle.texture = RETICLE_NOTCH; }; // Crossbow readied
     // Color (do not set the color to preserve the original texture color)
     if (Hlp_IsValidNpc(target)) { // The argument 'target' might be empty!
         var int att; att = Npc_GetAttitude(target, hero);
@@ -141,21 +143,16 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
         else if (drawForce < 100) { reticle.texture = ConcatStrings(base, "15.TGA"); }
         else { reticle.texture = ConcatStrings(base, "16.TGA"); };
     } else if (weapon.flags & ITEM_CROSSBOW) {
-        reticle.size = 100;
+        reticle.size = 100; // Keep the size fixed here
         var string base2; base2 = "RETICLEDROP";
-        if (dist < 7) { reticle.texture = ConcatStrings(base2, "00.TGA"); } // Simulate distance by animation
-        else if (dist < 14) { reticle.texture = ConcatStrings(base2, "01.TGA"); }
-        else if (dist < 21) { reticle.texture = ConcatStrings(base2, "02.TGA"); }
-        else if (dist < 28) { reticle.texture = ConcatStrings(base2, "03.TGA"); }
-        else if (dist < 35) { reticle.texture = ConcatStrings(base2, "04.TGA"); }
-        else if (dist < 42) { reticle.texture = ConcatStrings(base2, "05.TGA"); }
-        else if (dist < 50) { reticle.texture = ConcatStrings(base2, "06.TGA"); }
-        else if (dist < 58) { reticle.texture = ConcatStrings(base2, "07.TGA"); }
-        else if (dist < 66) { reticle.texture = ConcatStrings(base2, "08.TGA"); }
-        else if (dist < 76) { reticle.texture = ConcatStrings(base2, "09.TGA"); }
-        else if (dist < 85) { reticle.texture = ConcatStrings(base2, "10.TGA"); }
-        else if (dist < 92) { reticle.texture = ConcatStrings(base2, "11.TGA"); }
-        else { reticle.texture = ConcatStrings(base2, "12.TGA"); };
+        if (dist < 18) { reticle.texture = ConcatStrings(base2, "00.TGA"); } // Simulate distance by animation
+        else if (dist < 33) { reticle.texture = ConcatStrings(base2, "01.TGA"); }
+        else if (dist < 50) { reticle.texture = ConcatStrings(base2, "02.TGA"); }
+        else if (dist < 62) { reticle.texture = ConcatStrings(base2, "03.TGA"); }
+        else if (dist < 71) { reticle.texture = ConcatStrings(base2, "04.TGA"); }
+        else if (dist < 80) { reticle.texture = ConcatStrings(base2, "05.TGA"); }
+        else if (dist < 91) { reticle.texture = ConcatStrings(base2, "06.TGA"); }
+        else { reticle.texture = ConcatStrings(base2, "07.TGA"); };
     };
 };
 
