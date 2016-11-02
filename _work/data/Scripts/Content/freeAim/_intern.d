@@ -678,7 +678,7 @@ func void freeAimSetupProjectile() {
     pos[0] = addf(camPos.v0[3], newPos[0]);
     pos[1] = addf(camPos.v1[3], newPos[1]);
     pos[2] = addf(camPos.v2[3], newPos[2]);
-    // 4rd: Setup the aim vob
+    // 4th: Setup the aim vob
     var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos));
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
 };
