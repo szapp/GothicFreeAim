@@ -105,6 +105,7 @@ const string RETICLE_BOWL          = "RETICLEBOWL.TGA";
 const string RETICLE_HORNS         = "RETICLEHORNS.TGA";
 const string RETICLE_BLAZE         = "RETICLEBLAZE.TGA";              // Can be animated (flames)    [0..9]
 const string RETICLE_WHIRL         = "RETICLEWHIRL.TGA";              // Can be animated (rotation)  [0..9]
+const string RETICLE_BRUSH         = "RETICLEBRUSH.TGA";
 const string RETICLE_SPADES        = "RETICLESPADES.TGA";
 const string RETICLE_SQUIGGLE      = "RETICLESQUIGGLE.TGA";
 
