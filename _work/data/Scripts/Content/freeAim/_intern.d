@@ -540,6 +540,7 @@ func void freeAimAnimation() {
         target = 0; // No focus target ever
     };
     var int autoAlloc[7]; var Reticle reticle; reticle = _^(_@(autoAlloc)); // Gothic takes care of freeing this ptr
+    autoAlloc[0] = 0; autoAlloc[1] = 0; autoAlloc[2] = 0; autoAlloc[3] = 0; autoAlloc[4] = 0; autoAlloc[5] = 0;
     reticle.texture = ""; // Do not show reticle by default
     reticle.color = -1; // Do not set color by default
     reticle.size = 75; // Medium size by default
@@ -966,6 +967,7 @@ func void freeAimDetectCriticalHit() {
     var int model; model = CALL_RetValAsPtr();
     // Get weak spot node from target model
     var int autoAlloc[8]; var Weakspot weakspot; weakspot = _^(_@(autoAlloc)); // Gothic takes care of freeing this ptr
+    autoAlloc[0] = 0; autoAlloc[1] = 0; autoAlloc[2] = 0; autoAlloc[3] = 0; autoAlloc[4] = 0; autoAlloc[5] = 0;
     freeAimCriticalHitDef_(targetNpc, MEM_ReadInt(damagePtr), _@(weakspot)); // Retrieve weakspot specs
     var int nodeStrPtr; nodeStrPtr = _@(weakspot);
     if (Hlp_StrCmp(MEM_ReadString(nodeStrPtr), "")) { return; }; // No critical node defined
@@ -1094,6 +1096,7 @@ func void freeAimSpellReticle() {
         target = 0; // No focus target ever
     };
     var int autoAlloc[7]; var Reticle reticle; reticle = _^(_@(autoAlloc)); // Gothic takes care of freeing this ptr
+    autoAlloc[0] = 0; autoAlloc[1] = 0; autoAlloc[2] = 0; autoAlloc[3] = 0; autoAlloc[4] = 0; autoAlloc[5] = 0;
     reticle.texture = ""; // Do not show reticle by default
     reticle.color = -1; // Do not set color by default
     reticle.size = 75; // Medium size by default
