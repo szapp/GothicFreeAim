@@ -29,7 +29,8 @@
  *  - Projectile instance for re-using                freeAimGetUsedProjectileInstance(instance, targetNpc)
  *  - Draw force (gravity/drop-off) calculation:      freeAimGetDrawForce(weapon, talent)
  *  - Accuracy calculation:                           freeAimGetAccuracy(weapon, talent)
- *  - Reticle style (texture, color, size):           freeAimGetReticle(target, weapon, talent, distance)
+ *  - Reticle style (texture, color, size):           freeAimGetReticleRanged(target, weapon, talent, distance)
+ *  - Reticle style for spells:                       freeAimGetReticleSpell(target, spellID, spellInst, spellLevel, ..)
  *  - Hit registration on npcs (e.g. friendly-fire):  freeAimHitRegNpc(target, weapon, material)
  *  - Hit registration on world:                      freeAimHitRegWld(shooter, weapon, material)
  *  - Change the base damage at time of shooting:     freeAimScaleInitialDamage(basePointDamage, weapon, talent)
@@ -159,7 +160,7 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
 
 /* Modify this function to alter the reticle texture, color and size (scaled between 0 and 100) for magic combat. */
 func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell spellInst, var int spellLevel,
-        var int dist, var int rtrnPtr) {
+        var int isScroll, var int dist, var int rtrnPtr) {
     var Reticle reticle; reticle = _^(rtrnPtr);
     // Texture (needs to be set, otherwise reticle will not be displayed)
     if (spellInst.spellType == SPELL_GOOD) { reticle.texture = RETICLE_CIRCLECROSS; }
@@ -174,12 +175,14 @@ func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell 
     // Size (scale between [0, 100]: 0 is smallest, 100 is biggest)
     reticle.size = -dist + 100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
     // More sophisticated customization is also possible: change the texture by spellID, the size by spellLevel, ...
-    // if (spellID == SPL_Firebolt) { reticle.texture = RETICLE_SIMPLE; }
+    // if (spellID == SPL_Firebolt) { reticle.texture = RETICLE_DOT; }
     // else if (spellID == SPL_InstantFireball) { reticle.texture = RETICLE_CIRCLECROSS; }
     // else if ...
     // Size by spell level for invest spells (e.g. increase size by invest level)
     // if (spellLevel < 2) { reticle.size = 75; }
     // else if (spellLevel >= 2) { reticle.size = 100; };
+    // Different reticle for scrolls
+    // if (isScroll) { reticle.color = RGBA(125, 200, 250, 255); }; // Light blue
     reticle.texture = freeAimAnimateReticle(RETICLE_DOUBLECIRCLE, 30); // Animate reticle with 30 FPS
 };
 

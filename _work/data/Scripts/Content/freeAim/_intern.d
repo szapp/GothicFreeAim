@@ -1048,18 +1048,20 @@ func void freeAimSetupSpell() {
 
 /* Internal helper function for freeAimGetReticleSpell() for magic combat */
 func void freeAimGetReticleSpell_(var int target, var C_Spell spellInst, var int distance, var int returnPtr) {
-    var C_Npc targetNpc; var int spellID; var int spellLvl; // Retrieve target npc, spellID, spellLvl
+    var C_Npc targetNpc; var int spellID; var int spellLvl; var int isScroll;
     spellID = Npc_GetActiveSpell(hero);
     spellLvl = Npc_GetActiveSpellLevel(hero);
+    isScroll = Npc_GetActiveSpellIsScroll(hero);
     if (Hlp_Is_oCNpc(target)) { targetNpc = _^(target); } else { targetNpc = MEM_NullToInst(); };
     // Call customized function
     MEM_PushInstParam(targetNpc);
     MEM_PushIntParam(spellID);
     MEM_PushInstParam(spellInst);
     MEM_PushIntParam(spellLvl);
+    MEM_PushIntParam(isScroll);
     MEM_PushIntParam(distance);
     MEM_PushIntParam(returnPtr);
-    MEM_Call(freeAimGetReticleSpell); // freeAimGetReticleSpell(target, spellID, spellInst, spellLvl, dist, rtrnPtr);
+    MEM_Call(freeAimGetReticleSpell); // freeAimGetReticleSpell(target, spellID, spellInst, spellLvl, isScroll, ...);
 };
 
 /* Manage reticle style and focus collection for magic combat */
