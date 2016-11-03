@@ -145,7 +145,7 @@ func void freeAim_Init() {
         MemoryProtectionOverride(projectileDeflectOffNpcAddr, 2); // Collision behavior on npcs
         HookEngineF(onArrowCollVobAddr, 5, freeAimOnArrowCollide); // Collision behavior on non-npc vob material
         HookEngineF(onArrowCollStatAddr, 5, freeAimOnArrowCollide); // Collision behavior on static world material
-        HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aming
+        HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aiming
         if (!FREEAIM_DISABLE_SPELLS) {
             HookEngineF(oCAIHuman__MagicMode, 7, freeAimSpellReticle); // Manage focus collection and reticle
             HookEngineF(oCSpell__Setup_484BA9, 6, freeAimSetupSpell); // Set spell fx direction and trajectory
@@ -378,7 +378,7 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
         line[3] = addf(MEM_ReadInt(herPtr+72),  mulf(camPos.v0[0], FLOAT1K)); // Right of player model
         line[4] = addf(MEM_ReadInt(herPtr+88),  mulf(camPos.v1[0], FLOAT1K));
         line[5] = addf(MEM_ReadInt(herPtr+104), mulf(camPos.v2[0], FLOAT1K));
-        var int u[3]; var int v[3]; // Substract both points of the line from the camera position
+        var int u[3]; var int v[3]; // Subtract both points of the line from the camera position
         u[0] = subf(camPos.v0[3], line[0]); v[0] = subf(camPos.v0[3], line[3]);
         u[1] = subf(camPos.v1[3], line[1]); v[1] = subf(camPos.v1[3], line[4]);
         u[2] = subf(camPos.v2[3], line[2]); v[2] = subf(camPos.v2[3], line[5]);
@@ -387,7 +387,7 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
         crossProd[1] = subf(mulf(u[2], v[0]), mulf(u[0], v[2]));
         crossProd[2] = subf(mulf(u[0], v[1]), mulf(u[1], v[0]));
         dist = sqrtf(addf(addf(sqrf(crossProd[0]), sqrf(crossProd[1])), sqrf(crossProd[2])));
-        dist = divf(dist, mkf(2000)); // Devide area of triangle by length between the points on the line
+        dist = divf(dist, mkf(2000)); // Divide area of triangle by length between the points on the line
     };
     var int traceRayVec[6];
     traceRayVec[0] = addf(camPos.v0[3], mulf(camPos.v0[2], dist)); // Start ray from here
@@ -423,7 +423,7 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
             || ((focusType == TARGET_TYPE_ORCS) && target.guild > GIL_SEPERATOR_ORC) // Only focus orcs
             || ((focusType == TARGET_TYPE_HUMANS) && target.guild < GIL_SEPERATOR_HUM) // Only focus humans
             || ((focusType == TARGET_TYPE_UNDEAD) && npcIsUndead)) // Only focus undead npcs
-            && (!Npc_IsInState(target, ZS_Unconscious)) // Do not allow focussing npcs that are down
+            && (!Npc_IsInState(target, ZS_Unconscious)) // Do not allow focusing npcs that are down
             && (!Npc_IsInState(target, ZS_MagicSleep))
             && (!Npc_IsDead(target)) {
                 var int potVobPtr; potVobPtr = _@(potentialVob);
@@ -699,7 +699,7 @@ func void freeAimDropProjectile(var int rigidBody) {
 
 /* Internal helper function for freeAimHitRegNpc() */
 func int freeAimHitRegNpc_(var C_Npc target) {
-    var C_Item weapon; weapon = MEM_NullToInst(); // Deadalus pseudo locals
+    var C_Item weapon; weapon = MEM_NullToInst(); // Daedalus pseudo locals
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
     else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
     var int material; material = -1; // No armor
@@ -717,7 +717,7 @@ func int freeAimHitRegNpc_(var C_Npc target) {
 
 /* Internal helper function for freeAimHitRegWld() */
 func int freeAimHitRegWld_(var C_Npc shooter, var int material) {
-    var C_Item weapon; weapon = MEM_NullToInst(); // Deadalus pseudo locals
+    var C_Item weapon; weapon = MEM_NullToInst(); // Daedalus pseudo locals
     if (Npc_IsInFightMode(shooter, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(shooter); }
     else if (Npc_HasEquippedRangedWeapon(shooter)) { weapon = Npc_GetEquippedRangedWeapon(shooter); };
     // Call customized function
@@ -728,7 +728,7 @@ func int freeAimHitRegWld_(var C_Npc shooter, var int material) {
     return MEM_PopIntResult();
 };
 
-/* Determine the hit chance. For the player it's always 100%. True hit chance is calcualted in freeAimGetAccuracy() */
+/* Determine the hit chance. For the player it's always 100%. True hit chance is calculated in freeAimGetAccuracy() */
 func void freeAimDoNpcHit() {
     var int hitChance; hitChance = MEM_ReadInt(ESP+24); // esp+1ACh+194h
     var C_Npc target; target = _^(MEM_ReadInt(ESP+28)); // esp+1ACh+190h // oCNpc*
@@ -919,7 +919,7 @@ func void freeAimVisualizeWeakspot() {
 
 /* Internal helper function for freeAimCriticalHitEvent() */
 func void freeAimCriticalHitEvent_(var C_Npc target) {
-    var C_Item weapon; weapon = MEM_NullToInst(); // Deadalus pseudo locals
+    var C_Item weapon; weapon = MEM_NullToInst(); // Daedalus pseudo locals
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
     else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
     // Call customized function
@@ -930,7 +930,7 @@ func void freeAimCriticalHitEvent_(var C_Npc target) {
 
 /* Internal helper function for freeAimCriticalHitDef() */
 func void freeAimCriticalHitDef_(var C_Npc target, var int damage, var int returnPtr) {
-    var C_Item weapon; weapon = MEM_NullToInst(); // Deadalus pseudo locals
+    var C_Item weapon; weapon = MEM_NullToInst(); // Daedalus pseudo locals
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
     else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
     // Call customized function

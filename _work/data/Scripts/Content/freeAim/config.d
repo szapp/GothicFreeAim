@@ -52,7 +52,7 @@ func void freeAimInitConstants() {
     // FREEAIM_DRAWTIME_MAX         = 1200;            // Max draw time (ms): When is the bow fully drawn
     // FREEAIM_DEBUG_CONSOLE        = 1;               // Console commands for debugging. Set to zero in final mod
     // FREEAIM_DEBUG_WEAKSPOT       = 0;               // Visualize weakspot bbox and trajectory by default
-    // Modifing anything below is not recommended!
+    // Modifying anything below is not recommended!
     // FREEAIM_SCATTER_DEG          = 2.2;             // Maximum scatter radius in degrees
     // FREEAIM_TRAJECTORY_ARC_MAX   = 400;             // Max time (ms) after which the trajectory drops off
     // FREEAIM_PROJECTILE_GRAVITY   = 0.1;             // The gravity decides how fast the projectile drops
@@ -84,7 +84,7 @@ func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
     return accuracy;
 };
 
-// This a list of available reticle texturs. Some of them are animated as indicated. Animated textures with "not auto!"
+// This a list of available reticle textures. Some of them are animated as indicated. Animated textures with "not auto!"
 // cannot be animated automatically. The others (consisting of 10 frames) can be passed to the function
 // freeAimAnimateReticle(textureFileName, framesPerSecond)
 const string RETICLE_DOT           = "RETICLEDOT.TGA";
@@ -280,8 +280,8 @@ func int freeAimScaleInitialDamage(var int basePointDamage, var C_Item weapon, v
 func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int damage, var int rtrnPtr) {
     var Weakspot weakspot; weakspot = _^(rtrnPtr);
     // This function is dynamic: It is called on every hit and the weakspot and damage can be calculated individually
-    // Possibly incorporate weapon-specific stats, headshot talent, dependecy on target, ...
-    // The damage may depent on the target npc (e.g. different damage for monsters). Make use of 'target' argument
+    // Possibly incorporate weapon-specific stats, headshot talent, dependency on target, ...
+    // The damage may depend on the target npc (e.g. different damage for monsters). Make use of 'target' argument
     // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
     // The weapon can also be considered (e.g. weapon specific damage). Make use of 'weapon' for that
     // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon) to check
@@ -311,7 +311,7 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int dam
 
 /* Use this function to create an event when getting a critical hit, e.g. print or sound jingle, leave blank for none */
 func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon) {
-    // The event may depent on the target npc (e.g. different sound for monsters). Make use of 'target' argument
+    // The event may depend on the target npc (e.g. different sound for monsters). Make use of 'target' argument
     // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
     // The critical hits could also be counted here to give an xp reward after 25 headshots
     // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
