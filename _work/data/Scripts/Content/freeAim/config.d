@@ -162,28 +162,65 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
 func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell spellInst, var int spellLevel,
         var int isScroll, var int dist, var int rtrnPtr) {
     var Reticle reticle; reticle = _^(rtrnPtr);
-    // Texture (needs to be set, otherwise reticle will not be displayed)
-    if (spellInst.spellType == SPELL_GOOD) { reticle.texture = RETICLE_CIRCLECROSS; }
-    else if (spellInst.spellType == SPELL_NEUTRAL) { reticle.texture = RETICLE_CIRCLECROSS; }
-    else if (spellInst.spellType == SPELL_BAD) { reticle.texture = RETICLE_CIRCLECROSS; };
-    // Color (do not set the color to preserve the original texture color)
+    // Set the reticle style for spells here.
+    // Keep in mind that the summon and area spells have reticles, too. Best is to disable aiming for them by setting
+    // 'canTurnDuringInvest' to FALSE in the respective spell instances. An alternative is to set the reticle texture to
+    // "" (empty) here. This will show no reticle.
+    // 1. Texture (needs to be set, otherwise reticle will not be displayed)
+    // if (spellInst.spellType == SPELL_GOOD) { reticle.texture = RETICLE_CIRCLECROSS; }
+    // else if (spellInst.spellType == SPELL_NEUTRAL) { reticle.texture = RETICLE_CIRCLECROSS; }
+    // else if (spellInst.spellType == SPELL_BAD) { reticle.texture = RETICLE_CIRCLECROSS; };
+    // 2. Color (do not set the color to preserve the original texture color)
     if (Hlp_IsValidNpc(target)) { // The argument 'target' might be empty!
         var int att; att = Npc_GetAttitude(target, hero);
         if (att == ATT_FRIENDLY) { reticle.color = Focusnames_Color_Friendly(); }
         else if (att == ATT_HOSTILE) { reticle.color = Focusnames_Color_Hostile(); };
     };
-    // Size (scale between [0, 100]: 0 is smallest, 100 is biggest)
+    // 3. Size (scale between [0, 100]: 0 is smallest, 100 is biggest)
     reticle.size = -dist + 100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
     // More sophisticated customization is also possible: change the texture by spellID, the size by spellLevel, ...
-    // if (spellID == SPL_Firebolt) { reticle.texture = RETICLE_DOT; }
-    // else if (spellID == SPL_InstantFireball) { reticle.texture = RETICLE_CIRCLECROSS; }
-    // else if ...
     // Size by spell level for invest spells (e.g. increase size by invest level)
     // if (spellLevel < 2) { reticle.size = 75; }
     // else if (spellLevel >= 2) { reticle.size = 100; };
     // Different reticle for scrolls
     // if (isScroll) { reticle.color = RGBA(125, 200, 250, 255); }; // Light blue
-    reticle.texture = freeAimAnimateReticle(RETICLE_DOUBLECIRCLE, 30); // Animate reticle with 30 FPS
+    // One possibility is to set the reticle texture by grouping the spells, as it is done below
+    reticle.texture = RETICLE_CIRCLE; // Set this as the "default" texture here (if none of the conditions below is met)
+    // Ice spells
+    if (spellID == SPL_Icebolt)
+    || (spellID == SPL_IceCube)
+    || (spellID == SPL_IceLance) {
+        reticle.texture = RETICLE_SPADES;
+    } // Water spells
+    else if (spellID == SPL_WaterFist)
+    || (spellID == SPL_Inflate)
+    || (spellID == SPL_Geyser)
+    || (spellID == SPL_Waterwall) {
+        reticle.texture = freeAimAnimateReticle(RETICLE_WHIRL, 30); // Animate reticle with 30 FPS
+    } // Fire spells
+    else if (spellID == SPL_Firebolt)
+    || (spellID == SPL_InstantFireball)
+    || (spellID == SPL_ChargeFireball)
+    || (spellID == SPL_Pyrokinesis)
+    || (spellID == SPL_Firestorm) {
+        reticle.texture = RETICLE_HORNS;
+    } // Electric spells
+    else if (spellID == SPL_Zap)
+    || (spellID == SPL_LightningFlash)
+    || (spellID == SPL_ChargeZap) {
+        reticle.texture = freeAimAnimateReticle(RETICLE_BLAZE, 15); // Animate reticle with 15 FPS
+    } // Paladin spells
+    else if (spellID == SPL_PalHolyBolt)
+    || (spellID == SPL_PalRepelEvil)
+    || (spellID == SPL_PalDestroyEvil) {
+        reticle.texture = RETICLE_FRAME;
+    } // Evil spells
+    else if (spellID == SPL_BreathOfDeath)
+    || (spellID == SPL_MasterOfDisaster)
+    || (spellID == SPL_Energyball)
+    || (spellID == SPL_Skull) {
+        reticle.texture = RETICLE_BOWL;
+    };
 };
 
 /* Modify this function to disable hit registration on npcs, e.g. 'ineffective' ranged weapons, no friendly-fire, ... */
