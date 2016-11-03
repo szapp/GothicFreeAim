@@ -41,9 +41,8 @@ const int    FREEAIM_DEBUG_CONSOLE        = 1;               // Console command 
 const float  FREEAIM_PROJECTILE_GRAVITY   = 0.1;             // The gravity decides how fast the projectile drops
 const int    FREEAIM_DRAWTIME_READY       = 650;             // Time offset for readying the bow - fixed by animation
 const int    FREEAIM_DRAWTIME_RELOAD      = 1110;            // Time offset for reloading the bow - fixed by animation
-const int    FREEAIM_RETICLE_MIN_SIZE     = 16;              // Smallest reticle size in pixels (longest range)
-const int    FREEAIM_RETICLE_MED_SIZE     = 20;              // Medium reticle size in pixels (for disabled focus)
-const int    FREEAIM_RETICLE_MAX_SIZE     = 32;              // Biggest reticle size in pixels (closest range)
+const int    FREEAIM_RETICLE_MIN_SIZE     = 32;              // Smallest reticle size in pixels
+const int    FREEAIM_RETICLE_MAX_SIZE     = 64;              // Biggest reticle size in pixels
 const string FREEAIM_TRAIL_FX             = "freeAim_TRAIL"; // Trailstrip FX. Should not be changed
 const int    FREEAIM_MAX_DIST             = 5000;            // 50m. Shooting/reticle adjustments. Do not change
 const int    FREEAIM_ACTIVE_PREVFRAME     = 0;               // Internal. Do not change
@@ -146,7 +145,7 @@ func void freeAim_Init() {
         MemoryProtectionOverride(projectileDeflectOffNpcAddr, 2); // Collision behavior on npcs
         HookEngineF(onArrowCollVobAddr, 5, freeAimOnArrowCollide); // Collision behavior on non-npc vob material
         HookEngineF(onArrowCollStatAddr, 5, freeAimOnArrowCollide); // Collision behavior on static world material
-        HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aming
+        HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aiming
         if (!FREEAIM_DISABLE_SPELLS) {
             HookEngineF(oCAIHuman__MagicMode, 7, freeAimSpellReticle); // Manage focus collection and reticle
             HookEngineF(oCSpell__Setup_484BA9, 6, freeAimSetupSpell); // Set spell fx direction and trajectory
@@ -176,6 +175,11 @@ func void freeAim_Init() {
 
 /* Return the active spell instance */
 func MEMINT_HelperClass freeAimGetActiveSpellInst(var C_Npc npc) {
+    if (Npc_GetActiveSpell(npc) == -1) {
+        var C_Spell ret; ret = MEM_NullToInst();
+        MEMINT_StackPushInst(ret);
+        return;
+    };
     var int magBookPtr; magBookPtr = MEM_ReadInt(_@(npc)+2324); //0x0914 oCNpc.mag_book
     const int call = 0;
     if (CALL_Begin(call)) {
@@ -187,7 +191,7 @@ func MEMINT_HelperClass freeAimGetActiveSpellInst(var C_Npc npc) {
 
 /* Return whether a spell is eligible for free aiming */
 func int freeAimSpellEligible(var C_Spell spell) {
-    if (FREEAIM_DISABLE_SPELLS) { return FALSE; };
+    if (FREEAIM_DISABLE_SPELLS) || (!_@(spell)) { return FALSE; };
     if ((spell.targetCollectAlgo != TARGET_COLLECT_NONE) // Only if spell instance does not force a focus
     && (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS_FALLBACK_NONE))
     || (spell.targetCollectRange <= 0) || (spell.targetCollectAzi <= 0) || (spell.targetCollectElev <= 0) // SPL_Light
@@ -212,7 +216,7 @@ func void freeAimUpdateSettings(var int on) {
         FREEAIM_FOCUS_SPELL_FREE = -1;
         MEM_WriteString(zString_CamModRanged, "CAMMODRANGED"); // Restore camera mode, upper case is important
         MEM_WriteString(zString_CamModMagic, "CAMMODMAGIC"); // Also for spells
-        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to projectile collision behavior on npcs
+        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to default collision behavior on npcs
         MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59); // jz to 0x6A0BA3
         FREEAIM_ACTIVE_PREVFRAME = -1;
     };
@@ -258,6 +262,14 @@ func int freeAimIsActive() {
     if (keyStateAction1 == KEY_PRESSED) || (keyStateAction2 == KEY_PRESSED) {
         freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_READY; };
     return FMODE_FAR;
+};
+
+/* Returns the texture file name for an animated texture. Ten files must exist with the postfix _0 through _9 */
+func string freeAimAnimateReticle(var string fileName, var int fps) {
+    var int frameTime; frameTime = 1000/fps; // Time of one frame
+    var int cycle; cycle = (MEM_Timer.totalTime % (frameTime*10)) / frameTime; // Cycle through [0, 9]
+    var string prefix; prefix = STR_SubStr(fileName, 0, STR_Len(fileName)-4); // Base name (without extension)
+    return ConcatStrings(ConcatStrings(ConcatStrings(prefix, "_"), IntToString(cycle)), ".TGA");
 };
 
 /* Hide reticle */
@@ -383,7 +395,7 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
         line[3] = addf(MEM_ReadInt(herPtr+72),  mulf(camPos.v0[0], FLOAT1K)); // Right of player model
         line[4] = addf(MEM_ReadInt(herPtr+88),  mulf(camPos.v1[0], FLOAT1K));
         line[5] = addf(MEM_ReadInt(herPtr+104), mulf(camPos.v2[0], FLOAT1K));
-        var int u[3]; var int v[3]; // Substract both points of the line from the camera position
+        var int u[3]; var int v[3]; // Subtract both points of the line from the camera position
         u[0] = subf(camPos.v0[3], line[0]); v[0] = subf(camPos.v0[3], line[3]);
         u[1] = subf(camPos.v1[3], line[1]); v[1] = subf(camPos.v1[3], line[4]);
         u[2] = subf(camPos.v2[3], line[2]); v[2] = subf(camPos.v2[3], line[5]);
@@ -392,7 +404,7 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
         crossProd[1] = subf(mulf(u[2], v[0]), mulf(u[0], v[2]));
         crossProd[2] = subf(mulf(u[0], v[1]), mulf(u[1], v[0]));
         dist = sqrtf(addf(addf(sqrf(crossProd[0]), sqrf(crossProd[1])), sqrf(crossProd[2])));
-        dist = divf(dist, mkf(2000)); // Devide area of triangle by length between the points on the line
+        dist = divf(dist, mkf(2000)); // Divide area of triangle by length between the points on the line
     };
     var int traceRayVec[6];
     traceRayVec[0] = addf(camPos.v0[3], mulf(camPos.v0[2], dist)); // Start ray from here
@@ -428,7 +440,7 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
             || ((focusType == TARGET_TYPE_ORCS) && target.guild > GIL_SEPERATOR_ORC) // Only focus orcs
             || ((focusType == TARGET_TYPE_HUMANS) && target.guild < GIL_SEPERATOR_HUM) // Only focus humans
             || ((focusType == TARGET_TYPE_UNDEAD) && npcIsUndead)) // Only focus undead npcs
-            && (!Npc_IsInState(target, ZS_Unconscious)) // Do not allow focussing npcs that are down
+            && (!Npc_IsInState(target, ZS_Unconscious)) // Do not allow focusing npcs that are down
             && (!Npc_IsInState(target, ZS_MagicSleep))
             && (!Npc_IsDead(target)) {
                 var int potVobPtr; potVobPtr = _@(potentialVob);
@@ -545,7 +557,7 @@ func void freeAimAnimation() {
         target = 0; // No focus target ever
     };
     var int autoAlloc[7]; var Reticle reticle; reticle = _^(_@(autoAlloc)); // Gothic takes care of freeing this ptr
-    reticle.texture = ""; // Do not show reticle by default
+    MEM_CopyWords(_@s(""), _@(autoAlloc), 5); // reticle.texture (reset string) // Do not show reticle by default
     reticle.color = -1; // Do not set color by default
     reticle.size = 75; // Medium size by default
     freeAimGetReticleRanged_(target, distance, _@(reticle)); // Retrieve reticle specs
@@ -616,12 +628,34 @@ func int freeAimGetAccuracy_() {
     return accuracy;
 };
 
+/* Internal helper function for freeAimScaleInitialDamage() */
+func int freeAimScaleInitialDamage_(var int basePointDamage) {
+    var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
+    else { MEM_Error("freeAimScaleInitialDamage_: No valid weapon equipped/readied!"); return basePointDamage; };
+    if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
+    else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
+    else { MEM_Error("freeAimScaleInitialDamage_: No valid weapon equipped/readied!"); return basePointDamage; };
+    // Call customized function
+    MEM_PushIntParam(basePointDamage);
+    MEM_PushInstParam(weapon);
+    MEM_PushIntParam(talent);
+    MEM_Call(freeAimScaleInitialDamage); // freeAimScaleInitialDamage(basePointDamage, weapon, talent);
+    basePointDamage = MEM_PopIntResult();
+    if (basePointDamage < 0) { basePointDamage = 0; }; // No negative damage
+    return basePointDamage;
+};
+
 /* Set the projectile direction and trajectory. Hook oCAIArrow::SetupAIVob */
 func void freeAimSetupProjectile() {
     var int projectile; projectile = MEM_ReadInt(ESP+4);  // First argument is the projectile
     var C_Npc shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
     if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { return; }; // Only if player and if fa WAS active
-    // 1st: Set projectile drop-off (by draw force)
+    // 1st: Set base damage of projectile // oCItem.damage[DAM_INDEX_POINT];
+    var int baseDamage; baseDamage = MEM_ReadStatArr(projectile+364, DAM_INDEX_POINT);
+    MEM_WriteStatArr(projectile+364, DAM_INDEX_POINT, freeAimScaleInitialDamage_(baseDamage));
+    // 2nd: Set projectile drop-off (by draw force)
     const int call2 = 0;
     if (CALL_Begin(call2)) {
         CALL__thiscall(_@(projectile), zCVob__GetRigidBody); // Get ridigBody this way, it will be properly created
@@ -643,7 +677,7 @@ func void freeAimSetupProjectile() {
             call3 = CALL_End();
         };
     };
-    // 2nd: Manipulate aiming accuracy (scatter): Rotate target position (azimuth, elevation)
+    // 3rd: Manipulate aiming accuracy (scatter): Rotate target position (azimuth, elevation)
     var int distance; freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, _@(distance)); // Trace ray intersection
     var int accuracy; accuracy = freeAimGetAccuracy_(); // Change the accuracy calculation in that function, not here!
     if (accuracy > 100) { accuracy = 100; } else if (accuracy < 1) { accuracy = 1; }; // Prevent devision by zero
@@ -666,7 +700,7 @@ func void freeAimSetupProjectile() {
     pos[0] = addf(camPos.v0[3], newPos[0]);
     pos[1] = addf(camPos.v1[3], newPos[1]);
     pos[2] = addf(camPos.v2[3], newPos[2]);
-    // 3rd: Setup the aim vob
+    // 4th: Setup the aim vob
     var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos));
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
 };
@@ -680,27 +714,45 @@ func void freeAimDropProjectile(var int rigidBody) {
     MEM_WriteByte(rigidBody+256, 1); // Turn on gravity (zCRigidBody.bitfield)
 };
 
-/* Internal helper function for freeAimHitRegistration() */
-func int freeAimHitRegistration_(var C_Npc target, var C_Npc shooter, var int material) {
-    var C_Item weapon; weapon = MEM_NullToInst(); // Deadalus pseudo locals
-    if (Npc_IsInFightMode(shooter, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(shooter); }
-    else if (Npc_HasEquippedRangedWeapon(shooter)) { weapon = Npc_GetEquippedRangedWeapon(shooter); };
+/* Internal helper function for freeAimHitRegNpc() */
+func int freeAimHitRegNpc_(var C_Npc target) {
+    var C_Item weapon; weapon = MEM_NullToInst(); // Daedalus pseudo locals
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
+    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
+    var int material; material = -1; // No armor
+    if (Npc_HasEquippedArmor(target)) {
+        var C_Item armor; armor = Npc_GetEquippedArmor(target);
+        material = armor.material;
+    };
     // Call customized function
     MEM_PushInstParam(target);
     MEM_PushInstParam(weapon);
     MEM_PushIntParam(material);
-    MEM_Call(freeAimHitRegistration); // freeAimHitRegistration(target, weapon, material);
+    MEM_Call(freeAimHitRegNpc); // freeAimHitRegNpc(target, weapon, material);
     return MEM_PopIntResult();
 };
 
-/* Determine the hit chance. For the player it's always 100%. True hit chance is calcualted in freeAimGetAccuracy() */
+/* Internal helper function for freeAimHitRegWld() */
+func int freeAimHitRegWld_(var C_Npc shooter, var int material) {
+    var C_Item weapon; weapon = MEM_NullToInst(); // Daedalus pseudo locals
+    if (Npc_IsInFightMode(shooter, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(shooter); }
+    else if (Npc_HasEquippedRangedWeapon(shooter)) { weapon = Npc_GetEquippedRangedWeapon(shooter); };
+    // Call customized function
+    MEM_PushInstParam(shooter);
+    MEM_PushInstParam(weapon);
+    MEM_PushIntParam(material);
+    MEM_Call(freeAimHitRegWld); // freeAimHitRegWld(shooter, weapon, material);
+    return MEM_PopIntResult();
+};
+
+/* Determine the hit chance. For the player it's always 100%. True hit chance is calculated in freeAimGetAccuracy() */
 func void freeAimDoNpcHit() {
     var int hitChance; hitChance = MEM_ReadInt(ESP+24); // esp+1ACh+194h
     var C_Npc target; target = _^(MEM_ReadInt(ESP+28)); // esp+1ACh+190h // oCNpc*
     var C_Npc shooter; shooter = _^(MEM_ReadInt(EBP+92)); // ebp+5Ch // oCNpc*
     var int projectile; projectile = MEM_ReadInt(EBP+88); // ebp+58h // oCItem*
-    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { // Default hitchance for npcs and if fa disabled
-        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to projectile collision behavior on npcs
+    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { // Default hitchance for npcs or if fa is disabled
+        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to default collision behavior on npcs
         MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59); // jz to 0x6A0BA3
         return;
     };
@@ -726,29 +778,25 @@ func void freeAimDoNpcHit() {
     end;
     var int hit;
     if (intersection) {
-        var int material; material = -1; // No armor
-        if (Npc_HasEquippedArmor(target)) {
-            var C_Item armor; armor = Npc_GetEquippedArmor(target);
-            material = armor.material;
-        };
-        var int collision; collision = freeAimHitRegistration_(target, hero, material); // 0=destroy, 1=stuck, 2=deflect
+        var int collision; collision = freeAimHitRegNpc_(target); // 0=destroy, 1=stuck, 2=deflect
         if (collision == 2) { // Deflect (no damage)
-            MEM_WriteByte(projectileDeflectOffNpcAddr, ASMINT_OP_nop);
+            MEM_WriteByte(projectileDeflectOffNpcAddr, ASMINT_OP_nop); // Skip npc armor collision check, deflect always
             MEM_WriteByte(projectileDeflectOffNpcAddr + 1, ASMINT_OP_nop);
             hit = FALSE;
         } else {
-            MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116);
+            MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Jump beyond armor collision check, deflect never
             MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*60*/ 96); // jz to 0x6A0BC8
             if (!collision) { // Destroy (no damage)
-                hit = FALSE;
                 MEM_WriteInt(projectile+816, -1); // Delete item instance (it will not be put into the directory)
+                hit = FALSE;
             } else { // Collide (damage)
                 hit = TRUE;
             };
         };
     } else { // Destroy the projectile if it did not physically hit
-        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116);
+        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Jump beyond the armor collision check, deflect never
         MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*60*/ 96); // jz to 0x6A0BC8
+        MEM_WriteInt(projectile+816, -1); // Delete item instance (it will not be put into the directory)
         hit = FALSE;
     };
     MEM_WriteInt(ESP+24, hit*100); // Player always hits = 100%
@@ -761,8 +809,7 @@ func void freeAimOnArrowCollide() {
     var int matobj; matobj = MEM_ReadInt(ECX); // zCMaterial* or zCPolygon*
     if (MEM_ReadInt(matobj) != zCMaterial__vtbl) { matobj = MEM_ReadInt(matobj+24); }; // Static world: Read zCPolygon
     var int material; material = MEM_ReadInt(matobj+64);
-    var C_Npc emptyNpc; emptyNpc = MEM_NullToInst();
-    var int collision; collision = freeAimHitRegistration_(emptyNpc, shooter, material); // 0=destroy, 1=stay, 2=deflect
+    var int collision; collision = freeAimHitRegWld_(shooter, material); // 0=destroy, 1=stay, 2=deflect
     if (collision == 1) { // Collide
         EDI = material; // Sets the condition at 0x6A0A45 and 0x6A0C1A to true: Projectile stays
     } else {
@@ -889,7 +936,7 @@ func void freeAimVisualizeWeakspot() {
 
 /* Internal helper function for freeAimCriticalHitEvent() */
 func void freeAimCriticalHitEvent_(var C_Npc target) {
-    var C_Item weapon; weapon = MEM_NullToInst(); // Deadalus pseudo locals
+    var C_Item weapon; weapon = MEM_NullToInst(); // Daedalus pseudo locals
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
     else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
     // Call customized function
@@ -899,16 +946,16 @@ func void freeAimCriticalHitEvent_(var C_Npc target) {
 };
 
 /* Internal helper function for freeAimCriticalHitDef() */
-func void freeAimCriticalHitDef_(var C_Npc target, var int damagePtr, var int returnPtr) {
-    var C_Item weapon; weapon = MEM_NullToInst(); // Deadalus pseudo locals
+func void freeAimCriticalHitDef_(var C_Npc target, var int damage, var int returnPtr) {
+    var C_Item weapon; weapon = MEM_NullToInst(); // Daedalus pseudo locals
     if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
     else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
     // Call customized function
     MEM_PushInstParam(target);
     MEM_PushInstParam(weapon);
-    MEM_PushIntParam(MEM_ReadInt(damagePtr));
+    MEM_PushIntParam(damage);
     MEM_PushIntParam(returnPtr);
-    MEM_Call(freeAimCriticalHitDef); // freeAimCriticalHitDef(target, weapon, MEM_ReadInt(damagePtr), returnPtr);
+    MEM_Call(freeAimCriticalHitDef); // freeAimCriticalHitDef(target, weapon, damage, returnPtr);
     MEM_WriteString(returnPtr, STR_Upper(MEM_ReadString(returnPtr))); // Nodes are always upper case
     if (lf(MEM_ReadInt(returnPtr+28), FLOATNULL)) { MEM_WriteInt(returnPtr+28, FLOATNULL); }; // Correct negative damage
 };
@@ -936,8 +983,10 @@ func void freeAimDetectCriticalHit() {
     var int model; model = CALL_RetValAsPtr();
     // Get weak spot node from target model
     var int autoAlloc[8]; var Weakspot weakspot; weakspot = _^(_@(autoAlloc)); // Gothic takes care of freeing this ptr
-    freeAimCriticalHitDef_(targetNpc, damagePtr, _@(weakspot)); // Retrieve weakspot specs
+    MEM_CopyWords(_@s(""), _@(autoAlloc), 5); // weakspot.node (reset string)
+    freeAimCriticalHitDef_(targetNpc, MEM_ReadInt(damagePtr), _@(weakspot)); // Retrieve weakspot specs
     var int nodeStrPtr; nodeStrPtr = _@(weakspot);
+    if (Hlp_StrCmp(MEM_ReadString(nodeStrPtr), "")) { return; }; // No critical node defined
     const int call2 = 0;
     if (CALL_Begin(call2)) {
         CALL_PtrParam(_@(nodeStrPtr));
@@ -1017,18 +1066,20 @@ func void freeAimSetupSpell() {
 
 /* Internal helper function for freeAimGetReticleSpell() for magic combat */
 func void freeAimGetReticleSpell_(var int target, var C_Spell spellInst, var int distance, var int returnPtr) {
-    var C_Npc targetNpc; var int spellID; var int spellLvl; // Retrieve target npc, spellID, spellLvl
+    var C_Npc targetNpc; var int spellID; var int spellLvl; var int isScroll;
     spellID = Npc_GetActiveSpell(hero);
     spellLvl = Npc_GetActiveSpellLevel(hero);
+    isScroll = Npc_GetActiveSpellIsScroll(hero);
     if (Hlp_Is_oCNpc(target)) { targetNpc = _^(target); } else { targetNpc = MEM_NullToInst(); };
     // Call customized function
     MEM_PushInstParam(targetNpc);
     MEM_PushIntParam(spellID);
     MEM_PushInstParam(spellInst);
     MEM_PushIntParam(spellLvl);
+    MEM_PushIntParam(isScroll);
     MEM_PushIntParam(distance);
     MEM_PushIntParam(returnPtr);
-    MEM_Call(freeAimGetReticleSpell); // freeAimGetReticleSpell(target, spellID, spellInst, spellLvl, dist, rtrnPtr);
+    MEM_Call(freeAimGetReticleSpell); // freeAimGetReticleSpell(target, spellID, spellInst, spellLvl, isScroll, ...);
 };
 
 /* Manage reticle style and focus collection for magic combat */
@@ -1061,7 +1112,7 @@ func void freeAimSpellReticle() {
         target = 0; // No focus target ever
     };
     var int autoAlloc[7]; var Reticle reticle; reticle = _^(_@(autoAlloc)); // Gothic takes care of freeing this ptr
-    reticle.texture = ""; // Do not show reticle by default
+    MEM_CopyWords(_@s(""), _@(autoAlloc), 5); // reticle.texture (reset string) // Do not show reticle by default
     reticle.color = -1; // Do not set color by default
     reticle.size = 75; // Medium size by default
     freeAimGetReticleSpell_(target, spell, distance, _@(reticle)); // Retrieve reticle specs

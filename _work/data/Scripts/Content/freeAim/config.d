@@ -29,8 +29,11 @@
  *  - Projectile instance for re-using                freeAimGetUsedProjectileInstance(instance, targetNpc)
  *  - Draw force (gravity/drop-off) calculation:      freeAimGetDrawForce(weapon, talent)
  *  - Accuracy calculation:                           freeAimGetAccuracy(weapon, talent)
- *  - Reticle style (texture, color, size):           freeAimGetReticle(target, weapon, talent, distance)
- *  - Disable hit registration (e.g. friendly-fire):  freeAimHitRegistration(target, weapon, material)
+ *  - Reticle style (texture, color, size):           freeAimGetReticleRanged(target, weapon, talent, distance)
+ *  - Reticle style for spells:                       freeAimGetReticleSpell(target, spellID, spellInst, spellLevel, ..)
+ *  - Hit registration on npcs (e.g. friendly-fire):  freeAimHitRegNpc(target, weapon, material)
+ *  - Hit registration on world:                      freeAimHitRegWld(shooter, weapon, material)
+ *  - Change the base damage at time of shooting:     freeAimScaleInitialDamage(basePointDamage, weapon, talent)
  *  - Critical hit calculation (position, damage):    freeAimCriticalHitDef(target, weapon, damage)
  *  - Critical hit event (print, sound, xp, ...):     freeAimCriticalHitEvent(target, weapon)
  * Advanced (modification not recommended):
@@ -50,7 +53,7 @@ func void freeAimInitConstants() {
     // FREEAIM_DRAWTIME_MAX         = 1200;            // Max draw time (ms): When is the bow fully drawn
     // FREEAIM_DEBUG_CONSOLE        = 1;               // Console commands for debugging. Set to zero in final mod
     // FREEAIM_DEBUG_WEAKSPOT       = 0;               // Visualize weakspot bbox and trajectory by default
-    // Modifing anything below is not recommended!
+    // Modifying anything below is not recommended!
     // FREEAIM_SCATTER_DEG          = 2.2;             // Maximum scatter radius in degrees
     // FREEAIM_TRAJECTORY_ARC_MAX   = 400;             // Max time (ms) after which the trajectory drops off
     // FREEAIM_PROJECTILE_GRAVITY   = 0.1;             // The gravity decides how fast the projectile drops
@@ -72,26 +75,45 @@ func int freeAimGetDrawForce(var C_Item weapon, var int talent) {
 
 /* Modify this function to alter accuracy calculation. Scaled between 0 and 100 (percent) */
 func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
-    // Add any other factors here e.g. weafpon-specific accuracy stats, weapon spread, accuracy talent, ...
+    // Add any other factors here e.g. weapon-specific accuracy stats, weapon spread, accuracy talent, ...
     // Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW)
     // Here the talent is scaled by draw force: draw force=100% => accuracy=talent; draw force=0% => accuracy=talent/2
     var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent); // Already scaled to [0, 100]
     if (drawForce < talent) { drawForce = talent; }; // Decrease impact of draw force on talent
-    var int accuracy; accuracy = (talent * drawForce)/100;
+    var int accuracy; accuracy = (talent * drawForce) / 100;
     if (accuracy < 0) { accuracy = 0; } else if (accuracy > 100) { accuracy = 100; }; // Respect the ranges
     return accuracy;
 };
 
-const string RETICLE_SIMPLE = "RETICLESIMPLE.TGA";
-const string RETICLE_NORMAL = "RETICLENORMAL.TGA";
-const string RETICLE_NOTCH  = "RETICLENOTCH.TGA";
+// This a list of available reticle textures. Some of them are animated as indicated. Animated textures with "not auto!"
+// cannot be animated automatically. The others (consisting of 10 frames) can be passed to the function
+// freeAimAnimateReticle(textureFileName, framesPerSecond)
+const string RETICLE_DOT           = "RETICLEDOT.TGA";
+const string RETICLE_CROSSTWO      = "RETICLECROSSTWO.TGA";
+const string RETICLE_CROSSTHREE    = "RETICLECROSSTHREE.TGA";
+const string RETICLE_CROSSFOUR     = "RETICLECROSSFOUR.TGA";
+const string RETICLE_X             = "RETICLEX.TGA";
+const string RETICLE_CIRCLE        = "RETICLECIRCLE.TGA";
+const string RETICLE_CIRCLECROSS   = "RETICLECIRCLECROSS.TGA";
+const string RETICLE_DOUBLECIRCLE  = "RETICLEDOUBLECIRCLE.TGA";       // Can be animated (rotation)  [0..9]
+const string RETICLE_PEAK          = "RETICLEPEAK.TGA";
+const string RETICLE_NOTCH         = "RETICLENOTCH.TGA";              // Can be animated (expanding) [00..16] not auto!
+const string RETICLE_TRI_IN        = "RETICLETRIIN.TGA";              // Can be animated (expanding) [00..16] not auto!
+const string RETICLE_TRI_IN_DOT    = "RETICLETRIINDOT.TGA";           // Can be animated (expanding) [00..16] not auto!
+const string RETICLE_TRI_OUT_DOT   = "RETICLETRIOUTDOT.TGA";          // Can be animated (expanding) [00..16] not auto!
+const string RETICLE_DROP          = "RETICLEDROP.TGA";               // Can be animated (expanding) [00..07] not auto!
+const string RETICLE_FRAME         = "RETICLEFRAME.TGA";
+const string RETICLE_BOWL          = "RETICLEBOWL.TGA";
+const string RETICLE_HORNS         = "RETICLEHORNS.TGA";
+const string RETICLE_BLAZE         = "RETICLEBLAZE.TGA";              // Can be animated (flames)    [0..9]
+const string RETICLE_WHIRL         = "RETICLEWHIRL.TGA";              // Can be animated (rotation)  [0..9]
+const string RETICLE_BRUSH         = "RETICLEBRUSH.TGA";
+const string RETICLE_SPADES        = "RETICLESPADES.TGA";
+const string RETICLE_SQUIGGLE      = "RETICLESQUIGGLE.TGA";
 
 /* Modify this function to alter the reticle texture, color and size (scaled between 0 and 100) for ranged combat. */
 func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int talent, var int dist, var int rtrnPtr) {
     var Reticle reticle; reticle = _^(rtrnPtr);
-    // Texture (needs to be set, otherwise reticle will not be displayed)
-    if (weapon.flags & ITEM_BOW) { reticle.texture = RETICLE_NOTCH; } // Bow readied (this is actually replaced below)
-    else if (weapon.flags & ITEM_CROSSBOW) { reticle.texture = RETICLE_NOTCH; }; // Crossbow readied
     // Color (do not set the color to preserve the original texture color)
     if (Hlp_IsValidNpc(target)) { // The argument 'target' might be empty!
         var int att; att = Npc_GetAttitude(target, hero);
@@ -99,99 +121,169 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
         else if (att == ATT_HOSTILE) { reticle.color = Focusnames_Color_Hostile(); };
     };
     // Size (scale between [0, 100]: 0 is smallest, 100 is biggest)
-    reticle.size = -dist+100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
-    // reticle.size = -freeAimGetDrawForce(weapon, talent)+100; // Or inverse draw force: bigger for less draw force
-    // reticle.size = -freeAimGetAccuracy(weapon, talent)+100; // Or inverse accuracy: bigger with lower accuracy
+    reticle.size = -dist + 100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
+    // reticle.size = -freeAimGetDrawForce(weapon, talent) + 100; // Or inverse draw force: bigger for less draw force
+    // reticle.size = -freeAimGetAccuracy(weapon, talent) + 100; // Or inverse accuracy: bigger with lower accuracy
     // More sophisticated customization is also possible: change the texture by draw force, the size by accuracy, ...
     if (weapon.flags & ITEM_BOW) { // Change reticle texture by drawforce (irrespective of the reticle size set above)
         var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent);
-        if (drawForce < 5) { reticle.texture = "RETICLENOTCH00.TGA"; } // Simulate draw force by animating the reticle
-        else if (drawForce < 11) { reticle.texture = "RETICLENOTCH01.TGA"; }
-        else if (drawForce < 17) { reticle.texture = "RETICLENOTCH02.TGA"; }
-        else if (drawForce < 23) { reticle.texture = "RETICLENOTCH03.TGA"; }
-        else if (drawForce < 29) { reticle.texture = "RETICLENOTCH04.TGA"; }
-        else if (drawForce < 35) { reticle.texture = "RETICLENOTCH05.TGA"; }
-        else if (drawForce < 41) { reticle.texture = "RETICLENOTCH06.TGA"; }
-        else if (drawForce < 47) { reticle.texture = "RETICLENOTCH07.TGA"; }
-        else if (drawForce < 53) { reticle.texture = "RETICLENOTCH08.TGA"; }
-        else if (drawForce < 59) { reticle.texture = "RETICLENOTCH09.TGA"; }
-        else if (drawForce < 65) { reticle.texture = "RETICLENOTCH10.TGA"; }
-        else if (drawForce < 73) { reticle.texture = "RETICLENOTCH11.TGA"; }
-        else if (drawForce < 81) { reticle.texture = "RETICLENOTCH12.TGA"; }
-        else if (drawForce < 88) { reticle.texture = "RETICLENOTCH13.TGA"; }
-        else if (drawForce < 94) { reticle.texture = "RETICLENOTCH14.TGA"; }
-        else if (drawForce < 100) { reticle.texture = "RETICLENOTCH15.TGA"; }
-        else { reticle.texture = RETICLE_NOTCH; };
+        var string base; base = "RETICLENOTCH";
+        if (drawForce < 5) { reticle.texture = ConcatStrings(base, "00.TGA"); } // Simulate draw force by animation
+        else if (drawForce < 11) { reticle.texture = ConcatStrings(base, "01.TGA"); }
+        else if (drawForce < 17) { reticle.texture = ConcatStrings(base, "02.TGA"); }
+        else if (drawForce < 23) { reticle.texture = ConcatStrings(base, "03.TGA"); }
+        else if (drawForce < 29) { reticle.texture = ConcatStrings(base, "04.TGA"); }
+        else if (drawForce < 35) { reticle.texture = ConcatStrings(base, "05.TGA"); }
+        else if (drawForce < 41) { reticle.texture = ConcatStrings(base, "06.TGA"); }
+        else if (drawForce < 47) { reticle.texture = ConcatStrings(base, "07.TGA"); }
+        else if (drawForce < 53) { reticle.texture = ConcatStrings(base, "08.TGA"); }
+        else if (drawForce < 59) { reticle.texture = ConcatStrings(base, "09.TGA"); }
+        else if (drawForce < 65) { reticle.texture = ConcatStrings(base, "10.TGA"); }
+        else if (drawForce < 73) { reticle.texture = ConcatStrings(base, "11.TGA"); }
+        else if (drawForce < 81) { reticle.texture = ConcatStrings(base, "12.TGA"); }
+        else if (drawForce < 88) { reticle.texture = ConcatStrings(base, "13.TGA"); }
+        else if (drawForce < 94) { reticle.texture = ConcatStrings(base, "14.TGA"); }
+        else if (drawForce < 100) { reticle.texture = ConcatStrings(base, "15.TGA"); }
+        else { reticle.texture = ConcatStrings(base, "16.TGA"); };
+    } else if (weapon.flags & ITEM_CROSSBOW) {
+        reticle.size = 100; // Keep the size fixed here
+        var string base2; base2 = "RETICLEDROP";
+        if (dist < 18) { reticle.texture = ConcatStrings(base2, "00.TGA"); } // Simulate distance by animation
+        else if (dist < 33) { reticle.texture = ConcatStrings(base2, "01.TGA"); }
+        else if (dist < 50) { reticle.texture = ConcatStrings(base2, "02.TGA"); }
+        else if (dist < 62) { reticle.texture = ConcatStrings(base2, "03.TGA"); }
+        else if (dist < 71) { reticle.texture = ConcatStrings(base2, "04.TGA"); }
+        else if (dist < 80) { reticle.texture = ConcatStrings(base2, "05.TGA"); }
+        else if (dist < 91) { reticle.texture = ConcatStrings(base2, "06.TGA"); }
+        else { reticle.texture = ConcatStrings(base2, "07.TGA"); };
     };
 };
 
 /* Modify this function to alter the reticle texture, color and size (scaled between 0 and 100) for magic combat. */
 func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell spellInst, var int spellLevel,
-        var int dist, var int rtrnPtr) {
+        var int isScroll, var int dist, var int rtrnPtr) {
     var Reticle reticle; reticle = _^(rtrnPtr);
-    // Texture (needs to be set, otherwise reticle will not be displayed)
-    if (spellInst.spellType == SPELL_GOOD) { reticle.texture = RETICLE_NORMAL; }
-    else if (spellInst.spellType == SPELL_NEUTRAL) { reticle.texture = RETICLE_NORMAL; }
-    else if (spellInst.spellType == SPELL_BAD) { reticle.texture = RETICLE_NORMAL; };
-    // Color (do not set the color to preserve the original texture color)
+    // Set the reticle style for spells here.
+    // Keep in mind that the summon and area spells have reticles, too. Best is to disable aiming for them by setting
+    // 'canTurnDuringInvest' to FALSE in the respective spell instances. An alternative is to set the reticle texture to
+    // "" (empty) here. This will show no reticle.
+    // 1. Texture (needs to be set, otherwise reticle will not be displayed)
+    // if (spellInst.spellType == SPELL_GOOD) { reticle.texture = RETICLE_CIRCLECROSS; }
+    // else if (spellInst.spellType == SPELL_NEUTRAL) { reticle.texture = RETICLE_CIRCLECROSS; }
+    // else if (spellInst.spellType == SPELL_BAD) { reticle.texture = RETICLE_CIRCLECROSS; };
+    // 2. Color (do not set the color to preserve the original texture color)
     if (Hlp_IsValidNpc(target)) { // The argument 'target' might be empty!
         var int att; att = Npc_GetAttitude(target, hero);
         if (att == ATT_FRIENDLY) { reticle.color = Focusnames_Color_Friendly(); }
         else if (att == ATT_HOSTILE) { reticle.color = Focusnames_Color_Hostile(); };
     };
-    // Size (scale between [0, 100]: 0 is smallest, 100 is biggest)
-    reticle.size = -dist+100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
+    // 3. Size (scale between [0, 100]: 0 is smallest, 100 is biggest)
+    reticle.size = -dist + 100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
     // More sophisticated customization is also possible: change the texture by spellID, the size by spellLevel, ...
-    // if (spellID == SPL_Firebolt) { reticle.texture = RETICLE_SIMPLE; }
-    // else if (spellID == SPL_InstantFireball) { reticle.texture = RETICLE_NORMAL; }
-    // else if ...
     // Size by spell level for invest spells (e.g. increase size by invest level)
     // if (spellLevel < 2) { reticle.size = 75; }
     // else if (spellLevel >= 2) { reticle.size = 100; };
+    // Different reticle for scrolls
+    // if (isScroll) { reticle.color = RGBA(125, 200, 250, 255); }; // Light blue
+    // One possibility is to set the reticle texture by grouping the spells, as it is done below
+    reticle.texture = RETICLE_CIRCLE; // Set this as the "default" texture here (if none of the conditions below is met)
+    // Ice spells
+    if (spellID == SPL_Icebolt)
+    || (spellID == SPL_IceCube)
+    || (spellID == SPL_IceLance) {
+        reticle.texture = RETICLE_SPADES;
+    } // Water spells
+    else if (spellID == SPL_WaterFist)
+    || (spellID == SPL_Inflate)
+    || (spellID == SPL_Geyser)
+    || (spellID == SPL_Waterwall) {
+        reticle.texture = freeAimAnimateReticle(RETICLE_WHIRL, 30); // Animate reticle with 30 FPS
+    } // Fire spells
+    else if (spellID == SPL_Firebolt)
+    || (spellID == SPL_InstantFireball)
+    || (spellID == SPL_ChargeFireball)
+    || (spellID == SPL_Pyrokinesis)
+    || (spellID == SPL_Firestorm) {
+        reticle.texture = RETICLE_HORNS;
+    } // Electric spells
+    else if (spellID == SPL_Zap)
+    || (spellID == SPL_LightningFlash)
+    || (spellID == SPL_ChargeZap) {
+        reticle.texture = freeAimAnimateReticle(RETICLE_BLAZE, 15); // Animate reticle with 15 FPS
+    } // Paladin spells
+    else if (spellID == SPL_PalHolyBolt)
+    || (spellID == SPL_PalRepelEvil)
+    || (spellID == SPL_PalDestroyEvil) {
+        reticle.texture = RETICLE_FRAME;
+    } // Evil spells
+    else if (spellID == SPL_BreathOfDeath)
+    || (spellID == SPL_MasterOfDisaster)
+    || (spellID == SPL_Energyball)
+    || (spellID == SPL_Skull) {
+        reticle.texture = RETICLE_BOWL;
+    };
     if (spellID == SPL_Blink) { reticle.texture = ""; }; // No reticle for blink
 };
 
-/* Modify this function to disable hit registration. E.g. 'ineffective' ranged weapons, disable friendly-fire, ... */
-func int freeAimHitRegistration(var C_Npc target, var C_Item weapon, var int material) {
+/* Modify this function to disable hit registration on npcs, e.g. 'ineffective' ranged weapons, no friendly-fire, ... */
+func int freeAimHitRegNpc(var C_Npc target, var C_Item weapon, var int material) {
     // Valid return values are:
     const int DESTROY = 0; // No hit reg (no damage), projectile is destroyed
-    const int COLLIDE = 1; // Hit reg, projectile is put into inventory (npc), or is stuck in the surface (world)
+    const int COLLIDE = 1; // Hit reg (damage), projectile is put into inventory
     const int DEFLECT = 2; // No hit reg (no damage), projectile is repelled
-    // The argument 'material' holds the material of the target surface
-    // If the target surface is an npc, the material will be that of the armor, -1 for no armor equipped
-    // To check if it is an npc that is hit, use Hlp_IsValidNpc(target). In other cases target will be empty!
-    if (Hlp_IsValidNpc(target)) { // Target is an npc
-        // For armors of npcs the materials are defined as in Constants.d (MAT_METAL, MAT_WOOD, ...)
-        // Disable friendly-fire
-        if (target.aivar[AIV_PARTYMEMBER]) && (target.aivar[AIV_LASTTARGET] != Hlp_GetInstanceID(hero)) {
-            return DESTROY; };
-        //if (material == MAT_METAL) && (Hlp_Random(100) < 20) { return DEFLECT; }; // Metal armors may be more durable
-        // The weapon can also be considered (e.g. ineffective weapons). Make use of 'weapon' for that
-        // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
-        // if (Hlp_IsValidItem(weapon)) && (weapon.ineffective) { return DEFLECT; }; // Special case for weapon property
-        return COLLIDE; // Usually all shots on npcs should be registered, see freeAimGetAccuracy() above
-    } else { // Target is not an npc (might be a vob or a surface in the static world)
-        // The materials of the world are defined differently (than that of armors):
-        const int METAL = 1;
-        const int STONE = 2;
-        const int WOOD  = 3;
-        const int EARTH = 4;
-        const int WATER = 5;
-        const int SNOW  = 6;
-        const int UNDEF = 0;
-        if (material == WOOD) { return COLLIDE; }; // Projectiles stay stuck in wood (default in gothic)
-        // if (material == STONE) && (Hlp_Random(100) < 5) { return DESTROY; }; // The projectile might break on impact
-        // The example in the previous line can also be treated in freeAimGetUsedProjectileInstance() below
-        return DEFLECT; // Projectiles deflect off of all other surfaces
-    };
+    // The argument 'material' holds the material of the armor (of the target), -1 for no armor equipped
+    // For armors of npcs the materials are defined as in Constants.d (MAT_METAL, MAT_WOOD, ...)
+    if (target.aivar[AIV_PARTYMEMBER]) // Disable friendly-fire
+    && (target.aivar[AIV_LASTTARGET] != Hlp_GetInstanceID(hero)) { return DESTROY; };
+    // if (material == MAT_METAL) && (Hlp_Random(100) < 20) { return DEFLECT; }; // Metal armors may be more durable
+    // The weapon can also be considered (e.g. ineffective weapons). Make use of 'weapon' for that
+    // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
+    // if (Hlp_IsValidItem(weapon)) && (weapon.ineffective) { return DEFLECT; }; // Special case for weapon property
+    return COLLIDE; // Usually all shots on npcs should be registered, see freeAimGetAccuracy() above
+};
+
+/* Modify this function to disable hit registration on the world, e.g. deflection of metal, stuck in wood, ... */
+func int freeAimHitRegWld(var C_Npc shooter, var C_Item weapon, var int material) {
+    // This function, unlike freeAimHitRegNpc() and all other functions here, is also called for npc shooters!
+    // Valid return values are:
+    const int DESTROY = 0; // Projectile is destroyed on impact
+    const int COLLIDE = 1; // Projectile gets stuck in the surface
+    const int DEFLECT = 2; // Projectile is repelled
+    // Note: The materials of the world are defined differently (than the familiar item-materials):
+    const int METAL = 1;
+    const int STONE = 2;
+    const int WOOD  = 3;
+    const int EARTH = 4;
+    const int WATER = 5;
+    const int SNOW  = 6;
+    const int UNDEF = 0;
+    if (material == WOOD) { return COLLIDE; }; // Projectiles stay stuck in wood (default in gothic)
+    // if (Npc_IsPlayer(shooter)) ... // Keep in mind that this function is also called for npc shooters
+    // if (material == STONE) && (Hlp_Random(100) < 5) { return DESTROY; }; // The projectile might break on impact
+    // The example in the previous line can also be treated in freeAimGetUsedProjectileInstance() below
+    // The weapon can also be considered (e.g. ineffective weapons). Make use of 'weapon' for that
+    // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
+    // if (Hlp_IsValidItem(weapon)) && (weapon.ineffective) { return DEFLECT; }; // Special case for weapon property
+    return DEFLECT; // Projectiles deflect off of all other surfaces
+};
+
+/* Modify this function to alter the base damage of projectiles at time of shooting (only DAM_POINT) */
+func int freeAimScaleInitialDamage(var int basePointDamage, var C_Item weapon, var int talent) {
+    // This function should not be necessary, all damage specifications should be set in the item scripts. However,
+    // here the initial damage (DAM_POINT) may be scaled by draw force, accuracy, ...
+    // Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW)
+    // Here the damage is scaled by draw force: draw force=100% => baseDamage; draw force=0% => baseDamage/2
+    var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent); // Already scaled to [0, 100]
+    drawForce = 50 * drawForce / 100 + 50; // Re-scale the drawforce to [50, 100]
+    return (basePointDamage * drawForce) / 100; // Scale initial point damage by draw force
 };
 
 /* Modify this function to define a critical hit by weak spot (e.g. head node for headshot), its size and the damage */
 func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int damage, var int rtrnPtr) {
     var Weakspot weakspot; weakspot = _^(rtrnPtr);
     // This function is dynamic: It is called on every hit and the weakspot and damage can be calculated individually
-    // Possibly incorporate weapon-specific stats, headshot talent, dependecy on target, ...
-    // The damage may depent on the target npc (e.g. different damage for monsters). Make use of 'target' argument
+    // Possibly incorporate weapon-specific stats, headshot talent, dependency on target, ...
+    // The damage may depend on the target npc (e.g. different damage for monsters). Make use of 'target' argument
     // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
     // The weapon can also be considered (e.g. weapon specific damage). Make use of 'weapon' for that
     // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon) to check
@@ -209,6 +301,8 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int dam
     //    weakspot.bDmg = mulf(damage, castToIntf(1.75));
     // } else if (target.aivar[AIV_MM_REAL_ID] == ...
     //    ...
+    } else if (target.guild == GIL_BLOODFLY) { // Bloodflys don't have a head node
+        weakspot.node = ""; // Disable critical hits this way
     } else { // Default
         weakspot.node = "Bip01 Head";
         weakspot.dimX = 60; // 60x60cm size
@@ -219,7 +313,7 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int dam
 
 /* Use this function to create an event when getting a critical hit, e.g. print or sound jingle, leave blank for none */
 func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon) {
-    // The event may depent on the target npc (e.g. different sound for monsters). Make use of 'target' argument
+    // The event may depend on the target npc (e.g. different sound for monsters). Make use of 'target' argument
     // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
     // The critical hits could also be counted here to give an xp reward after 25 headshots
     // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
