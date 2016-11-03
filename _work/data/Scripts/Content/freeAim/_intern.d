@@ -175,6 +175,11 @@ func void freeAim_Init() {
 
 /* Return the active spell instance */
 func MEMINT_HelperClass freeAimGetActiveSpellInst(var C_Npc npc) {
+    if (Npc_GetActiveSpell(npc) == -1) {
+        var C_Spell ret; ret = MEM_NullToInst();
+        MEMINT_StackPushInst(ret);
+        return;
+    };
     var int magBookPtr; magBookPtr = MEM_ReadInt(_@(npc)+2324); //0x0914 oCNpc.mag_book
     const int call = 0;
     if (CALL_Begin(call)) {
@@ -186,7 +191,7 @@ func MEMINT_HelperClass freeAimGetActiveSpellInst(var C_Npc npc) {
 
 /* Return whether a spell is eligible for free aiming */
 func int freeAimSpellEligible(var C_Spell spell) {
-    if (FREEAIM_DISABLE_SPELLS) { return FALSE; };
+    if (FREEAIM_DISABLE_SPELLS) || (!_@(spell)) { return FALSE; };
     if ((spell.targetCollectAlgo != TARGET_COLLECT_NONE) // Only if spell instance does not force a focus
     && (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS_FALLBACK_NONE))
     || (spell.targetCollectRange <= 0) || (spell.targetCollectAzi <= 0) || (spell.targetCollectElev <= 0) // SPL_Light
