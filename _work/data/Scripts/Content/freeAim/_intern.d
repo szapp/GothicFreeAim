@@ -192,9 +192,7 @@ func MEMINT_HelperClass freeAimGetActiveSpellInst(var C_Npc npc) {
 /* Return whether a spell is eligible for free aiming */
 func int freeAimSpellEligible(var C_Spell spell) {
     if (FREEAIM_DISABLE_SPELLS) || (!_@(spell)) { return FALSE; };
-    if ((spell.targetCollectAlgo != TARGET_COLLECT_NONE) // Only if spell instance does not force a focus
-    && (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS_FALLBACK_NONE))
-    || (spell.targetCollectRange <= 0) || (spell.targetCollectAzi <= 0) || (spell.targetCollectElev <= 0) // SPL_Light
+    if (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS_FALLBACK_NONE)
     || (!spell.canTurnDuringInvest) || (!spell.canChangeTargetDuringInvest) {
         return FALSE;
     };
@@ -457,7 +455,7 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
             runDetailedTraceRay = 1; // Will perform detailed trace ray
         };
         if (runDetailedTraceRay) { // If focus collection is reasonable, run a more detailed examination
-            // This is essentially taken/modified from zCWorld::TraceRayNearestHit (0x621D82 in g2)
+            // zCWorld::TraceRayNearestHit (0x621D82 in g2)
             flags = (1<<0) | (1<<2); // (zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_VOB_BBOX) // Important!
             var int trRep; trRep = MEM_Alloc(40); // sizeof_zTTraceRayReport
             const int call3 = 0;
@@ -1087,9 +1085,10 @@ func void freeAimSpellReticle() {
     if (!freeAimIsActive()) { freeAimRemoveReticle(); return; }; // Only with eligible spells
     var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
     var int distance; var int target;
-    if (freeAimGetCollectFocus()) { // Set focus npc if there is a valid one under the reticle
+    if (freeAimGetCollectFocus()) && (spell.targetCollectRange > 0) { // Set focus npc if there is a valid one
         var int focusType; // No focus display for TARGET_COLLECT_NONE (still focus collection though)
-        if (!spell.targetCollectAlgo) { focusType = 0; } else { focusType = spell.targetCollectType; };
+        if (!spell.targetCollectAlgo) || (spell.targetCollectAzi <= 0) || (spell.targetCollectElev <= 0)
+        { focusType = 0; } else { focusType = spell.targetCollectType; };
         freeAimRay(spell.targetCollectRange, focusType, _@(target), 0, _@(distance), 0); // Shoot ray
         distance = roundf(divf(mulf(distance, FLOAT1C), mkf(FREEAIM_MAX_DIST))); // Distance scaled between [0, 100]
     } else { // More performance friendly. Here, there will be NO focus, otherwise it gets stuck on npcs.

@@ -163,10 +163,6 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
 func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell spellInst, var int spellLevel,
         var int isScroll, var int dist, var int rtrnPtr) {
     var Reticle reticle; reticle = _^(rtrnPtr);
-    // Set the reticle style for spells here.
-    // Keep in mind that the summon and area spells have reticles, too. Best is to disable aiming for them by setting
-    // 'canTurnDuringInvest' to FALSE in the respective spell instances. An alternative is to set the reticle texture to
-    // "" (empty) here. This will show no reticle.
     // 1. Texture (needs to be set, otherwise reticle will not be displayed)
     // if (spellInst.spellType == SPELL_GOOD) { reticle.texture = RETICLE_CIRCLECROSS; }
     // else if (spellInst.spellType == SPELL_NEUTRAL) { reticle.texture = RETICLE_CIRCLECROSS; }
@@ -186,7 +182,7 @@ func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell 
     // Different reticle for scrolls
     // if (isScroll) { reticle.color = RGBA(125, 200, 250, 255); }; // Light blue
     // One possibility is to set the reticle texture by grouping the spells, as it is done below
-    reticle.texture = RETICLE_CIRCLE; // Set this as the "default" texture here (if none of the conditions below is met)
+    reticle.texture = RETICLE_CIRCLE; // Set this as "default" texture here (if none of the conditions below is met)
     // Ice spells
     if (spellID == SPL_Icebolt)
     || (spellID == SPL_IceCube)
