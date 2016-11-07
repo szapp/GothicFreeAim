@@ -406,6 +406,11 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
         call = CALL_End();
     };
     var int found; found = CALL_RetValAsInt(); // Did the trace ray hit
+    if (!found) && (!MEM_World.foundVob) { // Fix the intersection if there was no hit (trace ray is inconsistent)
+        MEM_World.foundIntersection[0] = addf(traceRayVec[0], traceRayVec[3]);
+        MEM_World.foundIntersection[1] = addf(traceRayVec[1], traceRayVec[4]);
+        MEM_World.foundIntersection[2] = addf(traceRayVec[2], traceRayVec[5]);
+    };
     var int foundFocus; foundFocus = 0; // Is the focus vob in the trace ray vob list
     var int potentialVob; potentialVob = MEM_ReadInt(herPtr+2476); // oCNpc.focus_vob // Focus vob by focus collection
     if (potentialVob) { // Check if collected focus matches the desired focus type
