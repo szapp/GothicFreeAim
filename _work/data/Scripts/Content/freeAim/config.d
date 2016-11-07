@@ -104,8 +104,10 @@ const string RETICLE_TRI_IN_DOT    = "RETICLETRIINDOT.TGA";           // Can be 
 const string RETICLE_TRI_OUT_DOT   = "RETICLETRIOUTDOT.TGA";          // Can be animated (expanding) 17 Frames [00..16]
 const string RETICLE_DROP          = "RETICLEDROP.TGA";               // Can be animated (expanding)  8 Frames [00..07]
 const string RETICLE_FRAME         = "RETICLEFRAME.TGA";
+const string RETICLE_EDGES         = "RETICLEEDGES.TGA";
 const string RETICLE_BOWL          = "RETICLEBOWL.TGA";
 const string RETICLE_HORNS         = "RETICLEHORNS.TGA";
+const string RETICLE_BOLTS         = "RETICLEBOLTS.TGA";
 const string RETICLE_BLAZE         = "RETICLEBLAZE.TGA";              // Can be animated (flames)    10 Frames [00..09]
 const string RETICLE_WHIRL         = "RETICLEWHIRL.TGA";              // Can be animated (rotation)  10 Frames [00..09]
 const string RETICLE_BRUSH         = "RETICLEBRUSH.TGA";
@@ -160,7 +162,6 @@ func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell 
     // Scale size by the amount of mana invested
     //  reticle.size = manaInvested; // This should be scaled between [0, 100]
     // One possibility is to set the reticle texture by grouping the spells, as it is done below
-    reticle.texture = RETICLE_CIRCLE; // Set this as "default" texture here (if none of the conditions below is met)
     // Ice spells
     if (spellID == SPL_Icebolt)
     || (spellID == SPL_IceCube)
@@ -195,6 +196,8 @@ func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell 
     || (spellID == SPL_Energyball)
     || (spellID == SPL_Skull) {
         reticle.texture = RETICLE_BOWL;
+    } else {
+        reticle.texture = RETICLE_EDGES; // Set this as "default" texture here (if none of the conditions above is met)
     };
 };
 
