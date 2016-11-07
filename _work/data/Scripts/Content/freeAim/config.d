@@ -42,6 +42,7 @@
  *  - Max time before projectile drop-off:            FREEAIM_TRAJECTORY_ARC_MAX
  *  - Gravity of projectile after drop-off:           FREEAIM_PROJECTILE_GRAVITY
  *  - Turn speed while aiming:                        FREEAIM_ROTATION_SCALE
+ *  - Shift the aim vob:                              freeAimShiftAimVob
  */
 
 /* Initialize fixed settings. This function is called once at the beginning of each session. Set the constants here */
@@ -336,4 +337,10 @@ func int freeAimGetUsedProjectileInstance(var int projectileInst, var C_Npc inve
         // if (PLAYER_TALENT_REUSE_ARROW == FALSE) { return 0; }; // Reuse-projectile-talent
         return projectileInst; // For now it is just preserved (leave it in the world as is)
     };
+};
+
+/* Shift the aimvob along the camera out vector for spells (if you don't know what this is, you don't need it) */
+func int freeAimShiftAimVob(var int spellID) {
+    // if (spellID == ...) { return -100; }; // Push the aim vob 100 cm away from any wall
+    return 0;
 };
