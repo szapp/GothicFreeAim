@@ -295,8 +295,19 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon) {
     // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
     // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon) to check
     //  if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
+    // Simple screen notification
+    //  PrintS("Critical hit");
+    // Shooter-like hit marker
+    var int hitmark;
+    if (!Hlp_IsValidHandle(hitmark)) { // Create hitmark if it does not exist
+        Print_GetScreenSize();
+        hitmark = View_CreateCenterPxl(Print_Screen[PS_X]/2, Print_Screen[PS_Y]/2, 64, 64);
+        View_SetTexture(hitmark, RETICLE_X);
+    };
+    View_Open(hitmark);
+    FF_ApplyExtData(View_Close, 300, 1, hitmark);
+    // Sound notification
     Snd_Play("FORGE_ANVIL_A1");
-    PrintS("Kritischer Treffer"); // "Critical hit"
 };
 
 /* Modify this function to exchange (or remove) the projectile after shooting for re-using, e.g. used arrow */
