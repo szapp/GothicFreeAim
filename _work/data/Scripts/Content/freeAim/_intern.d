@@ -267,12 +267,23 @@ func int freeAimIsActive() {
     return FMODE_FAR;
 };
 
-/* Returns the texture file name for an animated texture. Ten files must exist with the postfix _0 through _9 */
-func string freeAimAnimateReticle(var string fileName, var int fps) {
+/* Return texture file name for an animated texture. numFrames files must exist with the postfix '_[frameNo].tga' */
+func string freeAimAnimateReticleByTime(var string fileName, var int fps, var int numFrames) {
     var int frameTime; frameTime = 1000/fps; // Time of one frame
-    var int cycle; cycle = (MEM_Timer.totalTime % (frameTime*10)) / frameTime; // Cycle through [0, 9]
+    var int cycle; cycle = (MEM_Timer.totalTime % (frameTime*numFrames)) / frameTime; // Cycle through [0, numFrames]
     var string prefix; prefix = STR_SubStr(fileName, 0, STR_Len(fileName)-4); // Base name (without extension)
-    return ConcatStrings(ConcatStrings(ConcatStrings(prefix, "_"), IntToString(cycle)), ".TGA");
+    var string postfix;
+    if (cycle < 10) { postfix = ConcatStrings("0", IntToString(cycle)); } else { postfix = IntToString(cycle); };
+    return ConcatStrings(ConcatStrings(ConcatStrings(prefix, "_"), postfix), ".TGA");
+};
+
+/* Return texture file name for an animated texture. numFrames files must exist with the postfix '_[frameNo].tga' */
+func string freeAimAnimateReticleByPercent(var string fileName, var int percent, var int numFrames) {
+    var int cycle; cycle = roundf(mulf(mkf(percent), divf(mkf(numFrames-1), FLOAT1C)));
+    var string prefix; prefix = STR_SubStr(fileName, 0, STR_Len(fileName)-4); // Base name (without extension)
+    var string postfix;
+    if (cycle < 10) { postfix = ConcatStrings("0", IntToString(cycle)); } else { postfix = IntToString(cycle); };
+    return ConcatStrings(ConcatStrings(ConcatStrings(prefix, "_"), postfix), ".TGA");
 };
 
 /* Hide reticle */
@@ -341,12 +352,6 @@ func void freeAimManageReticle() {
         freeAimDetachFX();
         freeAimRemoveReticle();
     };
-};
-
-/* Check whether free aiming should collect focus */
-func int freeAimGetCollectFocus() {
-    if (FREEAIM_FOCUS_COLLECTION) { return 1; };
-    return 0;
 };
 
 /* Mouse handling for manually turning the player model by mouse input */
@@ -590,7 +595,7 @@ func void freeAimAnimation() {
     if (freeAimIsActive() != FMODE_FAR) { return; };
     var int herPtr; herPtr = _@(hero);
     var int distance; var int target;
-    if (freeAimGetCollectFocus()) { // Set focus npc if there is a valid one under the reticle
+    if (FREEAIM_FOCUS_COLLECTION) { // Set focus npc if there is a valid one under the reticle
         freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, _@(target), 0, _@(distance), 0); // Shoot ray and retrieve info
         distance = roundf(divf(mulf(distance, FLOAT1C), mkf(FREEAIM_MAX_DIST))); // Distance scaled between [0, 100]
     } else { // More performance friendly. Here, there will be NO focus, otherwise it gets stuck on npcs.
@@ -1173,7 +1178,7 @@ func void freeAimSpellReticle() {
     if (!freeAimIsActive()) { freeAimRemoveReticle(); return; }; // Only with eligible spells
     var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
     var int distance; var int target;
-    if (freeAimGetCollectFocus()) && (spell.targetCollectRange > 0) { // Set focus npc if there is a valid one
+    if (FREEAIM_FOCUS_COLLECTION) && (spell.targetCollectRange > 0) { // Set focus npc if there is a valid one
         var int focusType; // No focus display for TARGET_COLLECT_NONE (still focus collection though)
         if (!spell.targetCollectAlgo) || (spell.targetCollectAzi <= 0) || (spell.targetCollectElev <= 0)
         { focusType = 0; } else { focusType = spell.targetCollectType; };

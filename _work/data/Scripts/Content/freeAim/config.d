@@ -85,9 +85,10 @@ func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
     return accuracy;
 };
 
-// This a list of available reticle textures. Some of them are animated as indicated. Animated textures with "not auto!"
-// cannot be animated automatically. The others (consisting of 10 frames) can be passed to the function
-// freeAimAnimateReticle(textureFileName, framesPerSecond)
+// This a list of available reticle textures. Some of them are animated as indicated. Animated textures can be passed to
+// the following functions:
+// reticle.texture = freeAimAnimateReticleByTime(textureFileName, framesPerSecond, numberOfFrames)
+// reticle.texture = freeAimAnimateReticleByPercent(textureFileName, 100, numberOfFrames) // Where 100 is a percentage
 const string RETICLE_DOT           = "RETICLEDOT.TGA";
 const string RETICLE_CROSSTWO      = "RETICLECROSSTWO.TGA";
 const string RETICLE_CROSSTHREE    = "RETICLECROSSTHREE.TGA";
@@ -95,18 +96,18 @@ const string RETICLE_CROSSFOUR     = "RETICLECROSSFOUR.TGA";
 const string RETICLE_X             = "RETICLEX.TGA";
 const string RETICLE_CIRCLE        = "RETICLECIRCLE.TGA";
 const string RETICLE_CIRCLECROSS   = "RETICLECIRCLECROSS.TGA";
-const string RETICLE_DOUBLECIRCLE  = "RETICLEDOUBLECIRCLE.TGA";       // Can be animated (rotation)  [0..9]
+const string RETICLE_DOUBLECIRCLE  = "RETICLEDOUBLECIRCLE.TGA";       // Can be animated (rotation)  10 Frames [00..09]
 const string RETICLE_PEAK          = "RETICLEPEAK.TGA";
-const string RETICLE_NOTCH         = "RETICLENOTCH.TGA";              // Can be animated (expanding) [00..16] not auto!
-const string RETICLE_TRI_IN        = "RETICLETRIIN.TGA";              // Can be animated (expanding) [00..16] not auto!
-const string RETICLE_TRI_IN_DOT    = "RETICLETRIINDOT.TGA";           // Can be animated (expanding) [00..16] not auto!
-const string RETICLE_TRI_OUT_DOT   = "RETICLETRIOUTDOT.TGA";          // Can be animated (expanding) [00..16] not auto!
-const string RETICLE_DROP          = "RETICLEDROP.TGA";               // Can be animated (expanding) [00..07] not auto!
+const string RETICLE_NOTCH         = "RETICLENOTCH.TGA";              // Can be animated (expanding) 17 Frames [00..16]
+const string RETICLE_TRI_IN        = "RETICLETRIIN.TGA";              // Can be animated (expanding) 17 Frames [00..16]
+const string RETICLE_TRI_IN_DOT    = "RETICLETRIINDOT.TGA";           // Can be animated (expanding) 17 Frames [00..16]
+const string RETICLE_TRI_OUT_DOT   = "RETICLETRIOUTDOT.TGA";          // Can be animated (expanding) 17 Frames [00..16]
+const string RETICLE_DROP          = "RETICLEDROP.TGA";               // Can be animated (expanding)  8 Frames [00..07]
 const string RETICLE_FRAME         = "RETICLEFRAME.TGA";
 const string RETICLE_BOWL          = "RETICLEBOWL.TGA";
 const string RETICLE_HORNS         = "RETICLEHORNS.TGA";
-const string RETICLE_BLAZE         = "RETICLEBLAZE.TGA";              // Can be animated (flames)    [0..9]
-const string RETICLE_WHIRL         = "RETICLEWHIRL.TGA";              // Can be animated (rotation)  [0..9]
+const string RETICLE_BLAZE         = "RETICLEBLAZE.TGA";              // Can be animated (flames)    10 Frames [00..09]
+const string RETICLE_WHIRL         = "RETICLEWHIRL.TGA";              // Can be animated (rotation)  10 Frames [00..09]
 const string RETICLE_BRUSH         = "RETICLEBRUSH.TGA";
 const string RETICLE_SPADES        = "RETICLESPADES.TGA";
 const string RETICLE_SQUIGGLE      = "RETICLESQUIGGLE.TGA";
@@ -126,36 +127,11 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
     // reticle.size = -freeAimGetAccuracy(weapon, talent) + 100; // Or inverse accuracy: bigger with lower accuracy
     // More sophisticated customization is also possible: change the texture by draw force, the size by accuracy, ...
     if (weapon.flags & ITEM_BOW) { // Change reticle texture by drawforce (irrespective of the reticle size set above)
-        var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent);
-        var string base; base = "RETICLENOTCH";
-        if (drawForce < 5) { reticle.texture = ConcatStrings(base, "00.TGA"); } // Simulate draw force by animation
-        else if (drawForce < 11) { reticle.texture = ConcatStrings(base, "01.TGA"); }
-        else if (drawForce < 17) { reticle.texture = ConcatStrings(base, "02.TGA"); }
-        else if (drawForce < 23) { reticle.texture = ConcatStrings(base, "03.TGA"); }
-        else if (drawForce < 29) { reticle.texture = ConcatStrings(base, "04.TGA"); }
-        else if (drawForce < 35) { reticle.texture = ConcatStrings(base, "05.TGA"); }
-        else if (drawForce < 41) { reticle.texture = ConcatStrings(base, "06.TGA"); }
-        else if (drawForce < 47) { reticle.texture = ConcatStrings(base, "07.TGA"); }
-        else if (drawForce < 53) { reticle.texture = ConcatStrings(base, "08.TGA"); }
-        else if (drawForce < 59) { reticle.texture = ConcatStrings(base, "09.TGA"); }
-        else if (drawForce < 65) { reticle.texture = ConcatStrings(base, "10.TGA"); }
-        else if (drawForce < 73) { reticle.texture = ConcatStrings(base, "11.TGA"); }
-        else if (drawForce < 81) { reticle.texture = ConcatStrings(base, "12.TGA"); }
-        else if (drawForce < 88) { reticle.texture = ConcatStrings(base, "13.TGA"); }
-        else if (drawForce < 94) { reticle.texture = ConcatStrings(base, "14.TGA"); }
-        else if (drawForce < 100) { reticle.texture = ConcatStrings(base, "15.TGA"); }
-        else { reticle.texture = ConcatStrings(base, "16.TGA"); };
-    } else if (weapon.flags & ITEM_CROSSBOW) {
+        var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent); // Already scaled between [0, 100]
+        reticle.texture = freeAimAnimateReticleByPercent(RETICLE_NOTCH, drawForce, 17); // Animate reticle by draw force
+    } else if (weapon.flags & ITEM_CROSSBOW) { // Change reticle texture by distance
         reticle.size = 100; // Keep the size fixed here
-        var string base2; base2 = "RETICLEDROP";
-        if (dist < 18) { reticle.texture = ConcatStrings(base2, "00.TGA"); } // Simulate distance by animation
-        else if (dist < 33) { reticle.texture = ConcatStrings(base2, "01.TGA"); }
-        else if (dist < 50) { reticle.texture = ConcatStrings(base2, "02.TGA"); }
-        else if (dist < 62) { reticle.texture = ConcatStrings(base2, "03.TGA"); }
-        else if (dist < 71) { reticle.texture = ConcatStrings(base2, "04.TGA"); }
-        else if (dist < 80) { reticle.texture = ConcatStrings(base2, "05.TGA"); }
-        else if (dist < 91) { reticle.texture = ConcatStrings(base2, "06.TGA"); }
-        else { reticle.texture = ConcatStrings(base2, "07.TGA"); };
+        reticle.texture = freeAimAnimateReticleByPercent(RETICLE_DROP, dist, 8); // Animate reticle by distance
     };
 };
 
@@ -193,7 +169,7 @@ func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell 
     || (spellID == SPL_Inflate)
     || (spellID == SPL_Geyser)
     || (spellID == SPL_Waterwall) {
-        reticle.texture = freeAimAnimateReticle(RETICLE_WHIRL, 30); // Animate reticle with 30 FPS
+        reticle.texture = freeAimAnimateReticleByTime(RETICLE_WHIRL, 30, 10); // Animate reticle with 30 FPS (10 Frames)
     } // Fire spells
     else if (spellID == SPL_Firebolt)
     || (spellID == SPL_InstantFireball)
@@ -205,7 +181,7 @@ func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell 
     else if (spellID == SPL_Zap)
     || (spellID == SPL_LightningFlash)
     || (spellID == SPL_ChargeZap) {
-        reticle.texture = freeAimAnimateReticle(RETICLE_BLAZE, 15); // Animate reticle with 15 FPS
+        reticle.texture = freeAimAnimateReticleByTime(RETICLE_BLAZE, 15, 10); // Animate reticle with 15 FPS (10 Frames)
     } // Paladin spells
     else if (spellID == SPL_PalHolyBolt)
     || (spellID == SPL_PalRepelEvil)
