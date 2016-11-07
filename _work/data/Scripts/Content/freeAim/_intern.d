@@ -310,9 +310,37 @@ func void freeAimInsertReticle(var int reticlePtr) {
     } else { freeAimRemoveReticle(); };
 };
 
+/* Attach an FX to the aim vob */
+func void freeAimAttachFX(var string effectInst) {
+    var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB");
+    if (!vobPtr) { return; };
+    MEM_WriteString(vobPtr+564, effectInst); // oCItem.effect
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL__thiscall(_@(vobPtr), oCItem__InsertEffect);
+        call = CALL_End();
+    };
+};
+
+/* Detach the FX of the aim vob */
+func void freeAimDetachFX() {
+    var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB");
+    if (!vobPtr) { return; };
+    if (Hlp_StrCmp(MEM_ReadString(vobPtr+564), "")) { return; };
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL__thiscall(_@(vobPtr), oCItem__RemoveEffect);
+        call = CALL_End();
+    };
+    MEM_WriteString(vobPtr+564, ""); // oCItem.effect
+};
+
 /* Decide when to draw reticle or when to hide it */
 func void freeAimManageReticle() {
-    if (!freeAimIsActive()) { freeAimRemoveReticle(); };
+    if (!freeAimIsActive()) {
+        freeAimDetachFX();
+        freeAimRemoveReticle();
+    };
 };
 
 /* Check whether free aiming should collect focus */
@@ -337,14 +365,15 @@ func void freeAimManualRotation() {
     };
 };
 
-/* Manipulate the position of the aim vob */
+/* Manipulate the position of the aim vob (only for spells) */
 func void freeAimManipulateAimVobPos(var int posPtr) {
     var int spell; spell = Npc_GetActiveSpell(hero);
+    if (spell == -1) { return; };
     MEM_PushIntParam(spell);
     MEM_Call(freeAimShiftAimVob);
     var int pushed; pushed = MEM_PopIntResult();
     if (pushed) {
-        pushed = mkf(pushed); // Mount to push the aim vob along the out vector of the camera
+        pushed = mkf(pushed); // Amount to push the aim vob along the out vector of the camera
         var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60);
         MEM_WriteInt(posPtr+0, addf(MEM_ReadInt(posPtr+0), mulf(camPos.v0[2], pushed)));
         MEM_WriteInt(posPtr+4, addf(MEM_ReadInt(posPtr+4), mulf(camPos.v1[2], pushed)));
@@ -366,7 +395,7 @@ func int freeAimSetupAimVob(var int posPtr) {
         MEM_WriteInt(vobPtr+260, 3105); // zCVob.bitfield[0] (ignored by trace ray, no collision)
     };
     MEM_CopyBytes(_@(hero)+60, vobPtr+60, 64); // Include rotation
-    freeAimManipulateAimVobPos(posPtr);
+    freeAimManipulateAimVobPos(posPtr); // Shift the aim vob (if desired)
     const int call4 = 0; // Set position to aim vob
     if (CALL_Begin(call4)) {
         CALL_PtrParam(_@(posPtr)); // Update aim vob position
@@ -374,30 +403,6 @@ func int freeAimSetupAimVob(var int posPtr) {
         call4 = CALL_End();
     };
     return vobPtr;
-};
-
-/* Attach an FX to the aim vob */
-func void freeAimAttachFX(var string effectInst) {
-    var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB");
-    if (!vobPtr) { return; };
-    MEM_WriteString(vobPtr+564, STR_Upper(effectInst)); // oCItem.effect
-    const int call = 0;
-    if (CALL_Begin(call)) {
-        CALL__thiscall(_@(vobPtr), oCItem__InsertEffect);
-        call = CALL_End();
-    };
-};
-
-/* Detach the FX of the aim vob */
-func void freeAimDetachFX() {
-    var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB");
-    if (!vobPtr) { return; };
-    const int call = 0;
-    if (CALL_Begin(call)) {
-        CALL__thiscall(_@(vobPtr), oCItem__RemoveEffect);
-        call = CALL_End();
-    };
-    MEM_WriteString(vobPtr+564, ""); // oCItem.effect
 };
 
 /* Shoot aim-tailored trace ray. Do no use for other purposes. This function is customized for aiming. */
