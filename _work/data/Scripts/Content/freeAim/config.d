@@ -87,8 +87,8 @@ func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
 
 // This a list of available reticle textures. Some of them are animated as indicated. Animated textures can be passed to
 // the following functions:
-// reticle.texture = freeAimAnimateReticleByTime(textureFileName, framesPerSecond, numberOfFrames)
-// reticle.texture = freeAimAnimateReticleByPercent(textureFileName, 100, numberOfFrames) // Where 100 is a percentage
+//  reticle.texture = freeAimAnimateReticleByTime(textureFileName, framesPerSecond, numberOfFrames)
+//  reticle.texture = freeAimAnimateReticleByPercent(textureFileName, 100, numberOfFrames) // Where 100 is a percentage
 const string RETICLE_DOT           = "RETICLEDOT.TGA";
 const string RETICLE_CROSSTWO      = "RETICLECROSSTWO.TGA";
 const string RETICLE_CROSSTHREE    = "RETICLECROSSTHREE.TGA";
@@ -123,8 +123,8 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
     };
     // Size (scale between [0, 100]: 0 is smallest, 100 is biggest)
     reticle.size = -dist + 100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
-    // reticle.size = -freeAimGetDrawForce(weapon, talent) + 100; // Or inverse draw force: bigger for less draw force
-    // reticle.size = -freeAimGetAccuracy(weapon, talent) + 100; // Or inverse accuracy: bigger with lower accuracy
+    //  reticle.size = -freeAimGetDrawForce(weapon, talent) + 100; // Or inverse draw force: bigger for less draw force
+    //  reticle.size = -freeAimGetAccuracy(weapon, talent) + 100; // Or inverse accuracy: bigger with lower accuracy
     // More sophisticated customization is also possible: change the texture by draw force, the size by accuracy, ...
     if (weapon.flags & ITEM_BOW) { // Change reticle texture by drawforce (irrespective of the reticle size set above)
         var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent); // Already scaled between [0, 100]
@@ -137,12 +137,12 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
 
 /* Modify this function to alter the reticle texture, color and size (scaled between 0 and 100) for magic combat. */
 func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell spellInst, var int spellLevel,
-        var int isScroll, var int dist, var int rtrnPtr) {
+        var int isScroll, var int manaInvested, var int dist, var int rtrnPtr) {
     var Reticle reticle; reticle = _^(rtrnPtr);
     // 1. Texture (needs to be set, otherwise reticle will not be displayed)
-    // if (spellInst.spellType == SPELL_GOOD) { reticle.texture = RETICLE_CIRCLECROSS; }
-    // else if (spellInst.spellType == SPELL_NEUTRAL) { reticle.texture = RETICLE_CIRCLECROSS; }
-    // else if (spellInst.spellType == SPELL_BAD) { reticle.texture = RETICLE_CIRCLECROSS; };
+    //  if (spellInst.spellType == SPELL_GOOD) { reticle.texture = RETICLE_CIRCLECROSS; }
+    //  else if (spellInst.spellType == SPELL_NEUTRAL) { reticle.texture = RETICLE_CIRCLECROSS; }
+    //  else if (spellInst.spellType == SPELL_BAD) { reticle.texture = RETICLE_CIRCLECROSS; };
     // 2. Color (do not set the color to preserve the original texture color)
     if (Hlp_IsValidNpc(target)) { // The argument 'target' might be empty!
         var int att; att = Npc_GetAttitude(target, hero);
@@ -153,10 +153,12 @@ func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell 
     reticle.size = -dist + 100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
     // More sophisticated customization is also possible: change the texture by spellID, the size by spellLevel, ...
     // Size by spell level for invest spells (e.g. increase size by invest level)
-    // if (spellLevel < 2) { reticle.size = 75; }
-    // else if (spellLevel >= 2) { reticle.size = 100; };
+    //  if (spellLevel < 2) { reticle.size = 75; }
+    //  else if (spellLevel >= 2) { reticle.size = 100; };
     // Different reticle for scrolls
-    // if (isScroll) { reticle.color = RGBA(125, 200, 250, 255); }; // Light blue
+    //  if (isScroll) { reticle.color = RGBA(125, 200, 250, 255); }; // Light blue
+    // Scale size by the amount of mana invested
+    //  reticle.size = manaInvested; // This should be scaled between [0, 100]
     // One possibility is to set the reticle texture by grouping the spells, as it is done below
     reticle.texture = RETICLE_CIRCLE; // Set this as "default" texture here (if none of the conditions below is met)
     // Ice spells
@@ -206,10 +208,10 @@ func int freeAimHitRegNpc(var C_Npc target, var C_Item weapon, var int material)
     // For armors of npcs the materials are defined as in Constants.d (MAT_METAL, MAT_WOOD, ...)
     if (target.aivar[AIV_PARTYMEMBER]) // Disable friendly-fire
     && (target.aivar[AIV_LASTTARGET] != Hlp_GetInstanceID(hero)) { return DESTROY; };
-    // if (material == MAT_METAL) && (Hlp_Random(100) < 20) { return DEFLECT; }; // Metal armors may be more durable
+    //  if (material == MAT_METAL) && (Hlp_Random(100) < 20) { return DEFLECT; }; // Metal armors may be more durable
     // The weapon can also be considered (e.g. ineffective weapons). Make use of 'weapon' for that
     // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
-    // if (Hlp_IsValidItem(weapon)) && (weapon.ineffective) { return DEFLECT; }; // Special case for weapon property
+    //  if (Hlp_IsValidItem(weapon)) && (weapon.ineffective) { return DEFLECT; }; // Special case for weapon property
     return COLLIDE; // Usually all shots on npcs should be registered, see freeAimGetAccuracy() above
 };
 
@@ -229,12 +231,12 @@ func int freeAimHitRegWld(var C_Npc shooter, var C_Item weapon, var int material
     const int SNOW  = 6;
     const int UNDEF = 0;
     if (material == WOOD) { return COLLIDE; }; // Projectiles stay stuck in wood (default in gothic)
-    // if (Npc_IsPlayer(shooter)) ... // Keep in mind that this function is also called for npc shooters
-    // if (material == STONE) && (Hlp_Random(100) < 5) { return DESTROY; }; // The projectile might break on impact
+    //  if (Npc_IsPlayer(shooter)) ... // Keep in mind that this function is also called for npc shooters
+    //  if (material == STONE) && (Hlp_Random(100) < 5) { return DESTROY; }; // The projectile might break on impact
     // The example in the previous line can also be treated in freeAimGetUsedProjectileInstance() below
     // The weapon can also be considered (e.g. ineffective weapons). Make use of 'weapon' for that
     // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
-    // if (Hlp_IsValidItem(weapon)) && (weapon.ineffective) { return DEFLECT; }; // Special case for weapon property
+    //  if (Hlp_IsValidItem(weapon)) && (weapon.ineffective) { return DEFLECT; }; // Special case for weapon property
     return DEFLECT; // Projectiles deflect off of all other surfaces
 };
 
@@ -255,10 +257,10 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int dam
     // This function is dynamic: It is called on every hit and the weakspot and damage can be calculated individually
     // Possibly incorporate weapon-specific stats, headshot talent, dependency on target, ...
     // The damage may depend on the target npc (e.g. different damage for monsters). Make use of 'target' argument
-    // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
+    //  if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
     // The weapon can also be considered (e.g. weapon specific damage). Make use of 'weapon' for that
     // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon) to check
-    // if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
+    //  if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
     // The damage is a float and represents the new base damage (damage of weapon), not the final damage!
     if (target.guild < GIL_SEPERATOR_HUM) { // Humans: head shot
         weakspot.node = "Bip01 Head"; // Upper/lower case is not important, but spelling and spaces are
@@ -285,11 +287,11 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int dam
 /* Use this function to create an event when getting a critical hit, e.g. print or sound jingle, leave blank for none */
 func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon) {
     // The event may depend on the target npc (e.g. different sound for monsters). Make use of 'target' argument
-    // if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
+    //  if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
     // The critical hits could also be counted here to give an xp reward after 25 headshots
     // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
     // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon) to check
-    // if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
+    //  if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
     Snd_Play("FORGE_ANVIL_A1");
     PrintS("Kritischer Treffer"); // "Critical hit"
 };
@@ -298,10 +300,10 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon) {
 func int freeAimGetUsedProjectileInstance(var int projectileInst, var C_Npc inventoryNpc) {
     // By returning zero, the projectile is completely removed (e.g. retrieve-projectile-talent not learned yet)
     // The argument inventoryNpc holds the npc in whose inventory it will be put, or is empty if it landed in the world
-    // if (projectileInst == Hlp_GetInstanceID(ItRw_Arrow)) { // Exchange the instance for a "used" one
-    //     if (!Hlp_IsValidItem(ItRw_UsedArrow)) { Wld_InsertItem(ItRw_UsedArrow, MEM_FARFARAWAY); }; // Initialize!
-    //     projectileInst = Hlp_GetInstanceID(ItRw_UsedArrow);
-    // };
+    //  if (projectileInst == Hlp_GetInstanceID(ItRw_Arrow)) { // Exchange the instance for a "used" one
+    //      if (!Hlp_IsValidItem(ItRw_UsedArrow)) { Wld_InsertItem(ItRw_UsedArrow, MEM_FARFARAWAY); }; // Initialize!
+    //      projectileInst = Hlp_GetInstanceID(ItRw_UsedArrow);
+    //  };
     if (Hlp_IsValidNpc(inventoryNpc)) { // Projectile hit npc and will be put into their inventory
         if (Npc_IsPlayer(inventoryNpc)) { return 0; }; // Do not put projectiles in player inventory
         // if (inventoryNpc.guild < GIL_SEPERATOR_HUM) { return 0; }; // Remove projectile when it hits humans
