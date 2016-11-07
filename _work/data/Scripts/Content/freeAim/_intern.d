@@ -37,6 +37,7 @@ const float  FREEAIM_SCATTER_DEG          = 2.2;             // Maximum scatter 
 const string FREEAIM_CAMERA               = "CamModFreeAim"; // CCamSys_Def script instance for free aim
 const int    FREEAIM_CAMERA_X_SHIFT       = 0;               // One, if camera is set to shoulderview (not recommended)
 const int    FREEAIM_DEBUG_WEAKSPOT       = 0;               // Visualize weakspot bbox and trajectory
+const int    FREEAIM_DEBUG_TRACERAY       = 0;               // Visualize trace ray bboxes and trajectory
 const int    FREEAIM_DEBUG_CONSOLE        = 1;               // Console command for debugging. Turn off in final mod
 const float  FREEAIM_PROJECTILE_GRAVITY   = 0.1;             // The gravity decides how fast the projectile drops
 const int    FREEAIM_DRAWTIME_READY       = 650;             // Time offset for readying the bow - fixed by animation
@@ -51,8 +52,10 @@ const int    FREEAIM_FOCUS_COLLECTION     = 1;               // Internal. Do not
 const int    FREEAIM_ARROWAI_REDIRECT     = 0;               // Used to redirect call-by-reference var. Do not change
 const int    FLOAT1C                      = 1120403456;      // 100 as float
 const int    FLOAT1K                      = 1148846080;      // 1000 as float
-var   int    freeAimDebugBBox[6];                            // Boundingbox for debug visualization
-var   int    freeAimDebugTrj[6];                             // Projectile trajectory for debug visualization
+var   int    freeAimDebugWSBBox[6];                          // Weaksopt boundingbox for debug visualization
+var   int    freeAimDebugWSTrj[6];                           // Projectile trajectory for debug visualization
+var   int    freeAimDebugTRBBox[6];                          // Trace ray intersection for debug visualization
+var   int    freeAimDebugTRTrj[6];                           // Trace ray trajectory
 var   int    freeAimReticleHndl;                             // Holds the handle of the reticle
 var   int    freeAimBowDrawOnset;                            // Time onset of drawing the bow
 
@@ -151,11 +154,13 @@ func void freeAim_Init() {
             HookEngineF(oCSpell__Setup_484BA9, 6, freeAimSetupSpell); // Set spell fx direction and trajectory
             HookEngineF(spellAutoTurnAddr, 6, freeAimDisableSpellAutoTurn); // Prevent auto turning towards target
         };
-        if (FREEAIM_DEBUG_CONSOLE) { // Enable console command for debugging
-            CC_Register(freeAimDebugWeakspot, "debug weakspot", "turn debug visualization on/off");
-        };
-        if (FREEAIM_DEBUG_CONSOLE) || (FREEAIM_DEBUG_WEAKSPOT) { // Visualization of weakspot for debugging
+        if (FREEAIM_DEBUG_CONSOLE) || (FREEAIM_DEBUG_WEAKSPOT) || (FREEAIM_DEBUG_TRACERAY) { // Debug visualization
             HookEngineF(zCWorld__AdvanceClock, 10, freeAimVisualizeWeakspot); // FrameFunctions hook too early
+            HookEngineF(zCWorld__AdvanceClock, 10, freeAimVisualizeTraceRay);
+            if (FREEAIM_DEBUG_CONSOLE) { // Enable console command for debugging
+                CC_Register(freeAimDebugWeakspot, "debug freeaim weakspot", "turn debug visualization on/off");
+                CC_Register(freeAimDebugTraceRay, "debug freeaim traceray", "turn debug visualization on/off");
+            };
         };
         if (FREEAIM_REUSE_PROJECTILES) { // Because of balancing issues, this is a constant and not a variable
             HookEngineF(onArrowHitNpcAddr, 5, freeAimOnArrowHitNpc); // Put projectile into inventory
@@ -448,6 +453,11 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
         call = CALL_End();
     };
     var int found; found = CALL_RetValAsInt(); // Did the trace ray hit
+    if (!found) && (!MEM_World.foundVob) { // Fix the intersection if there was no hit (trace ray is inconsistent)
+        MEM_World.foundIntersection[0] = addf(traceRayVec[0], traceRayVec[3]);
+        MEM_World.foundIntersection[1] = addf(traceRayVec[1], traceRayVec[4]);
+        MEM_World.foundIntersection[2] = addf(traceRayVec[2], traceRayVec[5]);
+    };
     var int foundFocus; foundFocus = 0; // Is the focus vob in the trace ray vob list
     var int potentialVob; potentialVob = MEM_ReadInt(herPtr+2476); // oCNpc.focus_vob // Focus vob by focus collection
     if (potentialVob) { // Check if collected focus matches the desired focus type
@@ -515,6 +525,21 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
             CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
             call5 = CALL_End();
         };
+    };
+    // Debug visualization
+    if (FREEAIM_DEBUG_TRACERAY) {
+        freeAimDebugTRBBox[0] = subf(MEM_World.foundIntersection[0], mkf(10));
+        freeAimDebugTRBBox[1] = subf(MEM_World.foundIntersection[1], mkf(10));
+        freeAimDebugTRBBox[2] = subf(MEM_World.foundIntersection[2], mkf(10));
+        freeAimDebugTRBBox[3] = addf(freeAimDebugTRBBox[0], mkf(20));
+        freeAimDebugTRBBox[4] = addf(freeAimDebugTRBBox[1], mkf(20));
+        freeAimDebugTRBBox[5] = addf(freeAimDebugTRBBox[2], mkf(20));
+        freeAimDebugTRTrj[0] = traceRayVec[0];
+        freeAimDebugTRTrj[1] = traceRayVec[1];
+        freeAimDebugTRTrj[2] = traceRayVec[2];
+        freeAimDebugTRTrj[3] = addf(traceRayVec[0], traceRayVec[3]);
+        freeAimDebugTRTrj[4] = addf(traceRayVec[1], traceRayVec[4]);
+        freeAimDebugTRTrj[5] = addf(traceRayVec[2], traceRayVec[5]);
     };
     // Write call-by-reference variables
     if (vobPtr) { MEM_WriteInt(vobPtr, MEM_World.foundVob); };
@@ -928,12 +953,12 @@ func void freeAimDmgAnimation() {
     if (Npc_IsPlayer(victim)) && (freeAimIsActive()) { EAX = 0; }; // Disable damage animation while aiming
 };
 
-/* Visualize the bounding box of the weakspot and the projectile trajectory for debugging */
-func void freeAimVisualizeWeakspot() {
-    if (!FREEAIM_DEBUG_WEAKSPOT) { return; };
-    if (freeAimDebugBBox[0]) { // Visualize weak spot bounding box
+/* Visualize the bounding boxes of the trace ray its trajectory for debugging */
+func void freeAimVisualizeTraceRay() {
+    if (!FREEAIM_DEBUG_TRACERAY) { return; };
+    if (freeAimDebugTRBBox[0]) { // Visualize intersection bounding box
         var int cGreenPtr; cGreenPtr = _@(zCOLOR_GREEN);
-        var int bboxPtr; bboxPtr = _@(freeAimDebugBBox);
+        var int bboxPtr; bboxPtr = _@(freeAimDebugTRBBox);
         const int call = 0;
         if (CALL_Begin(call)) {
             CALL_PtrParam(_@(cGreenPtr));
@@ -941,14 +966,41 @@ func void freeAimVisualizeWeakspot() {
             call = CALL_End();
         };
     };
-    if (freeAimDebugTrj[0]) { // Visualize projectile trajectory
-        var int cRedPtr; cRedPtr = _@(zCOLOR_RED);
-        var int pos1Ptr; pos1Ptr = _@(freeAimDebugTrj);
-        var int pos2Ptr; pos2Ptr = _@(freeAimDebugTrj)+12;
+    if (freeAimDebugTRTrj[0]) { // Visualize trace ray trajectory
+        var int pos1Ptr; pos1Ptr = _@(freeAimDebugTRTrj);
+        var int pos2Ptr; pos2Ptr = _@(freeAimDebugTRTrj)+12;
         const int call2 = 0; var int null;
         if (CALL_Begin(call2)) {
             CALL_IntParam(_@(null));
+            CALL_IntParam(_@(zCOLOR_GREEN));
+            CALL_PtrParam(_@(pos2Ptr));
+            CALL_PtrParam(_@(pos1Ptr));
+            CALL__thiscall(_@(zlineCache), zCLineCache__Line3D);
+            call2 = CALL_End();
+        };
+    };
+};
+
+/* Visualize the bounding box of the weakspot and the projectile trajectory for debugging */
+func void freeAimVisualizeWeakspot() {
+    if (!FREEAIM_DEBUG_WEAKSPOT) { return; };
+    if (freeAimDebugWSBBox[0]) { // Visualize weak spot bounding box
+        var int cRedPtr; cRedPtr = _@(zCOLOR_RED);
+        var int bboxPtr; bboxPtr = _@(freeAimDebugWSBBox);
+        const int call = 0;
+        if (CALL_Begin(call)) {
             CALL_PtrParam(_@(cRedPtr));
+            CALL__thiscall(_@(bboxPtr), zTBBox3D__Draw);
+            call = CALL_End();
+        };
+    };
+    if (freeAimDebugWSTrj[0]) { // Visualize projectile trajectory
+        var int pos1Ptr; pos1Ptr = _@(freeAimDebugWSTrj);
+        var int pos2Ptr; pos2Ptr = _@(freeAimDebugWSTrj)+12;
+        const int call2 = 0; var int null;
+        if (CALL_Begin(call2)) {
+            CALL_IntParam(_@(null));
+            CALL_IntParam(_@(zCOLOR_RED));
             CALL_PtrParam(_@(pos2Ptr));
             CALL_PtrParam(_@(pos1Ptr));
             CALL__thiscall(_@(zlineCache), zCLineCache__Line3D);
@@ -989,6 +1041,12 @@ func string freeAimDebugWeakspot(var string command) {
     if (FREEAIM_DEBUG_WEAKSPOT) { return "Debug weak spot on."; } else { return "Debug weak spot off."; };
 };
 
+/* Console function to enable/disable trace ray debug output */
+func string freeAimDebugTraceRay(var string command) {
+    FREEAIM_DEBUG_TRACERAY = !FREEAIM_DEBUG_TRACERAY;
+    if (FREEAIM_DEBUG_TRACERAY) { return "Debug trace ray on."; } else { return "Debug trace ray off."; };
+};
+
 /* Detect critical hits and increase base damage. Modify the weak spot in freeAimCriticalHitDef() */
 func void freeAimDetectCriticalHit() {
     var int damagePtr; damagePtr = ESP+228; // esp+1ACh+C8h // zREAL*
@@ -1024,7 +1082,7 @@ func void freeAimDetectCriticalHit() {
             CALL_PtrParam(node); CALL_RetValIsStruct(24); // sizeof_zTBBox3D // No recyclable call possible
             CALL__thiscall(model, zCModel__GetBBox3DNodeWorld);
             var int nodeBBoxPtr; nodeBBoxPtr = CALL_RetValAsPtr();
-            MEM_CopyWords(nodeBBoxPtr, _@(freeAimDebugBBox), 6); // zTBBox3D
+            MEM_CopyWords(nodeBBoxPtr, _@(freeAimDebugWSBBox), 6); // zTBBox3D
             MEM_Free(nodeBBoxPtr); // Free memory
         } else {
             MEM_Error("freeAimDetectCriticalHit: Node has no boundingbox!");
@@ -1041,29 +1099,29 @@ func void freeAimDetectCriticalHit() {
         var int nodPosPtr; nodPosPtr = CALL_RetValAsInt();
         var int nodePos[3]; MEM_CopyWords(nodPosPtr, _@(nodePos), 3);
         MEM_Free(nodPosPtr); // Free memory
-        freeAimDebugBBox[0] = subf(nodePos[0], mkf(weakspot.dimX)); // Build an own bbox by the passed node dimensions
-        freeAimDebugBBox[1] = subf(nodePos[1], mkf(weakspot.dimY));
-        freeAimDebugBBox[2] = subf(nodePos[2], mkf(weakspot.dimX));
-        freeAimDebugBBox[3] = addf(nodePos[0], mkf(weakspot.dimX));
-        freeAimDebugBBox[4] = addf(nodePos[1], mkf(weakspot.dimY));
-        freeAimDebugBBox[5] = addf(nodePos[2], mkf(weakspot.dimX));
+        freeAimDebugWSBBox[0] = subf(nodePos[0], mkf(weakspot.dimX)); // Build an own bbox by the passed node dimensions
+        freeAimDebugWSBBox[1] = subf(nodePos[1], mkf(weakspot.dimY));
+        freeAimDebugWSBBox[2] = subf(nodePos[2], mkf(weakspot.dimX));
+        freeAimDebugWSBBox[3] = addf(nodePos[0], mkf(weakspot.dimX));
+        freeAimDebugWSBBox[4] = addf(nodePos[1], mkf(weakspot.dimY));
+        freeAimDebugWSBBox[5] = addf(nodePos[2], mkf(weakspot.dimX));
     };
     // The internal engine functions are not accurate enough for detecting a shot through a bbox
     // Instead check here if "any" point along the line of projectile direction lies inside the bbox of the node
     var int dir[3]; // Direction of collision line along the right-vector of the projectile (projectile flies sideways)
     dir[0] = MEM_ReadInt(projectile+60); dir[1] = MEM_ReadInt(projectile+76); dir[2] = MEM_ReadInt(projectile+92);
-    freeAimDebugTrj[0] = addf(MEM_ReadInt(projectile+ 72), mulf(dir[0], FLOAT1C)); // Start 1m behind the projectile
-    freeAimDebugTrj[1] = addf(MEM_ReadInt(projectile+ 88), mulf(dir[1], FLOAT1C));
-    freeAimDebugTrj[2] = addf(MEM_ReadInt(projectile+104), mulf(dir[2], FLOAT1C));
+    freeAimDebugWSTrj[0] = addf(MEM_ReadInt(projectile+ 72), mulf(dir[0], FLOAT1C)); // Start 1m behind the projectile
+    freeAimDebugWSTrj[1] = addf(MEM_ReadInt(projectile+ 88), mulf(dir[1], FLOAT1C));
+    freeAimDebugWSTrj[2] = addf(MEM_ReadInt(projectile+104), mulf(dir[2], FLOAT1C));
     var int intersection; intersection = 0; // Critical hit detected
     var int i; i=0; var int iter; iter = 700/5; // 7meters: Max distance from model bbox edge to node bbox (e.g. troll)
     while(i <= iter); i += 1; // Walk along the line in steps of 5cm
-        freeAimDebugTrj[3] = subf(freeAimDebugTrj[0], mulf(dir[0], mkf(i*5))); // Next point along the collision line
-        freeAimDebugTrj[4] = subf(freeAimDebugTrj[1], mulf(dir[1], mkf(i*5)));
-        freeAimDebugTrj[5] = subf(freeAimDebugTrj[2], mulf(dir[2], mkf(i*5)));
-        if (lef(freeAimDebugBBox[0], freeAimDebugTrj[3])) && (lef(freeAimDebugBBox[1], freeAimDebugTrj[4]))
-        && (lef(freeAimDebugBBox[2], freeAimDebugTrj[5])) && (gef(freeAimDebugBBox[3], freeAimDebugTrj[3]))
-        && (gef(freeAimDebugBBox[4], freeAimDebugTrj[4])) && (gef(freeAimDebugBBox[5], freeAimDebugTrj[5])) {
+        freeAimDebugWSTrj[3] = subf(freeAimDebugWSTrj[0], mulf(dir[0], mkf(i*5))); // Next point along the collision line
+        freeAimDebugWSTrj[4] = subf(freeAimDebugWSTrj[1], mulf(dir[1], mkf(i*5)));
+        freeAimDebugWSTrj[5] = subf(freeAimDebugWSTrj[2], mulf(dir[2], mkf(i*5)));
+        if (lef(freeAimDebugWSBBox[0], freeAimDebugWSTrj[3])) && (lef(freeAimDebugWSBBox[1], freeAimDebugWSTrj[4]))
+        && (lef(freeAimDebugWSBBox[2], freeAimDebugWSTrj[5])) && (gef(freeAimDebugWSBBox[3], freeAimDebugWSTrj[3]))
+        && (gef(freeAimDebugWSBBox[4], freeAimDebugWSTrj[4])) && (gef(freeAimDebugWSBBox[5], freeAimDebugWSTrj[5])) {
             intersection = 1; }; // Current point is inside the node bbox, but stay in loop for debugging the line
     end;
     if (intersection) { // Critical hit detected
