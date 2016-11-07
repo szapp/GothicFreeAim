@@ -218,7 +218,6 @@ func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell 
     || (spellID == SPL_Skull) {
         reticle.texture = RETICLE_BOWL;
     };
-    if (spellID == SPL_Blink) { reticle.texture = ""; }; // No reticle for blink
 };
 
 /* Modify this function to disable hit registration on npcs, e.g. 'ineffective' ranged weapons, no friendly-fire, ... */
@@ -342,6 +341,6 @@ func int freeAimGetUsedProjectileInstance(var int projectileInst, var C_Npc inve
 
 /* Shift the aimvob along the camera out vector for spells (if you don't know what this is, you don't need it) */
 func int freeAimShiftAimVob(var int spellID) {
-    if (spellID == SPL_Blink) { return -100; }; // SPL_Blink visualizes the aim vob: push it away from any wall
+    // if (spellID == ...) { return -100; }; // Push the aim vob 100 cm away from any wall
     return 0;
 };
