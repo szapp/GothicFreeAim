@@ -792,7 +792,7 @@ func int freeAimHitRegNpc_(var C_Npc target) {
 };
 
 /* Internal helper function for freeAimHitRegWld() */
-func int freeAimHitRegWld_(var C_Npc shooter, var int material) {
+func int freeAimHitRegWld_(var C_Npc shooter, var int material, var string texture) {
     var C_Item weapon; weapon = MEM_NullToInst(); // Daedalus pseudo locals
     if (Npc_IsInFightMode(shooter, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(shooter); }
     else if (Npc_HasEquippedRangedWeapon(shooter)) { weapon = Npc_GetEquippedRangedWeapon(shooter); };
@@ -800,7 +800,8 @@ func int freeAimHitRegWld_(var C_Npc shooter, var int material) {
     MEM_PushInstParam(shooter);
     MEM_PushInstParam(weapon);
     MEM_PushIntParam(material);
-    MEM_Call(freeAimHitRegWld); // freeAimHitRegWld(shooter, weapon, material);
+    MEM_PushStringParam(texture);
+    MEM_Call(freeAimHitRegWld); // freeAimHitRegWld(shooter, weapon, material, texture);
     return MEM_PopIntResult();
 };
 
@@ -868,7 +869,8 @@ func void freeAimOnArrowCollide() {
     var int matobj; matobj = MEM_ReadInt(ECX); // zCMaterial* or zCPolygon*
     if (MEM_ReadInt(matobj) != zCMaterial__vtbl) { matobj = MEM_ReadInt(matobj+24); }; // Static world: Read zCPolygon
     var int material; material = MEM_ReadInt(matobj+64);
-    var int collision; collision = freeAimHitRegWld_(shooter, material); // 0=destroy, 1=stay, 2=deflect
+    var string texture; texture = MEM_ReadString(MEM_ReadInt(matobj+52)+16); // zCMaterial.texture._zCObject_objectName
+    var int collision; collision = freeAimHitRegWld_(shooter, material, texture); // 0=destroy, 1=stay, 2=deflect
     if (collision == 1) { // Collide
         EDI = material; // Sets the condition at 0x6A0A45 and 0x6A0C1A to true: Projectile stays
     } else {

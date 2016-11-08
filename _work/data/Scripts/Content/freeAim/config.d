@@ -32,7 +32,7 @@
  *  - Reticle style (texture, color, size):           freeAimGetReticleRanged(target, weapon, talent, distance)
  *  - Reticle style for spells:                       freeAimGetReticleSpell(target, spellID, spellInst, spellLevel, ..)
  *  - Hit registration on npcs (e.g. friendly-fire):  freeAimHitRegNpc(target, weapon, material)
- *  - Hit registration on world:                      freeAimHitRegWld(shooter, weapon, material)
+ *  - Hit registration on world:                      freeAimHitRegWld(shooter, weapon, material, texture)
  *  - Change the base damage at time of shooting:     freeAimScaleInitialDamage(basePointDamage, weapon, talent)
  *  - Critical hit calculation (position, damage):    freeAimCriticalHitDef(target, weapon, damage)
  *  - Critical hit event (print, sound, xp, ...):     freeAimCriticalHitEvent(target, weapon)
@@ -219,7 +219,7 @@ func int freeAimHitRegNpc(var C_Npc target, var C_Item weapon, var int material)
 };
 
 /* Modify this function to disable hit registration on the world, e.g. deflection of metal, stuck in wood, ... */
-func int freeAimHitRegWld(var C_Npc shooter, var C_Item weapon, var int material) {
+func int freeAimHitRegWld(var C_Npc shooter, var C_Item weapon, var int material, var string texture) {
     // This function, unlike freeAimHitRegNpc() and all other functions here, is also called for npc shooters!
     // Valid return values are:
     const int DESTROY = 0; // Projectile is destroyed on impact
@@ -234,6 +234,7 @@ func int freeAimHitRegWld(var C_Npc shooter, var C_Item weapon, var int material
     const int SNOW  = 6;
     const int UNDEF = 0;
     if (material == WOOD) { return COLLIDE; }; // Projectiles stay stuck in wood (default in gothic)
+    if (Hlp_StrCmp(texture, "MOWOBOWMARK01.TGA")) { return COLLIDE; }; // Condition by surface texture
     //  if (Npc_IsPlayer(shooter)) ... // Keep in mind that this function is also called for npc shooters
     //  if (material == STONE) && (Hlp_Random(100) < 5) { return DESTROY; }; // The projectile might break on impact
     // The example in the previous line can also be treated in freeAimGetUsedProjectileInstance() below
