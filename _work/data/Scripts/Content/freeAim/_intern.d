@@ -51,6 +51,7 @@ const int    FREEAIM_FOCUS_SPELL_FREE     = 0;               // Internal. Do not
 const int    FREEAIM_FOCUS_COLLECTION     = 1;               // Internal. Do not change (change in ini-file)
 const int    FREEAIM_ARROWAI_REDIRECT     = 0;               // Used to redirect call-by-reference var. Do not change
 const int    FLOAT1C                      = 1120403456;      // 100 as float
+const int    FLOAT3C                      = 1133903872;      // 300 as float
 const int    FLOAT1K                      = 1148846080;      // 1000 as float
 var   int    freeAimDebugWSBBox[6];                          // Weaksopt boundingbox for debug visualization
 var   int    freeAimDebugWSTrj[6];                           // Projectile trajectory for debug visualization
@@ -822,9 +823,9 @@ func void freeAimDoNpcHit() {
     var int dir[3]; // Direction of collision line along the right-vector of the projectile (projectile flies sideways)
     dir[0] = MEM_ReadInt(projectile+60); dir[1] = MEM_ReadInt(projectile+76); dir[2] = MEM_ReadInt(projectile+92);
     var int line[6]; // Collision line
-    line[0] = addf(MEM_ReadInt(projectile+ 72), mulf(dir[0], FLOAT1C)); // Start 1m behind the projectile
-    line[1] = addf(MEM_ReadInt(projectile+ 88), mulf(dir[1], FLOAT1C));
-    line[2] = addf(MEM_ReadInt(projectile+104), mulf(dir[2], FLOAT1C));
+    line[0] = addf(MEM_ReadInt(projectile+ 72), mulf(dir[0], FLOAT3C)); // Start 3m behind the projectile
+    line[1] = addf(MEM_ReadInt(projectile+ 88), mulf(dir[1], FLOAT3C)); // So far because of bbox at close range
+    line[2] = addf(MEM_ReadInt(projectile+104), mulf(dir[2], FLOAT3C));
     var int intersection; intersection = 0; // Critical hit detected
     var int i; i=0; var int iter; iter = 700/5; // 7meters
     while(i <= iter); i += 1; // Walk along the line in steps of 5cm
@@ -1123,9 +1124,9 @@ func void freeAimDetectCriticalHit() {
     // Instead check here if "any" point along the line of projectile direction lies inside the bbox of the node
     var int dir[3]; // Direction of collision line along the right-vector of the projectile (projectile flies sideways)
     dir[0] = MEM_ReadInt(projectile+60); dir[1] = MEM_ReadInt(projectile+76); dir[2] = MEM_ReadInt(projectile+92);
-    freeAimDebugWSTrj[0] = addf(MEM_ReadInt(projectile+ 72), mulf(dir[0], FLOAT1C)); // Start 1m behind the projectile
-    freeAimDebugWSTrj[1] = addf(MEM_ReadInt(projectile+ 88), mulf(dir[1], FLOAT1C));
-    freeAimDebugWSTrj[2] = addf(MEM_ReadInt(projectile+104), mulf(dir[2], FLOAT1C));
+    freeAimDebugWSTrj[0] = addf(MEM_ReadInt(projectile+ 72), mulf(dir[0], FLOAT3C)); // Start 3m behind the projectile
+    freeAimDebugWSTrj[1] = addf(MEM_ReadInt(projectile+ 88), mulf(dir[1], FLOAT3C)); // So far bc bbox at close range
+    freeAimDebugWSTrj[2] = addf(MEM_ReadInt(projectile+104), mulf(dir[2], FLOAT3C));
     var int intersection; intersection = 0; // Critical hit detected
     var int i; i=0; var int iter; iter = 700/5; // 7meters: Max distance from model bbox edge to node bbox (e.g. troll)
     while(i <= iter); i += 1; // Walk along the line in steps of 5cm
