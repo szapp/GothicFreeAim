@@ -26,6 +26,7 @@
  *  - Maximum bow draw time (ms):                     FREEAIM_DRAWTIME_MAX
  *  - Disable free aiming for spells (yes/no):        FREEAIM_DISABLE_SPELLS
  *  - Collect and re-use shot projectiles (yes/no):   FREEAIM_REUSE_PROJECTILES
+ *  - Sound when projectile breaks on impact:         FREEAIM_PROCJECTILE_BREAK
  *  - Projectile instance for re-using                freeAimGetUsedProjectileInstance(instance, targetNpc)
  *  - Draw force (gravity/drop-off) calculation:      freeAimGetDrawForce(weapon, talent)
  *  - Accuracy calculation:                           freeAimGetAccuracy(weapon, talent)
@@ -48,18 +49,19 @@
 /* Initialize fixed settings. This function is called once at the beginning of each session. Set the constants here */
 func void freeAimInitConstants() {
     // If you want to change a setting, uncomment the respective line. These are the default values.
-    // FREEAIM_REUSE_PROJECTILES    = 1;               // Enable collection and re-using of shot projectiles
-    // FREEAIM_DISABLE_SPELLS       = 0;               // If true, free aiming is disabled for spells (not for ranged)
-    // FREEAIM_DRAWTIME_MAX         = 1200;            // Max draw time (ms): When is the bow fully drawn
-    // FREEAIM_DEBUG_CONSOLE        = 1;               // Console commands for debugging. Set to zero in final mod
-    // FREEAIM_DEBUG_WEAKSPOT       = 0;               // Visualize weakspot bbox and trajectory by default
+    // FREEAIM_REUSE_PROJECTILES  = 1;                 // Enable collection and re-using of shot projectiles
+    // FREEAIM_DISABLE_SPELLS     = 0;                 // If true, free aiming is disabled for spells (not for ranged)
+    // FREEAIM_DRAWTIME_MAX       = 1200;              // Max draw time (ms): When is the bow fully drawn
+    // FREEAIM_PROCJECTILE_BREAK  = "PICKLOCK_BROKEN"; // Sound when projectile breaks on impact with world
+    // FREEAIM_DEBUG_CONSOLE      = 1;                 // Console commands for debugging. Set to zero in final mod
+    // FREEAIM_DEBUG_WEAKSPOT     = 0;                 // Visualize weakspot bbox and trajectory by default
     // Modifying anything below is not recommended!
-    // FREEAIM_SCATTER_DEG          = 2.2;             // Maximum scatter radius in degrees
-    // FREEAIM_TRAJECTORY_ARC_MAX   = 400;             // Max time (ms) after which the trajectory drops off
-    // FREEAIM_PROJECTILE_GRAVITY   = 0.1;             // The gravity decides how fast the projectile drops
-    // FREEAIM_CAMERA               = "CamModFreeAim"; // CCamSys_Def script instance for free aim
-    // FREEAIM_CAMERA_X_SHIFT       = 0;               // One, if camera is set to shoulderview, s.a. (not recommended)
-    // FREEAIM_ROTATION_SCALE       = 0.16;            // Turn rate. Non-weapon mode is 0.2 (zMouseRotationScale)
+    // FREEAIM_SCATTER_DEG        = 2.2;               // Maximum scatter radius in degrees
+    // FREEAIM_TRAJECTORY_ARC_MAX = 400;               // Max time (ms) after which the trajectory drops off
+    // FREEAIM_PROJECTILE_GRAVITY = 0.1;               // The gravity decides how fast the projectile drops
+    // FREEAIM_CAMERA             = "CamModFreeAim";   // CCamSys_Def script instance for free aim
+    // FREEAIM_CAMERA_X_SHIFT     = 0;                 // One, if camera is set to shoulderview, s.a. (not recommended)
+    // FREEAIM_ROTATION_SCALE     = 0.16;              // Turn rate. Non-weapon mode is 0.2 (zMouseRotationScale)
 };
 
 /* Modify this function to alter the draw force calculation. Scaled between 0 and 100 (percent) */
@@ -132,7 +134,7 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
         var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent); // Already scaled between [0, 100]
         reticle.texture = freeAimAnimateReticleByPercent(RETICLE_NOTCH, drawForce, 17); // Animate reticle by draw force
     } else if (weapon.flags & ITEM_CROSSBOW) { // Change reticle texture by distance
-        reticle.size = 100; // Keep the size fixed here
+        reticle.size = 75; // Keep the size fixed here
         reticle.texture = freeAimAnimateReticleByPercent(RETICLE_DROP, dist, 8); // Animate reticle by distance
     };
 };
@@ -308,7 +310,7 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon) {
     View_Open(hitmark);
     FF_ApplyExtData(View_Close, 300, 1, hitmark);
     // Sound notification
-    Snd_Play("FORGE_ANVIL_A1");
+    Snd_Play3D(target, "FORGE_ANVIL_A1");
 };
 
 /* Modify this function to exchange (or remove) the projectile after shooting for re-using, e.g. used arrow */

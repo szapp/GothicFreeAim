@@ -27,32 +27,33 @@
  */
 
 /* Free aim settings, do not modify! Change the settings in freeAim\config.d */
-const string FREEAIM_VERSION              = "G2 Free Aim";   // Do not change under any circumstances
-const int    FREEAIM_REUSE_PROJECTILES    = 1;               // Enable collection and re-using of shot projectiles
-const int    FREEAIM_DISABLE_SPELLS       = 0;               // If true, free aiming is disabled for spells
-const int    FREEAIM_DRAWTIME_MAX         = 1200;            // Max draw time (ms): When is the bow fully drawn
-const int    FREEAIM_TRAJECTORY_ARC_MAX   = 400;             // Max time (ms) after which the trajectory drops off
-const float  FREEAIM_ROTATION_SCALE       = 0.16;            // Turn rate. Non-weapon mode is 0.2 (zMouseRotationScale)
-const float  FREEAIM_SCATTER_DEG          = 2.2;             // Maximum scatter radius in degrees
-const string FREEAIM_CAMERA               = "CamModFreeAim"; // CCamSys_Def script instance for free aim
-const int    FREEAIM_CAMERA_X_SHIFT       = 0;               // One, if camera is set to shoulderview (not recommended)
-const int    FREEAIM_DEBUG_WEAKSPOT       = 0;               // Visualize weakspot bbox and trajectory
-const int    FREEAIM_DEBUG_TRACERAY       = 0;               // Visualize trace ray bboxes and trajectory
-const int    FREEAIM_DEBUG_CONSOLE        = 1;               // Console command for debugging. Turn off in final mod
-const float  FREEAIM_PROJECTILE_GRAVITY   = 0.1;             // The gravity decides how fast the projectile drops
-const int    FREEAIM_DRAWTIME_READY       = 650;             // Time offset for readying the bow - fixed by animation
-const int    FREEAIM_DRAWTIME_RELOAD      = 1110;            // Time offset for reloading the bow - fixed by animation
-const int    FREEAIM_RETICLE_MIN_SIZE     = 32;              // Smallest reticle size in pixels
-const int    FREEAIM_RETICLE_MAX_SIZE     = 64;              // Biggest reticle size in pixels
-const string FREEAIM_TRAIL_FX             = "freeAim_TRAIL"; // Trailstrip FX. Should not be changed
-const int    FREEAIM_MAX_DIST             = 5000;            // 50m. Shooting/reticle adjustments. Do not change
-const int    FREEAIM_ACTIVE_PREVFRAME     = 0;               // Internal. Do not change
-const int    FREEAIM_FOCUS_SPELL_FREE     = 0;               // Internal. Do not change
-const int    FREEAIM_FOCUS_COLLECTION     = 1;               // Internal. Do not change (change in ini-file)
-const int    FREEAIM_ARROWAI_REDIRECT     = 0;               // Used to redirect call-by-reference var. Do not change
-const int    FLOAT1C                      = 1120403456;      // 100 as float
-const int    FLOAT3C                      = 1133903872;      // 300 as float
-const int    FLOAT1K                      = 1148846080;      // 1000 as float
+const string FREEAIM_VERSION            = "G2 Free Aim";     // Do not change under any circumstances
+const int    FREEAIM_REUSE_PROJECTILES  = 1;                 // Enable collection and re-using of shot projectiles
+const int    FREEAIM_DISABLE_SPELLS     = 0;                 // If true, free aiming is disabled for spells
+const int    FREEAIM_DRAWTIME_MAX       = 1200;              // Max draw time (ms): When is the bow fully drawn
+const int    FREEAIM_TRAJECTORY_ARC_MAX = 400;               // Max time (ms) after which the trajectory drops off
+const float  FREEAIM_ROTATION_SCALE     = 0.16;              // Turn rate. Non-weapon mode is 0.2 (zMouseRotationScale)
+const float  FREEAIM_SCATTER_DEG        = 2.2;               // Maximum scatter radius in degrees
+const string FREEAIM_PROCJECTILE_BREAK  = "PICKLOCK_BROKEN"; // Sound when projectile breaks on impact with world
+const string FREEAIM_CAMERA             = "CamModFreeAim";   // CCamSys_Def script instance for free aim
+const int    FREEAIM_CAMERA_X_SHIFT     = 0;                 // One, if camera is set to shoulderview (not recommended)
+const int    FREEAIM_DEBUG_WEAKSPOT     = 0;                 // Visualize weakspot bbox and trajectory
+const int    FREEAIM_DEBUG_TRACERAY     = 0;                 // Visualize trace ray bboxes and trajectory
+const int    FREEAIM_DEBUG_CONSOLE      = 1;                 // Console command for debugging. Turn off in final mod
+const float  FREEAIM_PROJECTILE_GRAVITY = 0.1;               // The gravity decides how fast the projectile drops
+const int    FREEAIM_DRAWTIME_READY     = 650;               // Time offset for readying the bow - fixed by animation
+const int    FREEAIM_DRAWTIME_RELOAD    = 1110;              // Time offset for reloading the bow - fixed by animation
+const int    FREEAIM_RETICLE_MIN_SIZE   = 32;                // Smallest reticle size in pixels
+const int    FREEAIM_RETICLE_MAX_SIZE   = 64;                // Biggest reticle size in pixels
+const string FREEAIM_TRAIL_FX           = "freeAim_TRAIL";   // Trailstrip FX. Should not be changed
+const int    FREEAIM_MAX_DIST           = 5000;              // 50m. Shooting/reticle adjustments. Do not change
+const int    FREEAIM_ACTIVE_PREVFRAME   = 0;                 // Internal. Do not change
+const int    FREEAIM_FOCUS_SPELL_FREE   = 0;                 // Internal. Do not change
+const int    FREEAIM_FOCUS_COLLECTION   = 1;                 // Internal. Do not change (change in ini-file)
+const int    FREEAIM_ARROWAI_REDIRECT   = 0;                 // Used to redirect call-by-reference var. Do not change
+const int    FLOAT1C                    = 1120403456;        // 100 as float
+const int    FLOAT3C                    = 1133903872;        // 300 as float
+const int    FLOAT1K                    = 1148846080;        // 1000 as float
 var   int    freeAimDebugWSBBox[6];                          // Weaksopt boundingbox for debug visualization
 var   int    freeAimDebugWSTrj[6];                           // Projectile trajectory for debug visualization
 var   int    freeAimDebugTRBBox[6];                          // Trace ray intersection for debug visualization
@@ -880,6 +881,7 @@ func void freeAimOnArrowCollide() {
             if (FF_ActiveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody))) {
                 FF_RemoveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody)); };
             if (FREEAIM_REUSE_PROJECTILES) { // Destroy
+                if (!Hlp_StrCmp(FREEAIM_PROCJECTILE_BREAK, "")) { Snd_Play3D(projectile, FREEAIM_PROCJECTILE_BREAK); };
                 MEM_WriteInt(ESI+56, -1073741824); // oCAIArrow.lifeTime // Mark this AI for freeAimWatchProjectile()
             };
         };
