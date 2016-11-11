@@ -308,7 +308,7 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon) {
     View_Open(hitmark);
     FF_ApplyExtData(View_Close, 300, 1, hitmark);
     // Sound notification
-    Snd_Play3D(target, "FORGE_ANVIL_A1");
+    Snd_Play3D(target, "FREEAIM_CRITICALHIT");
 };
 
 /* Modify this function to exchange (or remove) the projectile after shooting for re-using, e.g. used arrow */
