@@ -236,7 +236,7 @@ func int freeAimHitRegWld(var C_Npc shooter, var C_Item weapon, var int material
     if (material == WOOD) { return COLLIDE; }; // Projectiles stay stuck in wood (default in gothic)
     if (Hlp_StrCmp(texture, "MOWOBOWMARK01.TGA")) { return COLLIDE; }; // Condition by surface texture
     //  if (Npc_IsPlayer(shooter)) ... // Keep in mind that this function is also called for npc shooters
-    //  if (material == STONE) && (Hlp_Random(100) < 5) { return DESTROY; }; // The projectile might break on impact
+    if (material == STONE) && (Hlp_Random(100) < 20) { return DESTROY; }; // The projectile might break on impact
     // The example in the previous line can also be treated in freeAimGetUsedProjectileInstance() below
     // The weapon can also be considered (e.g. ineffective weapons). Make use of 'weapon' for that
     // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
@@ -278,12 +278,12 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int dam
     //    weakspot.bDmg = mulf(damage, castToIntf(1.75));
     // } else if (target.aivar[AIV_MM_REAL_ID] == ...
     //    ...
-    } else if (target.guild == GIL_BLOODFLY) { // Bloodflys don't have a head node
+    } else if (target.guild == GIL_BLOODFLY) || (target.guild == GIL_MEATBUG) { // Models that don't have a head node
         weakspot.node = ""; // Disable critical hits this way
     } else { // Default
         weakspot.node = "Bip01 Head";
-        weakspot.dimX = 60; // 60x60cm size
-        weakspot.dimY = 60;
+        weakspot.dimX = 50; // 50x50cm size
+        weakspot.dimY = 50;
         weakspot.bDmg = mulf(damage, castToIntf(2.0)); // Double the base damage. This is a float
     };
 };
@@ -303,7 +303,7 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon) {
     if (!Hlp_IsValidHandle(hitmark)) { // Create hitmark if it does not exist
         Print_GetScreenSize();
         hitmark = View_CreateCenterPxl(Print_Screen[PS_X]/2, Print_Screen[PS_Y]/2, 64, 64);
-        View_SetTexture(hitmark, RETICLE_X);
+        View_SetTexture(hitmark, freeAimAnimateReticleByPercent(RETICLE_TRI_IN, 100, 7)); // Retrieve 7th frame of ani
     };
     View_Open(hitmark);
     FF_ApplyExtData(View_Close, 300, 1, hitmark);
