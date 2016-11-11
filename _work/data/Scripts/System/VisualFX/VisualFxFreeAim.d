@@ -40,3 +40,10 @@ INSTANCE freeAim_TRAIL_KEY_INVEST_3 (C_ParticleFxEmitKey) {
     visname_s               = ""; // Remove effect after collision
     pfx_ppsIsLoopingChg     = 1;
 };
+
+INSTANCE freeAim_DESTROY (CFx_Base_Proto) {
+    visname_s               = "FREEAIM_IMPACT";
+    emTrjOriginNode         = "BIP01";
+    sfxid                   = "PICKLOCK_BROKEN";
+    sfxisambient            = 1;
+};

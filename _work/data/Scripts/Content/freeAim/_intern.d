@@ -34,7 +34,6 @@ const int    FREEAIM_DRAWTIME_MAX       = 1200;                 // Max draw time
 const int    FREEAIM_TRAJECTORY_ARC_MAX = 400;                  // Max time (ms) after which the trajectory drops off
 const float  FREEAIM_ROTATION_SCALE     = 0.16;                 // Turn rate. Non-weapon mode: 0.2 (zMouseRotationScale)
 const float  FREEAIM_SCATTER_DEG        = 2.2;                  // Maximum scatter radius in degrees
-const string FREEAIM_PROCJECTILE_BREAK  = "PICKLOCK_BROKEN";    // Sound when projectile breaks on impact with world
 const string FREEAIM_CAMERA             = "CamModFreeAim";      // CCamSys_Def script instance for free aim
 const int    FREEAIM_CAMERA_X_SHIFT     = 0;                    // Camera is set to shoulderview (not recommended)
 const int    FREEAIM_DEBUG_WEAKSPOT     = 0;                    // Visualize weakspot bbox and trajectory
@@ -46,6 +45,7 @@ const int    FREEAIM_DRAWTIME_RELOAD    = 1110;                 // Time offset f
 const int    FREEAIM_RETICLE_MIN_SIZE   = 32;                   // Smallest reticle size in pixels
 const int    FREEAIM_RETICLE_MAX_SIZE   = 64;                   // Biggest reticle size in pixels
 const string FREEAIM_TRAIL_FX           = "freeAim_TRAIL";      // Trailstrip FX. Should not be changed
+const string FREEAIM_BREAK_FX           = "freeAim_DESTROY";    // FX of projectile breaking on impact with world
 const int    FREEAIM_MAX_DIST           = 5000;                 // 50m. Shooting/reticle adjustments. Do not change
 const int    FREEAIM_ACTIVE_PREVFRAME   = 0;                    // Internal. Do not change
 const int    FREEAIM_FOCUS_SPELL_FREE   = 0;                    // Internal. Do not change
@@ -881,7 +881,8 @@ func void freeAimOnArrowCollide() {
             if (FF_ActiveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody))) {
                 FF_RemoveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody)); };
             if (FREEAIM_REUSE_PROJECTILES) { // Destroy
-                if (!Hlp_StrCmp(FREEAIM_PROCJECTILE_BREAK, "")) { Snd_Play3D(projectile, FREEAIM_PROCJECTILE_BREAK); };
+                Wld_StopEffect(FREEAIM_BREAK_FX); // Sometimes collides several times
+                Wld_PlayEffect(FREEAIM_BREAK_FX, projectile, projectile, 0, 0, 0, FALSE);
                 MEM_WriteInt(ESI+56, -1073741824); // oCAIArrow.lifeTime // Mark this AI for freeAimWatchProjectile()
             };
         };

@@ -26,7 +26,6 @@
  *  - Maximum bow draw time (ms):                     FREEAIM_DRAWTIME_MAX
  *  - Disable free aiming for spells (yes/no):        FREEAIM_DISABLE_SPELLS
  *  - Collect and re-use shot projectiles (yes/no):   FREEAIM_REUSE_PROJECTILES
- *  - Sound when projectile breaks on impact:         FREEAIM_PROCJECTILE_BREAK
  *  - Projectile instance for re-using                freeAimGetUsedProjectileInstance(instance, targetNpc)
  *  - Draw force (gravity/drop-off) calculation:      freeAimGetDrawForce(weapon, talent)
  *  - Accuracy calculation:                           freeAimGetAccuracy(weapon, talent)
@@ -52,7 +51,6 @@ func void freeAimInitConstants() {
     // FREEAIM_REUSE_PROJECTILES  = 1;                 // Enable collection and re-using of shot projectiles
     // FREEAIM_DISABLE_SPELLS     = 0;                 // If true, free aiming is disabled for spells (not for ranged)
     // FREEAIM_DRAWTIME_MAX       = 1200;              // Max draw time (ms): When is the bow fully drawn
-    // FREEAIM_PROCJECTILE_BREAK  = "PICKLOCK_BROKEN"; // Sound when projectile breaks on impact with world
     // FREEAIM_DEBUG_CONSOLE      = 1;                 // Console commands for debugging. Set to zero in final mod
     // FREEAIM_DEBUG_WEAKSPOT     = 0;                 // Visualize weakspot bbox and trajectory by default
     // Modifying anything below is not recommended!
