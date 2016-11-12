@@ -207,7 +207,7 @@ func int freeAimSpellEligible(var C_Spell spell) {
 
 /* Update internal settings when turning free aim on/off in the options */
 func void freeAimUpdateSettings(var int on) {
-    MEM_Info("Updating internal free aiming settings");
+    MEM_Info("Updating internal free aim settings");
     MEM_InitGlobalInst(); // Important as this function will be called during level change, otherwise the game crashes
     if (on) {
         Focus_Ranged.npc_azi = 15.0; // Set stricter focus collection
