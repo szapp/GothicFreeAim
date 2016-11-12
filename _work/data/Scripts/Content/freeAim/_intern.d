@@ -169,11 +169,10 @@ func void freeAim_Init() {
             HookEngineF(onArrowHitVobAddr, 5, freeAimOnArrowGetStuck); // Keep projectile alive when stuck in vob
             HookEngineF(onArrowHitStatAddr, 5, freeAimOnArrowGetStuck); // Keep projectile alive when stuck in world
         };
-        if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusEnabled"))) { // No focuscollection (performance) not recommended
-            if (!MEM_GothOptExists("FREEAIM", "focusEnabled")) {
-                MEM_SetGothOpt("FREEAIM", "focusEnabled", "1"); // Turn on by default
-            } else { FREEAIM_FOCUS_COLLECTION = 0; };
-        };
+        if (!MEM_GothOptExists("FREEAIM", "enabled")) { MEM_SetGothOpt("FREEAIM", "enabled", "1"); }; // If not set
+        if (!MEM_GothOptExists("FREEAIM", "focusEnabled")) { MEM_SetGothOpt("FREEAIM", "focusEnabled", "1"); }
+        else if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusEnabled"))) {
+            FREEAIM_FOCUS_COLLECTION = 0; }; // No focuscollection (performance) not recommended
         r_DefaultInit(); // Start rng for aiming accuracy
         hookFreeAim = 1;
     };
