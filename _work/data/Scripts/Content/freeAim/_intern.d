@@ -1191,7 +1191,7 @@ func void freeAimSpellReticle() {
         if (!spell.targetCollectAlgo) || (spell.targetCollectAzi <= 0) || (spell.targetCollectElev <= 0)
         { focusType = 0; } else { focusType = spell.targetCollectType; };
         freeAimRay(spell.targetCollectRange, focusType, _@(target), 0, _@(distance), 0); // Shoot ray
-        distance = roundf(divf(mulf(distance, FLOAT1C), mkf(FREEAIM_MAX_DIST))); // Distance scaled between [0, 100]
+        distance = roundf(divf(mulf(distance, FLOAT1C), mkf(spell.targetCollectRange))); // Distance scaled to [0, 100]
     } else { // More performance friendly. Here, there will be NO focus, otherwise it gets stuck on npcs.
         var int herPtr; herPtr = _@(hero);
         const int call2 = 0; var int null; // Set the focus vob properly: reference counter
