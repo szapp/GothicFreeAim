@@ -36,6 +36,7 @@ const float  FREEAIM_ROTATION_SCALE     = 0.16;                 // Turn rate. No
 const float  FREEAIM_SCATTER_DEG        = 2.2;                  // Maximum scatter radius in degrees
 const string FREEAIM_CAMERA             = "CamModFreeAim";      // CCamSys_Def script instance for free aim
 const int    FREEAIM_CAMERA_X_SHIFT     = 0;                    // Camera is set to shoulderview (not recommended)
+const int    FREEAIM_HITDETECTION_EXP   = 0;                    // Additional hit detection test (EXPERIMENTAL)
 const int    FREEAIM_DEBUG_WEAKSPOT     = 0;                    // Visualize weakspot bbox and trajectory
 const int    FREEAIM_DEBUG_TRACERAY     = 0;                    // Visualize trace ray bboxes and trajectory
 const int    FREEAIM_DEBUG_CONSOLE      = 1;                    // Console command for debugging. Turn off in final mod
@@ -834,28 +835,29 @@ func void freeAimDoNpcHit() {
         MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59); // jz to 0x6A0BA3
         return;
     };
-    // The internal engine functions are not accurate enough for detecting a shot through a bbox
-    // Instead check here if "any" point along the line of projectile direction lies inside the bbox
-    var zTBBox3D targetBBox; targetBBox = _^(_@(target)+124); // oCNpc.bbox3D
-    var int dir[3]; // Direction of collision line along the right-vector of the projectile (projectile flies sideways)
-    dir[0] = MEM_ReadInt(projectile+60); dir[1] = MEM_ReadInt(projectile+76); dir[2] = MEM_ReadInt(projectile+92);
-    var int line[6]; // Collision line
-    line[0] = addf(MEM_ReadInt(projectile+ 72), mulf(dir[0], FLOAT3C)); // Start 3m behind the projectile
-    line[1] = addf(MEM_ReadInt(projectile+ 88), mulf(dir[1], FLOAT3C)); // So far because of bbox at close range
-    line[2] = addf(MEM_ReadInt(projectile+104), mulf(dir[2], FLOAT3C));
-    var int intersection; intersection = 0; // Critical hit detected
-    var int i; i=0; var int iter; iter = 700/5; // 7meters
-    while(i <= iter); i += 1; // Walk along the line in steps of 5cm
-        line[3] = subf(line[0], mulf(dir[0], mkf(i*5))); // Next point along the collision line
-        line[4] = subf(line[1], mulf(dir[1], mkf(i*5)));
-        line[5] = subf(line[2], mulf(dir[2], mkf(i*5)));
-        if (lef(targetBBox.mins[0], line[3])) && (lef(targetBBox.mins[1], line[4]))
-        && (lef(targetBBox.mins[2], line[5])) && (gef(targetBBox.maxs[0], line[3]))
-        && (gef(targetBBox.maxs[1], line[4])) && (gef(targetBBox.maxs[2], line[5])) {
-            intersection = 1; break; }; // Current point is inside the bbox
-    end;
+    var int intersection; intersection = 1; // Hit registered (positive hit determined by the engine at this point)
+    if (FREEAIM_HITDETECTION_EXP) { // Additional hit detection test (EXPERIMENTAL). Will lead to some hits not detected
+        intersection = 0; // Check here if "any" point along the line of the projectile direction lies inside the bbox
+        var zTBBox3D targetBBox; targetBBox = _^(_@(target)+124); // oCNpc.bbox3D
+        var int dir[3]; // Direction of collision line along the right-vector of projectile (projectile flies sideways)
+        dir[0] = MEM_ReadInt(projectile+60); dir[1] = MEM_ReadInt(projectile+76); dir[2] = MEM_ReadInt(projectile+92);
+        var int line[6]; // Collision line
+        line[0] = addf(MEM_ReadInt(projectile+ 72), mulf(dir[0], FLOAT3C)); // Start 3m behind the projectile
+        line[1] = addf(MEM_ReadInt(projectile+ 88), mulf(dir[1], FLOAT3C)); // So far because of bbox at close range
+        line[2] = addf(MEM_ReadInt(projectile+104), mulf(dir[2], FLOAT3C));
+        var int i; i=0; var int iter; iter = 700/5; // 7meters
+        while(i <= iter); i += 1; // Walk along the line in steps of 5cm
+            line[3] = subf(line[0], mulf(dir[0], mkf(i*5))); // Next point along the collision line
+            line[4] = subf(line[1], mulf(dir[1], mkf(i*5)));
+            line[5] = subf(line[2], mulf(dir[2], mkf(i*5)));
+            if (lef(targetBBox.mins[0], line[3])) && (lef(targetBBox.mins[1], line[4]))
+            && (lef(targetBBox.mins[2], line[5])) && (gef(targetBBox.maxs[0], line[3]))
+            && (gef(targetBBox.maxs[1], line[4])) && (gef(targetBBox.maxs[2], line[5])) {
+                intersection = 1; break; }; // Current point is inside the bbox
+        end;
+    };
     var int hit;
-    if (intersection) {
+    if (intersection) { // By default this is always true
         var int collision; collision = freeAimHitRegNpc_(target); // 0=destroy, 1=stuck, 2=deflect
         if (collision == 2) { // Deflect (no damage)
             MEM_WriteByte(projectileDeflectOffNpcAddr, ASMINT_OP_nop); // Skip npc armor collision check, deflect always

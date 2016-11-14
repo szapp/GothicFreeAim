@@ -42,6 +42,7 @@
  *  - Max time before projectile drop-off:            FREEAIM_TRAJECTORY_ARC_MAX
  *  - Gravity of projectile after drop-off:           FREEAIM_PROJECTILE_GRAVITY
  *  - Turn speed while aiming:                        FREEAIM_ROTATION_SCALE
+ *  - Additional hit detection test (EXPERIMENTAL):   FREEAIM_HITDETECTION_EXP
  *  - Shift the aim vob:                              freeAimShiftAimVob
  */
 
@@ -60,6 +61,7 @@ func void freeAimInitConstants() {
     // FREEAIM_CAMERA             = "CamModFreeAim";   // CCamSys_Def script instance for free aim
     // FREEAIM_CAMERA_X_SHIFT     = 0;                 // One, if camera is set to shoulderview, s.a. (not recommended)
     // FREEAIM_ROTATION_SCALE     = 0.16;              // Turn rate. Non-weapon mode is 0.2 (zMouseRotationScale)
+    // FREEAIM_HITDETECTION_EXP   = 0;                 // Additional hit detection (EXPERIMENTAL)
 };
 
 /* Modify this function to alter the draw force calculation. Scaled between 0 and 100 (percent) */
