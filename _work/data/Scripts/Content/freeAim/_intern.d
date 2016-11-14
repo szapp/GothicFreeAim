@@ -132,8 +132,9 @@ func void freeAim_Init() {
     const int hookFreeAim = 0;
     if (!hookFreeAim) {
         MEM_Info(""); // Copyright notice in zSpy
-        MEM_Info(ConcatStrings(ConcatStrings("     ", FREEAIM_VERSION),
-            ", Copyright (C) 2016  mud-freak (@szapp)"));
+        var int s; s = SB_New();
+        SB("     "); SB(FREEAIM_VERSION); SB(", Copyright "); SBc(169 /* (C) */); SB(" 2016  mud-freak (@szapp)");
+        MEM_Info(SB_ToString()); SB_Destroy();
         MEM_Info("     <http://github.com/szapp/g2freeAim>");
         MEM_Info("     Released under the GNU General Public License.");
         MEM_Info("     For more details see <http://www.gnu.org/licenses/>.");
@@ -720,7 +721,8 @@ func void freeAimSetupProjectile() {
     if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { return; }; // Only if player and if fa WAS active
     // 1st: Set base damage of projectile // oCItem.damage[DAM_INDEX_POINT];
     var int baseDamage; baseDamage = MEM_ReadStatArr(projectile+364, DAM_INDEX_POINT);
-    MEM_WriteStatArr(projectile+364, DAM_INDEX_POINT, freeAimScaleInitialDamage_(baseDamage));
+    var int newBaseDamage; newBaseDamage = freeAimScaleInitialDamage_(baseDamage);
+    MEM_WriteStatArr(projectile+364, DAM_INDEX_POINT, newBaseDamage);
     // 2nd: Set projectile drop-off (by draw force)
     const int call2 = 0;
     if (CALL_Begin(call2)) {
@@ -730,9 +732,9 @@ func void freeAimSetupProjectile() {
     var int rBody; rBody = CALL_RetValAsInt(); // zCRigidBody*
     var int drawForce; drawForce = freeAimGetDrawForce_(); // Modify the draw force in that function, not here!
     var int gravityMod; gravityMod = FLOATONE; // Gravity only modified on short draw time
-    if (drawForce < 25) { gravityMod = mkf(3); }; // Very short draw time increases gravity
-    drawForce = (drawForce*(FREEAIM_TRAJECTORY_ARC_MAX*100))/10000;
-    FF_ApplyOnceExtData(freeAimDropProjectile, drawForce, 1, rBody); // When to hit the projectile with gravity
+    if (drawForce < 25) { gravityMod = castToIntf(3.0); }; // Very short draw time increases gravity
+    var int dropTime; dropTime = (drawForce*(FREEAIM_TRAJECTORY_ARC_MAX*100))/10000;
+    FF_ApplyOnceExtData(freeAimDropProjectile, dropTime, 1, rBody); // When to hit the projectile with gravity
     freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_RELOAD; // Reset draw timer
     MEM_WriteInt(rBody+236, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod)); // Set gravity (but not enabled)
     if (Hlp_Is_oCItem(projectile)) && (Hlp_StrCmp(MEM_ReadString(projectile+564), "")) { // Projectile has no FX
@@ -768,6 +770,15 @@ func void freeAimSetupProjectile() {
     pos[2] = addf(camPos.v2[3], newPos[2]);
     // 4th: Setup the aim vob
     var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos));
+    // Print info to zSpy
+    var int s; s = SB_New();
+    SB("freeAimSetupProjectile: ");
+    SB("drawforce="); SBi(drawForce); SB("% ");
+    SB("accuracy="); SBi(accuracy); SB("% ");
+    SB("scatter="); SB(STR_Prefix(toStringf(angleX), 5)); SBc(176 /* deg */);
+    SB("/"); SB(STR_Prefix(toStringf(angleY), 5)); SBc(176 /* deg */); SB(" ");
+    SB("init-basedamage="); SBi(newBaseDamage); SB("/"); SBi(baseDamage);
+    MEM_Info(SB_ToString()); SB_Destroy();
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
 };
 
@@ -1146,6 +1157,13 @@ func void freeAimDetectCriticalHit() {
         && (gef(freeAimDebugWSBBox[4], freeAimDebugWSTrj[4])) && (gef(freeAimDebugWSBBox[5], freeAimDebugWSTrj[5])) {
             intersection = 1; }; // Current point is inside the node bbox, but stay in loop for debugging the line
     end;
+    var int s; s = SB_New(); // Print info to zSpy
+    SB("freeAimDetectCriticalHit: ");
+    SB("criticalhit="); SBi(intersection); SB(" ");
+    SB("basedamage="); SBi(roundf(weakspot.bDmg)); SB("/"); SBi(roundf(MEM_ReadInt(damagePtr))); SB(" ");
+    SB("ciriticalnode='"); SB(weakspot.node); SB("' ");
+    SB(" ("); SBi(weakspot.dimX); SB("x"); SBi(weakspot.dimY); SB(")");
+    MEM_Info(SB_ToString()); SB_Destroy();
     if (intersection) { // Critical hit detected
         freeAimCriticalHitEvent_(targetNpc); // Use this function to add an event, e.g. a print or a sound
         MEM_WriteInt(damagePtr, weakspot.bDmg); // Base damage not final damage
