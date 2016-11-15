@@ -724,7 +724,32 @@ func void freeAimSetupProjectile() {
     var int baseDamage; baseDamage = MEM_ReadStatArr(projectile+364, DAM_INDEX_POINT);
     var int newBaseDamage; newBaseDamage = freeAimScaleInitialDamage_(baseDamage);
     MEM_WriteStatArr(projectile+364, DAM_INDEX_POINT, newBaseDamage);
-    // 2nd: Set projectile drop-off (by draw force)
+    // 2nd: Manipulate aiming accuracy (scatter): Rotate target position (azimuth, elevation)
+    var int distance; freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, _@(distance)); // Trace ray intersection
+    var int accuracy; accuracy = freeAimGetAccuracy_(); // Change the accuracy calculation in that function, not here!
+    if (accuracy > 100) { accuracy = 100; } else if (accuracy < 1) { accuracy = 1; }; // Prevent devision by zero
+    var int bias; bias = castToIntf(FREEAIM_SCATTER_DEG);
+    var int slope; slope = negf(divf(castToIntf(FREEAIM_SCATTER_DEG), FLOAT1C));
+    var int angleMax; angleMax = roundf(mulf(addf(mulf(slope, mkf(accuracy)), bias), FLOAT1K)); // y = slope*acc+bias
+    var int angleY; angleY = fracf(r_MinMax(-angleMax, angleMax), 1000); // Degrees azimuth
+    angleMax = roundf(sqrtf(subf(sqrf(mkf(angleMax)), sqrf(mulf(angleY, FLOAT1K))))); // sqrt(angleMax^2-angleY^2)
+    var int angleX; angleX = fracf(r_MinMax(-angleMax, angleMax), 1000); // Degrees elevation (restrict to circle)
+    var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60); //0=right, 2=out, 3=pos
+    var int pos[3]; pos[0] = FLOATNULL; pos[1] = FLOATNULL; pos[2] = distance;
+    SinCosApprox(Print_ToRadian(angleX)); // Rotate around x-axis (elevation scatter)
+    pos[1] = mulf(negf(pos[2]), sinApprox); // y*cos - z*sin = y'
+    pos[2] = mulf(pos[2], cosApprox);       // y*sin + z*cos = z'
+    SinCosApprox(Print_ToRadian(angleY)); // Rotate around y-axis (azimuth scatter)
+    pos[0] = mulf(pos[2], sinApprox); //  x*cos + z*sin = x'
+    pos[2] = mulf(pos[2], cosApprox); // -x*sin + z*cos = z'
+    var int newPos[3]; // Rotation (translation into local coordinate system of camera)
+    newPos[0] = addf(addf(mulf(camPos.v0[0], pos[0]), mulf(camPos.v0[1], pos[1])), mulf(camPos.v0[2], pos[2]));
+    newPos[1] = addf(addf(mulf(camPos.v1[0], pos[0]), mulf(camPos.v1[1], pos[1])), mulf(camPos.v1[2], pos[2]));
+    newPos[2] = addf(addf(mulf(camPos.v2[0], pos[0]), mulf(camPos.v2[1], pos[1])), mulf(camPos.v2[2], pos[2]));
+    pos[0] = addf(camPos.v0[3], newPos[0]);
+    pos[1] = addf(camPos.v1[3], newPos[1]);
+    pos[2] = addf(camPos.v2[3], newPos[2]);
+    // 3rd: Set projectile drop-off (by draw force)
     const int call2 = 0;
     if (CALL_Begin(call2)) {
         CALL__thiscall(_@(projectile), zCVob__GetRigidBody); // Get ridigBody this way, it will be properly created
@@ -746,29 +771,6 @@ func void freeAimSetupProjectile() {
             call3 = CALL_End();
         };
     };
-    // 3rd: Manipulate aiming accuracy (scatter): Rotate target position (azimuth, elevation)
-    var int distance; freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, _@(distance)); // Trace ray intersection
-    var int accuracy; accuracy = freeAimGetAccuracy_(); // Change the accuracy calculation in that function, not here!
-    if (accuracy > 100) { accuracy = 100; } else if (accuracy < 1) { accuracy = 1; }; // Prevent devision by zero
-    var int angleMax; angleMax = roundf(mulf(mulf(fracf(1, accuracy), castToIntf(FREEAIM_SCATTER_DEG)), FLOAT1K));
-    var int angleY; angleY = fracf(r_MinMax(-angleMax, angleMax), 1000); // Degrees azimuth
-    angleMax = roundf(sqrtf(subf(sqrf(mkf(angleMax)), sqrf(mulf(angleY, FLOAT1K))))); // sqrt(angleMax^2-angleY^2)
-    var int angleX; angleX = fracf(r_MinMax(-angleMax, angleMax), 1000); // Degrees elevation (restrict to circle)
-    var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60); //0=right, 2=out, 3=pos
-    var int pos[3]; pos[0] = FLOATNULL; pos[1] = FLOATNULL; pos[2] = distance;
-    SinCosApprox(Print_ToRadian(angleX)); // Rotate around x-axis (elevation scatter)
-    pos[1] = mulf(negf(pos[2]), sinApprox); // y*cos - z*sin = y'
-    pos[2] = mulf(pos[2], cosApprox);       // y*sin + z*cos = z'
-    SinCosApprox(Print_ToRadian(angleY)); // Rotate around y-axis (azimuth scatter)
-    pos[0] = mulf(pos[2], sinApprox); //  x*cos + z*sin = x'
-    pos[2] = mulf(pos[2], cosApprox); // -x*sin + z*cos = z'
-    var int newPos[3]; // Rotation (translation into local coordinate system of camera)
-    newPos[0] = addf(addf(mulf(camPos.v0[0], pos[0]), mulf(camPos.v0[1], pos[1])), mulf(camPos.v0[2], pos[2]));
-    newPos[1] = addf(addf(mulf(camPos.v1[0], pos[0]), mulf(camPos.v1[1], pos[1])), mulf(camPos.v1[2], pos[2]));
-    newPos[2] = addf(addf(mulf(camPos.v2[0], pos[0]), mulf(camPos.v2[1], pos[1])), mulf(camPos.v2[2], pos[2]));
-    pos[0] = addf(camPos.v0[3], newPos[0]);
-    pos[1] = addf(camPos.v1[3], newPos[1]);
-    pos[2] = addf(camPos.v2[3], newPos[2]);
     // 4th: Setup the aim vob
     var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos));
     // Print info to zSpy

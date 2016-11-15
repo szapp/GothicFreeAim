@@ -81,8 +81,7 @@ func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
     // Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW)
     // Here the talent is scaled by draw force: draw force=100% => accuracy=talent; draw force=0% => accuracy=talent/2
     var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent); // Already scaled to [0, 100]
-    if (drawForce < talent) { drawForce = talent; }; // Decrease impact of draw force on talent
-    var int accuracy; accuracy = (talent * drawForce) / 100;
+    var int accuracy; accuracy = (talent-talent/2)*drawForce/100+talent/2;
     if (accuracy < 0) { accuracy = 0; } else if (accuracy > 100) { accuracy = 100; }; // Respect the ranges
     return accuracy;
 };
