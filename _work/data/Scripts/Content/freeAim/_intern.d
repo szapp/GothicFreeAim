@@ -141,6 +141,9 @@ func void freeAim_Init() {
         MEM_Info("     For more details see <http://www.gnu.org/licenses/>.");
         MEM_Info("");
         MEM_Call(freeAimInitConstants); // Customized settings
+        CC_Register(freeAimVersion, "freeaim version", "print freeaim version info");
+        CC_Register(freeAimLicense, "freeaim license", "print freeaim license info");
+        CC_Register(freeAimInfo, "freeaim info", "print freeaim info");
         HookEngineF(oCAniCtrl_Human__InterpolateCombineAni, 5, freeAimAnimation); // Update aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Set projectile direction and trajectory
         HookEngineF(oCAIHuman__BowMode, 6, freeAimManageReticle); // Manage the reticle (on/off)
@@ -1082,6 +1085,36 @@ func string freeAimDebugWeakspot(var string command) {
 func string freeAimDebugTraceRay(var string command) {
     FREEAIM_DEBUG_TRACERAY = !FREEAIM_DEBUG_TRACERAY;
     if (FREEAIM_DEBUG_TRACERAY) { return "Debug trace ray on."; } else { return "Debug trace ray off."; };
+};
+
+/* Console function to show freeAim version */
+func string freeAimVersion(var string command) {
+    return FREEAIM_VERSION;
+};
+
+/* Console function to show freeAim license */
+func string freeAimLicense(var string command) {
+    var int s; s = SB_New();
+    SB(FREEAIM_VERSION); SB(", Copyright "); SBc(169 /* (C) */); SB(" 2016  mud-freak (@szapp)"); SBc(13); SBc(10);
+    SB("<http://github.com/szapp/g2freeAim>"); SBc(13); SBc(10);
+    SB("Released under the GNU General Public License."); SBc(13); SBc(10);
+    SB("For more details see <http://www.gnu.org/licenses/>."); SBc(13); SBc(10);
+    var string ret; ret = SB_ToString(); SB_Destroy();
+    return ret;
+};
+
+/* Console function to show freeAim info */
+func string freeAimInfo(var string command) {
+    var string onOff[2];
+    onOff[0] = "off"; onOff[1] = "on";
+    var int s; s = SB_New();
+    SB(FREEAIM_VERSION); SBc(13); SBc(10);
+    SB("Enabled: "); SB(MEM_ReadStatStringArr(onOff, STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled")))); SBc(13);SBc(10);
+    SB("Focus: "); SB(MEM_ReadStatStringArr(onOff, FREEAIM_FOCUS_COLLECTION)); SBc(13); SBc(10);
+    SB("Reuse projectiles: "); SB(MEM_ReadStatStringArr(onOff, FREEAIM_REUSE_PROJECTILES)); SBc(13); SBc(10);
+    SB("Free aim for spells: "); SB(MEM_ReadStatStringArr(onOff, !FREEAIM_DISABLE_SPELLS)); SBc(13); SBc(10);
+    var string ret; ret = SB_ToString(); SB_Destroy();
+    return ret;
 };
 
 /* Detect critical hits and increase base damage. Modify the weak spot in freeAimCriticalHitDef() */
