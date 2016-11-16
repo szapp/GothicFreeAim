@@ -22,6 +22,7 @@
  *
  * Customizability:
  *  - Show weakspot debug visualization by default    FREEAIM_DEBUG_WEAKSPOT
+ *  - Show trace ray debug visualization by default   FREEAIM_DEBUG_TRACERAY
  *  - Allow freeAim console commands (cheats)         FREEAIM_DEBUG_CONSOLE
  *  - Maximum bow draw time (ms):                     FREEAIM_DRAWTIME_MAX
  *  - Disable free aiming for spells (yes/no):        FREEAIM_DISABLE_SPELLS
@@ -43,7 +44,7 @@
  *  - Gravity of projectile after drop-off:           FREEAIM_PROJECTILE_GRAVITY
  *  - Turn speed while aiming:                        FREEAIM_ROTATION_SCALE
  *  - Additional hit detection test (EXPERIMENTAL):   FREEAIM_HITDETECTION_EXP
- *  - Shift the aim vob:                              freeAimShiftAimVob
+ *  - Shift the aim vob:                              freeAimShiftAimVob(spellID)
  */
 
 /* Initialize fixed settings. This function is called once at the beginning of each session. Set the constants here */
@@ -54,6 +55,7 @@ func void freeAimInitConstants() {
     // FREEAIM_DRAWTIME_MAX       = 1200;              // Max draw time (ms): When is the bow fully drawn
     // FREEAIM_DEBUG_CONSOLE      = 1;                 // Console commands for debugging. Set to zero in final mod
     // FREEAIM_DEBUG_WEAKSPOT     = 0;                 // Visualize weakspot bbox and trajectory by default
+    // FREEAIM_DEBUG_TRACERAY     = 0;                 // Visualize trace ray bboxes and trajectory by default
     // Modifying anything below is not recommended!
     // FREEAIM_SCATTER_DEG        = 2.2;               // Maximum scatter radius in degrees
     // FREEAIM_TRAJECTORY_ARC_MAX = 400;               // Max time (ms) after which the trajectory drops off
