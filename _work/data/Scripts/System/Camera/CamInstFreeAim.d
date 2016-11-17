@@ -1,11 +1,11 @@
 /*
  * Free aim camera mode
  *
- * G2 Free Aim - Free aiming for the video game Gothic 2 by Piranha Bytes
+ * G2 Free Aim v0.1.0 - Free aiming for the video game Gothic 2 by Piranha Bytes
  * Copyright (C) 2016  mud-freak (@szapp)
  *
  * This file is part of G2 Free Aim.
- * http://github.com/szapp/g2freeAim
+ * <http://github.com/szapp/g2freeAim>
  *
  * G2 Free Aim is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
