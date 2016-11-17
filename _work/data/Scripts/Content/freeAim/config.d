@@ -23,6 +23,7 @@
  * Customizability:
  *  - Show weakspot debug visualization by default    FREEAIM_DEBUG_WEAKSPOT
  *  - Show trace ray debug visualization by default   FREEAIM_DEBUG_TRACERAY
+ *  - Apply trigger collision fix (disable collision) FREEAIM_TRIGGER_COLL_FIX
  *  - Allow freeAim console commands (cheats)         FREEAIM_DEBUG_CONSOLE
  *  - Maximum bow draw time (ms):                     FREEAIM_DRAWTIME_MAX
  *  - Disable free aiming for spells (yes/no):        FREEAIM_DISABLE_SPELLS
@@ -56,6 +57,7 @@ func void freeAimInitConstants() {
     // FREEAIM_DEBUG_CONSOLE      = 1;                 // Console commands for debugging. Set to zero in final mod
     // FREEAIM_DEBUG_WEAKSPOT     = 0;                 // Visualize weakspot bbox and trajectory by default
     // FREEAIM_DEBUG_TRACERAY     = 0;                 // Visualize trace ray bboxes and trajectory by default
+    // FREEAIM_TRIGGER_COLL_FIX   = 1;                 // Apply trigger collision fix (disable collision)
     // Modifying anything below is not recommended!
     // FREEAIM_SCATTER_DEG        = 2.2;               // Maximum scatter radius in degrees
     // FREEAIM_TRAJECTORY_ARC_MAX = 400;               // Max time (ms) after which the trajectory drops off

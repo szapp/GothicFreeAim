@@ -34,6 +34,7 @@ const int    FREEAIM_DRAWTIME_MAX       = 1200;                 // Max draw time
 const int    FREEAIM_TRAJECTORY_ARC_MAX = 400;                  // Max time (ms) after which the trajectory drops off
 const float  FREEAIM_ROTATION_SCALE     = 0.16;                 // Turn rate. Non-weapon mode: 0.2 (zMouseRotationScale)
 const float  FREEAIM_SCATTER_DEG        = 2.2;                  // Maximum scatter radius in degrees
+const int    FREEAIM_TRIGGER_COLL_FIX   = 1;                    // Apply trigger collision fix (disable collision)
 const string FREEAIM_CAMERA             = "CamModFreeAim";      // CCamSys_Def script instance for free aim
 const int    FREEAIM_CAMERA_X_SHIFT     = 0;                    // Camera is set to shoulderview (not recommended)
 const int    FREEAIM_HITDETECTION_EXP   = 0;                    // Additional hit detection test (EXPERIMENTAL)
@@ -85,6 +86,8 @@ const int zCArray_zCVob__IsInList                 = 7159168; //0x6D3D80
 const int zCWorld__TraceRayNearestHit_Vob         = 6430624; //0x621FA0
 const int oCWorld__AddVobAsChild                  = 7863856; //0x77FE30
 const int zCMaterial__vtbl                        = 8593940; //0x832214
+const int zCTrigger_vtbl                          = 8627196; //0x83A3FC
+const int zCTriggerScript_vtbl                    = 8582148; //0x82F404
 const int zString_CamModRanged                    = 9234704; //0x8CE910
 const int zString_CamModMagic                     = 9235048; //0x8CEA68
 const int oCAniCtrl_Human__Turn                   = 7005504; //0x6AE540
@@ -112,6 +115,7 @@ const int projectileDeflectOffNpcAddr             = 6949734; //0x6A0B66
 const int zCWorld__AdvanceClock                   = 6447328; //0x6260E0 // Hook length 10
 const int oCAniCtrl_Human__InterpolateCombineAni  = 7037296; //0x6B6170 // Hook length 5
 const int oCAIArrow__SetupAIVob                   = 6951136; //0x6A10E0 // Hook length 6
+const int oCAIArrow__CanThisCollideWith           = 6952080; //0x6A1490 // Hook length 7
 const int oCAIHuman__BowMode                      = 6905600; //0x695F00 // Hook length 6
 const int oCAIArrowBase__DoAI                     = 6948416; //0x6A0640 // Hook length 7
 const int onArrowHitNpcAddr                       = 6949832; //0x6A0BC8 // Hook length 5
@@ -173,6 +177,9 @@ func void freeAim_Init() {
             HookEngineF(onArrowHitNpcAddr, 5, freeAimOnArrowHitNpc); // Put projectile into inventory
             HookEngineF(onArrowHitVobAddr, 5, freeAimOnArrowGetStuck); // Keep projectile alive when stuck in vob
             HookEngineF(onArrowHitStatAddr, 5, freeAimOnArrowGetStuck); // Keep projectile alive when stuck in world
+        };
+        if (FREEAIM_TRIGGER_COLL_FIX) { // Because by default all triggers react to objects, this is a setting
+            HookEngineF(oCAIArrow__CanThisCollideWith, 7, freeAimTriggerCollisionCheck); // Fix trigger collision bug
         };
         if (!MEM_GothOptExists("FREEAIM", "enabled")) { MEM_SetGothOpt("FREEAIM", "enabled", "1"); }; // If not set
         if (!MEM_GothOptExists("FREEAIM", "focusEnabled")) { MEM_SetGothOpt("FREEAIM", "focusEnabled", "1"); }
@@ -937,6 +944,18 @@ func void freeAimOnArrowGetStuck() {
     projectile._zCVob_trafoObjToWorld[0] = mulf(projectile._zCVob_trafoObjToWorld[0], -1096111445);
     projectile._zCVob_trafoObjToWorld[4] = mulf(projectile._zCVob_trafoObjToWorld[4], -1096111445);
     projectile._zCVob_trafoObjToWorld[8] = mulf(projectile._zCVob_trafoObjToWorld[8], -1096111445);
+};
+
+/* Fix trigger collision bug. Taken from http://forum.worldofplayers.de/forum/threads/1126551/page10?p=20894916 */
+func void freeAimTriggerCollisionCheck() {
+    var int vobPtr; vobPtr = ESP+4;
+    var int shooter; shooter = MEM_ReadInt(ECX+92);
+    var int vtbl; vtbl = MEM_ReadInt(MEM_ReadInt(vobPtr));
+    if (vtbl != zCTrigger_vtbl) && (vtbl != zCTriggerScript_vtbl) { return; }; // It is no Trigger
+    var zCTrigger trigger; trigger = _^(MEM_ReadInt(vobPtr));
+    if (trigger.bitfield & zCTrigger_bitfield_respondToObject)
+    && (trigger.bitfield & zCTrigger_bitfield_reactToOnTouch) { return; }; // Object-reacting trigger
+    MEM_WriteInt(vobPtr, shooter); // The engine ignores the shooter
 };
 
 /* Once a projectile stopped moving keep it alive */
