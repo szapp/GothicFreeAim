@@ -29,10 +29,10 @@
  * Also in Menu_Opt_Game.d in MENUITEM_GAME_BACK change this:
  *  posy = MENU_BACK_Y+300;
  *
- * Adjust the item id (MENU_ID_FREEAIM) below if you added other options and change the labels if needed
+ * Adjust the item id (MENU_ID_FREEAIM) below to the next available item number and change the labels if needed
  */
 
-const int    MENU_ID_FREEAIM      = 7; // Next available Y-spot in the menu
+//const int  MENU_ID_FREEAIM      = 7; // Next available Y-spot in the menu
 const string MENU_FREEAIM_LABEL   = "Freies Zielen"; // "Free aiming"
 const string MENU_FREEAIM_CHOICES = "aus|an"; // "off|on"
 const string MENU_FREEAIM_DESCR   = "Erfordert Gothic 1 controls"; // "Requires Gothic 1 controls"
