@@ -1124,8 +1124,7 @@ func string freeAimLicense(var string command) {
 
 /* Console function to show freeAim info */
 func string freeAimInfo(var string command) {
-    var string onOff[2];
-    onOff[0] = "off"; onOff[1] = "on";
+    const string onOff[2] = {"off", "on"};
     var int s; s = SB_New();
     SB(FREEAIM_VERSION); SBc(13); SBc(10);
     SB("Enabled: "); SB(MEM_ReadStatStringArr(onOff, STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled")))); SBc(13);SBc(10);
