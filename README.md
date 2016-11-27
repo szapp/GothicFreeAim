@@ -55,7 +55,7 @@ Requirements:
  - [Mod Development Kit (MDK)](http://www.worldofgothic.de/dl/download_94.htm) with scripts
    (+ [patch 2.6a](http://www.worldofgothic.de/dl/download_99.htm))
  - [Ikarus 1.2](http://forum.worldofplayers.de/forum/threads/1299679)
- - [LeGo 2.3.7](http://lego.worldofplayers.de) or higher with HookEngine, FrameFunctions and ConsoleCommands
+ - [LeGo 2.4.0](http://lego.worldofplayers.de) or higher with HookEngine, FrameFunctions and ConsoleCommands
 
 A [setup](http://github.com/szapp/g2freeAim/releases/latest) is available to take care of the integration. Just run it,
 and all scripts should be fully working (originals will be backed up). Alternatively, you can do these following steps
