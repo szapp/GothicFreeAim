@@ -62,7 +62,8 @@ and all scripts should be fully working (originals will be backed up). Alternati
 manually.
 
  1. Make sure Ikarus and LeGo are installed and initialized with *FrameFunctions* and *ConsoleCommands*.
- 2. Copy all files from this repository into your Gothic II installation. Mind the relative paths.
+ 2. Copy all files from this repository into your Gothic II installation. Mind the relative paths. Do not forget the
+    binary files (textures) that come with the [release](http://github.com/szapp/g2freeAim/releases/latest).
  3. Have the files parsed:
     1. Add the line `FREEAIM\freeAim.src` to `_work\data\Scripts\Content\Gothic.src` somewhere **after** Ikarus, LeGo
        and `AI\AI_INTERN\FOCUS.D`.
