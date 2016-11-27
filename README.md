@@ -4,7 +4,7 @@ G2 Free Aim
 **Script for the video game Gothic II: Night of the Raven enabling free aiming for ranged weapons and spells.**
 
 **Note**: This is a script (i.e. source code). If you are interested in a playable version instead, checkout this
-modification [Gothic II - Freies Zielen](http://example.com) (German language).
+modification [Gothic II - Freies Zielen](http://forum.worldofplayers.de/forum/threads/1482039) (German language).
 
 [![Trailer on Youtube](http://i.imgur.com/PhJ3gcm.jpg)](http://www.youtube.com/watch?v=9CrFlxo21Qw)
 
@@ -46,7 +46,7 @@ Installation
 ------------
 
 Again, this is the installation **for developers**. If you are interested in a playable version instead, checkout this
-modification [Gothic II - Freies Zielen](http://example.com) (German language).
+modification [Gothic II - Freies Zielen](http://forum.worldofplayers.de/forum/threads/1482039) (German language).
 
 Requirements:
 
