@@ -1115,8 +1115,8 @@ func string freeAimLicense(var string command) {
     var int s; s = SB_New();
     SB(FREEAIM_VERSION); SB(", Copyright "); SBc(169 /* (C) */); SB(" 2016  mud-freak (@szapp)"); SBc(13); SBc(10);
     SB("<http://github.com/szapp/g2freeAim>"); SBc(13); SBc(10);
-    SB("Released under the GNU General Public License."); SBc(13); SBc(10);
-    SB("For more details see <http://www.gnu.org/licenses/>."); SBc(13); SBc(10);
+    SB("Released under the MIT License."); SBc(13); SBc(10);
+    SB("For more details see <http://opensource.org/licenses/MIT>."); SBc(13); SBc(10);
     var string ret; ret = SB_ToString(); SB_Destroy();
     return ret;
 };
