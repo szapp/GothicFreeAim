@@ -312,9 +312,9 @@ func void freeAimInsertReticle(var int reticlePtr) {
         size = (((FREEAIM_RETICLE_MAX_SIZE-FREEAIM_RETICLE_MIN_SIZE)*(reticle.size))/100)+FREEAIM_RETICLE_MIN_SIZE;
         if (size > FREEAIM_RETICLE_MAX_SIZE) { size = FREEAIM_RETICLE_MAX_SIZE; }
         else if (size < FREEAIM_RETICLE_MIN_SIZE) { size = FREEAIM_RETICLE_MIN_SIZE; };
+        var zCView screen; screen = _^(MEM_Game._zCSession_viewport);
         if (!Hlp_IsValidHandle(freeAimReticleHndl)) { // Create reticle if it does not exist
-            Print_GetScreenSize();
-            freeAimReticleHndl = View_CreateCenterPxl(Print_Screen[PS_X]/2, Print_Screen[PS_Y]/2, size, size);
+            freeAimReticleHndl = View_CreateCenterPxl(screen.psizex/2, screen.psizey/2, size, size);
             View_SetTexture(freeAimReticleHndl, reticle.texture);
             View_SetColor(freeAimReticleHndl, reticle.color);
             View_Open(freeAimReticleHndl);
@@ -326,9 +326,10 @@ func void freeAimInsertReticle(var int reticlePtr) {
                 View_SetColor(freeAimReticleHndl, reticle.color);
             };
             var zCView crsHr; crsHr = _^(getPtr(freeAimReticleHndl));
-            if (crsHr.psizex != size) { // Update its size and re-position it to the center of the screen
+            if (crsHr.psizex != size) || (screen.psizex/2 != centerX) { // Update its size and re-position it to center
+                var int centerX; centerX = screen.psizex/2;
                 View_ResizePxl(freeAimReticleHndl, size, size);
-                View_MoveToPxl(freeAimReticleHndl, Print_Screen[PS_X]/2-(size/2), Print_Screen[PS_Y]/2-(size/2));
+                View_MoveToPxl(freeAimReticleHndl, screen.psizex/2-(size/2), screen.psizey/2-(size/2));
             };
             if (!crsHr.isOpen) { View_Open(freeAimReticleHndl); };
         };
