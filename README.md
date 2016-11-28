@@ -101,10 +101,10 @@ You will have to adjust the labels in `_work\data\Scripts\System\Menu\Menu_Opt_G
 German. After parsing the scripts g2freeAim should be fully implemented. Read on to find out how to adjust g2freeAim to
 your preferences.
 
-> **Note**: By using these scripts, you agree to the terms of the **GNU General Public License**. Please respect my
-efforts and accredit my work in your project accordingly (i.e. *"This modification utilizes G2 Free Aim written by
-mud-freak (@szapp)"* in the credits). If you omit this, you are stating this was your own work which is effectively
-violating the license.
+> **Note**: By using these scripts, you agree to the terms of the **[MIT License](http://opensource.org/licenses/MIT)**.
+Please respect my efforts and accredit my work in your project accordingly (i.e. *"This modification utilizes G2 Free
+Aim written by mud-freak (@szapp)"* in the credits). If you omit this, you are stating this was your own work which is
+effectively violating the license.
 
 
 Customization

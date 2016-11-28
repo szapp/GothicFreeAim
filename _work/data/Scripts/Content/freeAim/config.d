@@ -13,7 +13,11 @@
  * G2 Free Aim is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * MIT License for more details (see the file LICENSE).
+ * MIT License for more details.
+ *
+ * You should have received a copy of the MIT License
+ * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
+ *
  *
  * Customizability:
  *  - Show weakspot debug visualization by default    FREEAIM_DEBUG_WEAKSPOT
