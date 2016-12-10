@@ -900,7 +900,10 @@ func void freeAimOnArrowCollide() {
     var int matobj; matobj = MEM_ReadInt(ECX); // zCMaterial* or zCPolygon*
     if (MEM_ReadInt(matobj) != zCMaterial__vtbl) { matobj = MEM_ReadInt(matobj+24); }; // Static world: Read zCPolygon
     var int material; material = MEM_ReadInt(matobj+64);
-    var string texture; texture = MEM_ReadString(MEM_ReadInt(matobj+52)+16); // zCMaterial.texture._zCObject_objectName
+    var string texture; texture = "";
+    if (MEM_ReadInt(matobj+52)) { // For the case that the material has no assigned texture (which should not happen)
+        texture = MEM_ReadString(MEM_ReadInt(matobj+52)+16); // zCMaterial.texture._zCObject_objectName
+    };
     var int collision; collision = freeAimHitRegWld_(shooter, material, texture); // 0=destroy, 1=stay, 2=deflect
     if (collision == 1) { // Collide
         EDI = material; // Sets the condition at 0x6A0A45 and 0x6A0C1A to true: Projectile stays
