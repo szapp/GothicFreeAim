@@ -1178,7 +1178,7 @@ func void freeAimDetectCriticalHit() {
             MEM_Error("freeAimDetectCriticalHit: Node has no boundingbox!");
             return;
         };
-    } else if (weakspot.dimX < 0) && (weakspot.dimY < 0) { // Bbox dimensions must be positive
+    } else if (weakspot.dimX < 0) || (weakspot.dimY < 0) { // Bbox dimensions must be positive
         MEM_Error("freeAimDetectCriticalHit: Boundingbox dimensions illegal!");
         return;
     } else { // Create bbox by dimensions
