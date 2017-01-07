@@ -296,6 +296,116 @@ Attempts, progress and unstable implementations for both features are available 
 create a pull request. Consult with the issue tracker for information on possible limitations and different attempts.
 
 
+FAQ
+---
+
+Q: **Do balancing issues arise from g2freeAim?**
+
+A:
+No. The option, to collect/re-use projectiles, however, increases the amount of arrows/bolts (since the player will need
+less of them). This should be kept in mind. If you disable this features, there is absolutely no impact on balance.
+
+Q: **Is there an easy way to try and get a feel for this script?**
+
+A:
+Anyone can try the free aiming by downloading the demo modification (see link above). This can be done without much
+effort. Note that this demo is in German.
+
+Q: **How do I install g2freeAim into my scripts?**
+
+A:
+You can find the latest release [here](http://github.com/szapp/g2freeAim/releases/latest). Follow the instructions
+above.
+
+Q: **I am getting an error while parsing: *"Syntax error : ï»¿ ( line 1 )"*, what now?**
+
+A:
+In the zSpy log you should see which file was parsed last, before the error occured (presumably `Startup.d`). Open the
+file and save it with the encoding *ANSI (Windows-1252)*.
+
+Q: **I am getting and error telling me *"CC_Register"* is missing, what now?**
+
+A:
+Your version of LeGo is out dated: g2freeAim requires LeGo 2.4.0 or higher.
+
+Q: **It does not work? What now?**
+
+A:
+Should the installation of g2freeAim fail, please read through this README.md first. If this does not help, post your
+problem into the mentioned forum thread (see **Contact and Discussion** below) with the following information:
+
+  - What exaclty is not working: Is the game not launching (list possible parser errors)? Is nothing happing in the game
+    (as if g2freeAim was not installed)? Does the game crash (when and how)?
+  - Attach possible error messages/codes
+  - Attach the zSpy log
+  - If possible, please post the output when entering `freeaim info` into the F2-ingame-console.
+
+Q: **Why does my game crash?**
+
+A:
+See **"It does not work? What now?"**. Additionally, it will be essential to describe your configuration, ideally by
+attaching your `freeAim/config.d`.
+
+Q: **What is the deal with the license? May I use g2freeAim in my modification?**
+
+A:
+In the section **Installation** above, I have written what the license implies. Please read it, keep it in mind and
+respect it. If you see a modification making use of this script and not mentioning it in the credits, feel free to
+remind the creator of that mod of the license conditions or report them to me.
+
+Q: **Why is the reticle not in the center of my screen?**
+
+A:
+You seem to be using version v0.1.0 of g2freeAim. Update it to the
+[latest version](http://github.com/szapp/g2freeAim/releases/latest).
+
+Q: **Why do I have a rock-like texture instead of a reticle on my screen?**
+
+A:
+You seem to have missed the textures. You can download them [here](http://github.com/szapp/g2freeAim/releases/latest).
+
+Q: **How can I define critical hit zones for different monsters?**
+
+A:
+In the default configuration the critical hit zones are defined very loosely as the head for all NPCs. This should be
+adjusted if possible, since these definitions are very inaccurate. This has not been done to not conflict with mods that
+do not include all monsters from Gothic II and to encourage you to put in a little work yourself. Nevertheless, well
+defined critical hit zones (head for all native Gothic II creatures) are available in the
+[mod scripts](http://www.worldofgothic.de/?go=moddb&action=view&fileID=1330) of the demo modification
+*"Gothic II - Freies Zielen"*. Furthermore, in order to design your own critical hit zones, I created a script to help
+with that. You can find it in the forum thread linked in the section **Contact and Discussion** below.
+
+Q: **Is this script still being developed?**
+
+A:
+No, it is complete. See **Future** and **Contact and Discussion** below for more information.
+
+Q: **I have a great idea for a feature! Could you implement it, please?**
+
+A:
+See **Future** and **Contact and Discussion** below for more information.
+
+Q: **(I think) I have found a bug. How can I report it?**
+
+A:
+You can report bugs either in the forum thread or to me directly via the information in the section
+**Contact and Discussion** or create a ticket directly here in the Github Issue Tracker. A good bug report should
+include the following information:
+
+ - Detailed description of what happened.
+ - Detailed description of how it happened.
+ - Output when entering `freeaim info` into the F2-ingame-console.
+ - zSpy Log.
+ - The Access Violation message (if applicable).
+ - Your configuration (attach the file `freeAim/config.d`).
+ - Used versions of Ikarus/LeGo.
+ - If possible: Your own attempts to isolate and reproduce the bug.
+
+
+If your question is not listed here, please read through this README.md first, before posting into the forum thread or
+asking for help (see **Contact and Discussion**).
+
+
 Contact and Discussion
 ----------------------
 
@@ -317,4 +427,3 @@ Gothic 1 Compatibility
 This script is only compatible with Gothic II: The Night of the Raven. It is not meant for Gothic 1. At the moment it is
 difficult to port it to Gothic 1, as there is no working version LeGo for Gothic 1. Also all memory addresses g2freeAim
 is using, would need to be adjusted. A lot of stack offsets are hard-coded at various places in the code.
-
