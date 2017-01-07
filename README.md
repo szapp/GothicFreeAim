@@ -51,7 +51,6 @@ modification [Gothic II - Freies Zielen](http://forum.worldofplayers.de/forum/th
 Requirements:
 
  - Gothic II: Night of the Raven ([Reportversion 2.6.0.0](http://www.worldofgothic.de/dl/download_278.htm))
- - [System Pack](http://forum.worldofplayers.de/forum/threads/1340357) for correct display of reticles
  - [Mod Development Kit (MDK)](http://www.worldofgothic.de/dl/download_94.htm) with scripts
    (+ [patch 2.6a](http://www.worldofgothic.de/dl/download_99.htm))
  - [Ikarus 1.2](http://forum.worldofplayers.de/forum/threads/1299679)
