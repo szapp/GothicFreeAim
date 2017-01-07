@@ -20,14 +20,14 @@
  *
  *
  * Customizability:
- *  - Show weakspot debug visualization by default    FREEAIM_DEBUG_WEAKSPOT
- *  - Show trace ray debug visualization by default   FREEAIM_DEBUG_TRACERAY
- *  - Apply trigger collision fix (disable collision) FREEAIM_TRIGGER_COLL_FIX
- *  - Allow freeAim console commands (cheats)         FREEAIM_DEBUG_CONSOLE
+ *  - Show weakspot debug visualization by default:   FREEAIM_DEBUG_WEAKSPOT
+ *  - Show trace ray debug visualization by default:  FREEAIM_DEBUG_TRACERAY
+ *  - Apply trigger collision fix (disable coll.):    FREEAIM_TRIGGER_COLL_FIX
+ *  - Allow freeAim console commands (cheats):        FREEAIM_DEBUG_CONSOLE
  *  - Maximum bow draw time (ms):                     FREEAIM_DRAWTIME_MAX
  *  - Disable free aiming for spells (yes/no):        FREEAIM_DISABLE_SPELLS
  *  - Collect and re-use shot projectiles (yes/no):   FREEAIM_REUSE_PROJECTILES
- *  - Projectile instance for re-using                freeAimGetUsedProjectileInstance(instance, targetNpc)
+ *  - Projectile instance for re-using:               freeAimGetUsedProjectileInstance(instance, targetNpc)
  *  - Draw force (gravity/drop-off) calculation:      freeAimGetDrawForce(weapon, talent)
  *  - Accuracy calculation:                           freeAimGetAccuracy(weapon, talent)
  *  - Reticle style (texture, color, size):           freeAimGetReticleRanged(target, weapon, talent, distance)
@@ -57,7 +57,7 @@ func void freeAimInitConstants() {
     // FREEAIM_DEBUG_WEAKSPOT     = 0;                 // Visualize weakspot bbox and trajectory by default
     // FREEAIM_DEBUG_TRACERAY     = 0;                 // Visualize trace ray bboxes and trajectory by default
     // FREEAIM_TRIGGER_COLL_FIX   = 1;                 // Apply trigger collision fix (disable collision)
-    // Modifying anything below is not recommended!
+    // Modifying any line below is not recommended!
     // FREEAIM_SCATTER_DEG        = 2.2;               // Maximum scatter radius in degrees
     // FREEAIM_TRAJECTORY_ARC_MAX = 400;               // Max time (ms) after which the trajectory drops off
     // FREEAIM_PROJECTILE_GRAVITY = 0.1;               // The gravity decides how fast the projectile drops
@@ -305,8 +305,8 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon) {
     // Shooter-like hit marker
     var int hitmark;
     if (!Hlp_IsValidHandle(hitmark)) { // Create hitmark if it does not exist
-        Print_GetScreenSize();
-        hitmark = View_CreateCenterPxl(Print_Screen[PS_X]/2, Print_Screen[PS_Y]/2, 64, 64);
+        var zCView screen; screen = _^(MEM_Game._zCSession_viewport);
+        hitmark = View_CreateCenterPxl(screen.psizex/2, screen.psizey/2, 64, 64);
         View_SetTexture(hitmark, freeAimAnimateReticleByPercent(RETICLE_TRI_IN, 100, 7)); // Retrieve 7th frame of ani
     };
     View_Open(hitmark);
