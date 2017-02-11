@@ -58,6 +58,7 @@ var   int    freeAimDebugWSBBox[6];                             // Weaksopt boun
 var   int    freeAimDebugWSTrj[6];                              // Projectile trajectory for debug visualization
 var   int    freeAimDebugTRBBox[6];                             // Trace ray intersection for debug visualization
 var   int    freeAimDebugTRTrj[6];                              // Trace ray trajectory
+var   int    freeAimDebugTRPrevVob;                             // Trace ray detected vob pointer
 var   int    freeAimReticleHndl;                                // Holds the handle of the reticle
 var   int    freeAimBowDrawOnset;                               // Time onset of drawing the bow
 
@@ -431,7 +432,7 @@ func int freeAimSetupAimVob(var int posPtr) {
 
 /* Shoot aim-tailored trace ray. Do no use for other purposes. This function is customized for aiming. */
 func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int posPtr, var int distPtr,
-        var int trueDistPtr) {
+        var int trueDistPtr, var int maxPosPtr) {
     // Flags: (VOB_IGNORE_NO_CD_DYN | POLY_IGNORE_TRANSP | VOB_IGNORE_PROJECTILES | POLY_TEST_WATER)
     const int flags = (1<<0) | (1<<8) | (1<<9) | (1<<14); // Do not change (will make trace ray unstable)
     var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60); //0=right, 2=out, 3=pos
@@ -487,14 +488,17 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
         MEM_World.foundIntersection[1] = addf(traceRayVec[1], traceRayVec[4]);
         MEM_World.foundIntersection[2] = addf(traceRayVec[2], traceRayVec[5]);
     };
+    var int foundVobIsNpc; // Maybe the trace ray hit an npc directly (not always the case!)
+    if (Hlp_Is_oCNpc(MEM_World.foundVob)) { foundVobIsNpc = true; } else { foundVobIsNpc = false; };
     var int foundFocus; foundFocus = 0; // Is the focus vob in the trace ray vob list
     var int potentialVob; potentialVob = MEM_ReadInt(herPtr+2476); // oCNpc.focus_vob // Focus vob by focus collection
-    if (potentialVob) { // Check if collected focus matches the desired focus type
+    if (potentialVob) || (foundVobIsNpc) { // Check if collected focus matches the desired focus type
         var int runDetailedTraceRay; runDetailedTraceRay = 0; // Second trace ray only if focus vob is reasonable
         if (!focusType) { // No focus vob (still a trace ray though)
             foundFocus = 0;
-        } else if (focusType != TARGET_TYPE_ITEMS) && (Hlp_Is_oCNpc(potentialVob)) { // Validate focus vob, if it is npc
-            var C_Npc target; target = _^(potentialVob);
+        } else if (focusType != TARGET_TYPE_ITEMS) && ((Hlp_Is_oCNpc(potentialVob)) || (foundVobIsNpc)) { // Validate
+            var C_Npc target; // Either focus npc or trace ray npc
+            if (foundVobIsNpc) { target = _^(MEM_World.foundVob); } else { target = _^(potentialVob); };
             MEM_PushInstParam(target); // Function is not defined yet at time of parsing:
             MEM_Call(C_NpcIsUndead); // C_NpcIsUndead(target);
             var int npcIsUndead; npcIsUndead = MEM_PopIntResult();
@@ -505,15 +509,19 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
             && (!Npc_IsInState(target, ZS_Unconscious)) // Do not allow focusing npcs that are down
             && (!Npc_IsInState(target, ZS_MagicSleep))
             && (!Npc_IsDead(target)) {
-                var int potVobPtr; potVobPtr = _@(potentialVob);
-                var int voblist; voblist = _@(MEM_World.traceRayVobList_array);
-                const int call2 = 0;
-                if (CALL_Begin(call2)) { // More complicated for npcs: Check if npc is in trace ray vob list
-                    CALL_PtrParam(_@(potVobPtr)); // Explanation: Npcs are never HIT by a trace ray (only collected)
-                    CALL__thiscall(_@(voblist), zCArray_zCVob__IsInList);
-                    call2 = CALL_End();
+                if (foundVobIsNpc) {
+                    foundFocus = MEM_World.foundVob;
+                } else {
+                    var int potVobPtr; potVobPtr = _@(potentialVob);
+                    var int voblist; voblist = _@(MEM_World.traceRayVobList_array);
+                    const int call2 = 0;
+                    if (CALL_Begin(call2)) { // More complicated for npcs: Check if npc is in trace ray vob list
+                        CALL_PtrParam(_@(potVobPtr)); // Explanation: Npcs are never HIT by a trace ray (only collected)
+                        CALL__thiscall(_@(voblist), zCArray_zCVob__IsInList);
+                        call2 = CALL_End();
+                    };
+                    runDetailedTraceRay = CALL_RetValAsInt(); // Will perform detailed trace ray if npc was in vob list
                 };
-                runDetailedTraceRay = CALL_RetValAsInt(); // Will perform detailed trace ray if npc was in vob list
             };
         } else if (focusType <= TARGET_TYPE_ITEMS) && (Hlp_Is_oCItem(potentialVob)) {
             runDetailedTraceRay = 1; // Will perform detailed trace ray
@@ -569,6 +577,17 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
         freeAimDebugTRTrj[3] = addf(traceRayVec[0], traceRayVec[3]);
         freeAimDebugTRTrj[4] = addf(traceRayVec[1], traceRayVec[4]);
         freeAimDebugTRTrj[5] = addf(traceRayVec[2], traceRayVec[5]);
+        if (MEM_World.foundVob != freeAimDebugTRPrevVob) { // Show bbox of detected vob (if present)
+            if (MEM_World.foundVob) {
+                var zCVob vob1; vob1 = _^(MEM_World.foundVob);
+                vob1.bitfield[0] = vob1.bitfield[0] | zCVob_bitfield0_drawBBox3D;
+            };
+            if (freeAimDebugTRPrevVob) {
+                var zCVob vob2; vob2 = _^(freeAimDebugTRPrevVob);
+                vob2.bitfield[0] = vob2.bitfield[0] &~ zCVob_bitfield0_drawBBox3D;
+            };
+            freeAimDebugTRPrevVob = MEM_World.foundVob;
+        };
     };
     // Write call-by-reference variables
     if (vobPtr) { MEM_WriteInt(vobPtr, MEM_World.foundVob); };
@@ -586,6 +605,11 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
             sqrf(subf(MEM_World.foundIntersection[1], camPos.v1[3]))),
             sqrf(subf(MEM_World.foundIntersection[2], camPos.v2[3]))));
         MEM_WriteInt(trueDistPtr, distance);
+    };
+    if (maxPosPtr) { // Position of maximum distance
+        MEM_WriteInt(maxPosPtr+0, addf(traceRayVec[0], traceRayVec[3]));
+        MEM_WriteInt(maxPosPtr+4, addf(traceRayVec[1], traceRayVec[4]));
+        MEM_WriteInt(maxPosPtr+8, addf(traceRayVec[2], traceRayVec[5]));
     };
     return found;
 };
@@ -615,7 +639,7 @@ func void freeAimAnimation() {
     var int herPtr; herPtr = _@(hero);
     var int distance; var int target;
     if (FREEAIM_FOCUS_COLLECTION) { // Set focus npc if there is a valid one under the reticle
-        freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, _@(target), 0, _@(distance), 0); // Shoot ray and retrieve info
+        freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, _@(target), 0, _@(distance), 0, 0); // Shoot ray to retrieve info
         distance = roundf(divf(mulf(distance, FLOAT1C), mkf(FREEAIM_MAX_DIST))); // Distance scaled between [0, 100]
     } else { // More performance friendly. Here, there will be NO focus, otherwise it gets stuck on npcs.
         const int call4 = 0; var int null; // Set the focus vob properly: reference counter
@@ -734,7 +758,7 @@ func void freeAimSetupProjectile() {
     var int newBaseDamage; newBaseDamage = freeAimScaleInitialDamage_(baseDamage);
     MEM_WriteStatArr(projectile+364, DAM_INDEX_POINT, newBaseDamage);
     // 2nd: Manipulate aiming accuracy (scatter): Rotate target position (azimuth, elevation)
-    var int distance; freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, _@(distance)); // Trace ray intersection
+    var int distance; freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, _@(distance), 0); // Trace ray
     var int accuracy; accuracy = freeAimGetAccuracy_(); // Change the accuracy calculation in that function, not here!
     if (accuracy > 100) { accuracy = 100; } else if (accuracy < 1) { accuracy = 1; }; // Prevent devision by zero
     var int bias; bias = castToIntf(FREEAIM_SCATTER_DEG);
@@ -1105,7 +1129,15 @@ func string freeAimDebugWeakspot(var string command) {
 /* Console function to enable/disable trace ray debug output */
 func string freeAimDebugTraceRay(var string command) {
     FREEAIM_DEBUG_TRACERAY = !FREEAIM_DEBUG_TRACERAY;
-    if (FREEAIM_DEBUG_TRACERAY) { return "Debug trace ray on."; } else { return "Debug trace ray off."; };
+    if (FREEAIM_DEBUG_TRACERAY) { return "Debug trace ray on."; }
+    else {
+        if (freeAimDebugTRPrevVob) { // Disable bbox
+            var zCVob vob2; vob2 = _^(freeAimDebugTRPrevVob);
+            vob2.bitfield[0] = vob2.bitfield[0] &~ zCVob_bitfield0_drawBBox3D;
+            freeAimDebugTRPrevVob = 0;
+        };
+        return "Debug trace ray off.";
+    };
 };
 
 /* Console function to show freeAim version */
@@ -1237,8 +1269,8 @@ func void freeAimSetupSpell() {
     if (!freeAimSpellEligible(spell)) { return; }; // Only with eligible spells
     var int focusType; // No focus display for TARGET_COLLECT_NONE (still focus collection though)
     if (!spell.targetCollectAlgo) { focusType = 0; } else { focusType = spell.targetCollectType; };
-    var int pos[3]; freeAimRay(spell.targetCollectRange, focusType, 0, _@(pos), 0, 0);
-    var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos)); // Setup the aim vob
+    var int pos[3]; freeAimRay(spell.targetCollectRange, focusType, 0, 0, 0, 0, _@(pos)); // Caution: Maximum distance!
+    var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos)); // Aim vob at maximum distance so spells dont stop mid-air
     MEM_WriteInt(ESP+4, vobPtr); // Overwrite target vob
 };
 
@@ -1271,7 +1303,7 @@ func void freeAimSpellReticle() {
         var int focusType; // No focus display for TARGET_COLLECT_NONE (still focus collection though)
         if (!spell.targetCollectAlgo) || (spell.targetCollectAzi <= 0) || (spell.targetCollectElev <= 0)
         { focusType = 0; } else { focusType = spell.targetCollectType; };
-        freeAimRay(spell.targetCollectRange, focusType, _@(target), 0, _@(distance), 0); // Shoot ray
+        freeAimRay(spell.targetCollectRange, focusType, _@(target), 0, _@(distance), 0, 0); // Shoot ray
         distance = roundf(divf(mulf(distance, FLOAT1C), mkf(spell.targetCollectRange))); // Distance scaled to [0, 100]
     } else { // More performance friendly. Here, there will be NO focus, otherwise it gets stuck on npcs.
         var int herPtr; herPtr = _@(hero);
