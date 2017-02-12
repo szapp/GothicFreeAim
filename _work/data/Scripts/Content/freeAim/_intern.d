@@ -1232,7 +1232,14 @@ func void freeAimSetupSpell() {
     if (!freeAimSpellEligible(spell)) { return; }; // Only with eligible spells
     var int focusType; // No focus display for TARGET_COLLECT_NONE (still focus collection though)
     if (!spell.targetCollectAlgo) { focusType = 0; } else { focusType = spell.targetCollectType; };
-    var int pos[3]; freeAimRay(spell.targetCollectRange, focusType, 0, 0, 0, 0, _@(pos)); // Caution: Maximum distance!
+    var int pos[3];
+    MEM_PushIntParam(MEM_ReadInt(_@(spell)-44)); //0x0054 oCSpell.spellID
+    MEM_Call(freeAimShiftAimVob); // Check if this spell needs the exact intersection coordinates
+    if (MEM_PopIntResult()) {
+        freeAimRay(spell.targetCollectRange, focusType, 0, _@(pos), 0, 0, 0); // Correct distance
+    } else {
+        freeAimRay(spell.targetCollectRange, focusType, 0, 0, 0, 0, _@(pos)); // Maximum distance
+    };
     var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos)); // Aim vob at maximum distance so spells dont stop mid-air
     MEM_WriteInt(ESP+4, vobPtr); // Overwrite target vob
 };
