@@ -58,7 +58,7 @@ var   int    freeAimDebugWSBBox[6];                             // Weaksopt boun
 var   int    freeAimDebugWSTrj[6];                              // Projectile trajectory for debug visualization
 var   int    freeAimDebugTRBBox[6];                             // Trace ray intersection for debug visualization
 var   int    freeAimDebugTRTrj[6];                              // Trace ray trajectory
-var   int    freeAimDebugTRPrevVob;                             // Trace ray detected vob pointer
+var   int    freeAimDebugTRPrevVob;                             // Trace ray detected vob bbox pointer
 var   int    freeAimReticleHndl;                                // Holds the handle of the reticle
 var   int    freeAimBowDrawOnset;                               // Time onset of drawing the bow
 
@@ -565,29 +565,17 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
     };
     // Debug visualization
     if (FREEAIM_DEBUG_TRACERAY) {
-        freeAimDebugTRBBox[0] = subf(MEM_World.foundIntersection[0], mkf(10));
-        freeAimDebugTRBBox[1] = subf(MEM_World.foundIntersection[1], mkf(10));
-        freeAimDebugTRBBox[2] = subf(MEM_World.foundIntersection[2], mkf(10));
-        freeAimDebugTRBBox[3] = addf(freeAimDebugTRBBox[0], mkf(20));
-        freeAimDebugTRBBox[4] = addf(freeAimDebugTRBBox[1], mkf(20));
-        freeAimDebugTRBBox[5] = addf(freeAimDebugTRBBox[2], mkf(20));
-        freeAimDebugTRTrj[0] = traceRayVec[0];
-        freeAimDebugTRTrj[1] = traceRayVec[1];
-        freeAimDebugTRTrj[2] = traceRayVec[2];
+        freeAimDebugTRBBox[0] = subf(MEM_World.foundIntersection[0], mkf(5));
+        freeAimDebugTRBBox[1] = subf(MEM_World.foundIntersection[1], mkf(5));
+        freeAimDebugTRBBox[2] = subf(MEM_World.foundIntersection[2], mkf(5));
+        freeAimDebugTRBBox[3] = addf(freeAimDebugTRBBox[0], mkf(10));
+        freeAimDebugTRBBox[4] = addf(freeAimDebugTRBBox[1], mkf(10));
+        freeAimDebugTRBBox[5] = addf(freeAimDebugTRBBox[2], mkf(10));
+        MEM_CopyWords(_@(traceRayVec), _@(freeAimDebugTRTrj), 3);
         freeAimDebugTRTrj[3] = addf(traceRayVec[0], traceRayVec[3]);
         freeAimDebugTRTrj[4] = addf(traceRayVec[1], traceRayVec[4]);
         freeAimDebugTRTrj[5] = addf(traceRayVec[2], traceRayVec[5]);
-        if (MEM_World.foundVob != freeAimDebugTRPrevVob) { // Show bbox of detected vob (if present)
-            if (MEM_World.foundVob) {
-                var zCVob vob1; vob1 = _^(MEM_World.foundVob);
-                vob1.bitfield[0] = vob1.bitfield[0] | zCVob_bitfield0_drawBBox3D;
-            };
-            if (freeAimDebugTRPrevVob) {
-                var zCVob vob2; vob2 = _^(freeAimDebugTRPrevVob);
-                vob2.bitfield[0] = vob2.bitfield[0] &~ zCVob_bitfield0_drawBBox3D;
-            };
-            freeAimDebugTRPrevVob = MEM_World.foundVob;
-        };
+        if (MEM_World.foundVob) { freeAimDebugTRPrevVob = MEM_World.foundVob+124; } else { freeAimDebugTRPrevVob = 0; };
     };
     // Write call-by-reference variables
     if (vobPtr) { MEM_WriteInt(vobPtr, MEM_World.foundVob); };
@@ -1038,60 +1026,43 @@ func void freeAimDmgAnimation() {
     if (Npc_IsPlayer(victim)) && (freeAimIsActive()) { EAX = 0; }; // Disable damage animation while aiming
 };
 
+/* Visualize a bounding box in 3D space */
+func void freeAimVisualizeBBox(var int bboxPtr, var int color) {
+    var int cPtr; cPtr = _@(color);
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL_PtrParam(_@(cPtr));
+        CALL__thiscall(_@(bboxPtr), zTBBox3D__Draw);
+        call = CALL_End();
+    };
+};
+
+/* Visualize a line in 3D space */
+func void freeAimVisualizeLine(var int pos1Ptr, var int pos2Ptr, var int color) {
+    const int call = 0; var int null;
+    if (CALL_Begin(call)) {
+        CALL_IntParam(_@(null));
+        CALL_IntParam(_@(color));
+        CALL_PtrParam(_@(pos2Ptr));
+        CALL_PtrParam(_@(pos1Ptr));
+        CALL__thiscall(_@(zlineCache), zCLineCache__Line3D);
+        call = CALL_End();
+    };
+};
+
 /* Visualize the bounding boxes of the trace ray its trajectory for debugging */
 func void freeAimVisualizeTraceRay() {
     if (!FREEAIM_DEBUG_TRACERAY) { return; };
-    if (freeAimDebugTRBBox[0]) { // Visualize intersection bounding box
-        var int cGreenPtr; cGreenPtr = _@(zCOLOR_GREEN);
-        var int bboxPtr; bboxPtr = _@(freeAimDebugTRBBox);
-        const int call = 0;
-        if (CALL_Begin(call)) {
-            CALL_PtrParam(_@(cGreenPtr));
-            CALL__thiscall(_@(bboxPtr), zTBBox3D__Draw);
-            call = CALL_End();
-        };
-    };
-    if (freeAimDebugTRTrj[0]) { // Visualize trace ray trajectory
-        var int pos1Ptr; pos1Ptr = _@(freeAimDebugTRTrj);
-        var int pos2Ptr; pos2Ptr = _@(freeAimDebugTRTrj)+12;
-        const int call2 = 0; var int null;
-        if (CALL_Begin(call2)) {
-            CALL_IntParam(_@(null));
-            CALL_IntParam(_@(zCOLOR_GREEN));
-            CALL_PtrParam(_@(pos2Ptr));
-            CALL_PtrParam(_@(pos1Ptr));
-            CALL__thiscall(_@(zlineCache), zCLineCache__Line3D);
-            call2 = CALL_End();
-        };
-    };
+    if (freeAimDebugTRBBox[0]) { freeAimVisualizeBBox(_@(freeAimDebugTRBBox), zCOLOR_GREEN); };
+    if (freeAimDebugTRTrj[0]) { freeAimVisualizeLine(_@(freeAimDebugTRTrj), _@(freeAimDebugTRTrj)+12, zCOLOR_GREEN); };
+    if (freeAimDebugTRPrevVob) { freeAimVisualizeBBox(freeAimDebugTRPrevVob, zCOLOR_GREEN); };
 };
 
 /* Visualize the bounding box of the weakspot and the projectile trajectory for debugging */
 func void freeAimVisualizeWeakspot() {
     if (!FREEAIM_DEBUG_WEAKSPOT) { return; };
-    if (freeAimDebugWSBBox[0]) { // Visualize weak spot bounding box
-        var int cRedPtr; cRedPtr = _@(zCOLOR_RED);
-        var int bboxPtr; bboxPtr = _@(freeAimDebugWSBBox);
-        const int call = 0;
-        if (CALL_Begin(call)) {
-            CALL_PtrParam(_@(cRedPtr));
-            CALL__thiscall(_@(bboxPtr), zTBBox3D__Draw);
-            call = CALL_End();
-        };
-    };
-    if (freeAimDebugWSTrj[0]) { // Visualize projectile trajectory
-        var int pos1Ptr; pos1Ptr = _@(freeAimDebugWSTrj);
-        var int pos2Ptr; pos2Ptr = _@(freeAimDebugWSTrj)+12;
-        const int call2 = 0; var int null;
-        if (CALL_Begin(call2)) {
-            CALL_IntParam(_@(null));
-            CALL_IntParam(_@(zCOLOR_RED));
-            CALL_PtrParam(_@(pos2Ptr));
-            CALL_PtrParam(_@(pos1Ptr));
-            CALL__thiscall(_@(zlineCache), zCLineCache__Line3D);
-            call2 = CALL_End();
-        };
-    };
+    if (freeAimDebugWSBBox[0]) { freeAimVisualizeBBox(_@(freeAimDebugWSBBox), zCOLOR_RED); };
+    if (freeAimDebugWSTrj[0]) { freeAimVisualizeLine(_@(freeAimDebugWSTrj), _@(freeAimDebugWSTrj)+12, zCOLOR_RED); };
 };
 
 /* Internal helper function for freeAimCriticalHitEvent() */
@@ -1129,15 +1100,7 @@ func string freeAimDebugWeakspot(var string command) {
 /* Console function to enable/disable trace ray debug output */
 func string freeAimDebugTraceRay(var string command) {
     FREEAIM_DEBUG_TRACERAY = !FREEAIM_DEBUG_TRACERAY;
-    if (FREEAIM_DEBUG_TRACERAY) { return "Debug trace ray on."; }
-    else {
-        if (freeAimDebugTRPrevVob) { // Disable bbox
-            var zCVob vob2; vob2 = _^(freeAimDebugTRPrevVob);
-            vob2.bitfield[0] = vob2.bitfield[0] &~ zCVob_bitfield0_drawBBox3D;
-            freeAimDebugTRPrevVob = 0;
-        };
-        return "Debug trace ray off.";
-    };
+    if (FREEAIM_DEBUG_TRACERAY) { return "Debug trace ray on."; } else { return "Debug trace ray off."; };
 };
 
 /* Console function to show freeAim version */
