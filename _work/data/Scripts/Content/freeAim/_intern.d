@@ -433,7 +433,8 @@ func int freeAimSetupAimVob(var int posPtr) {
 /* Shoot aim-tailored trace ray. Do no use for other purposes. This function is customized for aiming. */
 func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int posPtr, var int distPtr,
         var int trueDistPtr) {
-    var int flags; flags = (1<<0) | (1<<9) | (1<<14); // VOB_IGNORE_NO_CD_DYN | POLY_TEST_WATER | VOB_IGNORE_PROJECTILES
+    // Flags: VOB_IGNORE_NO_CD_DYN | POLY_IGNORE_TRANSP | POLY_TEST_WATER | VOB_IGNORE_PROJECTILES
+    var int flags; flags = (1<<0) | (1<<8) | (1<<9) | (1<<14); // Do not change (will make trace ray unstable)
     var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60); //0=right, 2=out, 3=pos
     var int herPtr; herPtr = _@(hero);
     // Shift the start point for the trace ray beyond the player model. Necessary, because if zooming out,
