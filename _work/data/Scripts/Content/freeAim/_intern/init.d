@@ -36,7 +36,7 @@ func void freeAim_Init() {
         CC_Register(freeAimVersion, "freeaim version", "print freeaim version info");
         CC_Register(freeAimLicense, "freeaim license", "print freeaim license info");
         CC_Register(freeAimInfo, "freeaim info", "print freeaim info");
-        HookEngineF(oCAniCtrl_Human__InterpolateCombineAni, 5, freeAimAnimation); // Update aiming animation
+        HookEngineF(oCAIHuman__BowMode_696296, 5, freeAimAnimation); // Update aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Set projectile direction and trajectory
         HookEngineF(oCAIHuman__BowMode, 6, freeAimManageReticle); // Manage the reticle (on/off)
         HookEngineF(oCNpcFocus__SetFocusMode, 7, freeAimSwitchMode); // Manage the reticle (on/off) and draw force
@@ -72,7 +72,10 @@ func void freeAim_Init() {
         if (!MEM_GothOptExists("FREEAIM", "enabled")) { MEM_SetGothOpt("FREEAIM", "enabled", "1"); }; // If not set
         if (!MEM_GothOptExists("FREEAIM", "focusEnabled")) { MEM_SetGothOpt("FREEAIM", "focusEnabled", "1"); }
         else if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusEnabled"))) {
-            FREEAIM_FOCUS_COLLECTION = 0; }; // No focuscollection (performance) not recommended
+            FREEAIM_FOCUS_COLLECTION = 0; }; // No focus collection (performance) not recommended
+        if (!MEM_GothOptExists("FREEAIM", "focusCollFreqMS")) { MEM_SetGothOpt("FREEAIM", "focusCollFreqMS", "10"); };
+        freeAimTraceRayFreq = STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusCollFreqMS"));
+        if (freeAimTraceRayFreq > 500) { freeAimTraceRayFreq = 500; }; // Recalculate trace ray intersection every x ms
         r_DefaultInit(); // Start rng for aiming accuracy
         hookFreeAim = 1;
     };

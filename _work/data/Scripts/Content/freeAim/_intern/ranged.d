@@ -53,9 +53,10 @@ func void freeAimAnimation() {
     freeAimInsertReticle(_@(reticle)); // Draw/update reticle
     var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60); //0=right, 2=out, 3=pos
     var int pos[3]; // The position is calculated from the camera, not the player model
-    pos[0] = addf(camPos.v0[3], mulf(camPos.v0[2], mkf(FREEAIM_MAX_DIST)));
-    pos[1] = addf(camPos.v1[3], mulf(camPos.v1[2], mkf(FREEAIM_MAX_DIST)));
-    pos[2] = addf(camPos.v2[3], mulf(camPos.v2[2], mkf(FREEAIM_MAX_DIST)));
+    distance = mkf(FREEAIM_MAX_DIST); // Take the max distance, otherwise it looks strange on close range targets
+    pos[0] = addf(camPos.v0[3], mulf(camPos.v0[2], distance));
+    pos[1] = addf(camPos.v1[3], mulf(camPos.v1[2], distance));
+    pos[2] = addf(camPos.v2[3], mulf(camPos.v2[2], distance));
     // Get aiming angles
     var int angleX; var int angXptr; angXptr = _@(angleX);
     var int angleY; var int angYptr; angYptr = _@(angleY);
@@ -72,13 +73,13 @@ func void freeAimAnimation() {
         if (lf(angleY, FLOATNULL)) { angleY =  -1098907648; } // -0.25
         else { angleY = 1048576000; }; // 0.25
     };
-    // This following paragraph is essentially "copied" from oCAIHuman::BowMode (0x695F00 in g2)
+    // This following paragraph is inspired by oCAIHuman::BowMode (0x695F00 in g2)
     angleY = negf(subf(mulf(angleY, 1001786197), FLOATHALF)); // Scale and flip Y [-90° +90°] to [+1 0]
     if (lef(angleY, FLOATNULL)) { angleY = FLOATNULL; } // Maximum aim height (straight up)
     else if (gef(angleY, 1065353216)) { angleY = 1065353216; }; // Minimum aim height (down)
-    // New aiming coordinates. Overwrite the arguments passed to oCAniCtrl_Human::InterpolateCombineAni
-    MEM_WriteInt(ESP+4, FLOATHALF); // Always aim at center (x angle)
-    MEM_WriteInt(ESP+8, angleY);
+    // New aiming coordinates. Overwrite the arguments one and two passed to oCAniCtrl_Human::InterpolateCombineAni
+    MEM_WriteInt(ESP+20, FLOATHALF); // First argument: Always aim at center (azimuth) (esp+44h+30h)
+    ECX = angleY; // Second argument: New elevation
 };
 
 /* Internal helper function for freeAimGetDrawForce() */

@@ -37,6 +37,7 @@ const int    FREEAIM_ARROWAI_REDIRECT   = 0;                    // Used to redir
 const int    FLOAT1C                    = 1120403456;           // 100 as float
 const int    FLOAT3C                    = 1133903872;           // 300 as float
 const int    FLOAT1K                    = 1148846080;           // 1000 as float
+var   int    freeAimTraceRayFreq;                               // Trace ray frequency (change in ini-file)
 var   int    freeAimDebugWSBBox[6];                             // Weaksopt boundingbox for debug visualization
 var   int    freeAimDebugWSTrj[6];                              // Projectile trajectory for debug visualization
 var   int    freeAimDebugTRBBox[6];                             // Trace ray intersection for debug visualization
@@ -80,7 +81,7 @@ const int mouseSensX                              = 9019720; //0x89A148
 const int mouseDeltaX                             = 9246300; //0x8D165C
 const int projectileDeflectOffNpcAddr             = 6949734; //0x6A0B66
 const int zCWorld__AdvanceClock                   = 6447328; //0x6260E0 // Hook length 10
-const int oCAniCtrl_Human__InterpolateCombineAni  = 7037296; //0x6B6170 // Hook length 5
+const int oCAIHuman__BowMode_696296               = 6906518; //0x696296 // Hook length 5
 const int oCAIArrow__SetupAIVob                   = 6951136; //0x6A10E0 // Hook length 6
 const int oCAIArrow__CanThisCollideWith           = 6952080; //0x6A1490 // Hook length 7
 const int oCAIHuman__BowMode                      = 6905600; //0x695F00 // Hook length 6
