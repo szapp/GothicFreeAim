@@ -5,7 +5,7 @@
 /*
  * This function is called every time an npc is hit by a projectile (arrows and bolts). It can be used to define the
  * collision behavior (or disabling hit registration) on npcs based on different criteria.
- * Ideas: 'ineffective' ranged weapons, armor materials immune to arrows, no friendly-fire
+ * Ideas: 'ineffective' ranged weapons, armor materials immune to arrows, disable friendly-fire, maximum range
  */
 func int freeAimHitRegNpc(var C_Npc target, var C_Item weapon, var int material) {
     // Valid return values are:
@@ -17,6 +17,7 @@ func int freeAimHitRegNpc(var C_Npc target, var C_Item weapon, var int material)
     if (target.aivar[AIV_PARTYMEMBER]) // Disable friendly-fire
     && (target.aivar[AIV_LASTTARGET] != Hlp_GetInstanceID(hero)) { return DESTROY; };
     //  if (material == MAT_METAL) && (Hlp_Random(100) < 20) { return DEFLECT; }; // Metal armors may be more durable
+    if (Npc_GetDistToPlayer(target) > FIGHT_DIST_CANCEL) { return DESTROY; }; // If player is too far away, do nothing
     // The weapon can also be considered (e.g. ineffective weapons). Make use of 'weapon' for that
     // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
     //  if (Hlp_IsValidItem(weapon)) && (weapon.ineffective) { return DEFLECT; }; // Special case for weapon property
