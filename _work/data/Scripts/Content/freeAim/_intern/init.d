@@ -38,6 +38,9 @@ func void freeAim_Init() {
         CC_Register(freeAimInfo, "freeaim info", "print freeaim info");
         HookEngineF(oCAIHuman__BowMode_696296, 5, freeAimAnimation); // Update aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Set projectile direction and trajectory
+        MemoryProtectionOverride(oCAIHuman__BowMode_695F2B, 6); // G2 Controls   0F 84 60 04 00 00   jz  loc_00696391
+        MemoryProtectionOverride(oCAIHuman__BowMode_6962F2, 2); // G2 Controls   6A 03               push  3
+        MemoryProtectionOverride(oCAIHuman___WalkCycle_6925892, 2); // G2 Ctrls  6A 05               push  5
         HookEngineF(oCAIHuman__BowMode, 6, freeAimManageReticle); // Manage the reticle (on/off)
         HookEngineF(oCNpcFocus__SetFocusMode, 7, freeAimSwitchMode); // Manage the reticle (on/off) and draw force
         HookEngineF(mouseUpdate, 5, freeAimManualRotation); // Update the player model rotation by mouse input
@@ -104,12 +107,38 @@ func void freeAimUpdateSettings(var int on) {
     };
 };
 
+/* Update internal settings for Gothic 2 controls */
+func void freeAimUpdateSettingsG2Ctrl(var int on) {
+    MEM_Info("Updating internal free aim settings for Gothic 2 controls");
+    if (on) { // Gothic 2 controls and free aiming enabled: Mimic the Gothic 1 controls but change the keys
+        MEM_WriteByte(oCAIHuman__BowMode_695F2B, ASMINT_OP_nop); // Skip jump to Gothic 2 controls
+        MEM_WriteByte(oCAIHuman__BowMode_695F2B+1, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIHuman__BowMode_695F2B+2, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIHuman__BowMode_695F2B+3, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIHuman__BowMode_695F2B+4, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIHuman__BowMode_695F2B+5, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIHuman__BowMode_6962F2+1, 5); // Overwrite shooting key to action button
+        MEM_WriteByte(oCAIHuman___WalkCycle_6925892+1, /*19*/ 25); // Overwrite aiming key to secondary (parry) button
+        FREEAIM_G2CTRL_PREVFRAME = 1;
+    } else { // Gothic 2 controls or free aiming disabled: Revert to original Gothic 2 controls
+        MEM_WriteByte(oCAIHuman__BowMode_695F2B, /*0F*/ 15); // Revert to G2 controls to default: jz loc_00696391
+        MEM_WriteByte(oCAIHuman__BowMode_695F2B+1, /*84*/ 132);
+        MEM_WriteByte(oCAIHuman__BowMode_695F2B+2, /*60*/ 96);
+        MEM_WriteByte(oCAIHuman__BowMode_695F2B+3, /*04*/ 4);
+        MEM_WriteByte(oCAIHuman__BowMode_695F2B+4, /*00*/ 0);
+        MEM_WriteByte(oCAIHuman__BowMode_695F2B+5, /*00*/ 0);
+        MEM_WriteByte(oCAIHuman__BowMode_6962F2+1, 3); // Revert to default: push 3
+        MEM_WriteByte(oCAIHuman___WalkCycle_6925892+1, 5); // Revert to default: push 5
+        FREEAIM_G2CTRL_PREVFRAME = -1;
+    };
+};
+
 /* Check whether free aiming should be activated */
 func int freeAimIsActive() {
     if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled"))) // Free aiming is disabled in the menu
-    || (!MEM_ReadInt(mouseEnabled)) // Mouse controls are disabled
-    || (!MEM_ReadInt(oCGame__s_bUseOldControls)) { // Classic gothic 1 controls are disabled
+    || (!MEM_ReadInt(mouseEnabled)) { // Mouse controls are disabled
         if (FREEAIM_ACTIVE_PREVFRAME != -1) { freeAimUpdateSettings(0); }; // Update internal settings (turn off)
+        if (FREEAIM_G2CTRL_PREVFRAME != -1) { freeAimUpdateSettingsG2Ctrl(0); }; // Disable extended Gothic 2 Controls
         return 0;
     };
     if (FREEAIM_ACTIVE_PREVFRAME != 1) { freeAimUpdateSettings(1); }; // Update internal settings (turn on)
@@ -118,8 +147,16 @@ func int freeAimIsActive() {
     if (!InfoManager_HasFinished()) { return 0; }; // Not in dialogs
     if (!Npc_IsInFightMode(hero, FMODE_FAR)) && (!Npc_IsInFightMode(hero, FMODE_MAGIC)) { return 0; };
     // Everything below is only reached if free aiming is enabled and active (player is in respective fight mode)
-    var int keyStateAction1; keyStateAction1 = MEM_KeyState(MEM_GetKey("keyAction")); // A bit much, but needed below
-    var int keyStateAction2; keyStateAction2 = MEM_KeyState(MEM_GetSecondaryKey("keyAction"));
+    var int keyStateAction1; var int keyStateAction2;
+    if (MEM_ReadInt(oCGame__s_bUseOldControls)) {
+        keyStateAction1 = MEM_KeyState(MEM_GetKey("keyAction")); // A bit much, but the keys are also needed below
+        keyStateAction2 = MEM_KeyState(MEM_GetSecondaryKey("keyAction"));
+        if (FREEAIM_G2CTRL_PREVFRAME != -1) { freeAimUpdateSettingsG2Ctrl(0); }; // Disable extended Gothic 2 controls
+    } else {
+        keyStateAction1 = MEM_KeyState(MEM_GetKey("keyParade"));
+        keyStateAction2 = MEM_KeyState(MEM_GetSecondaryKey("keyParade"));
+        if (FREEAIM_G2CTRL_PREVFRAME != 1) { freeAimUpdateSettingsG2Ctrl(1); }; // Enable extended Gothic 2 controls
+    };
     if (keyStateAction1 != KEY_PRESSED) && (keyStateAction1 != KEY_HOLD) // Only while pressing the action button
     && (keyStateAction2 != KEY_PRESSED) && (keyStateAction2 != KEY_HOLD) { return 0; };
     if (Npc_IsInFightMode(hero, FMODE_MAGIC)) {
