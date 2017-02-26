@@ -147,20 +147,21 @@ func int freeAimIsActive() {
     if (!InfoManager_HasFinished()) { return 0; }; // Not in dialogs
     if (!Npc_IsInFightMode(hero, FMODE_FAR)) && (!Npc_IsInFightMode(hero, FMODE_MAGIC)) { return 0; };
     // Everything below is only reached if free aiming is enabled and active (player is in respective fight mode)
-    var int keyStateAction1; var int keyStateAction2;
+    var int keyStateAiming1; var int keyStateAiming2; // Depending on control scheme either action or blocking key
     if (MEM_ReadInt(oCGame__s_bUseOldControls)) {
-        keyStateAction1 = MEM_KeyState(MEM_GetKey("keyAction")); // A bit much, but the keys are also needed below
-        keyStateAction2 = MEM_KeyState(MEM_GetSecondaryKey("keyAction"));
+        keyStateAiming1 = MEM_KeyState(MEM_GetKey("keyAction")); // A bit much, but the keys are also needed below
+        keyStateAiming2 = MEM_KeyState(MEM_GetSecondaryKey("keyAction"));
         if (FREEAIM_G2CTRL_PREVFRAME != -1) { freeAimUpdateSettingsG2Ctrl(0); }; // Disable extended Gothic 2 controls
     } else {
-        keyStateAction1 = MEM_KeyState(MEM_GetKey("keyParade"));
-        keyStateAction2 = MEM_KeyState(MEM_GetSecondaryKey("keyParade"));
+        keyStateAiming1 = MEM_KeyState(MEM_GetKey("keyParade"));
+        keyStateAiming2 = MEM_KeyState(MEM_GetSecondaryKey("keyParade"));
         if (FREEAIM_G2CTRL_PREVFRAME != 1) { freeAimUpdateSettingsG2Ctrl(1); }; // Enable extended Gothic 2 controls
     };
-    if (keyStateAction1 != KEY_PRESSED) && (keyStateAction1 != KEY_HOLD) // Only while pressing the action button
-    && (keyStateAction2 != KEY_PRESSED) && (keyStateAction2 != KEY_HOLD) { return 0; };
+    var int keyPressed; keyPressed = (keyStateAiming1 == KEY_PRESSED) || (keyStateAiming1 == KEY_HOLD)
+        || (keyStateAiming2 == KEY_PRESSED) || (keyStateAiming2 == KEY_HOLD);  // Pressing or holding the aiming key
     if (Npc_IsInFightMode(hero, FMODE_MAGIC)) {
         if (FREEAIM_DISABLE_SPELLS) { return 0; }; // If free aiming for spells is disabled
+        if (MEM_ReadInt(oCGame__s_bUseOldControls)) && (!keyPressed) { return 0; }; // G1 controls require action key
         var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
         if (!freeAimSpellEligible(spell)) { // Check if the active spell supports free aiming
             if (FREEAIM_FOCUS_SPELL_FREE != -1) {
@@ -177,8 +178,9 @@ func int freeAimIsActive() {
         };
         return FMODE_MAGIC;
     };
-    // Get onset for drawing the bow - right when pressing down the action key
-    if (keyStateAction1 == KEY_PRESSED) || (keyStateAction2 == KEY_PRESSED) {
+    if (!keyPressed) { return 0; }; // If aiming key is not pressed or held
+    // Get onset for drawing the bow - right when pressing down the aiming key
+    if (keyStateAiming1 == KEY_PRESSED) || (keyStateAiming2 == KEY_PRESSED) {
         freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_READY; };
     return FMODE_FAR;
 };
