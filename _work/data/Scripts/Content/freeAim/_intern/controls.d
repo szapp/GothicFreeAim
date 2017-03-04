@@ -21,22 +21,6 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-/* Mouse handling for manually turning the player model by mouse input */
-func void freeAimManualRotation() {
-    if (!freeAimIsActive()) { return; };
-    var int deltaX; deltaX = mulf(mkf(MEM_ReadInt(mouseDeltaX)), MEM_ReadInt(mouseSensX)); // Get mouse change in x
-    if (deltaX == FLOATNULL) { return; }; // Only rotate if there was movement along x position
-    deltaX = mulf(deltaX, castToIntf(FREEAIM_ROTATION_SCALE)); // Turn rate
-    var int hAniCtrl; hAniCtrl = MEM_ReadInt(_@(hero)+2432); // oCNpc.anictrl
-    const int call = 0; var int null;
-    if (CALL_Begin(call)) {
-        CALL_IntParam(_@(null)); // 0 = disable turn animation (there is none while aiming anyways)
-        CALL_FloatParam(_@(deltaX));
-        CALL__thiscall(_@(hAniCtrl), oCAniCtrl_Human__Turn);
-        call = CALL_End();
-    };
-};
-
 /* Disable damage animation. Taken from http://forum.worldofplayers.de/forum/threads/1474431?p=25057480#post25057480 */
 func void freeAimDmgAnimation() {
     var C_Npc victim; victim = _^(ECX);
