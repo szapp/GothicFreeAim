@@ -21,7 +21,7 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-/* Update aiming animation. Hook oCAniCtrl_Human::InterpolateCombineAni */
+/* Update aiming animation. Hook before oCAniCtrl_Human::InterpolateCombineAni */
 func void freeAimAnimation() {
     if (freeAimIsActive() != FMODE_FAR) { return; };
     var int herPtr; herPtr = _@(hero);
@@ -78,7 +78,7 @@ func void freeAimAnimation() {
     if (lef(angleY, FLOATNULL)) { angleY = FLOATNULL; } // Maximum aim height (straight up)
     else if (gef(angleY, 1065353216)) { angleY = 1065353216; }; // Minimum aim height (down)
     // New aiming coordinates. Overwrite the arguments one and two passed to oCAniCtrl_Human::InterpolateCombineAni
-    MEM_WriteInt(ESP+20, FLOATHALF); // First argument: Always aim at center (azimuth) (esp+44h+30h)
+    MEM_WriteInt(ESP+20, FLOATHALF); // First argument: Always aim at center (azimuth) (esp+44h-30h)
     ECX = angleY; // Second argument: New elevation
 };
 
