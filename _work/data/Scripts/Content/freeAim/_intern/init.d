@@ -25,38 +25,54 @@
 func void freeAim_Init() {
     const int hookFreeAim = 0;
     if (!hookFreeAim) {
-        MEM_Info(""); // Copyright notice in zSpy
+        // Copyright notice in zSpy
         var int s; s = SB_New();
         SB("     "); SB(FREEAIM_VERSION); SB(", Copyright "); SBc(169 /* (C) */); SB(" 2016  mud-freak (@szapp)");
+        MEM_Info("");
         MEM_Info(SB_ToString()); SB_Destroy();
         MEM_Info("     <http://github.com/szapp/g2freeAim>");
         MEM_Info("     Released under the MIT License.");
         MEM_Info("     For more details see <http://opensource.org/licenses/MIT>.");
         MEM_Info("");
-        CC_Register(freeAimVersion, "freeaim version", "print freeaim version info");
-        CC_Register(freeAimLicense, "freeaim license", "print freeaim license info");
-        CC_Register(freeAimInfo, "freeaim info", "print freeaim info");
+        // Controls
+        MEM_Info("Initializing controls.");
+        HookEngineF(mouseUpdate, 5, freeAimManualRotation); // Update the player model rotation by mouse input
+        HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aiming
+        // Ranged combat aiming and shooting
+        MEM_Info("Initializing ranged combat aiming and shooting.");
         HookEngineF(oCAIHuman__BowMode_696296, 5, freeAimAnimation); // Update aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Set projectile direction and trajectory
-        MemoryProtectionOverride(oCAIHuman__BowMode_695F2B, 6); // G2 Controls   0F 84 60 04 00 00   jz  loc_00696391
-        MemoryProtectionOverride(oCAIHuman__BowMode_6962F2, 2); // G2 Controls   6A 03               push  3
-        MemoryProtectionOverride(oCAIHuman___WalkCycle_6925892, 2); // G2 Ctrls  6A 05               push  5
+        // Gothic 2 controls
+        MEM_Info("Initializing Gothic 2 controls.");
+        MemoryProtectionOverride(oCAIHuman__BowMode_695F2B, 6); // Skip jump to Gothic 2 controls: jz to 0x696391
+        MemoryProtectionOverride(oCAIHuman__BowMode_6962F2, 2); // Shooting key: push 3
+        MemoryProtectionOverride(oCAIHuman__PC_ActionMove_69A0BB, 5); // Aiming key: mov eax, [esp+8h+4h] // push eax
+        // Reticle
+        MEM_Info("Initializing reticle.");
         HookEngineF(oCAIHuman__BowMode, 6, freeAimManageReticle); // Manage the reticle (on/off)
         HookEngineF(oCNpcFocus__SetFocusMode, 7, freeAimSwitchMode); // Manage the reticle (on/off) and draw force
-        HookEngineF(mouseUpdate, 5, freeAimManualRotation); // Update the player model rotation by mouse input
         HookEngineF(oCAIArrowBase__DoAI, 7, freeAimWatchProjectile); // AI loop for each projectile
+        // Collision detection
+        MEM_Info("Initializing collision detection.");
         HookEngineF(onArrowDamageAddr, 7, freeAimDetectCriticalHit); // Critical hit detection
         HookEngineF(onArrowHitChanceAddr, 5, freeAimDoNpcHit); // Decide whether a projectile hits or not
-        MemoryProtectionOverride(projectileDeflectOffNpcAddr, 2); // Collision behavior on npcs
         HookEngineF(onArrowCollVobAddr, 5, freeAimOnArrowCollide); // Collision behavior on non-npc vob material
         HookEngineF(onArrowCollStatAddr, 5, freeAimOnArrowCollide); // Collision behavior on static world material
-        HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aiming
+        MemoryProtectionOverride(projectileDeflectOffNpcAddr, 2); // Collision behavior on npcs: jz to 0x6A0BA3
+        // Spells
         if (!FREEAIM_DISABLE_SPELLS) {
+            MEM_Info("Initializing spell combat.");
             HookEngineF(oCAIHuman__MagicMode, 7, freeAimSpellReticle); // Manage focus collection and reticle
             HookEngineF(oCSpell__Setup_484BA9, 6, freeAimSetupSpell); // Set spell fx direction and trajectory
             HookEngineF(spellAutoTurnAddr, 6, freeAimDisableSpellAutoTurn); // Prevent auto turning towards target
         };
+        // Console commands
+        MEM_Info("Initializing console commands.");
+        CC_Register(freeAimVersion, "freeaim version", "print freeaim version info");
+        CC_Register(freeAimLicense, "freeaim license", "print freeaim license info");
+        CC_Register(freeAimInfo, "freeaim info", "print freeaim info");
         if (FREEAIM_DEBUG_CONSOLE) || (FREEAIM_DEBUG_WEAKSPOT) || (FREEAIM_DEBUG_TRACERAY) { // Debug visualization
+            MEM_Info("Initializing debug visualizations.");
             HookEngineF(zCWorld__AdvanceClock, 10, freeAimVisualizeWeakspot); // FrameFunctions hook too early
             HookEngineF(zCWorld__AdvanceClock, 10, freeAimVisualizeTraceRay);
             if (FREEAIM_DEBUG_CONSOLE) { // Enable console command for debugging
@@ -64,14 +80,20 @@ func void freeAim_Init() {
                 CC_Register(freeAimDebugTraceRay, "debug freeaim traceray", "turn debug visualization on/off");
             };
         };
+        // Collectable projectiles
         if (FREEAIM_REUSE_PROJECTILES) { // Because of balancing issues, this is a constant and not a variable
+            MEM_Info("Initializing collectable projectiles.");
             HookEngineF(onArrowHitNpcAddr, 5, freeAimOnArrowHitNpc); // Put projectile into inventory
             HookEngineF(onArrowHitVobAddr, 5, freeAimOnArrowGetStuck); // Keep projectile alive when stuck in vob
             HookEngineF(onArrowHitStatAddr, 5, freeAimOnArrowGetStuck); // Keep projectile alive when stuck in world
         };
+        // Trigger collision fix
         if (FREEAIM_TRIGGER_COLL_FIX) { // Because by default all triggers react to objects, this is a setting
+            MEM_Info("Initializing trigger collision fix.");
             HookEngineF(oCAIArrow__CanThisCollideWith, 7, freeAimTriggerCollisionCheck); // Fix trigger collision bug
         };
+        // INI Settings
+        MEM_Info("Initializing settings from Gothic.ini.");
         if (!MEM_GothOptExists("FREEAIM", "enabled")) { MEM_SetGothOpt("FREEAIM", "enabled", "1"); }; // If not set
         if (!MEM_GothOptExists("FREEAIM", "focusEnabled")) { MEM_SetGothOpt("FREEAIM", "focusEnabled", "1"); }
         else if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusEnabled"))) {
@@ -118,17 +140,25 @@ func void freeAimUpdateSettingsG2Ctrl(var int on) {
         MEM_WriteByte(oCAIHuman__BowMode_695F2B+4, ASMINT_OP_nop);
         MEM_WriteByte(oCAIHuman__BowMode_695F2B+5, ASMINT_OP_nop);
         MEM_WriteByte(oCAIHuman__BowMode_6962F2+1, 5); // Overwrite shooting key to action button
-        MEM_WriteByte(oCAIHuman___WalkCycle_6925892+1, /*19*/ 25); // Overwrite aiming key to secondary (parry) button
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+1, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+2, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+3, /*6A*/ 106); // push 0
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+4, 0); // Will be set to 0 or 1 depending on key press
         FREEAIM_G2CTRL_PREVFRAME = 1;
     } else { // Gothic 2 controls or free aiming disabled: Revert to original Gothic 2 controls
-        MEM_WriteByte(oCAIHuman__BowMode_695F2B, /*0F*/ 15); // Revert to G2 controls to default: jz loc_00696391
+        MEM_WriteByte(oCAIHuman__BowMode_695F2B, /*0F*/ 15); // Revert G2 controls to default: jz to 0x696391
         MEM_WriteByte(oCAIHuman__BowMode_695F2B+1, /*84*/ 132);
         MEM_WriteByte(oCAIHuman__BowMode_695F2B+2, /*60*/ 96);
         MEM_WriteByte(oCAIHuman__BowMode_695F2B+3, /*04*/ 4);
         MEM_WriteByte(oCAIHuman__BowMode_695F2B+4, /*00*/ 0);
         MEM_WriteByte(oCAIHuman__BowMode_695F2B+5, /*00*/ 0);
         MEM_WriteByte(oCAIHuman__BowMode_6962F2+1, 3); // Revert to default: push 3
-        MEM_WriteByte(oCAIHuman___WalkCycle_6925892+1, 5); // Revert to default: push 5
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB, /*8B*/ 139); // Revert action key to default: mov eax, [esp+8+a3]
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+1, /*44*/ 68);
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+2, /*24*/ 36);
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+3, /*0C*/ 12); // Revert action key to default: push eax
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+4, /*50*/ 80);
         FREEAIM_G2CTRL_PREVFRAME = -1;
     };
 };
@@ -178,6 +208,7 @@ func int freeAimIsActive() {
         };
         return FMODE_MAGIC;
     };
+    if (FREEAIM_G2CTRL_PREVFRAME == 1) { MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+4, keyPressed); }; // Aiming
     if (!keyPressed) { return 0; }; // If aiming key is not pressed or held
     // Get onset for drawing the bow - right when pressing down the aiming key
     if (keyStateAiming1 == KEY_PRESSED) || (keyStateAiming2 == KEY_PRESSED) {
