@@ -4,7 +4,6 @@ config\settings.d
 
 _intern\activeSpell.d
 _intern\init.d
-_intern\controls.d
 _intern\ccommands.d
 _intern\debug.d
 _intern\aimVob.d
