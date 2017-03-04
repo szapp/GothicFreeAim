@@ -23,7 +23,7 @@ Features
 
 **Examples**
 
-Here short list of some examples which are easily implementable (or already included) in `config.d`. There is a lot
+Here short list of some examples which are easily implementable (or already included) in `config\`. There is a lot
 more freedom, however.
 
  - Change the way the draw force (projectile gravity) is calculated (by weapon stats, skill level, ..)
@@ -110,14 +110,14 @@ Customization
 -------------
 
 As the mechanisms of the script are rather complex, the script is divided into two parts in
-`_work\data\Scripts\Content\freeAim\`. One part is the core functionality and should **not** be edited: `_intern.d`.
-The other one holds all possible customizations and can be freely adjusted and changed: `config.d`.
+`_work\data\Scripts\Content\freeAim\`. One part is the core functionality and should **not** be edited: `_intern\`.
+The other one holds all possible customizations and can be freely adjusted and changed: `config\`.
 
 The customization is mostly implemented by calling outsourced functions. These are functions you can freely adjust. The
 only restrictions are the function signature and the type of return value. What happens inside the functions is fully up
 to you. Other binary settings are offered as constants that can simply be changed.
 
-In the file `config.d` the following things can be adjusted. For more details see `config.d` and read the in-line
+In the files `config\` the following things can be adjusted. For more details see `config\` and read the in-line
 comments of each listed function. There are a lot of possibilities and a lot of information is already provided to each
 function (in form of function arguments). For some examples and ideas see **Examples** above.
 
@@ -236,8 +236,8 @@ a few are enumerated and explained here briefly.
    visualize the aim vob. For an example (SPL_Blink) visit the forum thread (see link in **Contact and Discussion**
    or check out the branch `SPL_Blink`).
 
-There are quite some more things that can be changed (listed at the top of `_intern.d`) but they should not be altered
-under normal circumstances. Changing those settings will most certainly make g2freeAim unstable.
+There are quite some more things that can be changed (listed at the top of `_intern\const.d`) but they should not be
+altered under normal circumstances. Changing those settings will most certainly make g2freeAim unstable.
 
 #### Eligible Spells
 
@@ -344,7 +344,7 @@ Q: **Why does my game crash?**
 
 A:
 See **"It does not work? What now?"**. Additionally, it will be essential to describe your configuration, ideally by
-attaching your `freeAim/config.d`.
+attaching your files in `freeAim\config\`.
 
 Q: **What is the deal with the license? May I use g2freeAim in my modification?**
 
@@ -397,7 +397,7 @@ include the following information:
  - Output when entering `freeaim info` into the F2-ingame-console.
  - zSpy Log.
  - The Access Violation message (if applicable).
- - Your configuration (attach the file `freeAim/config.d`).
+ - Your configuration (attach the files in `freeAim\config\`).
  - Used versions of Ikarus/LeGo.
  - If possible: Your own attempts to isolate and reproduce the bug.
 

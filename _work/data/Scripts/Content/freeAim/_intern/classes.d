@@ -1,5 +1,5 @@
 /*
- * Critical hit sound for projectiles
+ * Helper classes
  *
  * G2 Free Aim v0.1.2 - Free aiming for the video game Gothic 2 by Piranha Bytes
  * Copyright (C) 2016  mud-freak (@szapp)
@@ -21,7 +21,17 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-INSTANCE FREEAIM_CRITICALHIT (C_SFX_DEF) {
-    file = "BOW_FIRE_02.WAV";
-    vol  = 60;
+/* Helper class: Critical hit definitions */
+class Weakspot {
+    var string node;
+    var int dimX;
+    var int dimY;
+    var int bDmg;
+};
+
+/* Helper class: Reticle definitions */
+class Reticle {
+    var string texture;
+    var int size;
+    var int color;
 };
