@@ -191,7 +191,7 @@ func int freeAimIsActive() {
         || (keyStateAiming2 == KEY_PRESSED) || (keyStateAiming2 == KEY_HOLD);  // Pressing or holding the aiming key
     if (Npc_IsInFightMode(hero, FMODE_MAGIC)) {
         if (FREEAIM_DISABLE_SPELLS) { return 0; }; // If free aiming for spells is disabled
-        if (FREEAIM_G2CTRL_PREVFRAME == 1) && (!keyPressed) { return 0; }; // G1 controls require action key
+        if (FREEAIM_G2CTRL_PREVFRAME == -1) && (!keyPressed) { return 0; }; // G1 controls require action key
         var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
         if (!freeAimSpellEligible(spell)) { // Check if the active spell supports free aiming
             if (FREEAIM_FOCUS_SPELL_FREE != -1) {
