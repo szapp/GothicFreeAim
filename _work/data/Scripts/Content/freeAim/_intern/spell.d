@@ -21,19 +21,6 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-/* Disable auto turning towards the target for free aiming spells */
-func void freeAimDisableSpellAutoTurn() {
-    var int herPtr; herPtr = _@(hero);
-    if (freeAimIsActive() && MEM_ReadInt(herPtr+1176)) { //0x0498 oCNpc.enemy
-        const int call3 = 0; var int null; // Remove the enemy properly: reference counter
-        if (CALL_Begin(call3)) {
-            CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. Target will be set to aimvob when shooting
-            CALL__thiscall(_@(herPtr), oCNpc__SetEnemy); // This disables turning towards the target
-            call3 = CALL_End();
-        };
-    };
-};
-
 /* Set the spell fx direction and trajectory. Hook oCSpell::Setup */
 func void freeAimSetupSpell() {
     var int casterPtr; casterPtr = MEM_ReadInt(EBP+52); //0x0034 oCSpell.spellCasterNpc
@@ -71,7 +58,7 @@ func void freeAimSpellReticle() {
         if (!MEM_ReadInt(herPtr+1176)) { //0x0498 oCNpc.enemy
             const int call3 = 0; // Remove the enemy properly: reference counter
             if (CALL_Begin(call3)) {
-                CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. Target will be set to aimvob when shooting
+                CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. With no focus, there is also no target npc
                 CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
                 call3 = CALL_End();
             };

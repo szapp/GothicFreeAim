@@ -37,6 +37,7 @@ func void freeAim_Init() {
         // Controls
         MEM_Info("Initializing controls.");
         HookEngineF(mouseUpdate, 5, freeAimManualRotation); // Update the player model rotation by mouse input
+        MemoryProtectionOverride(oCNpc__TurnToEnemy_737D75, 6); // Prevent auto turning towards target
         HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aiming
         // Ranged combat aiming and shooting
         MEM_Info("Initializing ranged combat aiming and shooting.");
@@ -64,7 +65,6 @@ func void freeAim_Init() {
             MEM_Info("Initializing spell combat.");
             HookEngineF(oCAIHuman__MagicMode, 7, freeAimSpellReticle); // Manage focus collection and reticle
             HookEngineF(oCSpell__Setup_484BA9, 6, freeAimSetupSpell); // Set spell fx direction and trajectory
-            HookEngineF(spellAutoTurnAddr, 6, freeAimDisableSpellAutoTurn); // Prevent auto turning towards target
         };
         // Console commands
         MEM_Info("Initializing console commands.");
@@ -163,8 +163,32 @@ func void freeAimUpdateSettingsG2Ctrl(var int on) {
     };
 };
 
+/* Disable auto turning of player model towards enemy while aiming */
+func void freeAimDisableAutoTurn(var int on) {
+    if (on) {
+        // Jump from 0x737D75 to 0x737E32: 7568946-7568757 = 189-5 = 184 // Length of instruction: 5
+        MEM_WriteByte(oCNpc__TurnToEnemy_737D75, /*E9*/ 233); // jmp
+        MEM_WriteByte(oCNpc__TurnToEnemy_737D75+1, /*B8*/ 184); // B8 instead of B7 because jmp is of length 5 not 6
+        MEM_WriteByte(oCNpc__TurnToEnemy_737D75+2, /*00*/ 0);
+        MEM_WriteByte(oCNpc__TurnToEnemy_737D75+5, ASMINT_OP_nop);
+        FREEAIM_AUTOTURN_PREVFRAME = 1;
+    } else {
+        MEM_WriteByte(oCNpc__TurnToEnemy_737D75, /*0F*/ 15); // Revert to default: jnz loc_00737E32
+        MEM_WriteByte(oCNpc__TurnToEnemy_737D75+1, /*85*/ 133);
+        MEM_WriteByte(oCNpc__TurnToEnemy_737D75+2, /*B7*/ 183);
+        MEM_WriteByte(oCNpc__TurnToEnemy_737D75+5, /*00*/ 0);
+        FREEAIM_AUTOTURN_PREVFRAME = -1;
+    };
+};
+
 /* Check whether free aiming should be activated */
 func int freeAimIsActive() {
+    if (final()) {
+        //if (FREEAIM_AUTOTURN_PREVFRAME != autoTurn) { freeAimDisableAutoTurn((autoTurn+1)/2); }; // Enable/disable
+        MEM_Info(IntToString(autoTurn));
+    };
+    //if (FREEAIM_AUTOTURN_PREVFRAME != 1) { freeAimDisableAutoTurn(1); }; // Enable/disable
+    var int autoTurn; autoTurn = -1;
     if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled"))) // Free aiming is disabled in the menu
     || (!MEM_ReadInt(mouseEnabled)) { // Mouse controls are disabled
         if (FREEAIM_ACTIVE_PREVFRAME != -1) { freeAimUpdateSettings(0); }; // Update internal settings (turn off)
@@ -191,7 +215,7 @@ func int freeAimIsActive() {
         || (keyStateAiming2 == KEY_PRESSED) || (keyStateAiming2 == KEY_HOLD);  // Pressing or holding the aiming key
     if (Npc_IsInFightMode(hero, FMODE_MAGIC)) {
         if (FREEAIM_DISABLE_SPELLS) { return 0; }; // If free aiming for spells is disabled
-        if (FREEAIM_G2CTRL_PREVFRAME == 1) && (!keyPressed) { return 0; }; // G1 controls require action key
+        if (FREEAIM_G2CTRL_PREVFRAME == -1) && (!keyPressed) { return 0; }; // G1 controls require action key
         var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
         if (!freeAimSpellEligible(spell)) { // Check if the active spell supports free aiming
             if (FREEAIM_FOCUS_SPELL_FREE != -1) {
@@ -206,6 +230,7 @@ func int freeAimIsActive() {
             Focus_Magic.item_prio = 0;
             FREEAIM_FOCUS_SPELL_FREE = 1;
         };
+        autoTurn = 1;
         return FMODE_MAGIC;
     };
     if (FREEAIM_G2CTRL_PREVFRAME == 1) { MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+4, keyPressed); }; // Aiming
@@ -213,5 +238,6 @@ func int freeAimIsActive() {
     // Get onset for drawing the bow - right when pressing down the aiming key
     if (keyStateAiming1 == KEY_PRESSED) || (keyStateAiming2 == KEY_PRESSED) {
         freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_READY; };
+    autoTurn = 1;
     return FMODE_FAR;
 };

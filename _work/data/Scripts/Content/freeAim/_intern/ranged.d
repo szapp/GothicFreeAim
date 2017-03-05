@@ -38,7 +38,7 @@ func void freeAimAnimation() {
         };
         const int call5 = 0; // Remove the enemy properly: reference counter
         if (CALL_Begin(call5)) {
-            CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. Target will be set to aimvob when shooting
+            CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. With no focus, there is also no target npc
             CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
             call5 = CALL_End();
         };
