@@ -36,8 +36,8 @@ func void freeAim_Init() {
         MEM_Info("");
         // Controls
         MEM_Info("Initializing controls.");
+        HookEngineF(mouseUpdate, 5, freeAimManualRotation); // Update the player model rotation by mouse input
         HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aiming
-        MemoryProtectionOverride(oCAIHuman__PC_Turnings_69AA11, 6); // Skip jump to allow rotation: jz to 0x69AC5C
         // Ranged combat aiming and shooting
         MEM_Info("Initializing ranged combat aiming and shooting.");
         HookEngineF(oCAIHuman__BowMode_696296, 5, freeAimAnimation); // Update aiming animation
@@ -163,34 +163,8 @@ func void freeAimUpdateSettingsG2Ctrl(var int on) {
     };
 };
 
-/* Enable/disable rotation while holding action key */
-func void freeAimSetRotation(var int on) {
-    if (on) {
-        MEM_WriteByte(oCAIHuman__PC_Turnings_69AA11, ASMINT_OP_nop); // Skip jump to always have rotation control
-        MEM_WriteByte(oCAIHuman__PC_Turnings_69AA11+1, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__PC_Turnings_69AA11+2, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__PC_Turnings_69AA11+3, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__PC_Turnings_69AA11+4, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__PC_Turnings_69AA11+5, ASMINT_OP_nop);
-        FREEAIM_ROTATION_PREV = 1;
-    } else {
-        MEM_WriteByte(oCAIHuman__PC_Turnings_69AA11, /*0F*/ 15); //Revert to default: jz to 0x69AC5C
-        MEM_WriteByte(oCAIHuman__PC_Turnings_69AA11+1, /*84*/ 132);
-        MEM_WriteByte(oCAIHuman__PC_Turnings_69AA11+2, /*45*/ 69);
-        MEM_WriteByte(oCAIHuman__PC_Turnings_69AA11+3, /*02*/ 2);
-        MEM_WriteByte(oCAIHuman__PC_Turnings_69AA11+4, /*00*/ 0);
-        MEM_WriteByte(oCAIHuman__PC_Turnings_69AA11+5, /*00*/ 0);
-        FREEAIM_ROTATION_PREV = -1;
-    };
-};
-
 /* Check whether free aiming should be activated */
 func int freeAimIsActive() {
-    if (final()) {
-        var int ret; ret = MEMINT_PopInt();
-        if (FREEAIM_ROTATION_PREV != ret*2-1) { freeAimSetRotation(ret); }; // Enable/Disable rotation
-        ret;
-    };
     if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled"))) // Free aiming is disabled in the menu
     || (!MEM_ReadInt(mouseEnabled)) { // Mouse controls are disabled
         if (FREEAIM_ACTIVE_PREVFRAME != -1) { freeAimUpdateSettings(0); }; // Update internal settings (turn off)

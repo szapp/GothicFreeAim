@@ -150,9 +150,3 @@ func void freeAimTriggerCollisionCheck() {
     && (trigger.bitfield & zCTrigger_bitfield_reactToOnTouch) { return; }; // Object-reacting trigger
     MEM_WriteInt(vobPtr, shooter); // The engine ignores the shooter
 };
-
-/* Disable damage animation. Taken from http://forum.worldofplayers.de/forum/threads/1474431?p=25057480#post25057480 */
-func void freeAimDmgAnimation() {
-    var C_Npc victim; victim = _^(ECX);
-    if (Npc_IsPlayer(victim)) && (freeAimIsActive()) { EAX = 0; }; // Disable damage animation while aiming
-};
