@@ -99,20 +99,12 @@ func void freeAimKeepProjectileInWorld() {
             // Make the projectile focusable, i.e. collectable
             projectile.flags = projectile.flags &~ ITEM_NFOCUS;
 
-            // Create a new default AI
-            const int call3 = 0;
+            // Detach arrow AI from projectile (projectile will have no AI)
+            const int call3 = 0; const int zero = 0;
             if (CALL_Begin(call3)) {
-                CALL__cdecl(oCAIVobMove__CreateNewInstance);
-                call3 = CALL_End();
-            };
-            var int newAI; newAI = CALL_RetValAsPtr();
-
-            // Replace arrow AI with default AI
-            const int call4 = 0;
-            if (CALL_Begin(call4)) {
-                CALL_IntParam(_@(newAI));
+                CALL_IntParam(_@(zero));
                 CALL__thiscall(_@(projectilePtr), zCVob__SetAI);
-                call4 = CALL_End();
+                call3 = CALL_End();
             };
 
         } else { // Else: New projectile instance is empty or invalid. Let oCAIArrow::DoAI remove the projectile
