@@ -139,13 +139,15 @@ func int freeAimScaleInitialDamage_(var int basePointDamage) {
 
 /* Set the projectile direction and trajectory. Hook oCAIArrow::SetupAIVob */
 func void freeAimSetupProjectile() {
-    var int projectile; projectile = MEM_ReadInt(ESP+4);  // First argument is the projectile
+    var int projectilePtr; projectilePtr = MEM_ReadInt(ESP+4);  // First argument is the projectile
+    if (!projectilePtr) { return; };
+    var oCItem projectile; projectile = _^(projectilePtr);
     var C_Npc shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
     if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { return; }; // Only if player and if fa WAS active
-    // 1st: Set base damage of projectile // oCItem.damage[DAM_INDEX_POINT];
-    var int baseDamage; baseDamage = MEM_ReadStatArr(projectile+364, DAM_INDEX_POINT);
+    // 1st: Set base damage of projectile
+    var int baseDamage; baseDamage = projectile.damage[DAM_INDEX_POINT];
     var int newBaseDamage; newBaseDamage = freeAimScaleInitialDamage_(baseDamage);
-    MEM_WriteStatArr(projectile+364, DAM_INDEX_POINT, newBaseDamage);
+    projectile.damage[DAM_INDEX_POINT] = newBaseDamage;
     // 2nd: Manipulate aiming accuracy (scatter): Rotate target position (azimuth, elevation)
     var int distance; freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, _@(distance)); // Trace ray intersection
     var int accuracy; accuracy = freeAimGetAccuracy_(); // Change the accuracy calculation in that function, not here!
@@ -174,7 +176,7 @@ func void freeAimSetupProjectile() {
     // 3rd: Set projectile drop-off (by draw force)
     const int call2 = 0;
     if (CALL_Begin(call2)) {
-        CALL__thiscall(_@(projectile), zCVob__GetRigidBody); // Get ridigBody this way, it will be properly created
+        CALL__thiscall(_@(projectilePtr), zCVob__GetRigidBody); // Get ridigBody this way, it will be properly created
         call2 = CALL_End();
     };
     var int rBody; rBody = CALL_RetValAsInt(); // zCRigidBody*
@@ -184,12 +186,12 @@ func void freeAimSetupProjectile() {
     var int dropTime; dropTime = (drawForce*(FREEAIM_TRAJECTORY_ARC_MAX*100))/10000;
     FF_ApplyOnceExtData(freeAimDropProjectile, dropTime, 1, rBody); // When to hit the projectile with gravity
     freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_RELOAD; // Reset draw timer
-    MEM_WriteInt(rBody+236, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod)); // Set gravity (but not enabled)
-    if (Hlp_Is_oCItem(projectile)) && (Hlp_StrCmp(MEM_ReadString(projectile+564), "")) { // Projectile has no FX
-        MEM_WriteString(projectile+564, FREEAIM_TRAIL_FX); // Set trail strip fx for better visibility
+    MEM_WriteInt(rBody+zCRigidBody_gravity_offset, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod)); // Gravity
+    if (Hlp_Is_oCItem(projectilePtr)) && (Hlp_StrCmp(projectile.effect, "")) { // Projectile has no FX
+        projectile.effect = FREEAIM_TRAIL_FX; // Set trail strip fx for better visibility
         const int call3 = 0;
         if (CALL_Begin(call3)) {
-            CALL__thiscall(_@(projectile), oCItem__InsertEffect);
+            CALL__thiscall(_@(projectilePtr), oCItem__InsertEffect);
             call3 = CALL_End();
         };
     };
@@ -207,11 +209,29 @@ func void freeAimSetupProjectile() {
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
 };
 
-/* This function is timed by draw force and is responsible for applying gravity to a projectile */
+/*
+ * This is a frame function timed by draw force and is responsible for applying gravity to a projectile after a certain
+ * air time as determined in freeAimSetupProjectile(). The gravity is merely turned on, the gravity value itself is set
+ * in freeAimSetupProjectile().
+ */
 func void freeAimDropProjectile(var int rigidBody) {
-    if (!rigidBody) || (!MEM_ReadInt(rigidBody)) { return; };
-    if (MEM_ReadInt(rigidBody+188) == FLOATNULL) // zCRigidBody.velocity[3]
-    && (MEM_ReadInt(rigidBody+192) == FLOATNULL)
-    && (MEM_ReadInt(rigidBody+196) == FLOATNULL) { return; }; // Do not add gravity if projectile already stopped moving
-    MEM_WriteByte(rigidBody+256, 1); // Turn on gravity (zCRigidBody.bitfield)
+    if (!rigidBody) {
+        return;
+    };
+
+    // Check validity of the zCRigidBody pointer by its first class variable (value is always 10.0). This is necessary
+    // for loading a saved game, as the pointer will not point to a zCRigidBody address anymore.
+    if (roundf(MEM_ReadInt(rigidBody+zCRigidBody_mass_offset)) != 10) {
+        return;
+    };
+
+    // Do not add gravity if projectile already stopped moving
+    if (MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset) == FLOATNULL) // zCRigidBody.velocity[3]
+    && (MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset+4) == FLOATNULL)
+    && (MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset+8) == FLOATNULL) {
+        return;
+    };
+
+    // Turn on gravity
+    MEM_WriteByte(rigidBody+zCRigidBody_bitfield_offset, 1);
 };
