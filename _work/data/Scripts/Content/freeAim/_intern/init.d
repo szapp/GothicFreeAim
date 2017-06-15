@@ -110,7 +110,15 @@ func void freeAim_Init() {
 /* Update internal settings when turning free aim on/off in the options */
 func void freeAimUpdateSettings(var int on) {
     MEM_Info("Updating internal free aim settings");
-    MEM_InitGlobalInst(); // Important as this function will be called during level change, otherwise the game crashes
+    if (!_@(Focus_Ranged)) {
+        MEM_Info("Reinitializing focus modes");
+        // Gothic does not do this on level change, which is critical for enabling/disabling free aiming
+        const int call = 0;
+        if (CALL_Begin(call)) {
+            CALL__cdecl(oCNpcFocus__InitFocusModes);
+            call = CALL_End();
+        };
+    };
     if (on) {
         Focus_Ranged.npc_azi = 15.0; // Set stricter focus collection
         MEM_WriteString(zString_CamModRanged, STR_Upper(FREEAIM_CAMERA)); // New camera mode, upper case is important

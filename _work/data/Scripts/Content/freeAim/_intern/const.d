@@ -66,6 +66,7 @@ const int oCNpc__GetAngles                        = 6820528; //0x6812B0
 const int oCNpc__SetFocusVob                      = 7547744; //0x732B60
 const int oCNpc__SetEnemy                         = 7556032; //0x734BC0
 const int oCNpc__GetModel                         = 7571232; //0x738720
+const int oCNpcFocus__InitFocusModes              = 7072384; //0x6BEA80
 const int oCItem___CreateNewInstance              = 7423040; //0x714440
 const int oCItem__InitByScript                    = 7412688; //0x711BD0
 const int oCItem__InsertEffect                    = 7416896; //0x712C40
