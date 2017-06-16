@@ -106,11 +106,13 @@ func void freeAim_Init() {
         if (!MEM_GothOptExists("FREEAIM", "focusCollIntvMS")) { MEM_SetGothOpt("FREEAIM", "focusCollIntvMS", "10"); };
         freeAimRayInterval = STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusCollIntvMS"));
         if (freeAimRayInterval > 500) { freeAimRayInterval = 500; }; // Recalculate trace ray intersection every x ms
-        // Reset setting constant. In case of loading a game the focus instances would not be updated
-        FREEAIM_ACTIVE = 0;
         r_DefaultInit(); // Start rng for aiming accuracy
         hookFreeAim = 1;
     };
+    // Reset setting constant. In case of loading a game the focus instances would not be updated
+    FREEAIM_ACTIVE = 0;
+    MEM_Call(freeAimManageReticle); // Remove reticle on level change
+
     MEM_Info(ConcatStrings(FREEAIM_VERSION, " initialized successfully."));
 };
 
