@@ -103,9 +103,9 @@ func void freeAim_Init() {
         if (!MEM_GothOptExists("FREEAIM", "focusEnabled")) { MEM_SetGothOpt("FREEAIM", "focusEnabled", "1"); }
         else if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusEnabled"))) {
             FREEAIM_FOCUS_COLLECTION = 0; }; // No focus collection (performance) not recommended
-        if (!MEM_GothOptExists("FREEAIM", "focusCollFreqMS")) { MEM_SetGothOpt("FREEAIM", "focusCollFreqMS", "10"); };
-        freeAimTraceRayFreq = STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusCollFreqMS"));
-        if (freeAimTraceRayFreq > 500) { freeAimTraceRayFreq = 500; }; // Recalculate trace ray intersection every x ms
+        if (!MEM_GothOptExists("FREEAIM", "focusCollIntvMS")) { MEM_SetGothOpt("FREEAIM", "focusCollIntvMS", "10"); };
+        freeAimRayInterval = STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusCollIntvMS"));
+        if (freeAimRayInterval > 500) { freeAimRayInterval = 500; }; // Recalculate trace ray intersection every x ms
         // Reset setting constant. In case of loading a game the focus instances would not be updated
         FREEAIM_ACTIVE = 0;
         r_DefaultInit(); // Start rng for aiming accuracy

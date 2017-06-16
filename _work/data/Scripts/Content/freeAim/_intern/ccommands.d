@@ -56,7 +56,7 @@ func string freeAimInfo(var string command) {
     SB(FREEAIM_VERSION); SBc(13); SBc(10);
     SB("Enabled: "); SB(MEM_ReadStatStringArr(onOff, STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled")))); SBc(13);SBc(10);
     SB("Focus: "); SB(MEM_ReadStatStringArr(onOff, FREEAIM_FOCUS_COLLECTION));
-    SB(" ("); SBi(freeAimTraceRayFreq); SB(" ms collection frequency)"); SBc(13); SBc(10);
+    SB(" ("); SBi(freeAimRayInterval); SB(" ms collection frequency)"); SBc(13); SBc(10);
     SB("Reuse projectiles: "); SB(MEM_ReadStatStringArr(onOff, FREEAIM_REUSE_PROJECTILES)); SBc(13); SBc(10);
     SB("Free aim for spells: "); SB(MEM_ReadStatStringArr(onOff, !FREEAIM_DISABLE_SPELLS)); SBc(13); SBc(10);
     var string ret; ret = SB_ToString(); SB_Destroy();

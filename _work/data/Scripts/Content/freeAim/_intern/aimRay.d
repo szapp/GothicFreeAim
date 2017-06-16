@@ -24,9 +24,9 @@
 /* Shoot aim-tailored trace ray. Do no use for other purposes. This function is customized for aiming. */
 func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int posPtr, var int distPtr,
         var int trueDistPtr) {
-    // Only run full trace ray machinery every so often (see freeAimTraceRayFreq)
+    // Only run full trace ray machinery every so often (see freeAimRayInterval)
     var int curTime; curTime = MEM_Timer.totalTime;
-    if (curTime-prevCalculationTime >= freeAimTraceRayFreq) {
+    if (curTime-prevCalculationTime >= freeAimRayInterval) {
         var int prevCalculationTime; prevCalculationTime = curTime;
         // Flags: VOB_IGNORE_NO_CD_DYN | POLY_IGNORE_TRANSP | POLY_TEST_WATER | VOB_IGNORE_PROJECTILES
         var int flags; flags = (1<<0) | (1<<8) | (1<<9) | (1<<14); // Do not change (will make trace ray unstable)
