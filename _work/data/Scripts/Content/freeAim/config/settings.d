@@ -17,5 +17,5 @@ const int    FREEAIM_TRAJECTORY_ARC_MAX = 400;             // Max time (ms) afte
 const float  FREEAIM_PROJECTILE_GRAVITY = 0.1;             // Gravity of projectile after FREEAIM_TRAJECTORY_ARC_MAX ms
 const string FREEAIM_CAMERA             = "CamModFreeAim"; // CCamSys_Def script instance for free aim
 const int    FREEAIM_CAMERA_X_SHIFT     = 0;               // Camera is set to shoulderview, s.a. (not recommended)
-const float  FREEAIM_ROTATION_SCALE     = 0.16;            // Turn rate. Non-weapon mode is 0.2 (zMouseRotationScale)
+const float  FREEAIM_ROTATION_SCALE     = 0.05;            // Turn rate while aiming
 const int    FREEAIM_HITDETECTION_EXP   = 0;               // Additional hit detection test (EXPERIMENTAL)
