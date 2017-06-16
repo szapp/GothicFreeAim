@@ -40,10 +40,18 @@
  * active/enabled state to set the constant FREEAIM_ACTIVE.
  */
 func void freeAimManualRotation() {
-    // Retrieve free aim state and exit if player is not currently aiming using Gothic 1 controls
+    // Retrieve free aim state and exit if player is not currently aiming
     freeAimIsActive();
-    if (FREEAIM_ACTIVE < FMODE_FAR) || (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
+    if (FREEAIM_ACTIVE < FMODE_FAR) {
         return;
+    };
+
+    // Gothic 2 controls only need the rotation if currently shooting
+    if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
+        // Separate if-conditions to increase performance (Gothic checks ALL chained if-conditions)
+        if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) {
+            return;
+        };
     };
 
     // Retrieve vertical mouse movement (along x-axis) and apply mouse sensitivity
