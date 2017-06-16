@@ -33,7 +33,7 @@
 //const int  MENU_ID_FREEAIM      = 7; // Next available Y-spot in the menu
 const string MENU_FREEAIM_LABEL   = "Freies Zielen"; // "Free aiming"
 const string MENU_FREEAIM_CHOICES = "aus|an"; // "off|on"
-const string MENU_FREEAIM_DESCR   = "Erfordert Gothic 1 controls"; // "Requires Gothic 1 controls"
+const string MENU_FREEAIM_DESCR   = "Erfordert Maus Steuerung"; // "Requires mouse controls"
 
 INSTANCE MENUITEM_OPT_FREEAIM(C_MENU_ITEM_DEF) {
     backpic         = MENU_ITEM_BACK_PIC;
