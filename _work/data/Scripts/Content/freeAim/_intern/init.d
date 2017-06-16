@@ -43,6 +43,7 @@ func void freeAim_Init() {
         MEM_Info("Initializing ranged combat aiming and shooting.");
         HookEngineF(oCAIHuman__BowMode_696296, 5, freeAimAnimation); // Update aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Set projectile direction and trajectory
+        HookEngineF(oCAIArrow__DoAI_6A1489, 6, freeAimKeepProjectileInWorld); // End of DoAI loop for each projectile
         // Gothic 2 controls
         MEM_Info("Initializing Gothic 2 controls.");
         MemoryProtectionOverride(oCAIHuman__BowMode_695F2B, 6); // Skip jump to Gothic 2 controls: jz to 0x696391
@@ -52,7 +53,6 @@ func void freeAim_Init() {
         MEM_Info("Initializing reticle.");
         HookEngineF(oCAIHuman__BowMode, 6, freeAimManageReticle); // Manage the reticle (on/off)
         HookEngineF(oCNpcFocus__SetFocusMode, 7, freeAimSwitchMode); // Manage the reticle (on/off) and draw force
-        HookEngineF(oCAIArrowBase__DoAI, 7, freeAimWatchProjectile); // AI loop for each projectile
         // Collision detection
         MEM_Info("Initializing collision detection.");
         HookEngineF(onArrowDamageAddr, 7, freeAimDetectCriticalHit); // Critical hit detection

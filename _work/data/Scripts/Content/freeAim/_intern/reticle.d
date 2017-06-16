@@ -67,6 +67,9 @@ func void freeAimManageReticle() {
 
 /* Switching between weapon modes (sometimes called several times in a row) */
 func void freeAimSwitchMode() {
+    if (!_@(MEM_Timer)) { // Cheap check if Ikarus was initialized
+        MEM_InitAll(); // Important, as this here function is called during level change before any initialization
+    };
     freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_READY; // Reset draw force onset
     freeAimManageReticle();
 };

@@ -55,10 +55,11 @@ func int freeAimHitRegWld_(var C_Npc shooter, var int material, var string textu
 
 /* Determine the hit chance. For the player it's always 100%. True hit chance is calculated in freeAimGetAccuracy() */
 func void freeAimDoNpcHit() {
-    var int hitChance; hitChance = MEM_ReadInt(ESP+24); // esp+1ACh+194h
+    var int hitChancePtr; hitChancePtr = ESP+24; // esp+1ACh+194h
     var C_Npc target; target = _^(MEM_ReadInt(ESP+28)); // esp+1ACh+190h // oCNpc*
-    var C_Npc shooter; shooter = _^(MEM_ReadInt(EBP+92)); // ebp+5Ch // oCNpc*
-    var int projectile; projectile = MEM_ReadInt(EBP+88); // ebp+58h // oCItem*
+    var int arrowAI; arrowAI = EBP;
+    var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
+    var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
     if (!FREEAIM_ACTIVE) || (!Npc_IsPlayer(shooter)) { // Default hitchance for npcs or if FA is disabled
         MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to default collision behavior on npcs
         MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59); // jz to 0x6A0BA3
@@ -67,13 +68,15 @@ func void freeAimDoNpcHit() {
     var int intersection; intersection = 1; // Hit registered (positive hit determined by the engine at this point)
     if (FREEAIM_HITDETECTION_EXP) { // Additional hit detection test (EXPERIMENTAL). Will lead to some hits not detected
         intersection = 0; // Check here if "any" point along the line of the projectile direction lies inside the bbox
-        var zTBBox3D targetBBox; targetBBox = _^(_@(target)+124); // oCNpc.bbox3D
+        var zTBBox3D targetBBox; targetBBox = _^(_@(target)+zCVob_bbox3D_offset); // oCNpc.bbox3D
         var int dir[3]; // Direction of collision line along the right-vector of projectile (projectile flies sideways)
-        dir[0] = MEM_ReadInt(projectile+60); dir[1] = MEM_ReadInt(projectile+76); dir[2] = MEM_ReadInt(projectile+92);
+        dir[0] = projectile._zCVob_trafoObjToWorld[0];
+        dir[1] = projectile._zCVob_trafoObjToWorld[4];
+        dir[2] = projectile._zCVob_trafoObjToWorld[8];
         var int line[6]; // Collision line
-        line[0] = addf(MEM_ReadInt(projectile+ 72), mulf(dir[0], FLOAT3C)); // Start 3m behind the projectile
-        line[1] = addf(MEM_ReadInt(projectile+ 88), mulf(dir[1], FLOAT3C)); // So far because of bbox at close range
-        line[2] = addf(MEM_ReadInt(projectile+104), mulf(dir[2], FLOAT3C));
+        line[0] = addf(projectile._zCVob_trafoObjToWorld[ 3], mulf(dir[0], FLOAT3C)); // Start 3m behind the projectile
+        line[1] = addf(projectile._zCVob_trafoObjToWorld[ 7], mulf(dir[1], FLOAT3C)); // So far because of bbox at
+        line[2] = addf(projectile._zCVob_trafoObjToWorld[11], mulf(dir[2], FLOAT3C)); // close range
         var int i; i=0; var int iter; iter = 700/5; // 7meters
         while(i <= iter); i += 1; // Walk along the line in steps of 5cm
             line[3] = subf(line[0], mulf(dir[0], mkf(i*5))); // Next point along the collision line
@@ -96,7 +99,7 @@ func void freeAimDoNpcHit() {
             MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Jump beyond armor collision check, deflect never
             MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*60*/ 96); // jz to 0x6A0BC8
             if (!collision) { // Destroy (no damage)
-                MEM_WriteInt(projectile+816, -1); // Delete item instance (it will not be put into the directory)
+                projectile.instanz = -1; // Delete item instance (it will not be put into the inventory)
                 hit = FALSE;
             } else { // Collide (damage)
                 hit = TRUE;
@@ -105,22 +108,30 @@ func void freeAimDoNpcHit() {
     } else { // Destroy the projectile if it did not physically hit
         MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Jump beyond the armor collision check, deflect never
         MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*60*/ 96); // jz to 0x6A0BC8
-        MEM_WriteInt(projectile+816, -1); // Delete item instance (it will not be put into the directory)
+        projectile.instanz = -1; // Delete item instance (it will not be put into the inventory)
         hit = FALSE;
     };
-    MEM_WriteInt(ESP+24, hit*100); // Player always hits = 100%
+    MEM_WriteInt(hitChancePtr, hit*100); // Player always hits = 100%
 };
 
 /* Arrow collides with world (static or non-npc vob). Either destroy, deflect or collide */
 func void freeAimOnArrowCollide() {
-    var oCItem projectile; projectile = _^(MEM_ReadInt(ESI+60)); // esi+3Ch
-    var C_Npc shooter; shooter = _^(MEM_ReadInt(esi+92)); // esi+5Ch
-    var int matobj; matobj = MEM_ReadInt(ECX); // zCMaterial* or zCPolygon*
-    if (MEM_ReadInt(matobj) != zCMaterial__vtbl) { matobj = MEM_ReadInt(matobj+24); }; // Static world: Read zCPolygon
-    var int material; material = MEM_ReadInt(matobj+64);
-    var string texture; texture = "";
-    if (MEM_ReadInt(matobj+52)) { // For the case that the material has no assigned texture (which should not happen)
-        texture = MEM_ReadString(MEM_ReadInt(matobj+52)+16); // zCMaterial.texture._zCObject_objectName
+    var int arrowAI; arrowAI = ESI;
+    var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
+    var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
+    var int matPtr; matPtr = MEM_ReadInt(ECX); // zCMaterial* or zCPolygon*
+    if (MEM_ReadInt(matPtr) != zCMaterial__vtbl) { // Static world: Read zCPolygon
+        var zCPolygon polygon; polygon = _^(matPtr);
+        matPtr = polygon.material;
+    };
+    var zCMaterial mat; mat = _^(matPtr);
+    var int material; material = mat.matGroup;
+    var string texture;
+    if (mat.texture) { // Check for texture
+        var zCTexture tex; tex = _^(mat.texture);
+        texture = tex._zCObject_objectName;
+    } else {
+        texture = "";
     };
     var int collision; collision = freeAimHitRegWld_(shooter, material, texture); // 0=destroy, 1=stay, 2=deflect
     if (collision == 1) { // Collide
@@ -133,7 +144,7 @@ func void freeAimOnArrowCollide() {
             if (FREEAIM_REUSE_PROJECTILES) { // Destroy
                 Wld_StopEffect(FREEAIM_BREAK_FX); // Sometimes collides several times
                 Wld_PlayEffect(FREEAIM_BREAK_FX, projectile, projectile, 0, 0, 0, FALSE);
-                MEM_WriteInt(ESI+56, -1073741824); // oCAIArrow.lifeTime // Mark this AI for freeAimWatchProjectile()
+                MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATNULL); // Set life time to 0: Remove projectile
             };
         };
     };
@@ -142,11 +153,11 @@ func void freeAimOnArrowCollide() {
 /* Fix trigger collision bug. Taken from http://forum.worldofplayers.de/forum/threads/1126551/page10?p=20894916 */
 func void freeAimTriggerCollisionCheck() {
     var int vobPtr; vobPtr = ESP+4;
-    var int shooter; shooter = MEM_ReadInt(ECX+92);
     var int vtbl; vtbl = MEM_ReadInt(MEM_ReadInt(vobPtr));
     if (vtbl != zCTrigger_vtbl) && (vtbl != zCTriggerScript_vtbl) { return; }; // It is no Trigger
     var zCTrigger trigger; trigger = _^(MEM_ReadInt(vobPtr));
     if (trigger.bitfield & zCTrigger_bitfield_respondToObject)
     && (trigger.bitfield & zCTrigger_bitfield_reactToOnTouch) { return; }; // Object-reacting trigger
+    var int shooter; shooter = MEM_ReadInt(ECX+92);
     MEM_WriteInt(vobPtr, shooter); // The engine ignores the shooter
 };

@@ -49,6 +49,7 @@ var   int    freeAimBowDrawOnset;                               // Time onset of
 const int zCVob__SetPositionWorld                 = 6404976; //0x61BB70
 const int zCVob__GetRigidBody                     = 6285664; //0x5FE960
 const int zCVob__TraceRay                         = 6291008; //0x5FFE40
+const int zCVob__SetAI                            = 6285552; //0x5FE8F0
 const int zCArray_zCVob__IsInList                 = 7159168; //0x6D3D80
 const int zCWorld__TraceRayNearestHit_Vob         = 6430624; //0x621FA0
 const int oCWorld__AddVobAsChild                  = 7863856; //0x77FE30
@@ -81,6 +82,7 @@ const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
 const int mouseDeltaX                             = 9246300; //0x8D165C
 const int projectileDeflectOffNpcAddr             = 6949734; //0x6A0B66
+const int oCAIVobMove__CreateNewInstance          = 6959968; //0x6A3360
 const int oCAIHuman__BowMode_695F2B               = 6905643; //0x695F2B
 const int oCAIHuman__BowMode_6962F2               = 6906610; //0x6962F2
 const int oCAIHuman__PC_ActionMove_69A0BB         = 6922427; //0x69A0BB
@@ -89,7 +91,7 @@ const int oCAIHuman__BowMode                      = 6905600; //0x695F00 // Hook 
 const int oCAIHuman__BowMode_696296               = 6906518; //0x696296 // Hook length 5
 const int oCAIArrow__SetupAIVob                   = 6951136; //0x6A10E0 // Hook length 6
 const int oCAIArrow__CanThisCollideWith           = 6952080; //0x6A1490 // Hook length 7
-const int oCAIArrowBase__DoAI                     = 6948416; //0x6A0640 // Hook length 7
+const int oCAIArrow__DoAI_6A1489                  = 6952073; //0x6A1489 // Hook length 6
 const int onArrowHitNpcAddr                       = 6949832; //0x6A0BC8 // Hook length 5
 const int onArrowHitVobAddr                       = 6949929; //0x6A0C29 // Hook length 5
 const int onArrowHitStatAddr                      = 6949460; //0x6A0A54 // Hook length 5
@@ -102,3 +104,16 @@ const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook 
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook length 7
 const int oCSpell__Setup_484BA9                   = 4737961; //0x484BA9 // Hook length 6
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook length 5
+
+/* Offsets */
+const int zCVob_bbox3D_offset                     = 124; //0x007C
+
+const int oCAIArrowBase_collision_offset          = 52; //0x0034
+const int oCAIArrowBase_lifeTime_offset           = 56; //0x0038
+const int oCAIArrowBase_hostVob_offset            = 60; //0x003C
+const int oCAIArrow_origin_offset                 = 92; //0x005C
+
+const int zCRigidBody_mass_offset                 = 0; //0x0000
+const int zCRigidBody_gravity_offset              = 236; //0x00EC
+const int zCRigidBody_velocity_offset             = 188; //0x00BC
+const int zCRigidBody_bitfield_offset             = 256; //0x0100
