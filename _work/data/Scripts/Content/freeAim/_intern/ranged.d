@@ -23,7 +23,7 @@
 
 /* Update aiming animation. Hook before oCAniCtrl_Human::InterpolateCombineAni */
 func void freeAimAnimation() {
-    if (freeAimIsActive() != FMODE_FAR) { return; };
+    if (FREEAIM_ACTIVE != FMODE_FAR) { return; };
     var int herPtr; herPtr = _@(hero);
     var int distance; var int target;
     if (FREEAIM_FOCUS_COLLECTION) { // Set focus npc if there is a valid one under the reticle
@@ -38,7 +38,7 @@ func void freeAimAnimation() {
         };
         const int call5 = 0; // Remove the enemy properly: reference counter
         if (CALL_Begin(call5)) {
-            CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. Target will be set to aimvob when shooting
+            CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. With no focus, there is also no target npc
             CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
             call5 = CALL_End();
         };
@@ -143,7 +143,7 @@ func void freeAimSetupProjectile() {
     if (!projectilePtr) { return; };
     var oCItem projectile; projectile = _^(projectilePtr);
     var C_Npc shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
-    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { return; }; // Only if player and if fa WAS active
+    if (!FREEAIM_ACTIVE) || (!Npc_IsPlayer(shooter)) { return; }; // Only if player and if FA is enabled
     // 1st: Set base damage of projectile
     var int baseDamage; baseDamage = projectile.damage[DAM_INDEX_POINT];
     var int newBaseDamage; newBaseDamage = freeAimScaleInitialDamage_(baseDamage);

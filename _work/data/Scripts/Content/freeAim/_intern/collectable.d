@@ -21,6 +21,7 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
+
 /*
  * This function keeps the projectiles in the world. It hooks the end of the oCAIArrow::DoAI loop and checks whether
  * each projectile stopped moving. Once it has, the AI is detached from the projectile and replaced with the default
@@ -113,6 +114,7 @@ func void freeAimKeepProjectileInWorld() {
     };
 };
 
+
 /*
  * This function is called when a projectile hits an NPC. It is hooked by the collision detection function of
  * projectiles. It puts the projectile instance into inventory (if desired) and lets the AI die.
@@ -139,6 +141,7 @@ func void freeAimOnArrowHitNpc() {
     // Set life time to zero to remove this projectile
     MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATNULL);
 };
+
 
 /*
  * This function is called when a projectile gets stuck in the world (static and dynamic). It is hooked by the collision

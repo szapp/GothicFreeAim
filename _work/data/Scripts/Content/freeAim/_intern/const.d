@@ -21,7 +21,7 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-/* Free aim settings, do not modify! Change the settings in freeAim\config\settings.d */
+/* Free aim internal constants, do not modify! Change the settings in freeAim\config\settings.d */
 const string FREEAIM_VERSION            = "G2 Free Aim v0.1.2"; // Do not change under any circumstances
 const int    FREEAIM_DRAWTIME_READY     = 650;                  // Time offset for readying the bow. Fixed by animation
 const int    FREEAIM_DRAWTIME_RELOAD    = 1110;                 // Time offset for reloading the bow. Fixed by animation
@@ -30,9 +30,7 @@ const int    FREEAIM_RETICLE_MAX_SIZE   = 64;                   // Biggest retic
 const string FREEAIM_TRAIL_FX           = "freeAim_TRAIL";      // Trailstrip FX. Should not be changed
 const string FREEAIM_BREAK_FX           = "freeAim_DESTROY";    // FX of projectile breaking on impact with world
 const int    FREEAIM_MAX_DIST           = 5000;                 // 50m. Shooting/reticle adjustments. Do not change
-const int    FREEAIM_ACTIVE_PREVFRAME   = 0;                    // Internal. Do not change
-const int    FREEAIM_G2CTRL_PREVFRAME   = 0;                    // Internal. Do not change
-const int    FREEAIM_FOCUS_SPELL_FREE   = 0;                    // Internal. Do not change
+const int    FREEAIM_ACTIVE             = 0;                    // Internal. Do not change
 const int    FREEAIM_FOCUS_COLLECTION   = 1;                    // Internal. Do not change (change in ini-file)
 const int    FREEAIM_ARROWAI_REDIRECT   = 0;                    // Used to redirect call-by-reference var. Do not change
 const int    FLOAT1C                    = 1120403456;           // 100 as float
@@ -62,6 +60,7 @@ const int zString_CamModRanged                    = 9234704; //0x8CE910
 const int zString_CamModMagic                     = 9235048; //0x8CEA68
 const int oCAniCtrl_Human__Turn                   = 7005504; //0x6AE540
 const int oCAniCtrl_Human__GetLayerAni            = 7011712; //0x6AFD80
+const int oCNpc__TurnToEnemy_737D75               = 7568757; //0x737D75
 const int oCNpc__GetAngles                        = 6820528; //0x6812B0
 const int oCNpc__SetFocusVob                      = 7547744; //0x732B60
 const int oCNpc__SetEnemy                         = 7556032; //0x734BC0
@@ -104,7 +103,6 @@ const int onDmgAnimationAddr                      = 6774593; //0x675F41 // Hook 
 const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook length 7
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook length 7
 const int oCSpell__Setup_484BA9                   = 4737961; //0x484BA9 // Hook length 6
-const int spellAutoTurnAddr                       = 4665539; //0x4730C3 // Hook length 6
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook length 5
 
 /* Offsets */

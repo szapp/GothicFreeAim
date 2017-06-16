@@ -59,7 +59,7 @@ func void freeAimInsertReticle(var int reticlePtr) {
 
 /* Decide when to draw reticle or when to hide it */
 func void freeAimManageReticle() {
-    if (!freeAimIsActive()) {
+    if (FREEAIM_ACTIVE < FMODE_FAR) {
         freeAimDetachFX();
         freeAimRemoveReticle();
     };

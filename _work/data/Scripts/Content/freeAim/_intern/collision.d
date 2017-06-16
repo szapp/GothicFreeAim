@@ -60,7 +60,7 @@ func void freeAimDoNpcHit() {
     var int arrowAI; arrowAI = EBP;
     var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
-    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { // Default hitchance for npcs or if fa is disabled
+    if (!FREEAIM_ACTIVE) || (!Npc_IsPlayer(shooter)) { // Default hitchance for npcs or if FA is disabled
         MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to default collision behavior on npcs
         MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59); // jz to 0x6A0BA3
         return;

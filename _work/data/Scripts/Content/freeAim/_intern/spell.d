@@ -21,25 +21,12 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-/* Disable auto turning towards the target for free aiming spells */
-func void freeAimDisableSpellAutoTurn() {
-    var int herPtr; herPtr = _@(hero);
-    if (freeAimIsActive() && MEM_ReadInt(herPtr+1176)) { //0x0498 oCNpc.enemy
-        const int call3 = 0; var int null; // Remove the enemy properly: reference counter
-        if (CALL_Begin(call3)) {
-            CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. Target will be set to aimvob when shooting
-            CALL__thiscall(_@(herPtr), oCNpc__SetEnemy); // This disables turning towards the target
-            call3 = CALL_End();
-        };
-    };
-};
-
 /* Set the spell fx direction and trajectory. Hook oCSpell::Setup */
 func void freeAimSetupSpell() {
     var int casterPtr; casterPtr = MEM_ReadInt(EBP+52); //0x0034 oCSpell.spellCasterNpc
     if (!casterPtr) { return; }; // No caster
     var C_Npc caster; caster = _^(casterPtr);
-    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(caster)) { return; }; // Only if player and if fa WAS active
+    if (!FREEAIM_ACTIVE) || (!Npc_IsPlayer(caster)) { return; }; // Only if player and if FA is enabled
     var C_Spell spell; spell = _^(EBP+128); //0x0080 oCSpell.C_Spell
     if (!freeAimSpellEligible(spell)) { return; }; // Only with eligible spells
     var int focusType; // No focus display for TARGET_COLLECT_NONE (still focus collection though)
@@ -51,7 +38,7 @@ func void freeAimSetupSpell() {
 
 /* Manage reticle style and focus collection for magic combat */
 func void freeAimSpellReticle() {
-    if (!freeAimIsActive()) { freeAimRemoveReticle(); return; }; // Only with eligible spells
+    if (FREEAIM_ACTIVE != FMODE_MAGIC) { freeAimRemoveReticle(); return; }; // Only with eligible spells
     var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
     var int distance; var int target;
     if (FREEAIM_FOCUS_COLLECTION) && (spell.targetCollectRange > 0) { // Set focus npc if there is a valid one
@@ -71,7 +58,7 @@ func void freeAimSpellReticle() {
         if (!MEM_ReadInt(herPtr+1176)) { //0x0498 oCNpc.enemy
             const int call3 = 0; // Remove the enemy properly: reference counter
             if (CALL_Begin(call3)) {
-                CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. Target will be set to aimvob when shooting
+                CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. With no focus, there is also no target npc
                 CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
                 call3 = CALL_End();
             };

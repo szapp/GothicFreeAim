@@ -24,22 +24,14 @@
 /* Shoot aim-tailored trace ray. Do no use for other purposes. This function is customized for aiming. */
 func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int posPtr, var int distPtr,
         var int trueDistPtr) {
-    var int herPtr; herPtr = _@(hero);
-    if (MEM_ReadInt(herPtr+1176)) { //0x0498 oCNpc.enemy
-        const int call5 = 0; var int null; // Remove the enemy properly: reference counter
-        if (CALL_Begin(call5)) {
-            CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. Target will be set to aimvob when shooting
-            CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
-            call5 = CALL_End();
-        };
-    };
     // Only run full trace ray machinery every so often (see freeAimTraceRayFreq)
     var int curTime; curTime = MEM_Timer.totalTime;
-    if (curTime-prevCalculationTime >= freeAimTraceRayFreq) || (foundFocus != MEM_ReadInt(herPtr+2476)) {
+    if (curTime-prevCalculationTime >= freeAimTraceRayFreq) {
         var int prevCalculationTime; prevCalculationTime = curTime;
         // Flags: VOB_IGNORE_NO_CD_DYN | POLY_IGNORE_TRANSP | POLY_TEST_WATER | VOB_IGNORE_PROJECTILES
         var int flags; flags = (1<<0) | (1<<8) | (1<<9) | (1<<14); // Do not change (will make trace ray unstable)
         var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60);
+        var int herPtr; herPtr = _@(hero);
         // Shift the start point for the trace ray beyond the player model. Necessary, because if zooming out,
         // (1) there might be something between camera and hero and (2) the maximum aiming distance is off.
         var int distCamToPlayer; distCamToPlayer = sqrtf(addf(addf( // Does not care about camera offset (camera shift)
@@ -161,6 +153,14 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
                 CALL_PtrParam(_@(foundFocus)); // If no valid focus found, this will remove the focus (foundFocus == 0)
                 CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
                 call4 = CALL_End();
+            };
+        };
+        if (foundFocus != MEM_ReadInt(herPtr+1176)) { //0x0498 oCNpc.enemy
+            const int call5 = 0; // Set the enemy properly: reference counter
+            if (CALL_Begin(call5)) {
+                CALL_PtrParam(_@(foundFocus));
+                CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
+                call5 = CALL_End();
             };
         };
         // Debug visualization
