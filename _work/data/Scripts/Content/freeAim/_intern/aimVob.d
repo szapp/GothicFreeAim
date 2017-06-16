@@ -62,26 +62,46 @@ func void freeAimManipulateAimVobPos(var int posPtr) {
     };
 };
 
-/* Create and set aim vob to position */
+/*
+ * Retrieve/create aim vob and optionally update its position.
+ */
 func int freeAimSetupAimVob(var int posPtr) {
-    var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB"); // Arrow needs target vob
-    if (!vobPtr) { // Does not exist
-        MEM_Info("freeAimSetupAimVob: Creating aim vob."); // Should be printed only once ever
-        CALL__cdecl(oCItem___CreateNewInstance); // This actually allocates the memory, so no need to care about freeing
+    // Retrieve vob by name
+    var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB");
+
+    // Create vob if it does not exit
+    if (!vobPtr) {
+        MEM_Info("freeAimSetupAimVob: Creating aim vob."); // Should be printed only once ever (each world)
+
+        // This actually allocates the memory, so no need to care about freeing
+        CALL__cdecl(oCItem___CreateNewInstance);
         vobPtr = CALL_RetValAsPtr();
-        MEM_WriteString(vobPtr+16, "AIMVOB"); // zCVob._zCObject_objectName
+
+        // Set up vob properties
+        var zCVob vob; vob = _^(vobPtr);
+        vob._zCObject_objectName = "AIMVOB";
+
+        // Insert into world
         CALL_PtrParam(_@(MEM_Vobtree));
         CALL_PtrParam(vobPtr);
         CALL__thiscall(_@(MEM_World), oCWorld__AddVobAsChild);
-        MEM_WriteInt(vobPtr+260, 3105); // zCVob.bitfield[0] (ignored by trace ray, no collision)
+
+        // Ignored by trace ray, no collision
+        vob.bitfield[0] = 3105;
     };
-    MEM_CopyBytes(_@(hero)+60, vobPtr+60, 64); // Include rotation
-    freeAimManipulateAimVobPos(posPtr); // Shift the aim vob (if desired)
-    const int call4 = 0; // Set position to aim vob
-    if (CALL_Begin(call4)) {
-        CALL_PtrParam(_@(posPtr)); // Update aim vob position
-        CALL__thiscall(_@(vobPtr), zCVob__SetPositionWorld);
-        call4 = CALL_End();
+
+    // Update position and rotation
+    if (posPtr) {
+        MEM_CopyBytes(_@(hero)+60, vobPtr+60, 64); // Copy rotation from player model
+        freeAimManipulateAimVobPos(posPtr); // Additionally shift the vob (for certain spells)
+
+        // Reposition the vob
+        const int call = 0;
+        if (CALL_Begin(call)) {
+            CALL_PtrParam(_@(posPtr));
+            CALL__thiscall(_@(vobPtr), zCVob__SetPositionWorld);
+            call = CALL_End();
+        };
     };
     return vobPtr;
 };
