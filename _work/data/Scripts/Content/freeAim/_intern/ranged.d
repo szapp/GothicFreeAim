@@ -23,17 +23,12 @@
 
 
 /*
- * Update aiming animation. This function hooks oCAIHuman::BowMode just before oCAniCtrl_Human::InterpolateCombineAni to
- * adjust the direction the ranged weapon is pointed in. Also the focus collection is overwritten.
+ * Collect focus for aiming in ranged mode. This function is called from two different functions: While aiming, and
+ * while shooting, to prevent the focus from changing while shooting. Additionally, this function checks the distance
+ * to the nearest intersection (or to the focus) from the camera (not the player model!).
  */
-func void freeAimAnimation() {
-    // Only when aiming with a ranged weapon
-    if (FREEAIM_ACTIVE != FMODE_FAR) {
-        return;
-    };
-
+func void freeAimRangedFocus(var int targetPtr, var int distancePtr) {
     // Retrieve target NPC and the distance to it from the camera(!)
-    var int herPtr; herPtr = _@(hero);
     var int distance; var int target;
 
     if (FREEAIM_FOCUS_COLLECTION) {
@@ -45,8 +40,10 @@ func void freeAimAnimation() {
         // FREEAIM_FOCUS_COLLECTION can be set to false (see INI-file) for weaker computers. However, it is not
         // recommended, as there will be NO focus at all (otherwise it would get stuck on NPCs)
 
-        // Remove focus completely
         var oCNpc her; her = Hlp_GetNpc(hero);
+        var int herPtr; herPtr = _@(her);
+
+        // Remove focus completely
         const int call = 0; const int zero = 0; // Set the focus vob properly: reference counter
         if (CALL_Begin(call)) {
             CALL_PtrParam(_@(zero)); // This will remove the focus
@@ -67,6 +64,36 @@ func void freeAimAnimation() {
         distance = 25; // No distance check ever. Set it to medium distance
         target = 0; // No focus target ever
     };
+
+    MEM_WriteInt(distancePtr, distance);
+    MEM_WriteInt(targetPtr, target);
+};
+
+
+/*
+ * Collect focus during shooting. Otherwise the focus collection changes during the shooting animation. This function
+ * hooks oCAIHuman::BowMode at a position where the player model is carrying out the animation of shooting.
+ */
+func void freeAimRangedShooting() {
+    var int target; var int distance; // Not necessary here
+    freeAimRangedFocus(_@(target), _@(distance));
+};
+
+
+/*
+ * Interpolate the ranged aiming animation. This function hooks oCAIHuman::BowMode just before
+ * oCAniCtrl_Human::InterpolateCombineAni to adjust the direction the ranged weapon is pointed in. Also the focus
+ * collection is overwritten.
+ */
+func void freeAimAnimation() {
+    // Only free aiming is active
+    if (FREEAIM_ACTIVE != FMODE_FAR) {
+        return;
+    };
+
+    // Retrieve target NPC and the distance to it from the camera(!)
+    var int distance; var int target;
+    freeAimRangedFocus(_@(target), _@(distance));
 
     // Create reticle
     var int reticlePtr; reticlePtr = MEM_Alloc(sizeof_Reticle);
@@ -94,6 +121,7 @@ func void freeAimAnimation() {
     pos[2] = addf(camPos.v2[3], mulf(camPos.v2[2], distance));
 
     // Get aiming angles
+    var int herPtr; herPtr = _@(hero);
     var int angleX; var int angXptr; angXptr = _@(angleX);
     var int angleY; var int angYptr; angYptr = _@(angleY);
     var int posPtr; posPtr = _@(pos);

@@ -90,6 +90,7 @@ const int oCAIHuman__PC_ActionMove_69A0BB         = 6922427; //0x69A0BB
 const int zCWorld__AdvanceClock                   = 6447328; //0x6260E0 // Hook length 10
 const int oCAIHuman__BowMode                      = 6905600; //0x695F00 // Hook length 6
 const int oCAIHuman__BowMode_696296               = 6906518; //0x696296 // Hook length 5
+const int oCAIHuman__BowMode_69633B               = 6906683; //0x69633B // Hook length 6
 const int oCAIArrow__SetupAIVob                   = 6951136; //0x6A10E0 // Hook length 6
 const int oCAIArrow__CanThisCollideWith           = 6952080; //0x6A1490 // Hook length 7
 const int oCAIArrow__DoAI_6A1489                  = 6952073; //0x6A1489 // Hook length 6

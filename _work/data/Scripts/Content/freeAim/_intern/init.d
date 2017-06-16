@@ -45,6 +45,7 @@ func void freeAim_Init() {
         HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aiming
         // Ranged combat aiming and shooting
         MEM_Info("Initializing ranged combat aiming and shooting.");
+        HookEngineF(oCAIHuman__BowMode_69633B, 6, freeAimRangedShooting); // Focus collection during shooting
         HookEngineF(oCAIHuman__BowMode_696296, 5, freeAimAnimation); // Update aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Set projectile direction and trajectory
         HookEngineF(oCAIArrow__DoAI_6A1489, 6, freeAimKeepProjectileInWorld); // End of DoAI loop for each projectile
