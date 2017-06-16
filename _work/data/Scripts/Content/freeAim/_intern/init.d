@@ -21,7 +21,11 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-/* Initialize free aim framework */
+
+/*
+ * Initialize free aim framework. This function is called in Init_Global(). It includes registering hooks, console
+ * commands and the retrieval of settings from the INI-file and other initializations.
+ */
 func void freeAim_Init() {
     const int hookFreeAim = 0;
     if (!hookFreeAim) {
@@ -109,6 +113,7 @@ func void freeAim_Init() {
     MEM_Info(ConcatStrings(FREEAIM_VERSION, " initialized successfully."));
 };
 
+
 /*
  * This function assigns the focus instances (see Focus.d). This is necessary after a level change, because Gothic does
  * not do it. The focus instances are, however, critical for enabling/disabling free aiming.
@@ -125,6 +130,7 @@ func void freeAimReinitFocus() {
         };
     };
 };
+
 
 /*
  * Update internal settings when turning free aim on/off in the options menu. Settings include focus ranges/angles,
@@ -164,6 +170,7 @@ func void freeAimUpdateSettings(var int on) {
     };
     FREEAIM_ACTIVE = !FREEAIM_ACTIVE;
 };
+
 
 /*
  * Update internal settings for Gothic 2 controls.
@@ -211,6 +218,7 @@ func void freeAimUpdateSettingsG2Ctrl(var int on) {
     SET = !SET;
 };
 
+
 /*
  * Disable/re-enable auto turning of player model towards enemy while aiming. The auto turning prevents free aiming, as
  * it moves the player model to always face the focus. Of course, this should only by prevented during aiming such that
@@ -238,6 +246,7 @@ func void freeAimDisableAutoTurn(var int on) {
     };
     SET = !SET;
 };
+
 
 /*
  * This function is called nearly every frame by freeAimManualRotation() to check whether free aiming is enabled and
