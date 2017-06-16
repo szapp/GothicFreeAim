@@ -57,9 +57,9 @@ func void freeAim_Init() {
         MEM_Info("Initializing collision detection.");
         HookEngineF(onArrowDamageAddr, 7, freeAimDetectCriticalHit); // Critical hit detection
         HookEngineF(onArrowHitChanceAddr, 5, freeAimDoNpcHit); // Decide whether a projectile hits or not
-        HookEngineF(onArrowCollVobAddr, 5, freeAimOnArrowCollide); // Collision behavior on non-npc vob material
+        HookEngineF(onArrowCollVobAddr, 5, freeAimOnArrowCollide); // Collision behavior on non-NPC vob material
         HookEngineF(onArrowCollStatAddr, 5, freeAimOnArrowCollide); // Collision behavior on static world material
-        MemoryProtectionOverride(projectileDeflectOffNpcAddr, 2); // Collision behavior on npcs: jz to 0x6A0BA3
+        MemoryProtectionOverride(projectileDeflectOffNpcAddr, 2); // Collision behavior on NPCs: jz to 0x6A0BA3
         // Spells
         if (!FREEAIM_DISABLE_SPELLS) {
             MEM_Info("Initializing spell combat.");
@@ -101,38 +101,86 @@ func void freeAim_Init() {
         if (!MEM_GothOptExists("FREEAIM", "focusCollFreqMS")) { MEM_SetGothOpt("FREEAIM", "focusCollFreqMS", "10"); };
         freeAimTraceRayFreq = STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusCollFreqMS"));
         if (freeAimTraceRayFreq > 500) { freeAimTraceRayFreq = 500; }; // Recalculate trace ray intersection every x ms
+        // Reset setting constant. In case of loading a game the focus instances would not be updated
+        FREEAIM_ACTIVE = 0;
         r_DefaultInit(); // Start rng for aiming accuracy
         hookFreeAim = 1;
     };
     MEM_Info(ConcatStrings(FREEAIM_VERSION, " initialized successfully."));
 };
 
-/* Update internal settings when turning free aim on/off in the options */
-func void freeAimUpdateSettings(var int on) {
-    MEM_Info("Updating internal free aim settings");
-    MEM_InitGlobalInst(); // Important as this function will be called during level change, otherwise the game crashes
-    if (on) {
-        Focus_Ranged.npc_azi = 15.0; // Set stricter focus collection
-        MEM_WriteString(zString_CamModRanged, STR_Upper(FREEAIM_CAMERA)); // New camera mode, upper case is important
-        if (!FREEAIM_DISABLE_SPELLS) { MEM_WriteString(zString_CamModMagic, STR_Upper(FREEAIM_CAMERA)); };
-        FREEAIM_ACTIVE_PREVFRAME = 1;
-    } else {
-        Focus_Ranged.npc_azi = 45.0; // Reset ranged focus collection to standard
-        Focus_Magic.npc_azi = 45.0;
-        Focus_Magic.item_prio = -1;
-        FREEAIM_FOCUS_SPELL_FREE = -1;
-        MEM_WriteString(zString_CamModRanged, "CAMMODRANGED"); // Restore camera mode, upper case is important
-        MEM_WriteString(zString_CamModMagic, "CAMMODMAGIC"); // Also for spells
-        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to default collision behavior on npcs
-        MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59); // jz to 0x6A0BA3
-        FREEAIM_ACTIVE_PREVFRAME = -1;
+/*
+ * This function assigns the focus instances (see Focus.d). This is necessary after a level change, because Gothic does
+ * not do it. The focus instances are, however, critical for enabling/disabling free aiming.
+ * The function is called when setting the focus instances, in case of changing the free aiming settings or drawing a
+ * spell that supports free aiming after a spell that does not.
+ */
+func void freeAimReinitFocus() {
+    if (!_@(Focus_Ranged)) {
+        MEM_Info("Reinitializing focus modes");
+        const int call = 0;
+        if (CALL_Begin(call)) {
+            CALL__cdecl(oCNpcFocus__InitFocusModes);
+            call = CALL_End();
+        };
     };
 };
 
-/* Update internal settings for Gothic 2 controls */
+/*
+ * Update internal settings when turning free aim on/off in the options menu. Settings include focus ranges/angles,
+ * camera angles along with resetting some other settings. The constant FREEAIM_ACTIVE will be updated accordingly.
+ * This function is called from freeAimIsActive() nearly every frame.
+ */
+func void freeAimUpdateSettings(var int on) {
+    if ((FREEAIM_ACTIVE > 0) == on) {
+        return; // No change necessary
+    };
+
+    MEM_Info("Updating internal free aim settings");
+    freeAimReinitFocus();
+
+    if (on) {
+        // Set stricter focus collection
+        Focus_Ranged.npc_azi = 15.0;
+
+        // New camera modes, upper case is important
+        MEM_WriteString(zString_CamModRanged, STR_Upper(FREEAIM_CAMERA));
+        if (!FREEAIM_DISABLE_SPELLS) {
+            MEM_WriteString(zString_CamModMagic, STR_Upper(FREEAIM_CAMERA));
+        };
+    } else {
+        // Reset ranged focus collection to standard
+        Focus_Ranged.npc_azi = 45.0;
+        Focus_Magic.npc_azi = 45.0;
+        Focus_Magic.item_prio = -1;
+
+        // Restore camera modes, upper case is important
+        MEM_WriteString(zString_CamModRanged, "CAMMODRANGED");
+        MEM_WriteString(zString_CamModMagic, "CAMMODMAGIC");
+
+        // Reset to default collision behavior on NPCs
+        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // jz to 0x6A0BA3
+        MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59);
+    };
+    FREEAIM_ACTIVE = !FREEAIM_ACTIVE;
+};
+
+/*
+ * Update internal settings for Gothic 2 controls.
+ * The support for the Gothic 2 controls is accomplished by emulating the Gothic 1 controls with different sets of
+ * aiming and shooting keys. To do this, the condition to differentiate between the control schemes is skipped and the
+ * keys are overwritten (all on the level of opcode).
+ * This function is called from freeAimIsActive() nearly every frame.
+ */
 func void freeAimUpdateSettingsG2Ctrl(var int on) {
+    const int SET = 0; // Gothic 1 controls are considered default here
+    if (SET == on) {
+        return; // No change necessary
+    };
+
     MEM_Info("Updating internal free aim settings for Gothic 2 controls");
-    if (on) { // Gothic 2 controls and free aiming enabled: Mimic the Gothic 1 controls but change the keys
+    if (on) {
+        // Gothic 2 controls enabled: Mimic the Gothic 1 controls but change the keys
         MEM_WriteByte(oCAIHuman__BowMode_695F2B, ASMINT_OP_nop); // Skip jump to Gothic 2 controls
         MEM_WriteByte(oCAIHuman__BowMode_695F2B+1, ASMINT_OP_nop);
         MEM_WriteByte(oCAIHuman__BowMode_695F2B+2, ASMINT_OP_nop);
@@ -145,8 +193,8 @@ func void freeAimUpdateSettingsG2Ctrl(var int on) {
         MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+2, ASMINT_OP_nop);
         MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+3, /*6A*/ 106); // push 0
         MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+4, 0); // Will be set to 0 or 1 depending on key press
-        FREEAIM_G2CTRL_PREVFRAME = 1;
-    } else { // Gothic 2 controls or free aiming disabled: Revert to original Gothic 2 controls
+    } else {
+        // Gothic 2 controls disabled: Revert to original Gothic 2 controls
         MEM_WriteByte(oCAIHuman__BowMode_695F2B, /*0F*/ 15); // Revert G2 controls to default: jz to 0x696391
         MEM_WriteByte(oCAIHuman__BowMode_695F2B+1, /*84*/ 132);
         MEM_WriteByte(oCAIHuman__BowMode_695F2B+2, /*60*/ 96);
@@ -159,85 +207,146 @@ func void freeAimUpdateSettingsG2Ctrl(var int on) {
         MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+2, /*24*/ 36);
         MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+3, /*0C*/ 12); // Revert action key to default: push eax
         MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+4, /*50*/ 80);
-        FREEAIM_G2CTRL_PREVFRAME = -1;
     };
+    SET = !SET;
 };
 
-/* Disable auto turning of player model towards enemy while aiming */
+/*
+ * Disable/re-enable auto turning of player model towards enemy while aiming. The auto turning prevents free aiming, as
+ * it moves the player model to always face the focus. Of course, this should only by prevented during aiming such that
+ * the melee combat is not affected. Consequently, it needs to be disabled and enabled continuously.
+ * This function is called from freeAimIsActive() nearly every frame.
+ */
 func void freeAimDisableAutoTurn(var int on) {
+    const int SET = 0;
+    if (on == SET) {
+        return; // No change necessary
+    };
+
+    // MEM_Info("Updating internal free aim settings for auto turning"); // Happens too often
     if (on) {
         // Jump from 0x737D75 to 0x737E32: 7568946-7568757 = 189-5 = 184 // Length of instruction: 5
         MEM_WriteByte(oCNpc__TurnToEnemy_737D75, /*E9*/ 233); // jmp
         MEM_WriteByte(oCNpc__TurnToEnemy_737D75+1, /*B8*/ 184); // B8 instead of B7 because jmp is of length 5 not 6
         MEM_WriteByte(oCNpc__TurnToEnemy_737D75+2, /*00*/ 0);
         MEM_WriteByte(oCNpc__TurnToEnemy_737D75+5, ASMINT_OP_nop);
-        FREEAIM_AUTOTURN_PREVFRAME = 1;
     } else {
         MEM_WriteByte(oCNpc__TurnToEnemy_737D75, /*0F*/ 15); // Revert to default: jnz loc_00737E32
         MEM_WriteByte(oCNpc__TurnToEnemy_737D75+1, /*85*/ 133);
         MEM_WriteByte(oCNpc__TurnToEnemy_737D75+2, /*B7*/ 183);
         MEM_WriteByte(oCNpc__TurnToEnemy_737D75+5, /*00*/ 0);
-        FREEAIM_AUTOTURN_PREVFRAME = -1;
     };
+    SET = !SET;
 };
 
-/* Check whether free aiming should be activated */
-func int freeAimIsActive() {
-    if (final()) {
-        //if (FREEAIM_AUTOTURN_PREVFRAME != autoTurn) { freeAimDisableAutoTurn((autoTurn+1)/2); }; // Enable/disable
-        MEM_Info(IntToString(autoTurn));
-    };
-    //if (FREEAIM_AUTOTURN_PREVFRAME != 1) { freeAimDisableAutoTurn(1); }; // Enable/disable
-    var int autoTurn; autoTurn = -1;
-    if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled"))) // Free aiming is disabled in the menu
-    || (!MEM_ReadInt(mouseEnabled)) { // Mouse controls are disabled
-        if (FREEAIM_ACTIVE_PREVFRAME != -1) { freeAimUpdateSettings(0); }; // Update internal settings (turn off)
-        if (FREEAIM_G2CTRL_PREVFRAME != -1) { freeAimUpdateSettingsG2Ctrl(0); }; // Disable extended Gothic 2 Controls
-        return 0;
-    };
-    if (FREEAIM_ACTIVE_PREVFRAME != 1) { freeAimUpdateSettings(1); }; // Update internal settings (turn on)
-    // Everything below is only reached if free aiming is enabled (but not necessarily active)
-    if (MEM_Game.pause_screen) { return 0; }; // Only when playing
-    if (!InfoManager_HasFinished()) { return 0; }; // Not in dialogs
-    if (!Npc_IsInFightMode(hero, FMODE_FAR)) && (!Npc_IsInFightMode(hero, FMODE_MAGIC)) { return 0; };
-    // Everything below is only reached if free aiming is enabled and active (player is in respective fight mode)
-    var int keyStateAiming1; var int keyStateAiming2; // Depending on control scheme either action or blocking key
-    if (MEM_ReadInt(oCGame__s_bUseOldControls)) {
-        keyStateAiming1 = MEM_KeyState(MEM_GetKey("keyAction")); // A bit much, but the keys are also needed below
-        keyStateAiming2 = MEM_KeyState(MEM_GetSecondaryKey("keyAction"));
-        if (FREEAIM_G2CTRL_PREVFRAME != -1) { freeAimUpdateSettingsG2Ctrl(0); }; // Disable extended Gothic 2 controls
+/*
+ * This function is called nearly every frame by freeAimManualRotation() to check whether free aiming is enabled and
+ * active (player in either magic or ranged combat). It sets the constant FREEAIM_ACTIVE accordingly:
+ *  0 if disabled in menu or mouse disabled
+ *  1 if enabled but not active (not currently aiming)
+ *  5 if enabled and currently aiming in ranged fight mode (FMODE_FAR)
+ *  7 if enabled and currently aiming in magic fight mode with FA-eligible spell (FMODE_MAGIC)
+ * Different checks are performed in performance-favoring order (exiting the function as early as possible) to set the
+ * constant, which is subsequently used in a lot of functions to determine the state of free aiming.
+ */
+func void freeAimIsActive() {
+
+    // Check if g2freeAim is enabled and mouse controls are enabled
+    if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled"))) || (!MEM_ReadInt(mouseEnabled)) {
+        // Disable if previously enabled
+        freeAimUpdateSettings(0);
+        freeAimUpdateSettingsG2Ctrl(0);
+        freeAimDisableAutoTurn(0);
+        return;
     } else {
-        keyStateAiming1 = MEM_KeyState(MEM_GetKey("keyParade"));
-        keyStateAiming2 = MEM_KeyState(MEM_GetSecondaryKey("keyParade"));
-        if (FREEAIM_G2CTRL_PREVFRAME != 1) { freeAimUpdateSettingsG2Ctrl(1); }; // Enable extended Gothic 2 controls
+        // Enable if previously disabled
+        freeAimUpdateSettings(1);
     };
+
+    // Check if currently in a menu or in a dialog
+    if (MEM_Game.pause_screen) || (!InfoManager_HasFinished()) {
+        freeAimDisableAutoTurn(0);
+        FREEAIM_ACTIVE = 1;
+        return;
+    };
+
+    // Before anything else, check if player is in magic or ranged fight mode
+    var oCNpc her; her = Hlp_GetNpc(hero);
+    if (her.fmode < FMODE_FAR) {
+        freeAimDisableAutoTurn(0);
+        FREEAIM_ACTIVE = 1;
+        return;
+    };
+
+    // Set aiming key depending on control scheme to either action or blocking key
+    var String keyAiming;
+    if (MEM_ReadInt(oCGame__s_bUseOldControls)) { // Gothic 1 controls
+        keyAiming = "keyAction";
+        freeAimUpdateSettingsG2Ctrl(0);
+    } else { // Gothic 2 controls
+        keyAiming = "keyParade";
+        freeAimUpdateSettingsG2Ctrl(1);
+    };
+    var int keyStateAiming1; keyStateAiming1 = MEM_KeyState(MEM_GetKey(keyAiming));
+    var int keyStateAiming2; keyStateAiming2 = MEM_KeyState(MEM_GetSecondaryKey(keyAiming));
+
+    // Check if aiming button is pressed/held
     var int keyPressed; keyPressed = (keyStateAiming1 == KEY_PRESSED) || (keyStateAiming1 == KEY_HOLD)
-        || (keyStateAiming2 == KEY_PRESSED) || (keyStateAiming2 == KEY_HOLD);  // Pressing or holding the aiming key
-    if (Npc_IsInFightMode(hero, FMODE_MAGIC)) {
-        if (FREEAIM_DISABLE_SPELLS) { return 0; }; // If free aiming for spells is disabled
-        if (FREEAIM_G2CTRL_PREVFRAME == -1) && (!keyPressed) { return 0; }; // G1 controls require action key
+                                  || (keyStateAiming2 == KEY_PRESSED) || (keyStateAiming2 == KEY_HOLD);
+
+    // Check fight mode
+    if (her.fmode == FMODE_MAGIC) {
+        // Check if free aiming for spells is disabled
+        if (FREEAIM_DISABLE_SPELLS) {
+            freeAimDisableAutoTurn(0);
+            FREEAIM_ACTIVE = 1;
+            return;
+        };
+
+        // Gothic 1 controls require action key to be pressed/held
+        if (MEM_ReadInt(oCGame__s_bUseOldControls)) && (!keyPressed) {
+            freeAimDisableAutoTurn(0);
+            FREEAIM_ACTIVE = 1;
+            return;
+        };
+
+        // Check if active spell supports free aiming
+        freeAimReinitFocus();
         var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
-        if (!freeAimSpellEligible(spell)) { // Check if the active spell supports free aiming
-            if (FREEAIM_FOCUS_SPELL_FREE != -1) {
-                Focus_Magic.npc_azi = 45.0; // Reset ranged focus collection
-                Focus_Magic.item_prio = -1;
-                FREEAIM_FOCUS_SPELL_FREE = -1;
-            };
-            return 0;
-        };
-        if (FREEAIM_FOCUS_SPELL_FREE != 1) {
-            Focus_Magic.npc_azi = 15.0; // Set stricter focus collection
+        if (!freeAimSpellEligible(spell)) {
+            // Reset ranged focus collection
+            Focus_Magic.npc_azi = 45.0;
+            Focus_Magic.item_prio = -1;
+            freeAimDisableAutoTurn(0);
+            FREEAIM_ACTIVE = 1;
+            return;
+        } else {
+            // Spell uses free aiming: Set stricter focus collection
+            Focus_Magic.npc_azi = 15.0;
             Focus_Magic.item_prio = 0;
-            FREEAIM_FOCUS_SPELL_FREE = 1;
+            freeAimDisableAutoTurn(1);
+            FREEAIM_ACTIVE = her.fmode;
         };
-        autoTurn = 1;
-        return FMODE_MAGIC;
+
+    } else if (her.fmode == FMODE_FAR) {
+        // Set internally whether the aiming key is held or not (only if using Gothic 2 controls)
+        if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
+            MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+4, keyPressed);
+        };
+
+        // Check if aiming key is not pressed/held
+        if (!keyPressed) {
+            freeAimDisableAutoTurn(0);
+            FREEAIM_ACTIVE = 1;
+            return;
+        } else {
+            freeAimDisableAutoTurn(1);
+            FREEAIM_ACTIVE = her.fmode;
+        };
+
+        // Get onset for drawing the bow - right when pressing down the aiming key
+        if (keyStateAiming1 == KEY_PRESSED) || (keyStateAiming2 == KEY_PRESSED) {
+            freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_READY;
+        };
     };
-    if (FREEAIM_G2CTRL_PREVFRAME == 1) { MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+4, keyPressed); }; // Aiming
-    if (!keyPressed) { return 0; }; // If aiming key is not pressed or held
-    // Get onset for drawing the bow - right when pressing down the aiming key
-    if (keyStateAiming1 == KEY_PRESSED) || (keyStateAiming2 == KEY_PRESSED) {
-        freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_READY; };
-    autoTurn = 1;
-    return FMODE_FAR;
 };

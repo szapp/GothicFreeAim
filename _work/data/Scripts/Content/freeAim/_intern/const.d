@@ -21,7 +21,7 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-/* Free aim settings, do not modify! Change the settings in freeAim\config\settings.d */
+/* Free aim internal constants, do not modify! Change the settings in freeAim\config\settings.d */
 const string FREEAIM_VERSION            = "G2 Free Aim v0.1.2"; // Do not change under any circumstances
 const int    FREEAIM_DRAWTIME_READY     = 650;                  // Time offset for readying the bow. Fixed by animation
 const int    FREEAIM_DRAWTIME_RELOAD    = 1110;                 // Time offset for reloading the bow. Fixed by animation
@@ -30,10 +30,7 @@ const int    FREEAIM_RETICLE_MAX_SIZE   = 64;                   // Biggest retic
 const string FREEAIM_TRAIL_FX           = "freeAim_TRAIL";      // Trailstrip FX. Should not be changed
 const string FREEAIM_BREAK_FX           = "freeAim_DESTROY";    // FX of projectile breaking on impact with world
 const int    FREEAIM_MAX_DIST           = 5000;                 // 50m. Shooting/reticle adjustments. Do not change
-const int    FREEAIM_ACTIVE_PREVFRAME   = 0;                    // Internal. Do not change
-const int    FREEAIM_G2CTRL_PREVFRAME   = 0;                    // Internal. Do not change
-const int    FREEAIM_AUTOTURN_PREVFRAME = 0;                    // Internal. Do not change
-const int    FREEAIM_FOCUS_SPELL_FREE   = 0;                    // Internal. Do not change
+const int    FREEAIM_ACTIVE             = 0;                    // Internal. Do not change
 const int    FREEAIM_FOCUS_COLLECTION   = 1;                    // Internal. Do not change (change in ini-file)
 const int    FREEAIM_ARROWAI_REDIRECT   = 0;                    // Used to redirect call-by-reference var. Do not change
 const int    FLOAT1C                    = 1120403456;           // 100 as float
@@ -67,6 +64,7 @@ const int oCNpc__GetAngles                        = 6820528; //0x6812B0
 const int oCNpc__SetFocusVob                      = 7547744; //0x732B60
 const int oCNpc__SetEnemy                         = 7556032; //0x734BC0
 const int oCNpc__GetModel                         = 7571232; //0x738720
+const int oCNpcFocus__InitFocusModes              = 7072384; //0x6BEA80
 const int oCItem___CreateNewInstance              = 7423040; //0x714440
 const int oCItem__InitByScript                    = 7412688; //0x711BD0
 const int oCItem__InsertEffect                    = 7416896; //0x712C40

@@ -23,7 +23,8 @@
 
 /* Mouse handling for manually turning the player model by mouse input */
 func void freeAimManualRotation() {
-    if (!freeAimIsActive()) { return; };
+    freeAimIsActive();
+    if (FREEAIM_ACTIVE < FMODE_FAR) { return; };
     var int deltaX; deltaX = mulf(mkf(MEM_ReadInt(mouseDeltaX)), MEM_ReadInt(mouseSensX)); // Get mouse change in x
     if (deltaX == FLOATNULL) { return; }; // Only rotate if there was movement along x position
     deltaX = mulf(deltaX, castToIntf(FREEAIM_ROTATION_SCALE)); // Turn rate
@@ -40,5 +41,5 @@ func void freeAimManualRotation() {
 /* Disable damage animation. Taken from http://forum.worldofplayers.de/forum/threads/1474431?p=25057480#post25057480 */
 func void freeAimDmgAnimation() {
     var C_Npc victim; victim = _^(ECX);
-    if (Npc_IsPlayer(victim)) && (freeAimIsActive()) { EAX = 0; }; // Disable damage animation while aiming
+    if (Npc_IsPlayer(victim)) && (FREEAIM_ACTIVE > 1) { EAX = 0; }; // Disable damage animation while aiming
 };

@@ -26,7 +26,7 @@ func void freeAimSetupSpell() {
     var int casterPtr; casterPtr = MEM_ReadInt(EBP+52); //0x0034 oCSpell.spellCasterNpc
     if (!casterPtr) { return; }; // No caster
     var C_Npc caster; caster = _^(casterPtr);
-    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(caster)) { return; }; // Only if player and if fa WAS active
+    if (!FREEAIM_ACTIVE) || (!Npc_IsPlayer(caster)) { return; }; // Only if player and if FA is enabled
     var C_Spell spell; spell = _^(EBP+128); //0x0080 oCSpell.C_Spell
     if (!freeAimSpellEligible(spell)) { return; }; // Only with eligible spells
     var int focusType; // No focus display for TARGET_COLLECT_NONE (still focus collection though)
@@ -38,7 +38,7 @@ func void freeAimSetupSpell() {
 
 /* Manage reticle style and focus collection for magic combat */
 func void freeAimSpellReticle() {
-    if (!freeAimIsActive()) { freeAimRemoveReticle(); return; }; // Only with eligible spells
+    if (FREEAIM_ACTIVE != FMODE_MAGIC) { freeAimRemoveReticle(); return; }; // Only with eligible spells
     var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
     var int distance; var int target;
     if (FREEAIM_FOCUS_COLLECTION) && (spell.targetCollectRange > 0) { // Set focus npc if there is a valid one

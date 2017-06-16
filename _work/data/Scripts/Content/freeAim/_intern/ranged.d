@@ -23,7 +23,7 @@
 
 /* Update aiming animation. Hook before oCAniCtrl_Human::InterpolateCombineAni */
 func void freeAimAnimation() {
-    if (freeAimIsActive() != FMODE_FAR) { return; };
+    if (FREEAIM_ACTIVE != FMODE_FAR) { return; };
     var int herPtr; herPtr = _@(hero);
     var int distance; var int target;
     if (FREEAIM_FOCUS_COLLECTION) { // Set focus npc if there is a valid one under the reticle
@@ -141,7 +141,7 @@ func int freeAimScaleInitialDamage_(var int basePointDamage) {
 func void freeAimSetupProjectile() {
     var int projectile; projectile = MEM_ReadInt(ESP+4);  // First argument is the projectile
     var C_Npc shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
-    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { return; }; // Only if player and if fa WAS active
+    if (!FREEAIM_ACTIVE) || (!Npc_IsPlayer(shooter)) { return; }; // Only if player and if FA is enabled
     // 1st: Set base damage of projectile // oCItem.damage[DAM_INDEX_POINT];
     var int baseDamage; baseDamage = MEM_ReadStatArr(projectile+364, DAM_INDEX_POINT);
     var int newBaseDamage; newBaseDamage = freeAimScaleInitialDamage_(baseDamage);

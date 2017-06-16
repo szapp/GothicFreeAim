@@ -53,7 +53,7 @@ func void freeAimDetectCriticalHit() {
     var int target; target = MEM_ReadInt(ESP+28); // esp+1ACh+190h // oCNpc*
     var int projectile; projectile = MEM_ReadInt(EBP+88); // ebp+58h // oCItem*
     var C_Npc shooter; shooter = _^(MEM_ReadInt(EBP+92)); // ebp+5Ch // oCNpc*
-    if (FREEAIM_ACTIVE_PREVFRAME != 1) || (!Npc_IsPlayer(shooter)) { return; }; // Only if player and if fa WAS active
+    if (!FREEAIM_ACTIVE) || (!Npc_IsPlayer(shooter)) { return; }; // Only if player and if FA is enabled
     var C_Npc targetNpc; targetNpc = _^(target);
     // Get model from target npc
     const int call = 0;
