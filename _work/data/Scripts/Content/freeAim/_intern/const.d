@@ -21,6 +21,7 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
+
 /* Free aim internal constants, do not modify! Change the settings in freeAim\config\settings.d */
 const string FREEAIM_VERSION            = "G2 Free Aim v0.1.2"; // Do not change under any circumstances
 const int    FREEAIM_DRAWTIME_READY     = 650;                  // Time offset for readying the bow. Fixed by animation
@@ -32,7 +33,6 @@ const string FREEAIM_BREAK_FX           = "freeAim_DESTROY";    // FX of project
 const int    FREEAIM_MAX_DIST           = 5000;                 // 50m. Shooting/reticle adjustments. Do not change
 const int    FREEAIM_ACTIVE             = 0;                    // Internal. Do not change
 const int    FREEAIM_FOCUS_COLLECTION   = 1;                    // Internal. Do not change (change in ini-file)
-const int    FREEAIM_ARROWAI_REDIRECT   = 0;                    // Used to redirect call-by-reference var. Do not change
 const int    FLOAT1C                    = 1120403456;           // 100 as float
 const int    FLOAT3C                    = 1133903872;           // 300 as float
 const int    FLOAT1K                    = 1148846080;           // 1000 as float
@@ -44,6 +44,7 @@ var   int    freeAimDebugTRTrj[6];                              // Trace ray tra
 var   int    freeAimDebugTRPrevVob;                             // Trace ray detected vob bbox pointer for debugging
 var   int    freeAimReticleHndl;                                // Holds the handle of the reticle
 var   int    freeAimBowDrawOnset;                               // Time onset of drawing the bow
+
 
 /* All addresses used (gothic2). In case of a gothic1 port: There are a lot of hardcoded address offsets in the code! */
 const int zCVob__SetPositionWorld                 = 6404976; //0x61BB70
@@ -105,15 +106,24 @@ const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook 
 const int oCSpell__Setup_484BA9                   = 4737961; //0x484BA9 // Hook length 6
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook length 5
 
+
 /* Offsets */
 const int zCVob_bbox3D_offset                     = 124; //0x007C
 
-const int oCAIArrowBase_collision_offset          = 52; //0x0034
-const int oCAIArrowBase_lifeTime_offset           = 56; //0x0038
-const int oCAIArrowBase_hostVob_offset            = 60; //0x003C
-const int oCAIArrow_origin_offset                 = 92; //0x005C
+const int oCSpell_spellCasterNpc_offset           = 52;  //0x0034
+const int oCSpell_C_Spell_offset                  = 128; //0x0080
 
-const int zCRigidBody_mass_offset                 = 0; //0x0000
+const int oCAIArrowBase_collision_offset          = 52;  //0x0034
+const int oCAIArrowBase_lifeTime_offset           = 56;  //0x0038
+const int oCAIArrowBase_hostVob_offset            = 60;  //0x003C
+const int oCAIArrow_origin_offset                 = 92;  //0x005C
+
+const int zCRigidBody_mass_offset                 = 0;   //0x0000
 const int zCRigidBody_gravity_offset              = 236; //0x00EC
 const int zCRigidBody_velocity_offset             = 188; //0x00BC
 const int zCRigidBody_bitfield_offset             = 256; //0x0100
+
+const int zCModelNodeInst_visual_offset           = 8;   //0x0008
+
+const int sizeof_zVEC3                            = 12;  //0x000C
+const int sizeof_zTBBox3D                         = 24;  //0x0018

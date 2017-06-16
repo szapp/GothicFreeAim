@@ -21,46 +21,82 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-/* Update aiming animation. Hook before oCAniCtrl_Human::InterpolateCombineAni */
+
+/*
+ * Update aiming animation. This function hooks oCAIHuman::BowMode just before oCAniCtrl_Human::InterpolateCombineAni to
+ * adjust the direction the ranged weapon is pointed in. Also the focus collection is overwritten.
+ */
 func void freeAimAnimation() {
-    if (FREEAIM_ACTIVE != FMODE_FAR) { return; };
+    // Only when aiming with a ranged weapon
+    if (FREEAIM_ACTIVE != FMODE_FAR) {
+        return;
+    };
+
+    // Retrieve target NPC and the distance to it from the camera(!)
     var int herPtr; herPtr = _@(hero);
     var int distance; var int target;
-    if (FREEAIM_FOCUS_COLLECTION) { // Set focus npc if there is a valid one under the reticle
-        freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, _@(target), 0, _@(distance), 0); // Shoot ray and retrieve info
+
+    if (FREEAIM_FOCUS_COLLECTION) {
+        // Shoot aim trace ray, to retrieve the distance to an intersection and a possible target
+        freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, _@(target), 0, _@(distance), 0);
         distance = roundf(divf(mulf(distance, FLOAT1C), mkf(FREEAIM_MAX_DIST))); // Distance scaled between [0, 100]
-    } else { // More performance friendly. Here, there will be NO focus, otherwise it gets stuck on npcs.
-        const int call4 = 0; var int null; // Set the focus vob properly: reference counter
-        if (CALL_Begin(call4)) {
-            CALL_PtrParam(_@(null)); // This will remove the focus
+
+    } else {
+        // FREEAIM_FOCUS_COLLECTION can be set to false (see INI-file) for weaker computers. However, it is not
+        // recommended, as there will be NO focus at all (otherwise it would get stuck on NPCs)
+
+        // Remove focus completely
+        var oCNpc her; her = Hlp_GetNpc(hero);
+        const int call = 0; const int zero = 0; // Set the focus vob properly: reference counter
+        if (CALL_Begin(call)) {
+            CALL_PtrParam(_@(zero)); // This will remove the focus
             CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
-            call4 = CALL_End();
+            call = CALL_End();
         };
-        const int call5 = 0; // Remove the enemy properly: reference counter
-        if (CALL_Begin(call5)) {
-            CALL_PtrParam(_@(null)); // Always remove oCNpc.enemy. With no focus, there is also no target npc
-            CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
-            call5 = CALL_End();
+
+        // Always remove oCNpc.enemy. With no focus, there is also no target NPC. Caution: This invalidates the use of
+        // Npc_GetTarget()
+        if (her.enemy) {
+            const int call2 = 0; // Remove the enemy properly: reference counter
+            if (CALL_Begin(call2)) {
+                CALL_PtrParam(_@(zero));
+                CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
+                call2 = CALL_End();
+            };
         };
         distance = 25; // No distance check ever. Set it to medium distance
         target = 0; // No focus target ever
     };
-    var int autoAlloc[7]; var Reticle reticle; reticle = _^(_@(autoAlloc)); // Gothic takes care of freeing this ptr
-    MEM_CopyWords(_@s(""), _@(autoAlloc), 5); // reticle.texture (reset string) // Do not show reticle by default
+
+    // Create reticle
+    var int reticlePtr; reticlePtr = MEM_Alloc(sizeof_Reticle);
+    var Reticle reticle; reticle = _^(reticlePtr);
+    reticle.texture = ""; // Do not show reticle by default
     reticle.color = -1; // Do not set color by default
     reticle.size = 75; // Medium size by default
-    freeAimGetReticleRanged_(target, distance, _@(reticle)); // Retrieve reticle specs
-    freeAimInsertReticle(_@(reticle)); // Draw/update reticle
-    var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60); //0=right, 2=out, 3=pos
-    var int pos[3]; // The position is calculated from the camera, not the player model
-    distance = mkf(FREEAIM_MAX_DIST); // Take the max distance, otherwise it looks strange on close range targets
-    pos[0] = addf(camPos.v0[3], mulf(camPos.v0[2], distance));
+
+    // Retrieve reticle specs and draw/update it on screen
+    freeAimGetReticleRanged_(target, distance, reticlePtr); // Retrieve reticle specs
+    freeAimInsertReticle(reticlePtr);
+    MEM_Free(reticlePtr);
+
+    // Pointing distance: Take the max distance, otherwise it looks strange on close range targets
+    distance = mkf(FREEAIM_MAX_DIST);
+
+    // Get camera vob (not camera itself, because it does not offer a reliable position)
+    var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
+    var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0])); // Columns: 0=right vector, 2=out vector, 3=position
+
+    // Calculate position form distance and camera position (not from the player model!)
+    var int pos[3];
+    pos[0] = addf(camPos.v0[3], mulf(camPos.v0[2], distance)); // Distance along out vector from camera position
     pos[1] = addf(camPos.v1[3], mulf(camPos.v1[2], distance));
     pos[2] = addf(camPos.v2[3], mulf(camPos.v2[2], distance));
+
     // Get aiming angles
     var int angleX; var int angXptr; angXptr = _@(angleX);
     var int angleY; var int angYptr; angYptr = _@(angleY);
-    var int posPtr; posPtr = _@(pos); // So many pointers because it is a recyclable call
+    var int posPtr; posPtr = _@(pos);
     const int call3 = 0;
     if (CALL_Begin(call3)) {
         CALL_PtrParam(_@(angYptr));
@@ -69,18 +105,31 @@ func void freeAimAnimation() {
         CALL__thiscall(_@(herPtr), oCNpc__GetAngles);
         call3 = CALL_End();
     };
-    if (lf(absf(angleY), 1048576000)) { // Prevent multiplication with too small numbers. Would result in aim twitching
-        if (lf(angleY, FLOATNULL)) { angleY =  -1098907648; } // -0.25
-        else { angleY = 1048576000; }; // 0.25
+
+    // Prevent multiplication with too small numbers. Would result in twitching while aiming
+    if (lf(absf(angleY), 1048576000)) { // 0.25
+        if (lf(angleY, FLOATNULL)) {
+            angleY =  -1098907648; // -0.25
+        } else {
+            angleY = 1048576000; // 0.25
+        };
     };
+
     // This following paragraph is inspired by oCAIHuman::BowMode (0x695F00 in g2)
-    angleY = negf(subf(mulf(angleY, 1001786197), FLOATHALF)); // Scale and flip Y [-90° +90°] to [+1 0]
-    if (lef(angleY, FLOATNULL)) { angleY = FLOATNULL; } // Maximum aim height (straight up)
-    else if (gef(angleY, 1065353216)) { angleY = 1065353216; }; // Minimum aim height (down)
+    angleY = negf(subf(mulf(angleY, /* 0.0055 */ 1001786197), FLOATHALF)); // Scale and flip Y [-90° +90°] to [+1 0]
+    if (lef(angleY, FLOATNULL)) {
+        // Maximum aim height (straight up)
+        angleY = FLOATNULL;
+    } else if (gef(angleY, FLOATONE)) {
+        // Minimum aim height (down)
+        angleY = FLOATONE;
+    };
+
     // New aiming coordinates. Overwrite the arguments one and two passed to oCAniCtrl_Human::InterpolateCombineAni
     MEM_WriteInt(ESP+20, FLOATHALF); // First argument: Always aim at center (azimuth) (esp+44h-30h)
     ECX = angleY; // Second argument: New elevation
 };
+
 
 /* Internal helper function for freeAimGetDrawForce() */
 func int freeAimGetDrawForce_() {
@@ -208,6 +257,7 @@ func void freeAimSetupProjectile() {
     MEM_Info(SB_ToString()); SB_Destroy();
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
 };
+
 
 /*
  * This is a frame function timed by draw force and is responsible for applying gravity to a projectile after a certain

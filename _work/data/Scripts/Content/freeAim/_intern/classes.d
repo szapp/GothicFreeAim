@@ -21,7 +21,10 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
+
 /* Helper class: Critical hit definitions */
+const int sizeof_Weakspot = 32;
+
 class Weakspot {
     var string node;
     var int dimX;
@@ -29,7 +32,10 @@ class Weakspot {
     var int bDmg;
 };
 
+
 /* Helper class: Reticle definitions */
+const int sizeof_Reticle = 28;
+
 class Reticle {
     var string texture;
     var int size;
