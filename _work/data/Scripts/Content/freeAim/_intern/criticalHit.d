@@ -24,6 +24,7 @@
 
 /*
  * Internal helper function for freeAimCriticalHitEvent(). It is called from freeAimDetectCriticalHit().
+ * This function supplies the readied weapon.
  */
 func void freeAimCriticalHitEvent_(var C_Npc target) {
     // Get readied/equipped ranged weapon
@@ -43,6 +44,7 @@ func void freeAimCriticalHitEvent_(var C_Npc target) {
 
 /*
  * Internal helper function for freeAimCriticalHitDef(). It is called from freeAimDetectCriticalHit().
+ * This function is necessary for error handling and to supply the readied weapon.
  */
 func void freeAimCriticalHitDef_(var C_Npc target, var int damage, var int returnPtr) {
     // Get readied/equipped ranged weapon

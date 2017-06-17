@@ -24,7 +24,7 @@
 
 /*
  * Set the spell FX shooting direction. This function hooks oCSpell::Setup to overwrite the target vob with the aim vob
- * that is placed in from of the camera at the nearest intersection with the world or an object.
+ * that is placed in front of the camera at the nearest intersection with the world or an object.
  */
 func void freeAimSetupSpell() {
     var int spellOC; spellOC = EBP;

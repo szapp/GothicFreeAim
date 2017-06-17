@@ -128,3 +128,9 @@ const int zCModelNodeInst_visual_offset           = 8;   //0x0008
 
 const int sizeof_zVEC3                            = 12;  //0x000C
 const int sizeof_zTBBox3D                         = 24;  //0x0018
+
+// Trafo matrix as zMAT4 is divided column wise
+const int zMAT4_rightVec                          = 0; // Right vector
+const int zMAT4_upVec                             = 1; // Up vector
+const int zMAT4_outVec                            = 2; // Out vector (facing direction)
+const int zMAT4_position                          = 3; // Position vector

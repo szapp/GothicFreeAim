@@ -112,26 +112,27 @@ func void freeAimAnimation() {
 
     // Get camera vob (not camera itself, because it does not offer a reliable position)
     var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
-    var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0])); // Columns: 0=right vector, 2=out vector, 3=position
+    var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
 
     // Calculate position form distance and camera position (not from the player model!)
     var int pos[3];
-    pos[0] = addf(camPos.v0[3], mulf(camPos.v0[2], distance)); // Distance along out vector from camera position
-    pos[1] = addf(camPos.v1[3], mulf(camPos.v1[2], distance));
-    pos[2] = addf(camPos.v2[3], mulf(camPos.v2[2], distance));
+    // Distance along out vector (facing direction) from camera position
+    pos[0] = addf(camPos.v0[zMAT4_position], mulf(camPos.v0[zMAT4_outVec], distance));
+    pos[1] = addf(camPos.v1[zMAT4_position], mulf(camPos.v1[zMAT4_outVec], distance));
+    pos[2] = addf(camPos.v2[zMAT4_position], mulf(camPos.v2[zMAT4_outVec], distance));
 
     // Get aiming angles
     var int herPtr; herPtr = _@(hero);
     var int angleX; var int angXptr; angXptr = _@(angleX);
     var int angleY; var int angYptr; angYptr = _@(angleY);
     var int posPtr; posPtr = _@(pos);
-    const int call3 = 0;
-    if (CALL_Begin(call3)) {
+    const int call = 0;
+    if (CALL_Begin(call)) {
         CALL_PtrParam(_@(angYptr));
         CALL_PtrParam(_@(angXptr)); // X angle not needed
         CALL_PtrParam(_@(posPtr));
         CALL__thiscall(_@(herPtr), oCNpc__GetAngles);
-        call3 = CALL_End();
+        call = CALL_End();
     };
 
     // Prevent multiplication with too small numbers. Would result in twitching while aiming
@@ -159,121 +160,254 @@ func void freeAimAnimation() {
 };
 
 
-/* Internal helper function for freeAimGetDrawForce() */
+/*
+ * Internal helper function to retrieve the readied weapon and the respective talent value. This function is called by
+ * several wrapper/helper functions.
+ * Returns 1 on success, 0 otherwise.
+ */
+func int freeAimGetWeaponTalent(var int weaponPtr, var int talentPtr) {
+    // Get readied/equipped ranged weapon
+    var C_Item weapon;
+    if (Npc_IsInFightMode(hero, FMODE_FAR)) {
+        weapon = Npc_GetReadiedWeapon(hero);
+    } else if (Npc_HasEquippedRangedWeapon(hero)) {
+        weapon = Npc_GetEquippedRangedWeapon(hero);
+    } else {
+        MEM_Error("freeAimGetWeaponTalent: No valid weapon equipped/readied!");
+        return 0;
+    };
+
+    // Distinguish between (cross-)bow talent
+    var int talent;
+    if (weapon.flags & ITEM_BOW) {
+        talent = hero.HitChance[NPC_TALENT_BOW];
+    } else if (weapon.flags & ITEM_CROSSBOW) {
+        talent = hero.HitChance[NPC_TALENT_CROSSBOW];
+    } else {
+        MEM_Error("freeAimGetWeaponTalent: No valid weapon equipped/readied!");
+        return 0;
+    };
+
+    MEM_WriteInt(weaponPtr, _@(weapon));
+    MEM_WriteInt(talentPtr, talent);
+    return 1;
+};
+
+
+/*
+ * Internal helper function for freeAimGetDrawForce(). It is called from freeAimSetupProjectile().
+ * This function is necessary for error handling and to supply the readied weapon and respective talent value.
+ */
 func int freeAimGetDrawForce_() {
-    var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
-    else { MEM_Error("freeAimGetDrawForce_: No valid weapon equipped/readied!"); return -1; }; // Should never happen
-    if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
-    else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
-    else { MEM_Error("freeAimGetDrawForce_: No valid weapon equipped/readied!"); return -1; };
-    // Call customized function
+    // Get readied/equipped ranged weapon
+    var int talent; var int weaponPtr;
+    if (!freeAimGetWeaponTalent(_@(weaponPtr), _@(talent))) {
+        // On error return 50% draw force
+        return 50;
+    };
+    var C_Item weapon; weapon = _^(weaponPtr);
+
+    // Call customized function to retrieve draw force value
     MEM_PushInstParam(weapon);
     MEM_PushIntParam(talent);
     MEM_Call(freeAimGetDrawForce); // freeAimGetDrawForce(weapon, talent);
     var int drawForce; drawForce = MEM_PopIntResult();
-    if (drawForce > 100) { drawForce = 100; } else if (drawForce < 0) { drawForce = 0; }; // Must be in [0, 100]
+
+    // Must be a percentage in range of [0, 100]
+    if (drawForce > 100) {
+        drawForce = 100;
+    } else if (drawForce < 0) {
+        drawForce = 0;
+    };
     return drawForce;
 };
 
-/* Internal helper function for freeAimGetAccuracy() */
+
+/*
+ * Internal helper function for freeAimGetAccuracy(). It is called from freeAimSetupProjectile().
+ * This function is necessary for error handling and to supply the readied weapon and respective talent value.
+ */
 func int freeAimGetAccuracy_() {
-    var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
-    else { MEM_Error("freeAimGetAccuracy_: No valid weapon equipped/readied!"); return -1; }; // Should never happen
-    if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
-    else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
-    else { MEM_Error("freeAimGetAccuracy_: No valid weapon equipped/readied!"); return -1; };
-    // Call customized function
+    // Get readied/equipped ranged weapon
+    var int talent; var int weaponPtr;
+    if (!freeAimGetWeaponTalent(_@(weaponPtr), _@(talent))) {
+        // On error return 50% accuracy
+        return 50;
+    };
+    var C_Item weapon; weapon = _^(weaponPtr);
+
+    // Call customized function to retrieve accuracy value
     MEM_PushInstParam(weapon);
     MEM_PushIntParam(talent);
     MEM_Call(freeAimGetAccuracy); // freeAimGetAccuracy(weapon, talent);
     var int accuracy; accuracy = MEM_PopIntResult();
-    if (accuracy < 1) { accuracy = 1; } else if (accuracy > 100) { accuracy = 100; }; // Limit to [1, 100] // Div by 0!
+
+    // Must be a percentage in range of [1, 100], division by 0!
+    if (accuracy > 100) {
+        accuracy = 100;
+    } else if (accuracy < 1) {
+        // Prevent devision by zero later
+        accuracy = 1;
+    };
+
     return accuracy;
 };
 
-/* Internal helper function for freeAimScaleInitialDamage() */
+
+/*
+ * Internal helper function for freeAimScaleInitialDamage(). It is called from freeAimSetupProjectile().
+ * This function is necessary for error handling and to supply the readied weapon and respective talent value.
+ */
 func int freeAimScaleInitialDamage_(var int basePointDamage) {
-    var int talent; var C_Item weapon; // Retrieve the weapon first to distinguish between (cross-)bow talent
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); }
-    else { MEM_Error("freeAimScaleInitialDamage_: No valid weapon equipped/readied!"); return basePointDamage; };
-    if (weapon.flags & ITEM_BOW) { talent = hero.HitChance[NPC_TALENT_BOW]; } // Bow talent
-    else if (weapon.flags & ITEM_CROSSBOW) { talent = hero.HitChance[NPC_TALENT_CROSSBOW]; } // Crossbow talent
-    else { MEM_Error("freeAimScaleInitialDamage_: No valid weapon equipped/readied!"); return basePointDamage; };
-    // Call customized function
+    // Get readied/equipped ranged weapon
+    var int talent; var int weaponPtr;
+    if (!freeAimGetWeaponTalent(_@(weaponPtr), _@(talent))) {
+        // On error return the base damage unaltered
+        return basePointDamage;
+    };
+    var C_Item weapon; weapon = _^(weaponPtr);
+
+    // Call customized function to retrieve adjusted damage value
     MEM_PushIntParam(basePointDamage);
     MEM_PushInstParam(weapon);
     MEM_PushIntParam(talent);
     MEM_Call(freeAimScaleInitialDamage); // freeAimScaleInitialDamage(basePointDamage, weapon, talent);
     basePointDamage = MEM_PopIntResult();
-    if (basePointDamage < 0) { basePointDamage = 0; }; // No negative damage
+
+    // No negative damage
+    if (basePointDamage < 0) {
+        basePointDamage = 0;
+    };
     return basePointDamage;
 };
 
-/* Set the projectile direction and trajectory. Hook oCAIArrow::SetupAIVob */
+
+/*
+ * Set the projectile direction. This function hooks oCAIArrow::SetupAIVob to overwrite the target vob with the aim vob
+ * that is placed in front of the camera at the nearest intersection with the world or an object.
+ * Setting up the projectile involves five parts:
+ *  1st: Set base damage of projectile:            freeAimScaleInitialDamage()
+ *  2nd: Manipulate aiming accuracy (scatter):     freeAimGetAccuracy()
+ *  3rd: Set projectile drop-off (by draw force):  freeAimGetDrawForce()
+ *  4th: Add trial strip FX for better visibility
+ *  5th: Setup the aim vob and overwrite the target
+ */
 func void freeAimSetupProjectile() {
     var int projectilePtr; projectilePtr = MEM_ReadInt(ESP+4);  // First argument is the projectile
-    if (!projectilePtr) { return; };
+    if (!projectilePtr) {
+        return;
+    };
     var oCItem projectile; projectile = _^(projectilePtr);
+
+    // Only if shooter is the player and if FA is enabled
     var C_Npc shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
-    if (!FREEAIM_ACTIVE) || (!Npc_IsPlayer(shooter)) { return; }; // Only if player and if FA is enabled
-    // 1st: Set base damage of projectile
-    var int baseDamage; baseDamage = projectile.damage[DAM_INDEX_POINT];
+    if (!FREEAIM_ACTIVE) || (!Npc_IsPlayer(shooter)) {
+        return;
+    };
+
+
+    // 1st: Set base damage of projectile to allow for dynamical adjustment of damage (e.g. based on draw force)
+    var int baseDamage; baseDamage = projectile.damage[DAM_INDEX_POINT]; // Only point damage is considered
     var int newBaseDamage; newBaseDamage = freeAimScaleInitialDamage_(baseDamage);
     projectile.damage[DAM_INDEX_POINT] = newBaseDamage;
-    // 2nd: Manipulate aiming accuracy (scatter): Rotate target position (azimuth, elevation)
-    var int distance; freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, _@(distance)); // Trace ray intersection
+
+
+    // 2nd: Manipulate aiming accuracy (scatter)
+    // Get distance to nearest intersection with world/objects and retrieve accuracy
+    var int distance; freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, _@(distance));
     var int accuracy; accuracy = freeAimGetAccuracy_(); // Change the accuracy calculation in that function, not here!
-    if (accuracy > 100) { accuracy = 100; } else if (accuracy < 1) { accuracy = 1; }; // Prevent devision by zero
+
+    // Calculate scattering angles from accuracy percentage (azimuth and elevation)
     var int bias; bias = castToIntf(FREEAIM_SCATTER_DEG);
     var int slope; slope = negf(divf(castToIntf(FREEAIM_SCATTER_DEG), FLOAT1C));
     var int angleMax; angleMax = roundf(mulf(addf(mulf(slope, mkf(accuracy)), bias), FLOAT1K)); // y = slope*acc+bias
     var int angleY; angleY = fracf(r_MinMax(-angleMax, angleMax), 1000); // Degrees azimuth
     angleMax = roundf(sqrtf(subf(sqrf(mkf(angleMax)), sqrf(mulf(angleY, FLOAT1K))))); // sqrt(angleMax^2-angleY^2)
     var int angleX; angleX = fracf(r_MinMax(-angleMax, angleMax), 1000); // Degrees elevation (restrict to circle)
-    var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60); //0=right, 2=out, 3=pos
-    var int pos[3]; pos[0] = FLOATNULL; pos[1] = FLOATNULL; pos[2] = distance;
-    SinCosApprox(Print_ToRadian(angleX)); // Rotate around x-axis (elevation scatter)
-    pos[1] = mulf(negf(pos[2]), sinApprox); // y*cos - z*sin = y'
-    pos[2] = mulf(pos[2], cosApprox);       // y*sin + z*cos = z'
-    SinCosApprox(Print_ToRadian(angleY)); // Rotate around y-axis (azimuth scatter)
-    pos[0] = mulf(pos[2], sinApprox); //  x*cos + z*sin = x'
-    pos[2] = mulf(pos[2], cosApprox); // -x*sin + z*cos = z'
-    var int newPos[3]; // Rotation (translation into local coordinate system of camera)
-    newPos[0] = addf(addf(mulf(camPos.v0[0], pos[0]), mulf(camPos.v0[1], pos[1])), mulf(camPos.v0[2], pos[2]));
-    newPos[1] = addf(addf(mulf(camPos.v1[0], pos[0]), mulf(camPos.v1[1], pos[1])), mulf(camPos.v1[2], pos[2]));
-    newPos[2] = addf(addf(mulf(camPos.v2[0], pos[0]), mulf(camPos.v2[1], pos[1])), mulf(camPos.v2[2], pos[2]));
-    pos[0] = addf(camPos.v0[3], newPos[0]);
-    pos[1] = addf(camPos.v1[3], newPos[1]);
-    pos[2] = addf(camPos.v2[3], newPos[2]);
+
+    // Vector to manipulate (in local space). The angles calculated above will be applied to this vector
+    var int localPos[3];
+    localPos[0] = FLOATNULL;
+    localPos[1] = FLOATNULL;
+    localPos[2] = distance; // Distance into outVec (facing direction)
+
+    // Rotate around x-axis by angleX (elevation scatter)
+    SinCosApprox(Print_ToRadian(angleX));
+    localPos[1] = mulf(negf(localPos[2]), sinApprox); //  y*cos - z*sin = y'
+    localPos[2] = mulf(localPos[2], cosApprox);       //  y*sin + z*cos = z'
+
+    // Rotate around y-axis by angleY (azimuth scatter)
+    SinCosApprox(Print_ToRadian(angleY));
+    localPos[0] = mulf(localPos[2], sinApprox);       //  x*cos + z*sin = x'
+    localPos[2] = mulf(localPos[2], cosApprox);       // -x*sin + z*cos = z'
+
+    // Get camera vob (not camera itself, because it does not offer a reliable position)
+    var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
+    var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
+
+    // Translation into local coordinate system of camera (rotation): rightVec*x + upVec*y + outVec*z
+    var int pos[3];
+    // rightVec*x
+    pos[0] = mulf(camPos.v0[zMAT4_rightVec], localPos[0]);
+    pos[1] = mulf(camPos.v1[zMAT4_rightVec], localPos[0]);
+    pos[2] = mulf(camPos.v2[zMAT4_rightVec], localPos[0]);
+    // rightVec*x + upVec*y
+    pos[0] = addf(pos[0], mulf(camPos.v0[zMAT4_upVec], localPos[1]));
+    pos[1] = addf(pos[1], mulf(camPos.v1[zMAT4_upVec], localPos[1]));
+    pos[2] = addf(pos[2], mulf(camPos.v2[zMAT4_upVec], localPos[1]));
+    // rightVec*x + upVec*y + outVec*z
+    pos[0] = addf(pos[0], mulf(camPos.v0[zMAT4_outVec], localPos[2]));
+    pos[1] = addf(pos[1], mulf(camPos.v1[zMAT4_outVec], localPos[2]));
+    pos[2] = addf(pos[2], mulf(camPos.v2[zMAT4_outVec], localPos[2]));
+
+    // Add the translated coordinates to the camera position (final target position in world coordinates)
+    pos[0] = addf(camPos.v0[zMAT4_position], pos[0]);
+    pos[1] = addf(camPos.v1[zMAT4_position], pos[1]);
+    pos[2] = addf(camPos.v2[zMAT4_position], pos[2]);
+
+
     // 3rd: Set projectile drop-off (by draw force)
-    const int call2 = 0;
-    if (CALL_Begin(call2)) {
-        CALL__thiscall(_@(projectilePtr), zCVob__GetRigidBody); // Get ridigBody this way, it will be properly created
-        call2 = CALL_End();
+    // First get rigidBody of the projectile which is responsible for gravity
+    // Get ridigBody this way, it will be properly created as it most likely does not exist yet at this point
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL__thiscall(_@(projectilePtr), zCVob__GetRigidBody);
+        call = CALL_End();
     };
     var int rBody; rBody = CALL_RetValAsInt(); // zCRigidBody*
+
+    // Retrieve draw force percentage
     var int drawForce; drawForce = freeAimGetDrawForce_(); // Modify the draw force in that function, not here!
-    var int gravityMod; gravityMod = FLOATONE; // Gravity only modified on short draw time
-    if (drawForce < 25) { gravityMod = castToIntf(3.0); }; // Very short draw time increases gravity
+
+    // Gravity only modified on short draw time
+    var int gravityMod; gravityMod = FLOATONE;
+    if (drawForce < 25) {
+        // Very short draw time increases gravity
+        gravityMod = castToIntf(3.0);
+    };
+
+    // Calculate the air time at which to apply the gravity
     var int dropTime; dropTime = (drawForce*(FREEAIM_TRAJECTORY_ARC_MAX*100))/10000;
     FF_ApplyOnceExtData(freeAimDropProjectile, dropTime, 1, rBody); // When to hit the projectile with gravity
     freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_RELOAD; // Reset draw timer
     MEM_WriteInt(rBody+zCRigidBody_gravity_offset, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod)); // Gravity
+
+
+    // 4th: Add trail strip FX for better visibility
     if (Hlp_Is_oCItem(projectilePtr)) && (Hlp_StrCmp(projectile.effect, "")) { // Projectile has no FX
-        projectile.effect = FREEAIM_TRAIL_FX; // Set trail strip fx for better visibility
-        const int call3 = 0;
-        if (CALL_Begin(call3)) {
+        projectile.effect = FREEAIM_TRAIL_FX;
+        const int call2 = 0;
+        if (CALL_Begin(call2)) {
             CALL__thiscall(_@(projectilePtr), oCItem__InsertEffect);
-            call3 = CALL_End();
+            call2 = CALL_End();
         };
     };
-    // 4th: Setup the aim vob
-    var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos));
+
+
+    // 5th: Setup the aim vob and overwrite the target vob
+    var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos)); // Retrieve the aim vob and update its position
+    MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
+
     // Print info to zSpy
     var int s; s = SB_New();
     SB("freeAimSetupProjectile: ");
@@ -282,8 +416,8 @@ func void freeAimSetupProjectile() {
     SB("scatter="); SB(STR_Prefix(toStringf(angleX), 5)); SBc(176 /* deg */);
     SB("/"); SB(STR_Prefix(toStringf(angleY), 5)); SBc(176 /* deg */); SB(" ");
     SB("init-basedamage="); SBi(newBaseDamage); SB("/"); SBi(baseDamage);
-    MEM_Info(SB_ToString()); SB_Destroy();
-    MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
+    MEM_Info(SB_ToString());
+    SB_Destroy();
 };
 
 
