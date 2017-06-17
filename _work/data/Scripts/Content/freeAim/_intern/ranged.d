@@ -293,45 +293,55 @@ func int freeAimScaleInitialDamage_(var int basePointDamage) {
  *  5th: Setup the aim vob and overwrite the target
  */
 func void freeAimSetupProjectile() {
-    var int projectilePtr; projectilePtr = MEM_ReadInt(ESP+4);  // First argument is the projectile
-    if (!projectilePtr) {
-        return;
-    };
-    var oCItem projectile; projectile = _^(projectilePtr);
-
     // Only if shooter is the player and if FA is enabled
-    var C_Npc shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is shooter
+    var C_Npc shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is the shooter
     if (!FREEAIM_ACTIVE) || (!Npc_IsPlayer(shooter)) {
         return;
     };
 
+    var int projectilePtr; projectilePtr = MEM_ReadInt(ESP+4); // First argument is the projectile
+    if (!Hlp_Is_oCItem(projectilePtr)) {
+        return;
+    };
+    var oCItem projectile; projectile = _^(projectilePtr);
 
-    // 1st: Set base damage of projectile to allow for dynamical adjustment of damage (e.g. based on draw force)
+
+    // 1st: Modify the base damage of the projectile
+    // This allows for dynamical adjustment of damage (e.g. based on draw force).
     var int baseDamage; baseDamage = projectile.damage[DAM_INDEX_POINT]; // Only point damage is considered
     var int newBaseDamage; newBaseDamage = freeAimScaleInitialDamage_(baseDamage);
     projectile.damage[DAM_INDEX_POINT] = newBaseDamage;
 
 
     // 2nd: Manipulate aiming accuracy (scatter)
-    // Get distance to nearest intersection with world/objects and retrieve accuracy
-    var int distance; freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, _@(distance));
+    // The accuracy is supplied as a percentage. This percentage is scaled with the maximum scattering defined by
+    // FREEAIM_SCATTER_DEG. This results in two angles for azimuth and elevation. The precise target vector, retrieved
+    // by the nearest ray intersection with the world/objects (distance), will be manipulated by the two angles
+    // resulting in "scattering" the target position with a strength depending on the accuracy.
+    // The higher the accuracy the less the scattering.
+
+    // Retrieve accuracy percentage
     var int accuracy; accuracy = freeAimGetAccuracy_(); // Change the accuracy calculation in that function, not here!
 
-    // Calculate scattering angles from accuracy percentage (azimuth and elevation)
+    // Calculate scattering angles from the accuracy (azimuth and elevation)
     var int bias; bias = castToIntf(FREEAIM_SCATTER_DEG);
     var int slope; slope = negf(divf(castToIntf(FREEAIM_SCATTER_DEG), FLOAT1C));
     var int angleMax; angleMax = roundf(mulf(addf(mulf(slope, mkf(accuracy)), bias), FLOAT1K)); // y = slope*acc+bias
-    var int angleY; angleY = fracf(r_MinMax(-angleMax, angleMax), 1000); // Degrees azimuth
+    // Degrees azimuth: angleY
+    var int angleY; angleY = fracf(r_MinMax(-angleMax, angleMax), 1000);
+    // Restrict area to a circle by adjusting angleMax
     angleMax = roundf(sqrtf(subf(sqrf(mkf(angleMax)), sqrf(mulf(angleY, FLOAT1K))))); // sqrt(angleMax^2-angleY^2)
-    var int angleX; angleX = fracf(r_MinMax(-angleMax, angleMax), 1000); // Degrees elevation (restrict to circle)
+    // Degrees elevation: angleX
+    var int angleX; angleX = fracf(r_MinMax(-angleMax, angleMax), 1000);
 
-    // Vector to manipulate (in local space). The angles calculated above will be applied to this vector
-    var int localPos[3];
+    // Create the target position vector by taking the nearest ray intersection with world/objects
+    var int distance; freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, _@(distance));
+    var int localPos[3]; // Vector in local space. The angles calculated above will be applied to this vector
     localPos[0] = FLOATNULL;
     localPos[1] = FLOATNULL;
     localPos[2] = distance; // Distance into outVec (facing direction)
 
-    // Rotate around x-axis by angleX (elevation scatter)
+    // Rotate around x-axis by angleX (elevation scatter). The rotation equations are simplified because x and y are 0
     SinCosApprox(Print_ToRadian(angleX));
     localPos[1] = mulf(negf(localPos[2]), sinApprox); //  y*cos - z*sin = y'
     localPos[2] = mulf(localPos[2], cosApprox);       //  y*sin + z*cos = z'
@@ -360,15 +370,17 @@ func void freeAimSetupProjectile() {
     pos[1] = addf(pos[1], mulf(camPos.v1[zMAT4_outVec], localPos[2]));
     pos[2] = addf(pos[2], mulf(camPos.v2[zMAT4_outVec], localPos[2]));
 
-    // Add the translated coordinates to the camera position (final target position in world coordinates)
+    // Add the translated coordinates to the camera position (final target position expressed in world coordinates)
     pos[0] = addf(camPos.v0[zMAT4_position], pos[0]);
     pos[1] = addf(camPos.v1[zMAT4_position], pos[1]);
     pos[2] = addf(camPos.v2[zMAT4_position], pos[2]);
 
 
     // 3rd: Set projectile drop-off (by draw force)
-    // First get rigidBody of the projectile which is responsible for gravity
-    // Get ridigBody this way, it will be properly created as it most likely does not exist yet at this point
+    // The curved trajectory of the projectile is achieved by setting a fixed gravity, but applying it only after a
+    // certain air time. This air time is adjustable and depends on draw force: freeAimGetDrawForce().
+    // First get rigidBody of the projectile which is responsible for gravity. The rigidBody object does not exist yet
+    // at this point, so have it retrieved/created by calling this function:
     const int call = 0;
     if (CALL_Begin(call)) {
         CALL__thiscall(_@(projectilePtr), zCVob__GetRigidBody);
@@ -376,25 +388,35 @@ func void freeAimSetupProjectile() {
     };
     var int rBody; rBody = CALL_RetValAsInt(); // zCRigidBody*
 
-    // Retrieve draw force percentage
+    // Retrieve draw force percentage from which to calculate the drop time (time at which the gravity is applied)
     var int drawForce; drawForce = freeAimGetDrawForce_(); // Modify the draw force in that function, not here!
 
-    // Gravity only modified on short draw time
+    // The gravity is a fixed value. An exception are very short draw times. There, the gravity is higher
     var int gravityMod; gravityMod = FLOATONE;
     if (drawForce < 25) {
-        // Very short draw time increases gravity
+        // Draw force below 25% (very short draw time) increases gravity
         gravityMod = castToIntf(3.0);
     };
 
-    // Calculate the air time at which to apply the gravity
+    // Calculate the air time at which to apply the gravity, by the maximum air time FREEAIM_TRAJECTORY_ARC_MAX. Because
+    // drawForce is a percentage, FREEAIM_TRAJECTORY_ARC_MAX is first multiplied by 100 and later divided by 10000
     var int dropTime; dropTime = (drawForce*(FREEAIM_TRAJECTORY_ARC_MAX*100))/10000;
-    FF_ApplyOnceExtData(freeAimDropProjectile, dropTime, 1, rBody); // When to hit the projectile with gravity
-    freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_RELOAD; // Reset draw timer
-    MEM_WriteInt(rBody+zCRigidBody_gravity_offset, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod)); // Gravity
+    // Create a timed frame function to apply the gravity to the projectile after the calculated air time
+    FF_ApplyOnceExtData(freeAimDropProjectile, dropTime, 1, rBody);
+    // Set the gravity to the projectile. Again: The gravity does not take effect until it is activated
+    MEM_WriteInt(rBody+zCRigidBody_gravity_offset, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod));
+
+    // Reset draw timer
+    freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_RELOAD;
 
 
     // 4th: Add trail strip FX for better visibility
-    if (Hlp_Is_oCItem(projectilePtr)) && (Hlp_StrCmp(projectile.effect, "")) { // Projectile has no FX
+    // The horizontal position of the camera is aligned with the arrow trajectory, to counter the parallax effect and to
+    // allow reasonable aiming. Unfortunately, when the projectile flies along the out vector of the camera (exactly
+    // away from the camera), it is barely to not at all visible. To aid visibility, an additional trail strip FX is
+    // applied. This is only necessary when the projectile does not have an FX anyway (e.g. magic arrows). The trail
+    // strip FX will be removed later once the projectile stops moving.
+    if (Hlp_StrCmp(projectile.effect, "")) { // Projectile has no FX
         projectile.effect = FREEAIM_TRAIL_FX;
         const int call2 = 0;
         if (CALL_Begin(call2)) {
@@ -404,8 +426,8 @@ func void freeAimSetupProjectile() {
     };
 
 
-    // 5th: Setup the aim vob and overwrite the target vob
-    var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos)); // Retrieve the aim vob and update its position
+    // 5th: Reposition the aim vob and overwrite the target vob
+    var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos));
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
 
     // Print info to zSpy
