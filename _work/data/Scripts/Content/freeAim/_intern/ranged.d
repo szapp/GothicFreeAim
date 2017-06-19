@@ -44,7 +44,7 @@ func void freeAimRangedFocus(var int targetPtr, var int distancePtr) {
         var int herPtr; herPtr = _@(her);
 
         // Remove focus completely
-        const int call = 0; const int zero = 0; // Set the focus vob properly: reference counter
+        const int call = 0; var int zero; // Set the focus vob properly: reference counter
         if (CALL_Begin(call)) {
             CALL_PtrParam(_@(zero)); // This will remove the focus
             CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
@@ -249,7 +249,6 @@ func int freeAimGetAccuracy_() {
         // Prevent devision by zero later
         accuracy = 1;
     };
-
     return accuracy;
 };
 
@@ -314,28 +313,44 @@ func void freeAimSetupProjectile() {
 
 
     // 2nd: Manipulate aiming accuracy (scatter)
-    // The accuracy is supplied as a percentage. This percentage is scaled with the maximum scattering defined by
-    // FREEAIM_SCATTER_DEG. This results in two angles for azimuth and elevation. The precise target vector, retrieved
-    // by the nearest ray intersection with the world/objects (distance), will be manipulated by the two angles
-    // resulting in "scattering" the target position with a strength depending on the accuracy.
-    // The higher the accuracy the less the scattering.
+    // The accuracy is supplied as a percentage. This percentage corresponds to the shots hitting within an area with
+    // the radius FREEAIM_SCATTER_DEG, which is expressed as half the visual angle of the bounding box width (1.8m) from
+    // a distance of 15m (RANGED_CHANCE_MINDIST): tan^-1(90/1500) in degrees = 3.434.
+    // The size of the angles (azimuth and elevation) of deviation of the shot is thus scaled with the accuracy to
+    // result in x% of the shots hitting within the mentioned hi area on average.
 
     // Retrieve accuracy percentage
     var int accuracy; accuracy = freeAimGetAccuracy_(); // Change the accuracy calculation in that function, not here!
 
-    // Calculate scattering angles from the accuracy (azimuth and elevation)
-    var int bias; bias = castToIntf(FREEAIM_SCATTER_DEG);
-    var int slope; slope = negf(divf(castToIntf(FREEAIM_SCATTER_DEG), FLOAT1C));
-    var int angleMax; angleMax = roundf(mulf(addf(mulf(slope, mkf(accuracy)), bias), FLOAT1K)); // y = slope*acc+bias
-    // Degrees azimuth: angleY
-    var int angleY; angleY = fracf(r_MinMax(-angleMax, angleMax), 1000);
-    // Restrict area to a circle by adjusting angleMax
-    angleMax = roundf(sqrtf(subf(sqrf(mkf(angleMax)), sqrf(mulf(angleY, FLOAT1K))))); // sqrt(angleMax^2-angleY^2)
-    // Degrees elevation: angleX
-    var int angleX; angleX = fracf(r_MinMax(-angleMax, angleMax), 1000);
+    var int hitRadius; hitRadius = castToIntf(FREEAIM_SCATTER_DEG);
+    var int hitArea; hitArea = mulf(PI, sqrf(hitRadius)); // Area of circle from radius
+    // The hitArea corresponds to the percentage of shots hitting the bounding box of NPCs from the default distance of
+    // 15 meters (RANGED_CHANCE_MINDIST).
+
+    var int maxArea; maxArea = divf(hitArea, divf(mkf(accuracy), FLOAT1C));
+    var int maxRadius; maxRadius = sqrtf(divf(maxArea, PI)); // Radius from area
+    var int maxRadiusI; maxRadiusI = roundf(mulf(maxRadius, FLOAT1K)); // r_MinMax works with integers: scale value up
+
+    // The azimuth is here the horizontal deviation from a perfect shot in degrees. It will be a random value between
+    // -maxRadius and maxRadius.
+    var int angleX; angleX = fracf(r_MinMax(-maxRadiusI, maxRadiusI), 1000); // Here the 1000 are scaled down again
+
+    // The elevation is here the vertical deviation from a perfect shot in degrees. To end up with a circular scattering
+    // pattern, the range of possible values for angleY is decreased: r^2 - x^2 = y^2 => y = sqrt(r^2 - y^2)
+    maxRadius = subf(sqrf(maxRadius), sqrf(angleX)); // No square root yet, might be negative or 0
+    var int angleY;
+    if (lef(maxRadius, FLOATNULL)) {
+        angleY = FLOATNULL;
+    } else {
+        maxRadius = sqrtf(maxRadius);
+        maxRadiusI = roundf(mulf(maxRadius, FLOAT1K)); // r_MinMax works with integers: scale value up
+        angleY = fracf(r_MinMax(-maxRadiusI, maxRadiusI), 1000); // Here the 1000 are scaled down again
+    };
 
     // Create the target position vector by taking the nearest ray intersection with world/objects
-    var int distance; freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, _@(distance));
+    var int distance; // Distance to camera (used for calculating target position)
+    var int distPlayer; // Distance to player (used for debugging output to zSpy)
+    freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, _@(distPlayer), _@(distance));
     var int localPos[3]; // Vector in local space. The angles calculated above will be applied to this vector
     localPos[0] = FLOATNULL;
     localPos[1] = FLOATNULL;
@@ -433,6 +448,7 @@ func void freeAimSetupProjectile() {
     // Print info to zSpy
     var int s; s = SB_New();
     SB("freeAimSetupProjectile: ");
+    SB("distance="); SB(STR_Prefix(toStringf(divf(distPlayer, FLOAT1C)), 4)); SB("m ");
     SB("drawforce="); SBi(drawForce); SB("% ");
     SB("accuracy="); SBi(accuracy); SB("% ");
     SB("scatter="); SB(STR_Prefix(toStringf(angleX), 5)); SBc(176 /* deg */);
