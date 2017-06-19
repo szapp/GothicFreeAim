@@ -118,7 +118,6 @@ func void freeAimDoNpcHit() {
 func void freeAimOnArrowCollide() {
     var int arrowAI; arrowAI = ESI;
     var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
-    var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
     var int matPtr; matPtr = MEM_ReadInt(ECX); // zCMaterial* or zCPolygon*
     if (MEM_ReadInt(matPtr) != zCMaterial__vtbl) { // Static world: Read zCPolygon
         var zCPolygon polygon; polygon = _^(matPtr);
@@ -139,9 +138,23 @@ func void freeAimOnArrowCollide() {
     } else {
         EDI = -1;  // Sets the condition at 0x6A0A45 and 0x6A0C1A to false: Projectile deflects
         if (!collision) {
-            if (FF_ActiveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody))) {
-                FF_RemoveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody)); };
-            if (FREEAIM_REUSE_PROJECTILES) { // Destroy
+            var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
+
+            // Only destory projectile, if it did not bounce off and is still fast enough to reasonably break
+            var int rigidBody; rigidBody = projectile._zCVob_rigidBody;
+            var int totalVelocity; totalVelocity = addf(addf( // zCRigidBody.velocity[3]
+                absf(MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset)),
+                absf(MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset+4))),
+                absf(MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset+8)));
+            if (gf(totalVelocity, FLOAT1C)) {
+                // Total velocity is high enough to break the projectile
+
+                // Better safe than writing to an invalid address
+                if (FF_ActiveData(freeAimDropProjectile, rigidBody)) {
+                    FF_RemoveData(freeAimDropProjectile, rigidBody);
+                };
+
+                // Breaking sound and visual effect
                 Wld_StopEffect(FREEAIM_BREAK_FX); // Sometimes collides several times
                 Wld_PlayEffect(FREEAIM_BREAK_FX, projectile, projectile, 0, 0, 0, FALSE);
                 MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATNULL); // Set life time to 0: Remove projectile
