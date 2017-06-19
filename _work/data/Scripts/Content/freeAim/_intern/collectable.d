@@ -101,7 +101,7 @@ func void freeAimKeepProjectileInWorld() {
             projectile.flags = projectile.flags &~ ITEM_NFOCUS;
 
             // Detach arrow AI from projectile (projectile will have no AI)
-            const int call3 = 0; const int zero = 0;
+            const int call3 = 0; var int zero;
             if (CALL_Begin(call3)) {
                 CALL_IntParam(_@(zero));
                 CALL__thiscall(_@(projectilePtr), zCVob__SetAI);

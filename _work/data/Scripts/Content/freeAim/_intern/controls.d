@@ -66,7 +66,7 @@ func void freeAimManualRotation() {
     // Turn player model
     var oCNpc her; her = Hlp_GetNpc(hero);
     var int hAniCtrl; hAniCtrl = her.anictrl;
-    const int call = 0; const int zero = 0;
+    const int call = 0; var int zero;
     if (CALL_Begin(call)) {
         CALL_IntParam(_@(zero)); // 0 = disable turn animation (there is none while aiming anyways)
         CALL_FloatParam(_@(deltaX));

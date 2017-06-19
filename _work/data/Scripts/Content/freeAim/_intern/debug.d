@@ -34,9 +34,9 @@ func void freeAimVisualizeBBox(var int bboxPtr, var int color) {
 
 /* Visualize a line in 3D space */
 func void freeAimVisualizeLine(var int pos1Ptr, var int pos2Ptr, var int color) {
-    const int call = 0; var int null;
+    const int call = 0; var int zero;
     if (CALL_Begin(call)) {
-        CALL_IntParam(_@(null));
+        CALL_IntParam(_@(zero));
         CALL_IntParam(_@(color));
         CALL_PtrParam(_@(pos2Ptr));
         CALL_PtrParam(_@(pos1Ptr));

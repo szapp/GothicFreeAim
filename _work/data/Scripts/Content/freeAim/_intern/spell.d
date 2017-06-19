@@ -101,7 +101,7 @@ func void freeAimSpellReticle() {
         // Remove focus completely
         var oCNpc her; her = Hlp_GetNpc(hero);
         var int herPtr; herPtr = _@(her);
-        const int call = 0; const int zero = 0; // Set the focus vob properly: reference counter
+        const int call = 0; var int zero; // Set the focus vob properly: reference counter
         if (CALL_Begin(call)) {
             CALL_PtrParam(_@(zero)); // This will remove the focus
             CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
