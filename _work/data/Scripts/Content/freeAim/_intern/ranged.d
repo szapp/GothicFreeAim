@@ -483,5 +483,29 @@ func void freeAimDropProjectile(var int rigidBody) {
     };
 
     // Turn on gravity
-    MEM_WriteByte(rigidBody+zCRigidBody_bitfield_offset, 1);
+    var int bitfield; bitfield = MEM_ReadByte(rigidBody+zCRigidBody_bitfield_offset);
+    MEM_WriteByte(rigidBody+zCRigidBody_bitfield_offset, bitfield | zCRigidBody_bitfield_gravityActive);
+};
+
+
+/*
+ * This function resets the gravity back to its default value, after any collision occured. The function hooks
+ * oCAIArrowBase::DoAI at an offset where a collision is detected (so its not called too often).
+ * It is important to reset the gravity, because the projectile may bounce of walls (etc.), after which it would float
+ * around with the previously set drop-off gravity (FREEAIM_PROJECTILE_GRAVITY).
+ */
+func void freeAimResetGravity() {
+    var oCItem projectile; projectile = _^(EBP);
+    if (!projectile._zCVob_rigidBody) {
+        return;
+    };
+    var int rigidBody; rigidBody = projectile._zCVob_rigidBody;
+
+    // Better safe than writing to an invalid address
+    if (FF_ActiveData(freeAimDropProjectile, rigidBody)) {
+        FF_RemoveData(freeAimDropProjectile, rigidBody);
+    };
+
+    // Reset projectile gravity (zCRigidBody.gravity) after collision (oCAIArrow.collision) to default
+    MEM_WriteInt(rigidBody+zCRigidBody_gravity_offset, FLOATONE);
 };

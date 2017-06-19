@@ -45,25 +45,15 @@ func void freeAimKeepProjectileInWorld() {
         return;
     };
 
-    // Reset projectile gravity after a collision occurred
-    if (MEM_ReadInt(arrowAI+oCAIArrowBase_collision_offset)) {
-        MEM_WriteInt(projectile._zCVob_rigidBody+zCRigidBody_gravity_offset, FLOATONE); // Set gravity to default
-    };
-
-    // Exit if projectiles are not collectable (normal projectile handling)
-    if (!FREEAIM_REUSE_PROJECTILES) {
-        return;
-    };
-
     // Always keep the projectile alive, set high life time
     MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE);
 
     // Check if the projectile stopped moving
     if (!(projectile._zCVob_bitfield[0] & zCVob_bitfield0_physicsEnabled)) {
 
-        // Make sure the scheduled gravity does not kick in anymore
-        if (FF_ActiveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody))) {
-            FF_RemoveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody));
+        // Better safe than writing to an invalid address
+        if (FF_ActiveData(freeAimDropProjectile, projectile._zCVob_rigidBody)) {
+            FF_RemoveData(freeAimDropProjectile, projectile._zCVob_rigidBody);
         };
 
         // Remove the FX; only if the projectile does not have a different effect (like magic arrows)
@@ -133,9 +123,9 @@ func void freeAimOnArrowHitNpc() {
         CreateInvItem(victim, projInst); // Put respective instance in inventory
     };
 
-    // Make sure the scheduled gravity does not kick in anymore
-    if (FF_ActiveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody))) {
-        FF_RemoveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody));
+    // Better safe than writing to an invalid address
+    if (FF_ActiveData(freeAimDropProjectile, projectile._zCVob_rigidBody)) {
+        FF_RemoveData(freeAimDropProjectile, projectile._zCVob_rigidBody);
     };
 
     // Set life time to zero to remove this projectile
@@ -151,13 +141,13 @@ func void freeAimOnArrowGetStuck() {
     var int arrowAI; arrowAI = ESI;
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
 
-    // Make sure the scheduled gravity does not kick in anymore
-    if (FF_ActiveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody))) {
-        FF_RemoveData(freeAimDropProjectile, _@(projectile._zCVob_rigidBody));
+    // Better safe than writing to an invalid address
+    if (FF_ActiveData(freeAimDropProjectile, projectile._zCVob_rigidBody)) {
+        FF_RemoveData(freeAimDropProjectile, projectile._zCVob_rigidBody);
     };
 
     // Have the projectile not go in too deep. RightVec will be multiplied later
-    projectile._zCVob_trafoObjToWorld[0] = mulf(projectile._zCVob_trafoObjToWorld[0], -1096111445); // -15 cm
+    projectile._zCVob_trafoObjToWorld[0] = mulf(projectile._zCVob_trafoObjToWorld[0], -1096111445); // -33.3 cm
     projectile._zCVob_trafoObjToWorld[4] = mulf(projectile._zCVob_trafoObjToWorld[4], -1096111445);
     projectile._zCVob_trafoObjToWorld[8] = mulf(projectile._zCVob_trafoObjToWorld[8], -1096111445);
 };

@@ -48,7 +48,7 @@ func void freeAim_Init() {
         HookEngineF(oCAIHuman__BowMode_69633B, 6, freeAimRangedShooting); // Focus collection during shooting
         HookEngineF(oCAIHuman__BowMode_696296, 5, freeAimAnimation); // Update aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Set projectile direction and trajectory
-        HookEngineF(oCAIArrow__DoAI_6A1489, 6, freeAimKeepProjectileInWorld); // End of DoAI loop for each projectile
+        HookEngineF(oCAIArrowBase__DoAI_6A06D8, 6, freeAimResetGravity); // On any collision of each projectile
         // Gothic 2 controls
         MEM_Info("Initializing Gothic 2 controls.");
         MemoryProtectionOverride(oCAIHuman__BowMode_695F2B, 6); // Skip jump to Gothic 2 controls: jz to 0x696391
@@ -88,9 +88,10 @@ func void freeAim_Init() {
         // Collectable projectiles
         if (FREEAIM_REUSE_PROJECTILES) { // Because of balancing issues, this is a constant and not a variable
             MEM_Info("Initializing collectable projectiles.");
+            HookEngineF(oCAIArrow__DoAI_6A1489, 6, freeAimKeepProjectileInWorld); // End of projectile DoAI loop
             HookEngineF(onArrowHitNpcAddr, 5, freeAimOnArrowHitNpc); // Put projectile into inventory
-            HookEngineF(onArrowHitVobAddr, 5, freeAimOnArrowGetStuck); // Keep projectile alive when stuck in vob
-            HookEngineF(onArrowHitStatAddr, 5, freeAimOnArrowGetStuck); // Keep projectile alive when stuck in world
+            HookEngineF(onArrowHitVobAddr, 5, freeAimOnArrowGetStuck); // Reposition projectile when stuck in vob
+            HookEngineF(onArrowHitStatAddr, 5, freeAimOnArrowGetStuck); // Reposition projectile when stuck in world
         };
         // Trigger collision fix
         if (FREEAIM_TRIGGER_COLL_FIX) { // Because by default all triggers react to objects, this is a setting

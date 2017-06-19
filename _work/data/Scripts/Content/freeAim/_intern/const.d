@@ -94,6 +94,7 @@ const int oCAIHuman__BowMode_69633B               = 6906683; //0x69633B // Hook 
 const int oCAIArrow__SetupAIVob                   = 6951136; //0x6A10E0 // Hook length 6
 const int oCAIArrow__CanThisCollideWith           = 6952080; //0x6A1490 // Hook length 7
 const int oCAIArrow__DoAI_6A1489                  = 6952073; //0x6A1489 // Hook length 6
+const int oCAIArrowBase__DoAI_6A06D8              = 6948568; //0x6A06D8 // Hook length 6
 const int onArrowHitNpcAddr                       = 6949832; //0x6A0BC8 // Hook length 5
 const int onArrowHitVobAddr                       = 6949929; //0x6A0C29 // Hook length 5
 const int onArrowHitStatAddr                      = 6949460; //0x6A0A54 // Hook length 5
@@ -123,6 +124,7 @@ const int zCRigidBody_mass_offset                 = 0;   //0x0000
 const int zCRigidBody_gravity_offset              = 236; //0x00EC
 const int zCRigidBody_velocity_offset             = 188; //0x00BC
 const int zCRigidBody_bitfield_offset             = 256; //0x0100
+const int zCRigidBody_bitfield_gravityActive      = 1 << 0; // First bit
 
 const int zCModelNodeInst_visual_offset           = 8;   //0x0008
 
