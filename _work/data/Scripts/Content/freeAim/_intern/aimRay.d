@@ -81,19 +81,6 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
         var int hit; hit = CALL_RetValAsInt(); // Did the trace ray hit
         var int foundVob; foundVob = MEM_World.foundVob;
         var int intersection[3]; MEM_CopyWords(_@(MEM_World.foundIntersection), _@(intersection), 3);
-        var int distHitToPlayer;
-        if (!hit) && (!foundVob) { // Fix the intersection if there was no hit (trace ray is inconsistent)
-            intersection[0] = addf(traceRayVec[0], traceRayVec[3]);
-            intersection[1] = addf(traceRayVec[1], traceRayVec[4]);
-            intersection[2] = addf(traceRayVec[2], traceRayVec[5]);
-            distHitToPlayer = distance; // Maximum distance of trace ray
-        } else {
-            distHitToPlayer = sqrtf(addf(addf(
-                sqrf(subf(intersection[0], traceRayVec[0])),
-                sqrf(subf(intersection[1], traceRayVec[1]))),
-                sqrf(subf(intersection[2], traceRayVec[2]))));
-        };
-        var int distHitToCam; distHitToCam = addf(distHitToPlayer, distCamToPlayer);
         var int foundFocus; foundFocus = 0; // Is the focus vob in the trace ray vob list
         var int potentialVob; potentialVob = MEM_ReadInt(herPtr+2476); // oCNpc.focus_vob // Focus vob by f-collection
         if (potentialVob) { // Check if collected focus matches the desired focus type
@@ -163,6 +150,19 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
                 call5 = CALL_End();
             };
         };
+        var int distHitToPlayer;
+        if (!hit) && (!foundVob) { // Fix the intersection if there was no hit (trace ray is inconsistent)
+            intersection[0] = addf(traceRayVec[0], traceRayVec[3]);
+            intersection[1] = addf(traceRayVec[1], traceRayVec[4]);
+            intersection[2] = addf(traceRayVec[2], traceRayVec[5]);
+            distHitToPlayer = distance; // Maximum distance of trace ray
+        } else {
+            distHitToPlayer = sqrtf(addf(addf(
+                sqrf(subf(intersection[0], traceRayVec[0])),
+                sqrf(subf(intersection[1], traceRayVec[1]))),
+                sqrf(subf(intersection[2], traceRayVec[2]))));
+        };
+        var int distHitToCam; distHitToCam = addf(distHitToPlayer, distCamToPlayer);
         // Debug visualization
         if (FREEAIM_DEBUG_TRACERAY) {
             freeAimDebugTRBBox[0] = subf(intersection[0], mkf(5));
