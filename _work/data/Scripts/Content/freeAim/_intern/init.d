@@ -341,7 +341,7 @@ func void freeAimIsActive() {
             FREEAIM_ACTIVE = her.fmode;
         };
 
-    } else if (her.fmode == FMODE_FAR) {
+    } else if (her.fmode >= FMODE_FAR) { // Greater or equal: Crossbow has different fight mode!
         // Set internally whether the aiming key is held or not (only if using Gothic 2 controls)
         if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
             MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+4, keyPressed);
@@ -354,7 +354,7 @@ func void freeAimIsActive() {
             return;
         } else {
             freeAimDisableAutoTurn(1);
-            FREEAIM_ACTIVE = her.fmode;
+            FREEAIM_ACTIVE = FMODE_FAR; // Do not differentiate between bow and crossbow
         };
 
         // Get onset for drawing the bow - right when pressing down the aiming key
