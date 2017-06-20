@@ -28,6 +28,10 @@
  * to the nearest intersection (or to the focus) from the camera (not the player model!).
  */
 func void freeAimRangedFocus(var int targetPtr, var int distancePtr) {
+    if (!FREEAIM_ACTIVE) {
+        return;
+    };
+
     // Retrieve target NPC and the distance to it from the camera(!)
     var int distance; var int target;
 
@@ -65,8 +69,12 @@ func void freeAimRangedFocus(var int targetPtr, var int distancePtr) {
         target = 0; // No focus target ever
     };
 
-    MEM_WriteInt(distancePtr, distance);
-    MEM_WriteInt(targetPtr, target);
+    if (distancePtr) {
+        MEM_WriteInt(distancePtr, distance);
+    };
+    if (targetPtr) {
+        MEM_WriteInt(targetPtr, target);
+    };
 };
 
 
@@ -75,8 +83,9 @@ func void freeAimRangedFocus(var int targetPtr, var int distancePtr) {
  * hooks oCAIHuman::BowMode at a position where the player model is carrying out the animation of shooting.
  */
 func void freeAimRangedShooting() {
-    var int target; var int distance; // Not necessary here
-    freeAimRangedFocus(_@(target), _@(distance));
+    if (FREEAIM_ACTIVE) {
+        freeAimRangedFocus(0, 0);
+    };
 };
 
 
@@ -166,31 +175,41 @@ func void freeAimAnimation() {
  * Returns 1 on success, 0 otherwise.
  */
 func int freeAimGetWeaponTalent(var int weaponPtr, var int talentPtr) {
+    var C_Npc slf; slf = Hlp_GetNpc(hero);
+    var int error; error = 0;
+
     // Get readied/equipped ranged weapon
     var C_Item weapon;
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) {
-        weapon = Npc_GetReadiedWeapon(hero);
-    } else if (Npc_HasEquippedRangedWeapon(hero)) {
-        weapon = Npc_GetEquippedRangedWeapon(hero);
+    if (Npc_IsInFightMode(slf, FMODE_FAR)) {
+        weapon = Npc_GetReadiedWeapon(slf);
+    } else if (Npc_HasEquippedRangedWeapon(slf)) {
+        weapon = Npc_GetEquippedRangedWeapon(slf);
     } else {
-        MEM_Error("freeAimGetWeaponTalent: No valid weapon equipped/readied!");
-        return 0;
+        MEM_Warn("freeAimGetWeaponTalent: No valid weapon equipped/readied!");
+        weapon = MEM_NullToInst();
+        error = 1;
+    };
+    if (weaponPtr) {
+        MEM_WriteInt(weaponPtr, _@(weapon));
     };
 
     // Distinguish between (cross-)bow talent
-    var int talent;
-    if (weapon.flags & ITEM_BOW) {
-        talent = hero.HitChance[NPC_TALENT_BOW];
-    } else if (weapon.flags & ITEM_CROSSBOW) {
-        talent = hero.HitChance[NPC_TALENT_CROSSBOW];
-    } else {
-        MEM_Error("freeAimGetWeaponTalent: No valid weapon equipped/readied!");
-        return 0;
+    if (talentPtr) {
+        var int talent; talent = 0;
+        if (!error) {
+            if (weapon.flags & ITEM_BOW) {
+                talent = slf.HitChance[NPC_TALENT_BOW];
+            } else if (weapon.flags & ITEM_CROSSBOW) {
+                talent = slf.HitChance[NPC_TALENT_CROSSBOW];
+            } else {
+                MEM_Warn("freeAimGetWeaponTalent: No valid weapon equipped/readied!");
+                error = 1;
+            };
+        };
+        MEM_WriteInt(talentPtr, talent);
     };
 
-    MEM_WriteInt(weaponPtr, _@(weapon));
-    MEM_WriteInt(talentPtr, talent);
-    return 1;
+    return !error;
 };
 
 
