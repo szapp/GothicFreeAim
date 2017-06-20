@@ -136,7 +136,7 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int dam
  * This function is called when a critical hit occurred and can be used to print something to the screen, play a sound
  * jingle or, as done here by default, show a hitmarker. Leave this function blank for no event.
  */
-func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon) {
+func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon, var int freeAimingIsEnabled) {
     // The event may depend on the target npc (e.g. different sound for monsters). Make use of 'target' argument
     //  if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
     // The critical hits could also be counted here to give an xp reward after 25 headshots
@@ -146,14 +146,50 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon) {
     // Simple screen notification
     //  PrintS("Critical hit");
     // Shooter-like hit marker
-    var int hitmark;
-    if (!Hlp_IsValidHandle(hitmark)) { // Create hitmark if it does not exist
-        var zCView screen; screen = _^(MEM_Game._zCSession_viewport);
-        hitmark = View_CreateCenterPxl(screen.psizex/2, screen.psizey/2, 64, 64);
-        View_SetTexture(hitmark, freeAimAnimateReticleByPercent(RETICLE_TRI_IN, 100, 7)); // Retrieve 7th frame of ani
+    if (freeAimingIsEnabled) {
+        // Only show the hit marker if free aiming is enabled (this function is also called for auto aim critical hits)
+        var int hitmark;
+        if (!Hlp_IsValidHandle(hitmark)) { // Create hitmark if it does not exist
+            var zCView screen; screen = _^(MEM_Game._zCSession_viewport);
+            hitmark = View_CreateCenterPxl(screen.psizex/2, screen.psizey/2, 64, 64);
+            View_SetTexture(hitmark, freeAimAnimateReticleByPercent(RETICLE_TRI_IN, 100, 7)); // Get 7th frame of ani
+        };
+        View_Open(hitmark);
+        FF_ApplyExtData(View_Close, 300, 1, hitmark);
     };
-    View_Open(hitmark);
-    FF_ApplyExtData(View_Close, 300, 1, hitmark);
     // Sound notification
     Snd_Play3D(target, "FREEAIM_CRITICALHIT");
+};
+
+
+/*
+ * This function is called when a critical hit occurred; but only if free aiming is disabled. It allows to define a
+ * critical hit chance even for the standard auto aiming.
+ * Although not existing in the original Gothic 2, this is important here to balance the damage output between free aim
+ * and auto aim.
+ * The return value is a percentage (chance level or hit chance), where 0 is no cricital hit ever and and 100 always
+ * causes a critical hit. Everything in between is dependent on chance.
+ * To disable this feature, simply have the function always return 0.
+ */
+func int freeAimCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int talent) {
+    // The critical hit chance may depend on the target npc. Make use of 'target' argument
+    //  if (target.guild < GIL_SEPERATOR_HUM) { }; // E.g. special case for humans
+    // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
+    // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon) to check
+    //  if (Hlp_IsValidItem(weapon)) && (weapon.certainProperty > 10) { }; // E.g. special case for weapon property
+
+    // Here, scale the critical hit chance between MIN (0% skill) and MAX (100% skill)
+    const int MIN = 10; // With   0% skill, 10% of the hits are critical hits
+    const int MAX = 35; // With 100% skill, 35% of the hits are critical hits
+    var int critChance; critChance = (MAX-MIN)*talent/100+MIN;
+
+    // Respect the ranges
+    if (critChance < 0) {
+        critChance = 0;
+    } else if (critChance > 100) {
+        critChance = 100;
+    };
+
+    MEM_Info(ConcatStrings("   ### critical chance: ", IntToString(critChance)));
+    return critChance;
 };
