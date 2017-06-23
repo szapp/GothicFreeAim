@@ -16,6 +16,6 @@ const int    FREEAIM_DEBUG_TRACERAY     = FALSE;           // Show trace ray deb
 const float  FREEAIM_SCATTER_DEG        = 3.434;           // Minimum scatter radius in degrees for ranged accuracy
 const int    FREEAIM_TRAJECTORY_ARC_MAX = 400;             // Max time (ms) after which the trajectory drops off
 const float  FREEAIM_PROJECTILE_GRAVITY = 0.1;             // Gravity of projectile after FREEAIM_TRAJECTORY_ARC_MAX ms
-const string FREEAIM_CAMERA             = "CamModFreeAim"; // CCamSys_Def script instance for free aim
+const string FREEAIM_CAMERA             = "CamModFreeAim"; // CCamSys_Def script instance (not recommended)
 const int    FREEAIM_CAMERA_X_SHIFT     = FALSE;           // Camera is set to shoulderview, s.a. (not recommended)
 const float  FREEAIM_ROTATION_SCALE     = 0.16;            // Turn rate while aiming (changes Gothic 1 controls only)
