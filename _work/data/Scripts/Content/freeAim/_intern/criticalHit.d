@@ -109,8 +109,8 @@ func void freeAimDetectCriticalHit() {
     };
 
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
-    var int damagePtr; damagePtr = ESP+228; // esp+1ACh+C8h // zREAL*
-    var int targetPtr; targetPtr = MEM_ReadInt(ESP+28); // esp+1ACh+190h // oCNpc*
+    var int damagePtr; damagePtr = ESP+228; // esp+1ACh-C8h // zREAL*
+    var int targetPtr; targetPtr = MEM_ReadInt(ESP+28); // esp+1ACh-190h // oCNpc*
     var C_Npc targetNpc; targetNpc = _^(targetPtr);
 
     // Get weak spot node from target model

@@ -108,7 +108,7 @@ func void freeAimDoNpcHit() {
     if (collision == DEFLECT) {
         // Deflect projectile (no damage)
         MEM_WriteByte(projectileDeflectOffNpcAddr, ASMINT_OP_nop); // Skip npc armor collision check, deflect always
-        MEM_WriteByte(projectileDeflectOffNpcAddr + 1, ASMINT_OP_nop);
+        MEM_WriteByte(projectileDeflectOffNpcAddr+1, ASMINT_OP_nop);
         hit = FALSE;
     } else if (collision == DAMAGE) {
         // Apply damage or destroy projectile
