@@ -178,8 +178,8 @@ func void freeAimOnArrowCollide() {
 
         // Only destroy projectile, if it did not bounce off and is still fast enough to reasonably break
         var int rigidBody; rigidBody = projectile._zCVob_rigidBody;
-        var int totalVelocity; totalVelocity = addf(addf( // zCRigidBody.velocity[3]
-            absf(MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset)),
+        var int totalVelocity; totalVelocity = addf(addf(
+            absf(MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset)), // zCRigidBody.velocity[3]
             absf(MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset+4))),
             absf(MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset+8)));
         if (gf(totalVelocity, FLOAT1C)) {
@@ -222,6 +222,7 @@ func void freeAimTriggerCollisionCheck() {
     };
 
     // Replace the collision object with the shooter, because the shooter is always ignored
-    var int shooter; shooter = MEM_ReadInt(ECX+92);
+    var int arrowAI; arrowAI = ECX;
+    var int shooter; shooter = MEM_ReadInt(arrowAI+oCAIArrow_origin_offset);
     MEM_WriteInt(vobPtr, shooter);
 };
