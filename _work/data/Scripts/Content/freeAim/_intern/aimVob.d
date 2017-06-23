@@ -21,11 +21,23 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-/* Attach an FX to the aim vob */
+
+/*
+ * Attach a visual FX to the aim vob. This function is never used internally, but is useful for spells that visualize
+ * the aim vob. An example is the spell blink.
+ */
 func void freeAimAttachFX(var string effectInst) {
+    // Retrieve vob by name
     var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB");
-    if (!vobPtr) { return; };
-    MEM_WriteString(vobPtr+564, effectInst); // oCItem.effect
+    if (!vobPtr) {
+        return;
+    };
+
+    // Set the FX property
+    var oCItem vob; vob = _^(vobPtr);
+    vob.effect = effectInst;
+
+    // Start the FX
     const int call = 0;
     if (CALL_Begin(call)) {
         CALL__thiscall(_@(vobPtr), oCItem__InsertEffect);
@@ -33,37 +45,72 @@ func void freeAimAttachFX(var string effectInst) {
     };
 };
 
-/* Detach the FX of the aim vob */
+
+/*
+ * Detach the visual FX from the aim vob. This function should go hand in hand with attaching a visual FX: If you attach
+ * an FX, you should make sure to remove the FX, when it is no longer needed. Some precautions are already taken from
+ * the side of g2freeAim and this function is called on every weapon change, specifically in freeAimManageReticle().
+ */
 func void freeAimDetachFX() {
+    // Retrieve vob by name
     var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB");
-    if (!vobPtr) { return; };
-    if (Hlp_StrCmp(MEM_ReadString(vobPtr+564), "")) { return; };
+    if (!vobPtr) {
+        return;
+    };
+
+    var oCItem vob; vob = _^(vobPtr);
+    if (Hlp_StrCmp(vob.effect, "")) {
+        // If there is no FX, no action is necessary
+        return;
+    };
+
+    // Remove FX immediately
     const int call = 0;
     if (CALL_Begin(call)) {
         CALL__thiscall(_@(vobPtr), oCItem__RemoveEffect);
         call = CALL_End();
     };
-    MEM_WriteString(vobPtr+564, ""); // oCItem.effect
+
+    // Clear the FX property
+    vob.effect = "";
 };
 
-/* Manipulate the position of the aim vob (only for spells) */
+
+/*
+ * Manipulate the position of the aim vob (only for spells). This function is called from freeAimSetupAimVob() and only
+ * works for spells, as they might incorporate the aim vob into the spell's mechanics or visuals. An example is the
+ * spell blink, which shifts the aim vob away from walls. To do this, adjust the config: freeAimShiftAimVob().
+ */
 func void freeAimManipulateAimVobPos(var int posPtr) {
     var int spell; spell = Npc_GetActiveSpell(hero);
-    if (spell == -1) { return; };
+    if (spell == -1) {
+        return;
+    };
+
+    // Call customized function to check whether aim vob should be shifted, function not defined yet at time of parsing
     MEM_PushIntParam(spell);
-    MEM_Call(freeAimShiftAimVob);
-    var int pushed; pushed = MEM_PopIntResult();
-    if (pushed) {
-        pushed = mkf(pushed); // Amount to push the aim vob along the out vector of the camera
-        var zMAT4 camPos; camPos = _^(MEM_ReadInt(MEM_ReadInt(MEMINT_oGame_Pointer_Address)+20)+60);
-        MEM_WriteInt(posPtr+0, addf(MEM_ReadInt(posPtr+0), mulf(camPos.v0[2], pushed)));
-        MEM_WriteInt(posPtr+4, addf(MEM_ReadInt(posPtr+4), mulf(camPos.v1[2], pushed)));
-        MEM_WriteInt(posPtr+8, addf(MEM_ReadInt(posPtr+8), mulf(camPos.v2[2], pushed)));
+    MEM_Call(freeAimShiftAimVob); // freeAimShiftAimVob();
+    var int shifted; shifted = MEM_PopIntResult();
+
+    if (shifted) {
+        shifted = mkf(shifted); // Amount to shift the aim vob along the out vector of the camera
+
+        // Get camera vob (not camera itself, because it does not offer a reliable position)
+        var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
+        var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
+
+        // Manipulate the position
+        MEM_WriteInt(posPtr+0, addf(MEM_ReadInt(posPtr+0), mulf(camPos.v0[zMAT4_outVec], shifted)));
+        MEM_WriteInt(posPtr+4, addf(MEM_ReadInt(posPtr+4), mulf(camPos.v1[zMAT4_outVec], shifted)));
+        MEM_WriteInt(posPtr+8, addf(MEM_ReadInt(posPtr+8), mulf(camPos.v2[zMAT4_outVec], shifted)));
     };
 };
 
+
 /*
- * Retrieve/create aim vob and optionally update its position.
+ * Retrieve/create aim vob and optionally update its position. This function is constantly called to get the pointer of
+ * the aim vob and to reposition it. Manipulating the aim vob from outside of free aiming SHOULD NOT BE DONE. This is
+ * an internal mechanic and it should not be touched.
  */
 func int freeAimSetupAimVob(var int posPtr) {
     // Retrieve vob by name
@@ -92,8 +139,11 @@ func int freeAimSetupAimVob(var int posPtr) {
 
     // Update position and rotation
     if (posPtr) {
-        MEM_CopyBytes(_@(hero)+60, vobPtr+60, 64); // Copy rotation from player model
-        freeAimManipulateAimVobPos(posPtr); // Additionally shift the vob (for certain spells)
+        // Copy rotation from the player model
+        MEM_CopyBytes(_@(hero)+zCVob_trafoObjToWorld_offset, vobPtr+zCVob_trafoObjToWorld_offset, sizeof_zMAT4);
+
+        // Additionally shift the vob (for certain spells, adjust in freeAimShiftAimVob())
+        freeAimManipulateAimVobPos(posPtr);
 
         // Reposition the vob
         const int call = 0;

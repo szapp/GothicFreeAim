@@ -110,30 +110,41 @@ const int oCSpell__Setup_484BA9                   = 4737961; //0x484BA9 // Hook 
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook length 5
 
 
-/* Offsets */
-const int zCVob_bbox3D_offset                     = 124; //0x007C
+/* Class offsets */
+const int zCVob_bbox3D_offset                       = 124; //0x007C
+const int zCVob_trafoObjToWorld_offset              = 60;  //0x003C
 
-const int oCSpell_spellCasterNpc_offset           = 52;  //0x0034
-const int oCSpell_C_Spell_offset                  = 128; //0x0080
+const int oCSpell_spellCasterNpc_offset             = 52;  //0x0034
+const int oCSpell_C_Spell_offset                    = 128; //0x0080
 
-const int oCAIArrowBase_collision_offset          = 52;  //0x0034
-const int oCAIArrowBase_lifeTime_offset           = 56;  //0x0038
-const int oCAIArrowBase_hostVob_offset            = 60;  //0x003C
-const int oCAIArrow_origin_offset                 = 92;  //0x005C
+const int oCAIArrowBase_collision_offset            = 52;  //0x0034
+const int oCAIArrowBase_lifeTime_offset             = 56;  //0x0038
+const int oCAIArrowBase_hostVob_offset              = 60;  //0x003C
+const int oCAIArrow_origin_offset                   = 92;  //0x005C
 
-const int zCRigidBody_mass_offset                 = 0;   //0x0000
-const int zCRigidBody_gravity_offset              = 236; //0x00EC
-const int zCRigidBody_velocity_offset             = 188; //0x00BC
-const int zCRigidBody_bitfield_offset             = 256; //0x0100
-const int zCRigidBody_bitfield_gravityActive      = 1 << 0; // First bit
+const int zCRigidBody_mass_offset                   = 0;   //0x0000
+const int zCRigidBody_gravity_offset                = 236; //0x00EC
+const int zCRigidBody_velocity_offset               = 188; //0x00BC
+const int zCRigidBody_bitfield_offset               = 256; //0x0100
+const int zCRigidBody_bitfield_gravityActive        = 1<<0;
 
-const int zCModelNodeInst_visual_offset           = 8;   //0x0008
+const int zCModelNodeInst_visual_offset             = 8;   //0x0008
 
-const int sizeof_zVEC3                            = 12;  //0x000C
-const int sizeof_zTBBox3D                         = 24;  //0x0018
+const int zTraceRay_vob_ignore_no_cd_dyn            = 1<<0;  // Ignore vobs without collision
+const int zTraceRay_vob_bbox                        = 1<<2;  // Intersect with bounding boxes (important to detect NPCs)
+const int zTraceRay_poly_ignore_transp              = 1<<8;  // Ignore alpha polygons (without this trace ray is bugged)
+const int zTraceRay_poly_test_water                 = 1<<9;  // Intersect with water
+const int zTraceRay_vob_ignore_projectiles          = 1<<14; // Ignore projectiles
+
+const int zTTraceRayReport_foundIntersection_offset = 12;  //0x000C
+
+const int sizeof_zVEC3                              = 12;  //0x000C
+const int sizeof_zTBBox3D                           = 24;  //0x0018
+const int sizeof_zTTraceRayReport                   = 40;  //0x0028
+const int sizeof_zMAT4                              = 64;  //0x0040
 
 // Trafo matrix as zMAT4 is divided column wise
-const int zMAT4_rightVec                          = 0; // Right vector
-const int zMAT4_upVec                             = 1; // Up vector
-const int zMAT4_outVec                            = 2; // Out vector (facing direction)
-const int zMAT4_position                          = 3; // Position vector
+const int zMAT4_rightVec                            = 0; // Right vector
+const int zMAT4_upVec                               = 1; // Up vector
+const int zMAT4_outVec                              = 2; // Out vector/at vector (facing direction)
+const int zMAT4_position                            = 3; // Position vector
