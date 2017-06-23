@@ -332,82 +332,100 @@ func void freeAimSetupProjectile() {
 
 
     // 2nd: Manipulate aiming accuracy (scatter)
-    // The accuracy is supplied as a percentage. This percentage corresponds to the shots hitting within an area with
-    // the radius FREEAIM_SCATTER_DEG, which is expressed as half the visual angle of the bounding box width (1.8m) from
-    // a distance of 15m (RANGED_CHANCE_MINDIST): tan^-1(90/1500) in degrees = 3.434.
-    // The size of the angles (azimuth and elevation) of deviation of the shot is thus scaled with the accuracy to
-    // result in x% of the shots hitting within the mentioned hi area on average.
+    // The scattering is optional: If disabled, the default hit chance from Gothic is used, where shots are always
+    // accurate, but only register damage in a fraction of shots depending on the skill
 
     // Retrieve accuracy percentage
-    var int accuracy; accuracy = freeAimGetAccuracy_(); // Change the accuracy calculation in that function, not here!
+    var int accuracy; accuracy = freeAimGetAccuracy_(); // Change the accuracy in that function, not here!
+    var int pos[3]; // Position of the target shot
+    var int angleX; var int angleY; // Scattering angles
 
-    var int hitRadius; hitRadius = castToIntf(FREEAIM_SCATTER_DEG);
-    var int hitArea; hitArea = mulf(PI, sqrf(hitRadius)); // Area of circle from radius
-    // The hitArea corresponds to the percentage of shots hitting the bounding box of NPCs from the default distance of
-    // 15 meters (RANGED_CHANCE_MINDIST).
+    if (FREEAIM_TRUE_HITCHANCE) {
+        // The accuracy is supplied as a percentage. This percentage corresponds to the shots hitting within an area
+        // with the radius FREEAIM_SCATTER_DEG, which is expressed as half the visual angle of the bounding box width
+        // (1.8m) from a distance of 15m (RANGED_CHANCE_MINDIST): tan^-1(90/1500) in degrees = 3.434.
+        // The size of the angles (azimuth and elevation) of deviation of the shot is thus scaled with the accuracy to
+        // result in x% of the shots hitting within the mentioned hi area on average.
 
-    var int maxArea; maxArea = divf(hitArea, divf(mkf(accuracy), FLOAT1C));
-    var int maxRadius; maxRadius = sqrtf(divf(maxArea, PI)); // Radius from area
-    var int maxRadiusI; maxRadiusI = roundf(mulf(maxRadius, FLOAT1K)); // r_MinMax works with integers: scale value up
+        var int hitRadius; hitRadius = castToIntf(FREEAIM_SCATTER_DEG);
+        var int hitArea; hitArea = mulf(PI, sqrf(hitRadius)); // Area of circle from radius
+        // The hitArea corresponds to the percentage of shots hitting the bounding box of NPCs from the default distance
+        // of 15 meters (RANGED_CHANCE_MINDIST).
 
-    // The azimuth is here the horizontal deviation from a perfect shot in degrees. It will be a random value between
-    // -maxRadius and maxRadius.
-    var int angleX; angleX = fracf(r_MinMax(-maxRadiusI, maxRadiusI), 1000); // Here the 1000 are scaled down again
+        var int maxArea; maxArea = divf(hitArea, divf(mkf(accuracy), FLOAT1C));
+        var int maxRadius; maxRadius = sqrtf(divf(maxArea, PI)); // Radius from area
+        var int maxRadiusI; maxRadiusI = roundf(mulf(maxRadius, FLOAT1K)); // r_MinMax works with integers: scale up
 
-    // The elevation is here the vertical deviation from a perfect shot in degrees. To end up with a circular scattering
-    // pattern, the range of possible values for angleY is decreased: r^2 - x^2 = y^2 => y = sqrt(r^2 - y^2)
-    maxRadius = subf(sqrf(maxRadius), sqrf(angleX)); // No square root yet, might be negative or 0
-    var int angleY;
-    if (lef(maxRadius, FLOATNULL)) {
-        angleY = FLOATNULL;
+        // The azimuth is here the horizontal deviation from a perfect shot in degrees. It will be a random value
+        // between -maxRadius and maxRadius.
+        angleX = fracf(r_MinMax(-maxRadiusI, maxRadiusI), 1000); // Here the 1000 are scaled down again
+
+        // The elevation is here the vertical deviation from a perfect shot in degrees. To end up with a circular
+        // scattering pattern, the range of possible values for angleY is decreased:
+        // r^2 - x^2 = y^2 => y = sqrt(r^2 - y^2)
+        maxRadius = subf(sqrf(maxRadius), sqrf(angleX)); // No square root yet, might be negative or 0
+        if (lef(maxRadius, FLOATNULL)) {
+            angleY = FLOATNULL;
+        } else {
+            maxRadius = sqrtf(maxRadius);
+            maxRadiusI = roundf(mulf(maxRadius, FLOAT1K)); // r_MinMax works with integers: scale value up
+            angleY = fracf(r_MinMax(-maxRadiusI, maxRadiusI), 1000); // Here the 1000 are scaled down again
+        };
+
+        // Create the target position vector by taking the nearest ray intersection with world/objects
+        var int distance; // Distance to camera (used for calculating target position)
+        var int distPlayer; // Distance to player (used for debugging output to zSpy)
+        freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, _@(distPlayer), _@(distance));
+        var int localPos[3]; // Vector in local space. The angles calculated above will be applied to this vector
+        localPos[0] = FLOATNULL;
+        localPos[1] = FLOATNULL;
+        localPos[2] = distance; // Distance into outVec (facing direction)
+
+        // Rotate around x-axis by angleX (elevation scatter). Rotation equations are simplified, because x and y are 0
+        SinCosApprox(Print_ToRadian(angleX));
+        localPos[1] = mulf(negf(localPos[2]), sinApprox); //  y*cos - z*sin = y'
+        localPos[2] = mulf(localPos[2], cosApprox);       //  y*sin + z*cos = z'
+
+        // Rotate around y-axis by angleY (azimuth scatter)
+        SinCosApprox(Print_ToRadian(angleY));
+        localPos[0] = mulf(localPos[2], sinApprox);       //  x*cos + z*sin = x'
+        localPos[2] = mulf(localPos[2], cosApprox);       // -x*sin + z*cos = z'
+
+        // Get camera vob (not camera itself, because it does not offer a reliable position)
+        var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
+        var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
+
+        // Translation into local coordinate system of camera (rotation): rightVec*x + upVec*y + outVec*z
+        // rightVec*x
+        pos[0] = mulf(camPos.v0[zMAT4_rightVec], localPos[0]);
+        pos[1] = mulf(camPos.v1[zMAT4_rightVec], localPos[0]);
+        pos[2] = mulf(camPos.v2[zMAT4_rightVec], localPos[0]);
+        // rightVec*x + upVec*y
+        pos[0] = addf(pos[0], mulf(camPos.v0[zMAT4_upVec], localPos[1]));
+        pos[1] = addf(pos[1], mulf(camPos.v1[zMAT4_upVec], localPos[1]));
+        pos[2] = addf(pos[2], mulf(camPos.v2[zMAT4_upVec], localPos[1]));
+        // rightVec*x + upVec*y + outVec*z
+        pos[0] = addf(pos[0], mulf(camPos.v0[zMAT4_outVec], localPos[2]));
+        pos[1] = addf(pos[1], mulf(camPos.v1[zMAT4_outVec], localPos[2]));
+        pos[2] = addf(pos[2], mulf(camPos.v2[zMAT4_outVec], localPos[2]));
+
+        // Add the translated coordinates to the camera position (final target position expressed in world coordinates)
+        pos[0] = addf(camPos.v0[zMAT4_position], pos[0]);
+        pos[1] = addf(camPos.v1[zMAT4_position], pos[1]);
+        pos[2] = addf(camPos.v2[zMAT4_position], pos[2]);
+
+        // Hit chance determined by physical hits. If a hit occurs, the accuracy is 100
+        freeAimLastAccuracy = 100;
+
     } else {
-        maxRadius = sqrtf(maxRadius);
-        maxRadiusI = roundf(mulf(maxRadius, FLOAT1K)); // r_MinMax works with integers: scale value up
-        angleY = fracf(r_MinMax(-maxRadiusI, maxRadiusI), 1000); // Here the 1000 are scaled down again
+        // Default hit chance: Every shot is very accurate, hit chance calculation is done in freeAimDoNpcHit()
+        freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, _@(pos), _@(distPlayer), 0);
+        angleX = FLOATNULL; // No scattering (only set for zSpy output at the end of this function)
+        angleY = FLOATNULL;
+
+        // Hit chance determined by accuracy in freeAimDoNpcHit() instead
+        freeAimLastAccuracy = accuracy;
     };
-
-    // Create the target position vector by taking the nearest ray intersection with world/objects
-    var int distance; // Distance to camera (used for calculating target position)
-    var int distPlayer; // Distance to player (used for debugging output to zSpy)
-    freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, _@(distPlayer), _@(distance));
-    var int localPos[3]; // Vector in local space. The angles calculated above will be applied to this vector
-    localPos[0] = FLOATNULL;
-    localPos[1] = FLOATNULL;
-    localPos[2] = distance; // Distance into outVec (facing direction)
-
-    // Rotate around x-axis by angleX (elevation scatter). The rotation equations are simplified because x and y are 0
-    SinCosApprox(Print_ToRadian(angleX));
-    localPos[1] = mulf(negf(localPos[2]), sinApprox); //  y*cos - z*sin = y'
-    localPos[2] = mulf(localPos[2], cosApprox);       //  y*sin + z*cos = z'
-
-    // Rotate around y-axis by angleY (azimuth scatter)
-    SinCosApprox(Print_ToRadian(angleY));
-    localPos[0] = mulf(localPos[2], sinApprox);       //  x*cos + z*sin = x'
-    localPos[2] = mulf(localPos[2], cosApprox);       // -x*sin + z*cos = z'
-
-    // Get camera vob (not camera itself, because it does not offer a reliable position)
-    var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
-    var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
-
-    // Translation into local coordinate system of camera (rotation): rightVec*x + upVec*y + outVec*z
-    var int pos[3];
-    // rightVec*x
-    pos[0] = mulf(camPos.v0[zMAT4_rightVec], localPos[0]);
-    pos[1] = mulf(camPos.v1[zMAT4_rightVec], localPos[0]);
-    pos[2] = mulf(camPos.v2[zMAT4_rightVec], localPos[0]);
-    // rightVec*x + upVec*y
-    pos[0] = addf(pos[0], mulf(camPos.v0[zMAT4_upVec], localPos[1]));
-    pos[1] = addf(pos[1], mulf(camPos.v1[zMAT4_upVec], localPos[1]));
-    pos[2] = addf(pos[2], mulf(camPos.v2[zMAT4_upVec], localPos[1]));
-    // rightVec*x + upVec*y + outVec*z
-    pos[0] = addf(pos[0], mulf(camPos.v0[zMAT4_outVec], localPos[2]));
-    pos[1] = addf(pos[1], mulf(camPos.v1[zMAT4_outVec], localPos[2]));
-    pos[2] = addf(pos[2], mulf(camPos.v2[zMAT4_outVec], localPos[2]));
-
-    // Add the translated coordinates to the camera position (final target position expressed in world coordinates)
-    pos[0] = addf(camPos.v0[zMAT4_position], pos[0]);
-    pos[1] = addf(camPos.v1[zMAT4_position], pos[1]);
-    pos[2] = addf(camPos.v2[zMAT4_position], pos[2]);
 
 
     // 3rd: Set projectile drop-off (by draw force)
@@ -470,8 +488,12 @@ func void freeAimSetupProjectile() {
     SB("distance="); SB(STR_Prefix(toStringf(divf(distPlayer, FLOAT1C)), 4)); SB("m ");
     SB("drawforce="); SBi(drawForce); SB("% ");
     SB("accuracy="); SBi(accuracy); SB("% ");
-    SB("scatter="); SB(STR_Prefix(toStringf(angleX), 5)); SBc(176 /* deg */);
-    SB("/"); SB(STR_Prefix(toStringf(angleY), 5)); SBc(176 /* deg */); SB(" ");
+    if (FREEAIM_TRUE_HITCHANCE) {
+        SB("scatter="); SB(STR_Prefix(toStringf(angleX), 5)); SBc(176 /* deg */);
+        SB("/"); SB(STR_Prefix(toStringf(angleY), 5)); SBc(176 /* deg */); SB(" ");
+    } else {
+        SB("scatter disabled (standard hit chance) ");
+    };
     SB("init-basedamage="); SBi(newBaseDamage); SB("/"); SBi(baseDamage);
     MEM_Info(SB_ToString());
     SB_Destroy();

@@ -36,6 +36,7 @@ const int    FREEAIM_FOCUS_COLLECTION   = 1;                    // Internal. Do 
 const int    FLOAT1C                    = 1120403456;           // 100 as float
 const int    FLOAT3C                    = 1133903872;           // 300 as float
 const int    FLOAT1K                    = 1148846080;           // 1000 as float
+var   int    freeAimLastAccuracy;                               // Accuracy of the previous shot for hit chance
 var   int    freeAimRayInterval;                                // Perform trace ray every x ms (change in ini-file)
 var   int    freeAimDebugWSBBox[6];                             // Weaksopt boundingbox for debug visualization
 var   int    freeAimDebugWSTrj[6];                              // Projectile trajectory for debug visualization

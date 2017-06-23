@@ -21,17 +21,25 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-/* Internal helper function for freeAimHitRegNpc() */
+
+/*
+ * Internal helper function for freeAimHitRegNpc(). It is called from freeAimDoNpcHit().
+ * This function is necessary for error handling and to supply the readied weapon and respective talent value.
+ */
 func int freeAimHitRegNpc_(var C_Npc target) {
-    var C_Item weapon; weapon = MEM_NullToInst(); // Daedalus pseudo locals
-    if (Npc_IsInFightMode(hero, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(hero); }
-    else if (Npc_HasEquippedRangedWeapon(hero)) { weapon = Npc_GetEquippedRangedWeapon(hero); };
+    // Get readied/equipped ranged weapon
+    var int weaponPtr;
+    freeAimGetWeaponTalent(_@(weaponPtr), 0);
+    var C_Item weapon; weapon = _^(weaponPtr);
+
+    // Get material of equipped armor
     var int material; material = -1; // No armor
     if (Npc_HasEquippedArmor(target)) {
         var C_Item armor; armor = Npc_GetEquippedArmor(target);
         material = armor.material;
     };
-    // Call customized function
+
+    // Call customized function to retrieve collision definition
     MEM_PushInstParam(target);
     MEM_PushInstParam(weapon);
     MEM_PushIntParam(material);
@@ -39,12 +47,18 @@ func int freeAimHitRegNpc_(var C_Npc target) {
     return MEM_PopIntResult();
 };
 
-/* Internal helper function for freeAimHitRegWld() */
+
+/*
+ * Internal helper function for freeAimHitRegWld(). It is called from freeAimOnArrowCollide().
+ * This function is necessary for error handling and to supply the readied weapon and respective talent value.
+ */
 func int freeAimHitRegWld_(var C_Npc shooter, var int material, var string texture) {
-    var C_Item weapon; weapon = MEM_NullToInst(); // Daedalus pseudo locals
-    if (Npc_IsInFightMode(shooter, FMODE_FAR)) { weapon = Npc_GetReadiedWeapon(shooter); }
-    else if (Npc_HasEquippedRangedWeapon(shooter)) { weapon = Npc_GetEquippedRangedWeapon(shooter); };
-    // Call customized function
+    // Get readied/equipped ranged weapon
+    var int weaponPtr;
+    freeAimGetWeaponTalent(_@(weaponPtr), 0);
+    var C_Item weapon; weapon = _^(weaponPtr);
+
+    // Call customized function to retrieve collision definition
     MEM_PushInstParam(shooter);
     MEM_PushInstParam(weapon);
     MEM_PushIntParam(material);
@@ -53,124 +67,161 @@ func int freeAimHitRegWld_(var C_Npc shooter, var int material, var string textu
     return MEM_PopIntResult();
 };
 
-/* Determine the hit chance. For the player it's always 100%. True hit chance is calculated in freeAimGetAccuracy() */
+
+/*
+ * Determine the hit chance when shooting at an NPC to manipulate the hit registration. This function hooks
+ * oCAIArrow::ReportCollisionToAI() at the offset where the hit chance of the NPC is checked. With freeAimHitRegNpc(),
+ * it is decided whether a projectile causes damage, does nothing or bounces of the NPC. Depending on
+ * FREEAIM_TRUE_HITCHANCE, the resulting hit chance is either the accuracy or always 100%, where the hit chance is
+ * instead determined by scattering in freeAimSetupProjectile().
+ * This function is only manipulating anything if the shooter is the player.
+ */
 func void freeAimDoNpcHit() {
-    var int hitChancePtr; hitChancePtr = ESP+24; // esp+1ACh+194h
-    var C_Npc target; target = _^(MEM_ReadInt(ESP+28)); // esp+1ACh+190h // oCNpc*
     var int arrowAI; arrowAI = EBP;
     var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
-    var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
-    if (!FREEAIM_ACTIVE) || (!Npc_IsPlayer(shooter)) { // Default hitchance for npcs or if FA is disabled
+
+    // This function does not affect NPCs and also only affects the player if FA is enabled
+    if (!FREEAIM_ACTIVE) || (!Npc_IsPlayer(shooter)) {
+        // Reset to Gothic's default hit registration and leave the function
         MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to default collision behavior on npcs
         MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59); // jz to 0x6A0BA3
         return;
     };
-    var int intersection; intersection = 1; // Hit registered (positive hit determined by the engine at this point)
-    if (FREEAIM_HITDETECTION_EXP) { // Additional hit detection test (EXPERIMENTAL). Will lead to some hits not detected
-        intersection = 0; // Check here if "any" point along the line of the projectile direction lies inside the bbox
-        var zTBBox3D targetBBox; targetBBox = _^(_@(target)+zCVob_bbox3D_offset); // oCNpc.bbox3D
-        var int dir[3]; // Direction of collision line along the right-vector of projectile (projectile flies sideways)
-        dir[0] = projectile._zCVob_trafoObjToWorld[0];
-        dir[1] = projectile._zCVob_trafoObjToWorld[4];
-        dir[2] = projectile._zCVob_trafoObjToWorld[8];
-        var int line[6]; // Collision line
-        line[0] = addf(projectile._zCVob_trafoObjToWorld[ 3], mulf(dir[0], FLOAT3C)); // Start 3m behind the projectile
-        line[1] = addf(projectile._zCVob_trafoObjToWorld[ 7], mulf(dir[1], FLOAT3C)); // So far because of bbox at
-        line[2] = addf(projectile._zCVob_trafoObjToWorld[11], mulf(dir[2], FLOAT3C)); // close range
-        var int i; i=0; var int iter; iter = 700/5; // 7meters
-        while(i <= iter); i += 1; // Walk along the line in steps of 5cm
-            line[3] = subf(line[0], mulf(dir[0], mkf(i*5))); // Next point along the collision line
-            line[4] = subf(line[1], mulf(dir[1], mkf(i*5)));
-            line[5] = subf(line[2], mulf(dir[2], mkf(i*5)));
-            if (lef(targetBBox.mins[0], line[3])) && (lef(targetBBox.mins[1], line[4]))
-            && (lef(targetBBox.mins[2], line[5])) && (gef(targetBBox.maxs[0], line[3]))
-            && (gef(targetBBox.maxs[1], line[4])) && (gef(targetBBox.maxs[2], line[5])) {
-                intersection = 1; break; }; // Current point is inside the bbox
-        end;
-    };
+
+    // Retrieve some variables
+    var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
+    var int hitChancePtr; hitChancePtr = ESP+24; // esp+1ACh-194h
+    var C_Npc target; target = _^(MEM_ReadInt(ESP+28)); // esp+1ACh-190h
+
+    // Boolean to specify, whether damage will be applied or not
     var int hit;
-    if (intersection) { // By default this is always true
-        var int collision; collision = freeAimHitRegNpc_(target); // 0=destroy, 1=stuck, 2=deflect
-        if (collision == 2) { // Deflect (no damage)
-            MEM_WriteByte(projectileDeflectOffNpcAddr, ASMINT_OP_nop); // Skip npc armor collision check, deflect always
-            MEM_WriteByte(projectileDeflectOffNpcAddr + 1, ASMINT_OP_nop);
-            hit = FALSE;
-        } else {
-            MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Jump beyond armor collision check, deflect never
-            MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*60*/ 96); // jz to 0x6A0BC8
-            if (!collision) { // Destroy (no damage)
-                projectile.instanz = -1; // Delete item instance (it will not be put into the inventory)
-                hit = FALSE;
-            } else { // Collide (damage)
-                hit = TRUE;
-            };
-        };
-    } else { // Destroy the projectile if it did not physically hit
-        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Jump beyond the armor collision check, deflect never
+
+    // Retrieve the collision behavior based on the shooter, target and the material type of their armor
+    var int collision; collision = freeAimHitRegNpc_(target);
+    const int DESTROY = 0; // Projectile breaks and vanishes
+    const int DAMAGE  = 1; // Projectile stays and is stuck in the surface of the collision object
+    const int DEFLECT = 2; // Projectile deflects of the surfaces and bounces off
+
+    if (collision == DEFLECT) {
+        // Deflect projectile (no damage)
+        MEM_WriteByte(projectileDeflectOffNpcAddr, ASMINT_OP_nop); // Skip npc armor collision check, deflect always
+        MEM_WriteByte(projectileDeflectOffNpcAddr + 1, ASMINT_OP_nop);
+        hit = FALSE;
+    } else if (collision == DAMAGE) {
+        // Apply damage or destroy projectile
+        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Jump beyond armor collision check, deflect never
+        MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*60*/ 96); // jz to 0x6A0BC8
+        hit = TRUE;
+    } else if (collision == DESTROY) {
+        // Destroy (no damage)
+        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Jump beyond armor collision check, deflect never
         MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*60*/ 96); // jz to 0x6A0BC8
         projectile.instanz = -1; // Delete item instance (it will not be put into the inventory)
         hit = FALSE;
     };
-    MEM_WriteInt(hitChancePtr, hit*100); // Player always hits = 100%
+
+    // This is a positive hit, defined by collision (see above) and the hit chance percentage (accuracy). The percentage
+    // is either determined by the skill (default Gothic hit chance) or is always 100%, if the accuracy is defined by
+    // the scattering (FREEAIM_TRUE_HITCHANCE)
+    MEM_WriteInt(hitChancePtr, hit*freeAimLastAccuracy);
 };
 
-/* Arrow collides with world (static or non-npc vob). Either destroy, deflect or collide */
+
+/*
+ * Determine the collision behavior when a projectile collides with the world (static or non-NPC vob). Either destroy,
+ * deflect or collide. This function hooks oCAIArrowBase::ReportCollisionToAI() at two different offsets for vobs and
+ * the static world.
+ */
 func void freeAimOnArrowCollide() {
-    var int arrowAI; arrowAI = ESI;
-    var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
-    var int matPtr; matPtr = MEM_ReadInt(ECX); // zCMaterial* or zCPolygon*
-    if (MEM_ReadInt(matPtr) != zCMaterial__vtbl) { // Static world: Read zCPolygon
+    // Get the material of the collision object. Since this function hooks at two different addresses, it has to be
+    // differentiated between zCMaterial and zCPolygon first, before reading the material type from it
+    var int matPtr; matPtr = MEM_ReadInt(ECX); // zCMaterial* or zCPolygon* depending on hooked address
+    if (MEM_ReadInt(matPtr) != zCMaterial__vtbl) { // Static world: Get the zCMaterial from the zCPolygon
         var zCPolygon polygon; polygon = _^(matPtr);
         matPtr = polygon.material;
     };
+
+    // From the zCMaterial the material type can be read (as defined in Constants.d)
     var zCMaterial mat; mat = _^(matPtr);
     var int material; material = mat.matGroup;
+
+    // Additionally, get the texture of the collision object for more customization of collision behavior
     var string texture;
-    if (mat.texture) { // Check for texture
+    if (mat.texture) { // Some objects strangely do not have a texture
         var zCTexture tex; tex = _^(mat.texture);
         texture = tex._zCObject_objectName;
     } else {
         texture = "";
     };
-    var int collision; collision = freeAimHitRegWld_(shooter, material, texture); // 0=destroy, 1=stay, 2=deflect
-    if (collision == 1) { // Collide
+
+    // Get the shooter
+    var int arrowAI; arrowAI = ESI;
+    var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
+
+    // Retrieve the collision behavior based on the shooter, the material type and the texture of the collision object
+    var int collision; collision = freeAimHitRegWld_(shooter, material, texture);
+    const int DESTROY = 0; // Projectile breaks and vanishes
+    const int STUCK   = 1; // Projectile stays and is stuck in the surface of the collision object
+    const int DEFLECT = 2; // Projectile deflects of the surfaces and bounces off
+
+    if (collision == STUCK) {
+        // Collide and get stuck in the object
         EDI = material; // Sets the condition at 0x6A0A45 and 0x6A0C1A to true: Projectile stays
-    } else {
+    } else if (collision == DEFLECT) {
+        // Deflect the projectile
         EDI = -1;  // Sets the condition at 0x6A0A45 and 0x6A0C1A to false: Projectile deflects
-        if (!collision) {
-            var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
+    } else if (collision == DESTROY) {
+        // Destroy the projectile
+        EDI = -1;  // Sets the condition at 0x6A0A45 and 0x6A0C1A to false: Projectile deflects
 
-            // Only destory projectile, if it did not bounce off and is still fast enough to reasonably break
-            var int rigidBody; rigidBody = projectile._zCVob_rigidBody;
-            var int totalVelocity; totalVelocity = addf(addf( // zCRigidBody.velocity[3]
-                absf(MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset)),
-                absf(MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset+4))),
-                absf(MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset+8)));
-            if (gf(totalVelocity, FLOAT1C)) {
-                // Total velocity is high enough to break the projectile
+        var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
 
-                // Better safe than writing to an invalid address
-                if (FF_ActiveData(freeAimDropProjectile, rigidBody)) {
-                    FF_RemoveData(freeAimDropProjectile, rigidBody);
-                };
+        // Only destroy projectile, if it did not bounce off and is still fast enough to reasonably break
+        var int rigidBody; rigidBody = projectile._zCVob_rigidBody;
+        var int totalVelocity; totalVelocity = addf(addf( // zCRigidBody.velocity[3]
+            absf(MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset)),
+            absf(MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset+4))),
+            absf(MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset+8)));
+        if (gf(totalVelocity, FLOAT1C)) {
+            // Total velocity is high enough to break the projectile
 
-                // Breaking sound and visual effect
-                Wld_StopEffect(FREEAIM_BREAK_FX); // Sometimes collides several times
-                Wld_PlayEffect(FREEAIM_BREAK_FX, projectile, projectile, 0, 0, 0, FALSE);
-                MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATNULL); // Set life time to 0: Remove projectile
+            // Better safe than writing to an invalid address
+            if (FF_ActiveData(freeAimDropProjectile, rigidBody)) {
+                FF_RemoveData(freeAimDropProjectile, rigidBody);
             };
+
+            // Breaking sound and visual effect
+            Wld_StopEffect(FREEAIM_BREAK_FX); // Sometimes collides several times, so disable first
+            Wld_PlayEffect(FREEAIM_BREAK_FX, projectile, projectile, 0, 0, 0, FALSE);
+            MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATNULL); // Set life time to 0: Remove projectile
         };
     };
 };
 
-/* Fix trigger collision bug. Taken from http://forum.worldofplayers.de/forum/threads/1126551/page10?p=20894916 */
+
+/*
+ * Fix trigger collision bug. When shooting a projectile inside a trigger of certain properties, the projectile collides
+ * continuously causing a nerve recking sound. This function hooks oCAIArrow::CanThisCollideWith() and checks whether
+ * the object in question is a trigger with certain properties to prevent the collision.
+ * Taken from http://forum.worldofplayers.de/forum/threads/1126551/page10?p=20894916
+ */
 func void freeAimTriggerCollisionCheck() {
     var int vobPtr; vobPtr = ESP+4;
-    var int vtbl; vtbl = MEM_ReadInt(MEM_ReadInt(vobPtr));
-    if (vtbl != zCTrigger_vtbl) && (vtbl != zCTriggerScript_vtbl) { return; }; // It is no Trigger
+    var zCVob vob; vob = _^(MEM_ReadInt(vobPtr));
+
+    // Check if the collision object is a trigger
+    if (vob._vtbl != zCTrigger_vtbl) && (vob._vtbl != zCTriggerScript_vtbl) {
+        return;
+    };
     var zCTrigger trigger; trigger = _^(MEM_ReadInt(vobPtr));
+
     if (trigger.bitfield & zCTrigger_bitfield_respondToObject)
-    && (trigger.bitfield & zCTrigger_bitfield_reactToOnTouch) { return; }; // Object-reacting trigger
+    && (trigger.bitfield & zCTrigger_bitfield_reactToOnTouch) {
+        // Object-reacting trigger. This kind of trigger needs the collision, e.g. to react to projectiles
+        return;
+    };
+
+    // Replace the collision object with the shooter, because the shooter is always ignored
     var int shooter; shooter = MEM_ReadInt(ECX+92);
-    MEM_WriteInt(vobPtr, shooter); // The engine ignores the shooter
+    MEM_WriteInt(vobPtr, shooter);
 };
