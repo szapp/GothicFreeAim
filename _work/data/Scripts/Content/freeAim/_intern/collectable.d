@@ -29,19 +29,20 @@
  * AI life time to maximum.
  */
 func void freeAimKeepProjectileInWorld() {
-    var int arrowAI; arrowAI = EAX; // oCAIArrow* is the arrow AI of the projectile
-    var int projectilePtr; projectilePtr = EBX; // oCItem*
+    // Check if AI was already removed. Happens if NPC is hit, see freeAimOnArrowHitNpc()
     var int removePtr; removePtr = EDI; // int* determines the removal of the projectile (1 for remove, 0 otherwise)
-
-    // Check validity
-    if (MEM_ReadInt(removePtr)) { // AI was already removed. Happens if NPC is hit, see freeAimOnArrowHitNpc()
+    if (MEM_ReadInt(removePtr)) {
         return;
     };
-    if (!projectilePtr) { // In case oCItem* does not exist (should never happen)
+
+    // Check validity of projectile an its rigidBody
+    var int arrowAI; arrowAI = EAX; // oCAIArrow* is the arrow AI of the projectile
+    var int projectilePtr; projectilePtr = EBX; // oCItem*
+    if (!projectilePtr) {
         return;
     };
     var oCItem projectile; projectile = _^(projectilePtr);
-    if (!projectile._zCVob_rigidBody) { // In case zCRigidBody* does not exist (should never happen)
+    if (!projectile._zCVob_rigidBody) {
         return;
     };
 

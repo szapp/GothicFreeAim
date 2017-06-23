@@ -33,10 +33,13 @@ func int freeAimHitRegNpc_(var C_Npc target) {
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Get material of equipped armor
-    var int material; material = -1; // No armor
+    var int material;
     if (Npc_HasEquippedArmor(target)) {
         var C_Item armor; armor = Npc_GetEquippedArmor(target);
         material = armor.material;
+    } else {
+        // No armor
+        material = -1;
     };
 
     // Call customized function to retrieve collision definition

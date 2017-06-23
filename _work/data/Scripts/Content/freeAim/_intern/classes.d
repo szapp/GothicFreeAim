@@ -22,7 +22,9 @@
  */
 
 
-/* Helper class: Critical hit definitions */
+/*
+ * Helper class: Critical hit definitions
+ */
 const int sizeof_Weakspot = 32;
 
 class Weakspot {
@@ -33,7 +35,9 @@ class Weakspot {
 };
 
 
-/* Helper class: Reticle definitions */
+/*
+ * Helper class: Reticle definitions
+ */
 const int sizeof_Reticle = 28;
 
 class Reticle {

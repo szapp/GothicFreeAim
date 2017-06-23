@@ -21,41 +21,81 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-/* Visualize a bounding box in 3D space */
+
+/*
+ * Visualize a bounding box in 3D space. Function can generally be used to debug operations in 3D space.
+ */
 func void freeAimVisualizeBBox(var int bboxPtr, var int color) {
     var int cPtr; cPtr = _@(color);
     const int call = 0;
     if (CALL_Begin(call)) {
-        CALL_PtrParam(_@(cPtr));
+        CALL_PtrParam(_@(cPtr)); // zCOLOR*
         CALL__thiscall(_@(bboxPtr), zTBBox3D__Draw);
         call = CALL_End();
     };
 };
 
-/* Visualize a line in 3D space */
+
+/*
+ * Visualize a line in 3D space. Function can generally be used to debug operations in 3D space.
+ */
 func void freeAimVisualizeLine(var int pos1Ptr, var int pos2Ptr, var int color) {
     const int call = 0; var int zero;
     if (CALL_Begin(call)) {
         CALL_IntParam(_@(zero));
-        CALL_IntParam(_@(color));
-        CALL_PtrParam(_@(pos2Ptr));
-        CALL_PtrParam(_@(pos1Ptr));
+        CALL_IntParam(_@(color));   // zCOLOR
+        CALL_PtrParam(_@(pos2Ptr)); // zVEC3*
+        CALL_PtrParam(_@(pos1Ptr)); // zVEC3*
         CALL__thiscall(_@(zlineCache), zCLineCache__Line3D);
         call = CALL_End();
     };
 };
 
-/* Visualize the bounding boxes of the trace ray its trajectory for debugging */
+
+/*
+ * Visualize the bounding boxes of the trace ray and its trajectory for debugging. This function hooks
+ * zCWorld::AdvanceClock, because it has to happen BEFORE where the frame functions are hooked. Otherwise the drawn
+ * lines disappear.
+ */
 func void freeAimVisualizeTraceRay() {
-    if (!FREEAIM_DEBUG_TRACERAY) { return; };
-    if (freeAimDebugTRBBox[0]) { freeAimVisualizeBBox(_@(freeAimDebugTRBBox), zCOLOR_GREEN); };
-    if (freeAimDebugTRTrj[0]) { freeAimVisualizeLine(_@(freeAimDebugTRTrj), _@(freeAimDebugTRTrj)+12, zCOLOR_GREEN); };
-    if (freeAimDebugTRPrevVob) { freeAimVisualizeBBox(freeAimDebugTRPrevVob, zCOLOR_GREEN); };
+    if (!FREEAIM_DEBUG_TRACERAY) {
+        return;
+    };
+
+    // Visualize trace ray intersection as small green bounding box
+    if (freeAimDebugTRBBox[0]) {
+        freeAimVisualizeBBox(_@(freeAimDebugTRBBox), zCOLOR_GREEN);
+    };
+
+    // Visualize trace ray as green line
+    if (freeAimDebugTRTrj[0]) {
+        freeAimVisualizeLine(_@(freeAimDebugTRTrj), _@(freeAimDebugTRTrj)+sizeof_zVEC3, zCOLOR_GREEN);
+    };
+
+    // Visualize validated found vob as green bounding box, if present
+    if (freeAimDebugTRPrevVob) {
+        freeAimVisualizeBBox(freeAimDebugTRPrevVob, zCOLOR_GREEN);
+    };
 };
 
-/* Visualize the bounding box of the weakspot and the projectile trajectory for debugging */
+
+/*
+ * Visualize the bounding box of the weak spot (critical hit) and the projectile trajectory for debugging. This function
+ * hooks zCWorld::AdvanceClock, because it has to happen BEFORE where the frame functions are hooked. Otherwise the
+ * drawn lines disappear.
+ */
 func void freeAimVisualizeWeakspot() {
-    if (!FREEAIM_DEBUG_WEAKSPOT) { return; };
-    if (freeAimDebugWSBBox[0]) { freeAimVisualizeBBox(_@(freeAimDebugWSBBox), zCOLOR_RED); };
-    if (freeAimDebugWSTrj[0]) { freeAimVisualizeLine(_@(freeAimDebugWSTrj), _@(freeAimDebugWSTrj)+12, zCOLOR_RED); };
+    if (!FREEAIM_DEBUG_WEAKSPOT) {
+        return;
+    };
+
+    // Visualize critical hit node (weak spot) as red bounding box
+    if (freeAimDebugWSBBox[0]) {
+        freeAimVisualizeBBox(_@(freeAimDebugWSBBox), zCOLOR_RED);
+    };
+
+    // Approximate projectile trajectory as red line
+    if (freeAimDebugWSTrj[0]) {
+        freeAimVisualizeLine(_@(freeAimDebugWSTrj), _@(freeAimDebugWSTrj)+sizeof_zVEC3, zCOLOR_RED);
+    };
 };

@@ -28,7 +28,10 @@
  */
 func void freeAim_Init() {
     const int hookFreeAim = 0;
+
+    // Only register once per session
     if (!hookFreeAim) {
+
         // Copyright notice in zSpy
         var int s; s = SB_New();
         SB("     "); SB(FREEAIM_VERSION); SB(", Copyright "); SBc(169 /* (C) */); SB(" 2016  mud-freak (@szapp)");
@@ -38,40 +41,47 @@ func void freeAim_Init() {
         MEM_Info("     Released under the MIT License.");
         MEM_Info("     For more details see <http://opensource.org/licenses/MIT>.");
         MEM_Info("");
+
         // Controls
         MEM_Info("Initializing controls.");
         HookEngineF(mouseUpdate, 5, freeAimManualRotation); // Update the player model rotation by mouse input
-        MemoryProtectionOverride(oCNpc__TurnToEnemy_737D75, 6); // Prevent auto turning towards target
+        MemoryProtectionOverride(oCNpc__TurnToEnemy_737D75, 6); // Prevent auto turning towards the target
         HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aiming
+
         // Ranged combat aiming and shooting
         MEM_Info("Initializing ranged combat aiming and shooting.");
-        HookEngineF(oCAIHuman__BowMode_69633B, 6, freeAimRangedShooting); // Focus collection during shooting
-        HookEngineF(oCAIHuman__BowMode_696296, 5, freeAimAnimation); // Update aiming animation
+        HookEngineF(oCAIHuman__BowMode_69633B, 6, freeAimRangedShooting); // Correct focus collection during shooting
+        HookEngineF(oCAIHuman__BowMode_696296, 5, freeAimAnimation); // Update ranged aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Set projectile direction and trajectory
-        HookEngineF(oCAIArrowBase__DoAI_6A06D8, 6, freeAimResetGravity); // On any collision of each projectile
+        HookEngineF(oCAIArrowBase__DoAI_6A06D8, 6, freeAimResetGravity); // Reset gravity on collision of projectiles
+
         // Gothic 2 controls
         MEM_Info("Initializing Gothic 2 controls.");
         MemoryProtectionOverride(oCAIHuman__BowMode_695F2B, 6); // Skip jump to Gothic 2 controls: jz to 0x696391
         MemoryProtectionOverride(oCAIHuman__BowMode_6962F2, 2); // Shooting key: push 3
         MemoryProtectionOverride(oCAIHuman__PC_ActionMove_69A0BB, 5); // Aiming key: mov eax, [esp+8h+4h] // push eax
+
         // Reticle
         MEM_Info("Initializing reticle.");
         HookEngineF(oCAIHuman__BowMode, 6, freeAimManageReticle); // Manage the reticle (on/off)
-        HookEngineF(oCNpcFocus__SetFocusMode, 7, freeAimSwitchMode); // Manage the reticle (on/off) and draw force
+        HookEngineF(oCNpcFocus__SetFocusMode, 7, freeAimSwitchMode); // Manage the reticle (on/off) and reset draw force
+
         // Collision detection
         MEM_Info("Initializing collision detection.");
-        HookEngineF(onArrowDamageAddr, 7, freeAimDetectCriticalHit); // Critical hit detection
+        HookEngineF(onArrowDamageAddr, 7, freeAimDetectCriticalHit); // Perform critical hit detection
         HookEngineF(onArrowHitChanceAddr, 5, freeAimDoNpcHit); // Decide whether a projectile hits or not
         HookEngineF(onArrowCollVobAddr, 5, freeAimOnArrowCollide); // Collision behavior on non-NPC vob material
         HookEngineF(onArrowCollStatAddr, 5, freeAimOnArrowCollide); // Collision behavior on static world material
         MemoryProtectionOverride(projectileDeflectOffNpcAddr, 2); // Collision behavior on NPCs: jz to 0x6A0BA3
+
         // Spells
         if (!FREEAIM_DISABLE_SPELLS) {
             MEM_Info("Initializing spell combat.");
             HookEngineF(oCAIHuman__MagicMode, 7, freeAimSpellReticle); // Manage focus collection and reticle
-            HookEngineF(oCSpell__Setup_484BA9, 6, freeAimSetupSpell); // Set spell fx direction and trajectory
+            HookEngineF(oCSpell__Setup_484BA9, 6, freeAimSetupSpell); // Set spell FX direction and trajectory
         };
-        // Console commands
+
+        // Register console commands
         MEM_Info("Initializing console commands.");
         CC_Register(freeAimVersion, "freeaim version", "print freeaim version info");
         CC_Register(freeAimLicense, "freeaim license", "print freeaim license info");
@@ -85,34 +95,61 @@ func void freeAim_Init() {
                 CC_Register(freeAimDebugTraceRay, "debug freeaim traceray", "turn debug visualization on/off");
             };
         };
+
         // Collectable projectiles
-        if (FREEAIM_REUSE_PROJECTILES) { // Because of balancing issues, this is a constant and not a variable
+        if (FREEAIM_REUSE_PROJECTILES) {
+            // Because of balancing issues, this is setting is a constant and not a variable, because it should not be
+            // changed during the game. That would cause too many/too few projectiles when switching
             MEM_Info("Initializing collectable projectiles.");
-            HookEngineF(oCAIArrow__DoAI_6A1489, 6, freeAimKeepProjectileInWorld); // End of projectile DoAI loop
+            HookEngineF(oCAIArrow__DoAI_6A1489, 6, freeAimKeepProjectileInWorld); // Keep projectiles when stop moving
             HookEngineF(onArrowHitNpcAddr, 5, freeAimOnArrowHitNpc); // Put projectile into inventory
             HookEngineF(onArrowHitVobAddr, 5, freeAimOnArrowGetStuck); // Reposition projectile when stuck in vob
             HookEngineF(onArrowHitStatAddr, 5, freeAimOnArrowGetStuck); // Reposition projectile when stuck in world
         };
+
         // Trigger collision fix
-        if (FREEAIM_TRIGGER_COLL_FIX) { // Because by default all triggers react to objects, this is a setting
+        if (FREEAIM_TRIGGER_COLL_FIX) {
             MEM_Info("Initializing trigger collision fix.");
             HookEngineF(oCAIArrow__CanThisCollideWith, 7, freeAimTriggerCollisionCheck); // Fix trigger collision bug
         };
-        // INI Settings
+
+        // Read INI Settings
         MEM_Info("Initializing settings from Gothic.ini.");
-        if (!MEM_GothOptExists("FREEAIM", "enabled")) { MEM_SetGothOpt("FREEAIM", "enabled", "1"); }; // If not set
-        if (!MEM_GothOptExists("FREEAIM", "focusEnabled")) { MEM_SetGothOpt("FREEAIM", "focusEnabled", "1"); }
-        else if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusEnabled"))) {
-            FREEAIM_FOCUS_COLLECTION = 0; }; // No focus collection (performance) not recommended
-        if (!MEM_GothOptExists("FREEAIM", "focusCollIntvMS")) { MEM_SetGothOpt("FREEAIM", "focusCollIntvMS", "10"); };
+
+        if (!MEM_GothOptExists("FREEAIM", "enabled")) {
+            // Add INI-entry, if not set (set to enabled by default)
+            MEM_SetGothOpt("FREEAIM", "enabled", "1");
+        };
+
+        if (!MEM_GothOptExists("FREEAIM", "focusEnabled")) {
+            // Add INI-entry, if not set (set to enabled by default)
+            MEM_SetGothOpt("FREEAIM", "focusEnabled", "1");
+        } else if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusEnabled"))) {
+            // No focus collection (performance increase for the price of no focus collection) not recommended
+            FREEAIM_FOCUS_COLLECTION = 0;
+        };
+
+        if (!MEM_GothOptExists("FREEAIM", "focusCollIntvMS")) {
+            // Add INI-entry, if not set (set to 10ms by default)
+            MEM_SetGothOpt("FREEAIM", "focusCollIntvMS", "10");
+        };
+        // Recalculate trace ray intersection every x ms
         freeAimRayInterval = STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusCollIntvMS"));
-        if (freeAimRayInterval > 500) { freeAimRayInterval = 500; }; // Recalculate trace ray intersection every x ms
-        r_DefaultInit(); // Start rng for aiming accuracy
+        if (freeAimRayInterval > 500) {
+            // The upper bound is 500 ms
+            freeAimRayInterval = 500;
+        };
+
+        // Start rng for aiming accuracy
+        r_DefaultInit();
+
+        // Done
         hookFreeAim = 1;
     };
+
     // Reset setting constant. In case of loading a game the focus instances would not be updated
     FREEAIM_ACTIVE = 0;
-    MEM_Call(freeAimManageReticle); // Remove reticle on level change
+    MEM_Call(freeAimManageReticle); // Remove reticle on level change (would be stuck on screen)
 
     MEM_Info(ConcatStrings(FREEAIM_VERSION, " initialized successfully."));
 };
@@ -258,7 +295,8 @@ func void freeAimDisableAutoTurn(var int on) {
  *  0 if disabled in menu or mouse disabled
  *  1 if enabled but not active (not currently aiming)
  *  5 if enabled and currently aiming in ranged fight mode (FMODE_FAR)
- *  7 if enabled and currently aiming in magic fight mode with FA-eligible spell (FMODE_MAGIC)
+ *  7 if enabled and currently aiming in magic fight mode with free aiming suported spell (FMODE_MAGIC)
+ *
  * Different checks are performed in performance-favoring order (exiting the function as early as possible) to set the
  * constant, which is subsequently used in a lot of functions to determine the state of free aiming.
  */
@@ -338,7 +376,7 @@ func void freeAimIsActive() {
             Focus_Magic.npc_azi = 15.0;
             Focus_Magic.item_prio = 0;
             freeAimDisableAutoTurn(1);
-            FREEAIM_ACTIVE = her.fmode;
+            FREEAIM_ACTIVE = FMODE_MAGIC;
         };
 
     } else if (her.fmode >= FMODE_FAR) { // Greater or equal: Crossbow has different fight mode!

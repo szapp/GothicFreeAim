@@ -67,10 +67,11 @@ func void freeAimSetupSpell() {
 
 
 /*
- * Manage reticle style and focus collection for magic combat.
+ * Manage reticle style and focus collection for magic combat during aiming. This function hooks oCAIHuman::MagicMode,
+ * but exists right away if the active spell does not support free aiming or if the player is not currently aiming.
  */
 func void freeAimSpellReticle() {
-    // Only show reticle for spells that support free aiming
+    // Only show reticle for spells that support free aiming and during aiming
     if (FREEAIM_ACTIVE != FMODE_MAGIC) {
         freeAimRemoveReticle();
         return;
@@ -78,7 +79,8 @@ func void freeAimSpellReticle() {
 
     // Retrieve target NPC and the distance to it from the camera(!)
     var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
-    var int distance; var int target;
+    var int distance;
+    var int target;
 
     if (FREEAIM_FOCUS_COLLECTION) && (spell.targetCollectRange > 0) {
         // Determine the focus type. If focusType is 0, then no focus will be collect, but only an intersection with the

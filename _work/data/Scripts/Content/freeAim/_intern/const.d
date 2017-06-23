@@ -22,7 +22,9 @@
  */
 
 
-/* Free aim internal constants, do not modify! Change the settings in freeAim\config\settings.d */
+/*
+ * Free aim internal constants, do not modify! Change the settings in freeAim\config\settings.d
+ */
 const string FREEAIM_VERSION            = "G2 Free Aim v0.1.2"; // Do not change under any circumstances
 const int    FREEAIM_DRAWTIME_READY     = 650;                  // Time offset for readying the bow. Fixed by animation
 const int    FREEAIM_DRAWTIME_RELOAD    = 1110;                 // Time offset for reloading the bow. Fixed by animation
@@ -47,7 +49,9 @@ var   int    freeAimReticleHndl;                                // Holds the han
 var   int    freeAimBowDrawOnset;                               // Time onset of drawing the bow
 
 
-/* All addresses used (gothic2). In case of a gothic1 port: There are a lot of hardcoded address offsets in the code! */
+/*
+ * All addresses used (Gothic 2). Hooked functions indicated by the hook length in the in-line comments
+ */
 const int zCVob__SetPositionWorld                 = 6404976; //0x61BB70
 const int zCVob__GetRigidBody                     = 6285664; //0x5FE960
 const int zCVob__TraceRay                         = 6291008; //0x5FFE40
@@ -110,11 +114,14 @@ const int oCSpell__Setup_484BA9                   = 4737961; //0x484BA9 // Hook 
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook length 5
 
 
-/* Class offsets */
+/*
+ * Class offsets (Gothic 2)
+ */
 const int zCVob_bbox3D_offset                       = 124; //0x007C
 const int zCVob_trafoObjToWorld_offset              = 60;  //0x003C
 
 const int oCSpell_spellCasterNpc_offset             = 52;  //0x0034
+const int oCSpell_manaInvested_offset               = 72;  //0x0048
 const int oCSpell_C_Spell_offset                    = 128; //0x0080
 
 const int oCAIArrowBase_collision_offset            = 52;  //0x0034

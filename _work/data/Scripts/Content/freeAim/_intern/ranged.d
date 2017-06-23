@@ -95,8 +95,7 @@ func void freeAimRangedShooting() {
  * collection is overwritten.
  */
 func void freeAimAnimation() {
-    // Only free aiming is active
-    if (FREEAIM_ACTIVE != FMODE_FAR) {
+    if (!FREEAIM_ACTIVE) {
         return;
     };
 
@@ -312,12 +311,12 @@ func int freeAimScaleInitialDamage_(var int basePointDamage) {
  */
 func void freeAimSetupProjectile() {
     // Only if shooter is the player and if FA is enabled
-    var C_Npc shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second argument is the shooter
+    var C_Npc shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second function argument is the shooter
     if (!FREEAIM_ACTIVE) || (!Npc_IsPlayer(shooter)) {
         return;
     };
 
-    var int projectilePtr; projectilePtr = MEM_ReadInt(ESP+4); // First argument is the projectile
+    var int projectilePtr; projectilePtr = MEM_ReadInt(ESP+4); // First function argument is the projectile
     if (!Hlp_Is_oCItem(projectilePtr)) {
         return;
     };
