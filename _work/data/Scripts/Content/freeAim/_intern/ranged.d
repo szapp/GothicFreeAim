@@ -340,35 +340,72 @@ func void freeAimSetupProjectile() {
     var int angleX; var int angleY; // Scattering angles
 
     if (FREEAIM_TRUE_HITCHANCE) {
-        // The accuracy is supplied as a percentage. This percentage corresponds to the shots hitting within an area
-        // with the radius FREEAIM_SCATTER_DEG, which is expressed as half the visual angle of the bounding box width
-        // (1.8m) from a distance of 15m (RANGED_CHANCE_MINDIST): tan^-1(90/1500) in degrees = 3.434.
-        // The size of the angles (azimuth and elevation) of deviation of the shot is thus scaled with the accuracy to
-        // result in x% of the shots hitting within the mentioned hi area on average.
+        // The accuracy is first used as a probability to decide whether a projectile should hit or not. Depending on
+        // this, the minimum (rmin) and maximum (rmax) scattering angles are designed by which the shot is deviated.
+        // Not-a-hit results in rmin=FREEAIM_SCATTER_HIT and rmax=FREEAIM_SCATTER_MAX, a positive hit results in
+        // rmin=0 and rmax=FREEAIM_SCATTER_HIT.
 
-        var int hitRadius; hitRadius = castToIntf(FREEAIM_SCATTER_DEG);
-        var int hitArea; hitArea = mulf(PI, sqrf(hitRadius)); // Area of circle from radius
-        // The hitArea corresponds to the percentage of shots hitting the bounding box of NPCs from the default distance
-        // of 15 meters (RANGED_CHANCE_MINDIST).
+        // Specify minimum and maximum scattering angles
+        var int rmin;
+        var int rmax;
+        // Determine whether it is considered accurate enough for a positive hit
+        if (r_Max(99) /* [0, 99] */ < accuracy) {
 
-        var int maxArea; maxArea = divf(hitArea, divf(mkf(accuracy), FLOAT1C));
-        var int maxRadius; maxRadius = sqrtf(divf(maxArea, PI)); // Radius from area
-        var int maxRadiusI; maxRadiusI = roundf(mulf(maxRadius, FLOAT1K)); // r_MinMax works with integers: scale up
+            // The projectile will land inside the hit radius scaled by the accuracy
+            rmin = FLOATNULL;
 
-        // The azimuth is here the horizontal deviation from a perfect shot in degrees. It will be a random value
-        // between -maxRadius and maxRadius.
-        angleX = fracf(r_MinMax(-maxRadiusI, maxRadiusI), 1000); // Here the 1000 are scaled down again
+            // Scale the maximum radius by acurracy. The circle area from the radius scales better with accuracy
+            var int hitRadius; hitRadius = castToIntf(FREEAIM_SCATTER_HIT);
+            var int hitArea; hitArea = mulf(PI, sqrf(hitRadius)); // Area of circle from radius
 
-        // The elevation is here the vertical deviation from a perfect shot in degrees. To end up with a circular
-        // scattering pattern, the range of possible values for angleY is decreased:
-        // r^2 - x^2 = y^2 => y = sqrt(r^2 - y^2)
-        maxRadius = subf(sqrf(maxRadius), sqrf(angleX)); // No square root yet, might be negative or 0
-        if (lef(maxRadius, FLOATNULL)) {
-            angleY = FLOATNULL;
+            var int maxArea; maxArea = divf(hitArea, divf(mkf(accuracy), FLOAT1C));
+            rmax = sqrtf(divf(maxArea, PI)); // Radius from area
+            if (rmax > hitRadius) {
+                rmax = hitRadius;
+            };
+
         } else {
-            maxRadius = sqrtf(maxRadius);
-            maxRadiusI = roundf(mulf(maxRadius, FLOAT1K)); // r_MinMax works with integers: scale value up
-            angleY = fracf(r_MinMax(-maxRadiusI, maxRadiusI), 1000); // Here the 1000 are scaled down again
+            // The projectile will land outside of the hit radius
+            rmin = castToIntf(FREEAIM_SCATTER_HIT);
+            rmax = castToIntf(FREEAIM_SCATTER_MAX);
+        };
+
+        // r_MinMax works with integers: scale up
+        var int rmaxI; rmaxI = roundf(mulf(rmax, FLOAT1K));
+
+        // Azimiuth scatter (horizontal deviation from a perfect shot in degrees)
+        angleX = fracf(r_MinMax(FLOATNULL, rmaxI), 1000); // Here the 1000 are scaled down again
+
+        // For a circular scattering pattern the range of possible values (rmin and rmax) for angleY is decreased:
+        // r^2 - x^2 = y^2  =>  y = sqrt(r^2 - x^2), where r is the radius to stay within the radius
+
+        // Adjust rmin
+        if (lf(angleX, rmin)) {
+            rmin = sqrtf(subf(sqrf(rmin), sqrf(angleX)));
+        } else {
+            rmin = FLOATNULL;
+        };
+        // r_MinMax works with integers: scale up
+        var int rminI; rminI = roundf(mulf(rmin, FLOAT1K));
+
+        // Adjust rmax
+        if (lf(angleX, rmax)) {
+            rmax = sqrtf(subf(sqrf(rmax), sqrf(angleX)));
+        } else {
+            rmax = FLOATNULL;
+        };
+        // r_MinMax works with integers: scale up
+        rmaxI = roundf(mulf(rmax, FLOAT1K));
+
+        // Elevation scatter (vertical deviation from a perfect shot in degrees)
+        angleY = fracf(r_MinMax(rminI, rmaxI), 1000); // Here the 1000 are scaled down again
+
+        // Randomize the sign of scatter
+        if (r_Max(1)) {
+            angleX = negf(angleX);
+        };
+        if (r_Max(1)) {
+            angleY = negf(angleY);
         };
 
         // Create the target position vector by taking the nearest ray intersection with world/objects

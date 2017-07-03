@@ -20,7 +20,8 @@ const int    FREEAIM_DEBUG_TRACERAY     = FALSE;           // Show trace ray deb
 /*
  * Modifying any line below is not recommended!
  */
-const float  FREEAIM_SCATTER_DEG        = 3.434;           // Minimum scatter radius in degrees for ranged accuracy
+const float  FREEAIM_SCATTER_HIT        = 2.2;             // Scatter radius in degrees below which everything is a hit
+const float  FREEAIM_SCATTER_MAX        = 4.5;             // Maximum scatter radius in degrees
 const int    FREEAIM_TRAJECTORY_ARC_MAX = 400;             // Max time (ms) after which the trajectory drops off
 const float  FREEAIM_PROJECTILE_GRAVITY = 0.1;             // Gravity of projectile after FREEAIM_TRAJECTORY_ARC_MAX ms
 const string FREEAIM_CAMERA             = "CamModFreeAim"; // CCamSys_Def script instance (not recommended)
