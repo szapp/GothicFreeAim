@@ -342,24 +342,31 @@ func void freeAimSetupProjectile() {
     if (FREEAIM_TRUE_HITCHANCE) {
         // The accuracy is first used as a probability to decide whether a projectile should hit or not. Depending on
         // this, the minimum (rmin) and maximum (rmax) scattering angles are designed by which the shot is deviated.
-        // Not-a-hit results in rmin=FREEAIM_SCATTER_HIT and rmax=FREEAIM_SCATTER_MAX, a positive hit results in
-        // rmin=0 and rmax=FREEAIM_SCATTER_HIT.
-
-        // Specify minimum and maximum scattering angles
+        // Not-a-hit results in rmin=FREEAIM_SCATTER_HIT and rmax=FREEAIM_SCATTER_MAX.
+        // A positive hit results in rmin=0 and rmax=FREEAIM_SCATTER_HIT*(-accuracy+100).
         var int rmin;
         var int rmax;
+
         // Determine whether it is considered accurate enough for a positive hit
-        if (r_Max(99) /* [0, 99] */ < accuracy) {
+        if (r_MinMax(0, 99) < accuracy) {
 
             // The projectile will land inside the hit radius scaled by the accuracy
             rmin = FLOATNULL;
 
-            // Scale the maximum radius by acurracy. The circle area from the radius scales better with accuracy
+            // The circle area from the radius scales better with accuracy
             var int hitRadius; hitRadius = castToIntf(FREEAIM_SCATTER_HIT);
             var int hitArea; hitArea = mulf(PI, sqrf(hitRadius)); // Area of circle from radius
 
-            var int maxArea; maxArea = divf(hitArea, divf(mkf(accuracy), FLOAT1C));
-            rmax = sqrtf(divf(maxArea, PI)); // Radius from area
+            // Scale the maximum area with minimum acurracy
+            // (hitArea - 1) * (accuracy - 100)
+            // --------------------------------  + 1
+            //               -100
+            var int maxArea;
+            areaMax = addf(divf(mulf(subf(hitArea, FLOATONE), mkf(accuracy-100)), negf(FLAOT1C)), FLOATONE);
+
+            // Convert back to a radius
+            rmax = sqrtf(divf(maxArea, PI));
+
             if (rmax > hitRadius) {
                 rmax = hitRadius;
             };
@@ -377,7 +384,7 @@ func void freeAimSetupProjectile() {
         angleX = fracf(r_MinMax(FLOATNULL, rmaxI), 1000); // Here the 1000 are scaled down again
 
         // For a circular scattering pattern the range of possible values (rmin and rmax) for angleY is decreased:
-        // r^2 - x^2 = y^2  =>  y = sqrt(r^2 - x^2), where r is the radius to stay within the radius
+        // r^2 - x^2 = y^2  =>  y = sqrt(r^2 - x^2), where r is the radius to stay within the maximum radius
 
         // Adjust rmin
         if (lf(angleX, rmin)) {
@@ -385,6 +392,7 @@ func void freeAimSetupProjectile() {
         } else {
             rmin = FLOATNULL;
         };
+
         // r_MinMax works with integers: scale up
         var int rminI; rminI = roundf(mulf(rmin, FLOAT1K));
 
@@ -401,7 +409,7 @@ func void freeAimSetupProjectile() {
         angleY = fracf(r_MinMax(rminI, rmaxI), 1000); // Here the 1000 are scaled down again
 
         // Randomize the sign of scatter
-        if (r_Max(1)) {
+        if (r_Max(1)) { // 0 or 1, approx. 50-50 chance
             angleX = negf(angleX);
         };
         if (r_Max(1)) {
