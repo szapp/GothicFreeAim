@@ -362,7 +362,7 @@ func void freeAimSetupProjectile() {
             // --------------------------------  + 1
             //               -100
             var int maxArea;
-            areaMax = addf(divf(mulf(subf(hitArea, FLOATONE), mkf(accuracy-100)), negf(FLAOT1C)), FLOATONE);
+            maxArea = addf(divf(mulf(subf(hitArea, FLOATONE), mkf(accuracy-100)), negf(FLOAT1C)), FLOATONE);
 
             // Convert back to a radius
             rmax = sqrtf(divf(maxArea, PI));
