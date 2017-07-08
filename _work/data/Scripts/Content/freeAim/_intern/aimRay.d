@@ -198,6 +198,7 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
 
                 // Update the flags and specific trace ray
                 flags = zTRACERAY_vob_ignore_no_cd_dyn | zTRACERAY_vob_bbox; // Important!
+                var int focusVobPtr; focusVobPtr = her.focus_vob; // Write to variable, otherwise crash on new game
                 var int trRep; trRep = MEM_Alloc(sizeof_zTTraceRayReport);
                 const int call3 = 0;
                 if (CALL_Begin(call3)) {
@@ -205,7 +206,7 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
                     CALL_IntParam(_@(flags));      // Trace ray flags
                     CALL_PtrParam(_@(dirPosPtr));  // Trace ray direction
                     CALL_PtrParam(_@(fromPosPtr)); // Start vector
-                    CALL__thiscall(_@(her.focus_vob), zCVob__TraceRay); // This is a vob specific trace ray
+                    CALL__thiscall(_@(focusVobPtr), zCVob__TraceRay); // This is a vob specific trace ray
                     call3 = CALL_End();
                 };
                 if (CALL_RetValAsInt()) {
