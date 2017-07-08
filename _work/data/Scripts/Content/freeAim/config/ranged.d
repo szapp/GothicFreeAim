@@ -43,6 +43,9 @@ func int freeAimGetDrawForce(var C_Item weapon, var int talent) {
  * Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW).
  *
  * Here, the accuracy is scaled by talent and by draw force (see function above).
+ *
+ * Note: This function is only used, if FREEAIM_TRUE_HITCHANCE is true. Otherwise, Gothic's default hit chance
+ * calculation (based on skill and distance from target) is used and the accuracy defined here does not take effect!
  */
 func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
     // Here the talent is scaled by draw force:

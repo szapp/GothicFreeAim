@@ -84,7 +84,7 @@ func void freeAimDoNpcHit() {
     var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
 
     // This function does not affect NPCs and also only affects the player if FA is enabled
-    if (!FREEAIM_ACTIVE) || (!Npc_IsPlayer(shooter)) {
+    if (!Npc_IsPlayer(shooter)) {
         // Reset to Gothic's default hit registration and leave the function
         MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to default collision behavior on npcs
         MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59); // jz to 0x6A0BA3
@@ -123,10 +123,19 @@ func void freeAimDoNpcHit() {
         hit = FALSE;
     };
 
-    // This is a positive hit, defined by collision (see above) and the hit chance percentage (accuracy). The percentage
-    // is either determined by the skill (default Gothic hit chance) or is always 100%, if the accuracy is defined by
-    // the scattering (FREEAIM_TRUE_HITCHANCE)
-    MEM_WriteInt(hitChancePtr, hit*freeAimLastAccuracy);
+    // The hit chance percentage is either determined by skill and distance (default Gothic hit chance) or is always
+    // 100%, if free aiming is enabled and the accuracy is defined by the scattering (FREEAIM_TRUE_HITCHANCE == TRUE).
+    var int hitchance;
+    if (FREEAIM_ACTIVE) && (FREEAIM_TRUE_HITCHANCE) {
+        // Always hits (100% of all times)
+        hitchance = 100;
+    } else {
+        // Take the default distance-skill-hit chance provided by Gothic's engine
+        hitchance = MEM_ReadInt(hitChancePtr);
+    };
+
+    // This is a positive hit, depending on the collision (see above) and the hit chance percentage
+    MEM_WriteInt(hitChancePtr, hit*hitchance);
 };
 
 

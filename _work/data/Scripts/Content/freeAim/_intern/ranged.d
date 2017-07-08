@@ -332,50 +332,97 @@ func void freeAimSetupProjectile() {
 
     // 2nd: Manipulate aiming accuracy (scatter)
     // The scattering is optional: If disabled, the default hit chance from Gothic is used, where shots are always
-    // accurate, but only register damage in a fraction of shots depending on the skill
+    // accurate, but only register damage in a fraction of shots depending on skill and distance
 
-    // Retrieve accuracy percentage
-    var int accuracy; accuracy = freeAimGetAccuracy_(); // Change the accuracy in that function, not here!
+    // Create the target position vector for the shot by taking the nearest ray intersection with world/objects
     var int pos[3]; // Position of the target shot
-    var int angleX; var int angleY; // Scattering angles
+    var int distance; // Distance to camera (used for calculating position of target shot in local space)
+    var int distPlayer; // Distance to player (used for debugging output in zSpy)
+    freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, _@(pos), _@(distPlayer), _@(distance));
 
+    // Scattering with different hit chance calcualtion (optional)
     if (FREEAIM_TRUE_HITCHANCE) {
-        // The accuracy is supplied as a percentage. This percentage corresponds to the shots hitting within an area
-        // with the radius FREEAIM_SCATTER_DEG, which is expressed as half the visual angle of the bounding box width
-        // (1.8m) from a distance of 15m (RANGED_CHANCE_MINDIST): tan^-1(90/1500) in degrees = 3.434.
-        // The size of the angles (azimuth and elevation) of deviation of the shot is thus scaled with the accuracy to
-        // result in x% of the shots hitting within the mentioned hi area on average.
+        // The accuracy is first used as a probability to decide whether a projectile should hit or not. Depending on
+        // this, the minimum (rmin) and maximum (rmax) scattering angles are designed by which the shot is deviated.
+        // Not-a-hit results in rmin=FREEAIM_SCATTER_MISS and rmax=FREEAIM_SCATTER_MAX.
+        // A positive hit results in rmin=0 and rmax=FREEAIM_SCATTER_HIT*(-accuracy+100).
+        var int rmin;
+        var int rmax;
 
-        var int hitRadius; hitRadius = castToIntf(FREEAIM_SCATTER_DEG);
-        var int hitArea; hitArea = mulf(PI, sqrf(hitRadius)); // Area of circle from radius
-        // The hitArea corresponds to the percentage of shots hitting the bounding box of NPCs from the default distance
-        // of 15 meters (RANGED_CHANCE_MINDIST).
+        // Retrieve accuracy percentage
+        var int accuracy; accuracy = freeAimGetAccuracy_(); // Change the accuracy in that function, not here!
 
-        var int maxArea; maxArea = divf(hitArea, divf(mkf(accuracy), FLOAT1C));
-        var int maxRadius; maxRadius = sqrtf(divf(maxArea, PI)); // Radius from area
-        var int maxRadiusI; maxRadiusI = roundf(mulf(maxRadius, FLOAT1K)); // r_MinMax works with integers: scale up
+        // Determine whether it is considered accurate enough for a positive hit
+        if (r_MinMax(0, 99) < accuracy) {
 
-        // The azimuth is here the horizontal deviation from a perfect shot in degrees. It will be a random value
-        // between -maxRadius and maxRadius.
-        angleX = fracf(r_MinMax(-maxRadiusI, maxRadiusI), 1000); // Here the 1000 are scaled down again
+            // The projectile will land inside the hit radius scaled by the accuracy
+            rmin = FLOATNULL;
 
-        // The elevation is here the vertical deviation from a perfect shot in degrees. To end up with a circular
-        // scattering pattern, the range of possible values for angleY is decreased:
-        // r^2 - x^2 = y^2 => y = sqrt(r^2 - y^2)
-        maxRadius = subf(sqrf(maxRadius), sqrf(angleX)); // No square root yet, might be negative or 0
-        if (lef(maxRadius, FLOATNULL)) {
-            angleY = FLOATNULL;
+            // The circle area from the radius scales better with accuracy
+            var int hitRadius; hitRadius = castToIntf(FREEAIM_SCATTER_HIT);
+            var int hitArea; hitArea = mulf(PI, sqrf(hitRadius)); // Area of circle from radius
+
+            // Scale the maximum area with minimum acurracy
+            // (hitArea - 1) * (accuracy - 100)
+            // --------------------------------  + 1
+            //               -100
+            var int maxArea;
+            maxArea = addf(divf(mulf(subf(hitArea, FLOATONE), mkf(accuracy-100)), negf(FLOAT1C)), FLOATONE);
+
+            // Convert back to a radius
+            rmax = sqrtf(divf(maxArea, PI));
+
+            if (rmax > hitRadius) {
+                rmax = hitRadius;
+            };
+
         } else {
-            maxRadius = sqrtf(maxRadius);
-            maxRadiusI = roundf(mulf(maxRadius, FLOAT1K)); // r_MinMax works with integers: scale value up
-            angleY = fracf(r_MinMax(-maxRadiusI, maxRadiusI), 1000); // Here the 1000 are scaled down again
+            // The projectile will land outside of the hit radius
+            rmin = castToIntf(FREEAIM_SCATTER_MISS);
+            rmax = castToIntf(FREEAIM_SCATTER_MAX);
         };
 
-        // Create the target position vector by taking the nearest ray intersection with world/objects
-        var int distance; // Distance to camera (used for calculating target position)
-        var int distPlayer; // Distance to player (used for debugging output to zSpy)
-        freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, _@(distPlayer), _@(distance));
-        var int localPos[3]; // Vector in local space. The angles calculated above will be applied to this vector
+        // r_MinMax works with integers: scale up
+        var int rmaxI; rmaxI = roundf(mulf(rmax, FLOAT1K));
+
+        // Azimiuth scatter (horizontal deviation from a perfect shot in degrees)
+        var int angleX; angleX = fracf(r_MinMax(FLOATNULL, rmaxI), 1000); // Here the 1000 are scaled down again
+
+        // For a circular scattering pattern the range of possible values (rmin and rmax) for angleY is decreased:
+        // r^2 - x^2 = y^2  =>  y = sqrt(r^2 - x^2), where r is the radius to stay within the maximum radius
+
+        // Adjust rmin
+        if (lf(angleX, rmin)) {
+            rmin = sqrtf(subf(sqrf(rmin), sqrf(angleX)));
+        } else {
+            rmin = FLOATNULL;
+        };
+
+        // r_MinMax works with integers: scale up
+        var int rminI; rminI = roundf(mulf(rmin, FLOAT1K));
+
+        // Adjust rmax
+        if (lf(angleX, rmax)) {
+            rmax = sqrtf(subf(sqrf(rmax), sqrf(angleX)));
+        } else {
+            rmax = FLOATNULL;
+        };
+        // r_MinMax works with integers: scale up
+        rmaxI = roundf(mulf(rmax, FLOAT1K));
+
+        // Elevation scatter (vertical deviation from a perfect shot in degrees)
+        var int angleY; angleY = fracf(r_MinMax(rminI, rmaxI), 1000); // Here the 1000 are scaled down again
+
+        // Randomize the sign of scatter
+        if (r_Max(1)) { // 0 or 1, approx. 50-50 chance
+            angleX = negf(angleX);
+        };
+        if (r_Max(1)) {
+            angleY = negf(angleY);
+        };
+
+        // Create vector in local space from distance. The angles calculated above will be applied to this vector
+        var int localPos[3];
         localPos[0] = FLOATNULL;
         localPos[1] = FLOATNULL;
         localPos[2] = distance; // Distance into outVec (facing direction)
@@ -412,18 +459,6 @@ func void freeAimSetupProjectile() {
         pos[0] = addf(camPos.v0[zMAT4_position], pos[0]);
         pos[1] = addf(camPos.v1[zMAT4_position], pos[1]);
         pos[2] = addf(camPos.v2[zMAT4_position], pos[2]);
-
-        // Hit chance determined by physical hits. If a hit occurs, the accuracy is 100
-        freeAimLastAccuracy = 100;
-
-    } else {
-        // Default hit chance: Every shot is very accurate, hit chance calculation is done in freeAimDoNpcHit()
-        freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, _@(pos), _@(distPlayer), 0);
-        angleX = FLOATNULL; // No scattering (only set for zSpy output at the end of this function)
-        angleY = FLOATNULL;
-
-        // Hit chance determined by accuracy in freeAimDoNpcHit() instead
-        freeAimLastAccuracy = accuracy;
     };
 
 
@@ -486,12 +521,14 @@ func void freeAimSetupProjectile() {
     SB("freeAimSetupProjectile: ");
     SB("distance="); SB(STR_Prefix(toStringf(divf(distPlayer, FLOAT1C)), 4)); SB("m ");
     SB("drawforce="); SBi(drawForce); SB("% ");
-    SB("accuracy="); SBi(accuracy); SB("% ");
     if (FREEAIM_TRUE_HITCHANCE) {
+        SB("accuracy="); SBi(accuracy); SB("% ");
         SB("scatter="); SB(STR_Prefix(toStringf(angleX), 5)); SBc(176 /* deg */);
         SB("/"); SB(STR_Prefix(toStringf(angleY), 5)); SBc(176 /* deg */); SB(" ");
     } else {
-        SB("scatter disabled (standard hit chance) ");
+        var int hitchance;
+        freeAimGetWeaponTalent(0, _@(hitchance));
+        SB("scattering disabled (standard hit chance) hit chance="); SBi(hitchance); SB("% ");
     };
     SB("init-basedamage="); SBi(newBaseDamage); SB("/"); SBi(baseDamage);
     MEM_Info(SB_ToString());

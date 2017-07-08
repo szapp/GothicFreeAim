@@ -26,19 +26,29 @@
  * Free aim internal constants, do not modify! Change the settings in freeAim\config\settings.d
  */
 const string FREEAIM_VERSION            = "G2 Free Aim v0.1.2"; // Do not change under any circumstances
-const int    FREEAIM_DRAWTIME_READY     = 650;                  // Time offset for readying the bow. Fixed by animation
-const int    FREEAIM_DRAWTIME_RELOAD    = 1110;                 // Time offset for reloading the bow. Fixed by animation
+
+const int    FREEAIM_DRAWTIME_READY     = 650;                  // Time (ms) for readying the bow. Fixed by animation
+const int    FREEAIM_DRAWTIME_RELOAD    = 1110;                 // Time (ms) for reloading the bow. Fixed by animation
+
 const int    FREEAIM_RETICLE_MIN_SIZE   = 32;                   // Smallest reticle size in pixels
 const int    FREEAIM_RETICLE_MAX_SIZE   = 64;                   // Biggest reticle size in pixels
+
 const string FREEAIM_TRAIL_FX           = "freeAim_TRAIL";      // Trailstrip FX. Should not be changed
 const string FREEAIM_BREAK_FX           = "freeAim_DESTROY";    // FX of projectile breaking on impact with world
+
 const int    FREEAIM_MAX_DIST           = 5000;                 // 50m. Shooting/reticle adjustments. Do not change
-const int    FREEAIM_ACTIVE             = 0;                    // Internal. Do not change
-const int    FREEAIM_FOCUS_COLLECTION   = 1;                    // Internal. Do not change (change in ini-file)
+
+const float  FREEAIM_SCATTER_HIT        = 2.5;                  // Radius (visual angle) below which everything is a hit
+const float  FREEAIM_SCATTER_MISS       = 3.3;                  // Radius above which everything is a miss
+const float  FREEAIM_SCATTER_MAX        = 5.0;                  // Maximum scatter radius
+
 const int    FLOAT1C                    = 1120403456;           // 100 as float
 const int    FLOAT3C                    = 1133903872;           // 300 as float
 const int    FLOAT1K                    = 1148846080;           // 1000 as float
-var   int    freeAimLastAccuracy;                               // Accuracy of the previous shot for hit chance
+
+const int    FREEAIM_ACTIVE             = 0;                    // Internal. Do not change
+const int    FREEAIM_FOCUS_COLLECTION   = 1;                    // Internal. Do not change (change in ini-file)
+
 var   int    freeAimRayInterval;                                // Perform trace ray every x ms (change in ini-file)
 var   int    freeAimDebugWSBBox[6];                             // Weaksopt boundingbox for debug visualization
 var   int    freeAimDebugWSTrj[6];                              // Projectile trajectory for debug visualization
@@ -127,6 +137,7 @@ const int oCSpell_C_Spell_offset                    = 128; //0x0080
 const int oCAIArrowBase_collision_offset            = 52;  //0x0034
 const int oCAIArrowBase_lifeTime_offset             = 56;  //0x0038
 const int oCAIArrowBase_hostVob_offset              = 60;  //0x003C
+const int oCAIArrowBase_hasHit_offset               = 84; //0x0054
 const int oCAIArrow_origin_offset                   = 92;  //0x005C
 
 const int zCRigidBody_mass_offset                   = 0;   //0x0000

@@ -112,6 +112,12 @@ func void freeAimKeepProjectileInWorld() {
  */
 func void freeAimOnArrowHitNpc() {
     var int arrowAI; arrowAI = ESI;
+
+    if (!MEM_ReadInt(arrowAI+oCAIArrowBase_hasHit_offset)) {
+        // Check if the projectile actually caused no damage (in case of auto aim hit registration)
+        return;
+    };
+
     var C_Npc victim; victim = _^(EDI);
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
 
