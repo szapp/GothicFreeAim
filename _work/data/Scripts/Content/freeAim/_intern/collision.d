@@ -99,11 +99,18 @@ func void freeAimDoNpcHit() {
     // Boolean to specify, whether damage will be applied or not
     var int hit;
 
-    // Retrieve the collision behavior based on the shooter, target and the material type of their armor
-    var int collision; collision = freeAimHitRegNpc_(target);
-    const int DESTROY = 0; // Projectile breaks and vanishes
-    const int DAMAGE  = 1; // Projectile stays and is stuck in the surface of the collision object
+    var int collision;
+    const int DESTROY = 0; // Projectile doest not cause damage and vanishes
+    const int DAMAGE  = 1; // Projectile causes damage and may stay in the inventory of the victim
     const int DEFLECT = 2; // Projectile deflects of the surfaces and bounces off
+
+    if (MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset)) {
+        // Adjust collision behavior for NPCs if the projectile bounced off a surface before
+        collision = FREEAIM_COLL_PRIOR_NPC;
+    } else {
+        // Retrieve the collision behavior based on the shooter, target and the material type of their armor
+        collision = freeAimHitRegNpc_(target);
+    };
 
     if (collision == DEFLECT) {
         // Deflect projectile (no damage)
@@ -212,10 +219,41 @@ func void freeAimOnArrowCollide() {
 
 
 /*
+ * This function disables collision of projectiles with NPCs once the projectiles have bounced of another surface. Like
+ * freeAimTriggerCollisionCheck(), this function hooks oCAIArrow::CanThisCollideWith() and checks whether the object in
+ * question is an NPC to prevent the collision, if the projectiles has collided before. The hook is done in a separate
+ * function to increase performance, if only one of the two settings is enabled.
+ *
+ * Note: This hook is only initialized if FREEAIM_COLL_PRIOR_NPC == -1.
+ */
+func void freeAimDisableNpcCollisionOnBounce() {
+    var int arrowAI; arrowAI = ECX;
+
+    // Check if the projectile bounced off a surface before
+    if (!MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset)) {
+        return;
+    };
+
+    var int vobPtr; vobPtr = ESP+4;
+    if (!Hlp_Is_oCNpc(MEM_ReadInt(vobPtr))) {
+        return;
+    };
+
+    // Replace the collision object with the shooter, because the shooter is always ignored
+    var int shooter; shooter = MEM_ReadInt(arrowAI+oCAIArrow_origin_offset);
+    MEM_WriteInt(vobPtr, shooter);
+};
+
+
+/*
  * Fix trigger collision bug. When shooting a projectile inside a trigger of certain properties, the projectile collides
- * continuously causing a nerve recking sound. This function hooks oCAIArrow::CanThisCollideWith() and checks whether
- * the object in question is a trigger with certain properties to prevent the collision.
+ * continuously causing a nerve recking sound. Like freeAimDisableNpcCollisionOnBounce(), this function hooks
+ * oCAIArrow::CanThisCollideWith() and checks whether the object in question is a trigger with certain properties to
+ * prevent the collision. The hook is done in a separate function to increase performance, if only one of the two
+ * settings is enabled.
  * Taken from http://forum.worldofplayers.de/forum/threads/1126551/page10?p=20894916
+ *
+ * Note: This hook is only initialized if FREEAIM_TRIGGER_COLL_FIX is true.
  */
 func void freeAimTriggerCollisionCheck() {
     var int vobPtr; vobPtr = ESP+4;

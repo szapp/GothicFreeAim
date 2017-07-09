@@ -11,6 +11,7 @@ const int    FREEAIM_REUSE_PROJECTILES  = TRUE;            // Enable collection 
 const int    FREEAIM_DISABLE_SPELLS     = FALSE;           // Disable free aiming for spells (ranged uneffected)
 const int    FREEAIM_DRAWTIME_MAX       = 1200;            // Max draw time (ms): When is the bow fully drawn
 const int    FREEAIM_TRUE_HITCHANCE     = TRUE;            // Enable scattering (true) or use Gothic default hit chance
+const int    FREEAIM_COLL_PRIOR_NPC     = -1;              // After coll: ignre(-1), dstry(0), coll(1), dflct(2) off NPC
 const int    FREEAIM_TRIGGER_COLL_FIX   = TRUE;            // Apply trigger collision fix (disable collision)
 const int    FREEAIM_DEBUG_CONSOLE      = TRUE;            // Enable console commands (debugging). Disable in final mod
 const int    FREEAIM_DEBUG_WEAKSPOT     = FALSE;           // Show weakspot debugging visualization by default

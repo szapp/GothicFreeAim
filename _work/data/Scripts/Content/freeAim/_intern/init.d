@@ -73,6 +73,9 @@ func void freeAim_Init() {
         HookEngineF(onArrowCollVobAddr, 5, freeAimOnArrowCollide); // Collision behavior on non-NPC vob material
         HookEngineF(onArrowCollStatAddr, 5, freeAimOnArrowCollide); // Collision behavior on static world material
         MemoryProtectionOverride(projectileDeflectOffNpcAddr, 2); // Collision behavior on NPCs: jz to 0x6A0BA3
+        if (FREEAIM_COLL_PRIOR_NPC == -1) {
+            HookEngineF(oCAIArrow__CanThisCollideWith, 7, freeAimDisableNpcCollisionOnBounce); // Ignore NPC after coll
+        };
 
         // Spells
         if (!FREEAIM_DISABLE_SPELLS) {

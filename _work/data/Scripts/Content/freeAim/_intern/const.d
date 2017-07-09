@@ -138,7 +138,8 @@ const int oCSpell_C_Spell_offset                    = 128; //0x0080
 const int oCAIArrowBase_collision_offset            = 52;  //0x0034
 const int oCAIArrowBase_lifeTime_offset             = 56;  //0x0038
 const int oCAIArrowBase_hostVob_offset              = 60;  //0x003C
-const int oCAIArrowBase_hasHit_offset               = 84; //0x0054
+const int oCAIArrowBase_creatingImpactFX_offset     = 64;  //0x0040
+const int oCAIArrowBase_hasHit_offset               = 84;  //0x0054
 const int oCAIArrow_origin_offset                   = 92;  //0x005C
 
 const int zCRigidBody_mass_offset                   = 0;   //0x0000
