@@ -50,6 +50,7 @@ const int    FREEAIM_ACTIVE             = 0;                    // Internal. Do 
 const int    FREEAIM_FOCUS_COLLECTION   = 1;                    // Internal. Do not change (change in ini-file)
 
 var   int    freeAimRayInterval;                                // Perform trace ray every x ms (change in ini-file)
+var   int    freeAimRayPrevCalcTime;                            // Time of last trace ray calculation
 var   int    freeAimDebugWSBBox[6];                             // Weaksopt boundingbox for debug visualization
 var   int    freeAimDebugWSTrj[6];                              // Projectile trajectory for debug visualization
 var   int    freeAimDebugTRBBox[6];                             // Trace ray intersection for debug visualization

@@ -147,9 +147,10 @@ func void freeAim_Init() {
         hookFreeAim = 1;
     };
 
-    // Reset setting constant. In case of loading a game the focus instances would not be updated
-    FREEAIM_ACTIVE = 0;
-    MEM_Call(freeAimManageReticle); // Remove reticle on level change (would be stuck on screen)
+    // Reset settings to prevent crashes
+    FREEAIM_ACTIVE = 0; // Reset setting constant. Focus instances would not be updated, when loading a game
+    MEM_Call(freeAimManageReticle); // Remove reticle. Would be stuck on screen on level change
+    freeAimRayPrevCalcTime = 0; // Reset aim ray calculation time. Would cause an invalid vob pointer on loading a game
 
     MEM_Info(ConcatStrings(FREEAIM_VERSION, " initialized successfully."));
 };

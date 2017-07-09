@@ -36,9 +36,9 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
 
     // Only run full trace ray machinery every so often (see freeAimRayInterval) to allow weaker machines to run this
     var int curTime; curTime = MEM_Timer.totalTime; // Get current time
-    if (curTime-prevCalculationTime >= freeAimRayInterval) { // If the interval is passed, recompute trace ray
+    if (curTime-freeAimRayPrevCalcTime >= freeAimRayInterval) { // If the interval is passed, recompute trace ray
         // Update time of previous calculation
-        var int prevCalculationTime; prevCalculationTime = curTime;
+        freeAimRayPrevCalcTime = curTime;
 
         // The trace ray is cast along the camera viewing angle from a start point towards a direction/length vector
 
