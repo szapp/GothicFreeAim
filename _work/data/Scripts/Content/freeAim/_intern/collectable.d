@@ -112,22 +112,21 @@ func void freeAimKeepProjectileInWorld() {
  */
 func void freeAimOnArrowHitNpc() {
     var int arrowAI; arrowAI = ESI;
-
-    if (!MEM_ReadInt(arrowAI+oCAIArrowBase_hasHit_offset)) {
-        // Check if the projectile actually caused no damage (in case of auto aim hit registration)
-        return;
-    };
-
-    var C_Npc victim; victim = _^(EDI);
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
 
-    // Call customized function to retrieve new projectile instance
-    MEM_PushIntParam(projectile.instanz);
-    MEM_PushInstParam(victim);
-    MEM_Call(freeAimGetUsedProjectileInstance); // freeAimGetUsedProjectileInstance(projectile.instanz, victim);
-    var int projInst; projInst = MEM_PopIntResult();
-    if (projInst > 0) {
-        CreateInvItem(victim, projInst); // Put respective instance in inventory
+    if (MEM_ReadInt(arrowAI+oCAIArrowBase_hasHit_offset)) {
+        // Check if the projectile actually caused damage (in case of auto aim hit registration). Only in that case put
+        // it in the inventory of the victim
+        var C_Npc victim; victim = _^(EDI);
+
+        // Call customized function to retrieve new projectile instance
+        MEM_PushIntParam(projectile.instanz);
+        MEM_PushInstParam(victim);
+        MEM_Call(freeAimGetUsedProjectileInstance); // freeAimGetUsedProjectileInstance(projectile.instanz, victim);
+        var int projInst; projInst = MEM_PopIntResult();
+        if (projInst > 0) {
+            CreateInvItem(victim, projInst); // Put respective instance in inventory
+        };
     };
 
     // Better safe than writing to an invalid address
