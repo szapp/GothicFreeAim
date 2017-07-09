@@ -95,3 +95,8 @@ func int freeAimScaleInitialDamage(var int basePointDamage, var C_Item weapon, v
 
     return basePointDamage;
 };
+
+
+func int freeAimGetRecoil(var C_Item weapon, var int talent) {
+    return 100;
+};

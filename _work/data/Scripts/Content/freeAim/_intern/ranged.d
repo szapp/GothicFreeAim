@@ -299,6 +299,32 @@ func int freeAimScaleInitialDamage_(var int basePointDamage) {
 };
 
 
+
+func int freeAimGetRecoil_() {
+    // Get readied/equipped ranged weapon
+    var int talent; var int weaponPtr;
+    if (!freeAimGetWeaponTalent(_@(weaponPtr), _@(talent))) {
+        // On error return 50% accuracy
+        return 50;
+    };
+    var C_Item weapon; weapon = _^(weaponPtr);
+
+    // Call customized function to retrieve accuracy value
+    MEM_PushInstParam(weapon);
+    MEM_PushIntParam(talent);
+    MEM_Call(freeAimGetRecoil); // freeAimGetRecoil(weapon, talent);
+    var int recoil; recoil = MEM_PopIntResult();
+
+    // Must be a percentage in range of [0, 100]
+    if (recoil > 100) {
+        recoil = 100;
+    } else if (recoil < 0) {
+        recoil = 1;
+    };
+    return recoil;
+};
+
+
 /*
  * Set the projectile direction. This function hooks oCAIArrow::SetupAIVob to overwrite the target vob with the aim vob
  * that is placed in front of the camera at the nearest intersection with the world or an object.
@@ -339,6 +365,10 @@ func void freeAimSetupProjectile() {
     var int distance; // Distance to camera (used for calculating position of target shot in local space)
     var int distPlayer; // Distance to player (used for debugging output in zSpy)
     freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, _@(pos), _@(distPlayer), _@(distance));
+
+    // Get camera vob (not camera itself, because it does not offer a reliable position)
+    var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
+    var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
 
     // Scattering with different hit chance calcualtion (optional)
     if (FREEAIM_TRUE_HITCHANCE) {
@@ -437,10 +467,6 @@ func void freeAimSetupProjectile() {
         localPos[0] = mulf(localPos[2], sinApprox);       //  x*cos + z*sin = x'
         localPos[2] = mulf(localPos[2], cosApprox);       // -x*sin + z*cos = z'
 
-        // Get camera vob (not camera itself, because it does not offer a reliable position)
-        var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
-        var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
-
         // Translation into local coordinate system of camera (rotation): rightVec*x + upVec*y + outVec*z
         // rightVec*x
         pos[0] = mulf(camPos.v0[zMAT4_rightVec], localPos[0]);
@@ -515,6 +541,135 @@ func void freeAimSetupProjectile() {
     // 5th: Reposition the aim vob and overwrite the target vob
     var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos));
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
+
+
+    // 6th: Add recoil
+    var int recoil; recoil = freeAimGetRecoil_();
+    var int recoilAngle; recoilAngle = 45;
+
+
+    //const int zCMovementTracker__GetTracker = 4932816; //0x4B44D0
+    //CALL__cdecl(zCMovementTracker__GetTracker);
+    //var int tracker; tracker = CALL_RetValAsPtr();
+
+    //var int flt; flt = castToIntf(45.0);
+    //const int zCMovementTracker__SetElevation = 4935888; //0x4B50D0
+    //CALL_PtrParam(_@(flt));
+    //CALL__thiscall(tracker, zCMovementTracker__SetElevation);
+
+    //const int zCMovementTracker__Update = 4944880; //0x4B73F0
+    //CALL__thiscall(tracker, zCMovementTracker__Update);
+
+    var zCCamera camera; camera = _^(MEM_Game._zCSession_camera);
+    camera.tremorToggle = 1;
+    camera.tremorScale = castToIntf(0.2);
+    camera.tremorAmplitude[0] = castToIntf(0.1);
+    camera.tremorAmplitude[1] = castToIntf(0.1);
+    camera.tremorAmplitude[2] = castToIntf(0.1);
+    camera.tremorOrigin[0] = castToIntf(0.1);
+    camera.tremorOrigin[1] = castToIntf(0.1);
+    camera.tremorOrigin[2] = castToIntf(0.1);
+    camera.tremorVelo = castToIntf(0.1);
+
+
+    //var zCCamera camera; camera = _^(MEM_Game._zCSession_camera);
+    //var zCVob cam; cam = _^(camera.connectedVob);
+    //camPos = _^(_@(cam.trafoObjToWorld[0]));
+    ////var zCCamera cam; cam = _^(MEM_Game._zCSession_camera);
+    ////camPos = _^(_@(cam.trafoView));
+
+    //// Rotate around x-axis by recoil percent
+    //SinCosApprox(Print_ToRadian(recoilAngle));
+
+    //// Rotate At-Vector (z)
+    //var int y_; y_ = subf(mulf(camPos.v1[zMAT4_outVec], cosApprox), mulf(camPos.v2[zMAT4_outVec], sinApprox));
+    //var int z_; z_ = addf(mulf(camPos.v1[zMAT4_outVec], sinApprox), mulf(camPos.v2[zMAT4_outVec], cosApprox));
+    //camPos.v1[zMAT4_outVec] = y_;
+    //camPos.v2[zMAT4_outVec] = z_;
+
+    //// Rotate Up-Vector (y)
+    //y_ = subf(mulf(camPos.v1[zMAT4_upVec], cosApprox), mulf(camPos.v2[zMAT4_upVec], sinApprox));
+    //z_ = addf(mulf(camPos.v1[zMAT4_upVec], sinApprox), mulf(camPos.v2[zMAT4_upVec], cosApprox));
+    //camPos.v1[zMAT4_upVec] = y_;
+    //camPos.v2[zMAT4_upVec] = z_;
+
+    //var int d[3];
+    //d[0] = camPos.v0[zMAT4_position];
+    //d[1] = camPos.v1[zMAT4_position];
+    //d[2] = camPos.v2[zMAT4_position];
+
+
+
+    //var int XM11_CamAngleHead; XM11_CamAngleHead = 0;
+    //var int XM11_CamAngleElev; XM11_CamAngleElev = FLOATHALF;
+
+    ////var zCCamera camera; camera = _^(MEM_Game._zCSession_camera);
+
+
+    ////if(!camera.connectedVob) {
+    ////    MEM_Error("Could not find and update camera?");
+    ////    return;
+    ////};
+
+    /////* In the case XM11_CamAngleHead == 0 && XM11_CamAngleElev == 0 there is some
+    //// * serious bullshit going down. I have NO idea what it could be. I know:
+    //// * The Matrix (cam.trafoObjToWorld) that I calculate is correct:
+    //// *
+    //// * ( 0 0 1)
+    //// * ( 0 1 0)
+    //// * (-1 0 0)
+    //// *
+    //// * But sometimes (not always!) setting this matrix will unleash hell:
+    //// * -For at least one frame the screen will have a brownish colour.
+    //// * -From this point on every frame will take very long (~1 sec) to render
+    //// * -SetPositionWorldVec will take very long (~1 sec) to complete on the camera vob (why???)
+    //// *
+    //// * This bug is bugging me and my "fix" is an evil hack that
+    //// * seems to work but may not be sufficient (avoids looking along the x-axis,
+    //// * but how do I know this is the only problematic situation?)
+    //// */
+
+    //if (XM11_CamAngleHead == 0) { XM11_CamAngleHead = fracf(1, 10000); };
+    //if (XM11_CamAngleElev == 0) { XM11_CamAngleElev = fracf(1, 10000); };
+
+    //var int ce; var int se;
+    //var int ch; var int sh;
+    //SinCosApprox(XM11_CamAngleHead);
+    //ch = cosApprox; sh = sinApprox;
+    //SinCosApprox(XM11_CamAngleElev);
+    //ce = cosApprox; se = sinApprox;
+
+    ///* set rotation mat */
+    ////var zCVob cam; cam = _^(camera.connectedVob);
+    ///* right                           up                                           front */
+    //cam.trafoObjToWorld[0] = sh;       cam.trafoObjToWorld[1] = mulf(negf(se), ch); cam.trafoObjToWorld[ 2] = mulf(ch, ce);
+    //cam.trafoObjToWorld[4] = 0;        cam.trafoObjToWorld[5] = ce;                 cam.trafoObjToWorld[ 6] = se;
+    //cam.trafoObjToWorld[8] = negf(ch); cam.trafoObjToWorld[9] = mulf(negf(se), sh); cam.trafoObjToWorld[10] = mulf(sh, ce);
+
+    /////* set position */
+    ////var int d[3]; /* - front */
+    ////d[0] = negf(mulf(ce, ch));
+    ////d[1] = negf(se);
+    ////d[2] = negf(mulf(sh, ce));
+    //////ScaleVec(_@(d), mkf(XM11_CamDist + XM11_CamDistToObjects));
+
+    //////if (TraceRay(_@(XM11_PivotPos), _@(d),
+    //////             zTRACERAY_POLY_TEST_WATER | zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_POLY_NORMAL)) {
+    //////    /* get away from the intersection (with the normal) */
+    //////    ScaleVec(_@(MEM_World.foundPolyNormal), mkf(XM11_CamDistToObjects));
+    //////    AddToVec(_@(MEM_World.foundIntersection), _@(MEM_World.foundPolyNormal));
+    //////    SetPositionWorldVec(MEM_Camera.connectedVob, _@(MEM_World.foundIntersection));
+    //////} else {
+    //////    AddToVec(_@(d), _@(XM11_PivotPos));
+    //////    SetPositionWorldVec(MEM_Camera.connectedVob, _@(d));
+    //////};
+
+    //const int zCVob_SetPositionWorld = 6404976; //0x61BB70
+
+    //CALL_PtrParam(_@(d));
+    //CALL__thiscall(camera.connectedVob, zCVob_SetPositionWorld);
+
+
 
     // Print info to zSpy
     var int s; s = SB_New();
