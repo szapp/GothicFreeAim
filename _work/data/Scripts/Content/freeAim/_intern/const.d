@@ -38,9 +38,9 @@ const string FREEAIM_BREAK_FX           = "freeAim_DESTROY";    // FX of project
 
 const int    FREEAIM_MAX_DIST           = 5000;                 // 50m. Shooting/reticle adjustments. Do not change
 
-const float  FREEAIM_SCATTER_HIT        = 2.5;                  // Radius (visual angle) below which everything is a hit
-const float  FREEAIM_SCATTER_MISS       = 3.3;                  // Radius above which everything is a miss
-const float  FREEAIM_SCATTER_MAX        = 5.0;                  // Maximum scatter radius
+const float  FREEAIM_SCATTER_HIT        = 2.6;                  // (Visual angle)/2 within which everything is a hit
+const float  FREEAIM_SCATTER_MISS       = 3.3;                  // (Visual angle)/2 outside which everything is a miss
+const float  FREEAIM_SCATTER_MAX        = 5.0;                  // (Visual angle)/2 of maximum scatter (all in degrees)
 
 const int    FLOAT1C                    = 1120403456;           // 100 as float
 const int    FLOAT3C                    = 1133903872;           // 300 as float
