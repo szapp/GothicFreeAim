@@ -560,16 +560,125 @@ func void freeAimSetupProjectile() {
     //const int zCMovementTracker__Update = 4944880; //0x4B73F0
     //CALL__thiscall(tracker, zCMovementTracker__Update);
 
-    var zCCamera camera; camera = _^(MEM_Game._zCSession_camera);
-    camera.tremorToggle = 1;
-    camera.tremorScale = castToIntf(0.2);
-    camera.tremorAmplitude[0] = castToIntf(0.1);
-    camera.tremorAmplitude[1] = castToIntf(0.1);
-    camera.tremorAmplitude[2] = castToIntf(0.1);
-    camera.tremorOrigin[0] = castToIntf(0.1);
-    camera.tremorOrigin[1] = castToIntf(0.1);
-    camera.tremorOrigin[2] = castToIntf(0.1);
-    camera.tremorVelo = castToIntf(0.1);
+    //var zCCamera camera; camera = _^(MEM_Game._zCSession_camera);
+    //camera.tremorToggle = 1;
+    //camera.tremorScale = castToIntf(0.2);
+    //camera.tremorAmplitude[0] = castToIntf(0.1);
+    //camera.tremorAmplitude[1] = castToIntf(0.1);
+    //camera.tremorAmplitude[2] = castToIntf(0.1);
+    //camera.tremorOrigin[0] = castToIntf(0.1);
+    //camera.tremorOrigin[1] = castToIntf(0.1);
+    //camera.tremorOrigin[2] = castToIntf(0.1);
+    //camera.tremorVelo = castToIntf(0.1);
+
+
+
+    //const int sizeof_zCCamera = 2356;
+    //var int cameraPtr; cameraPtr = MEM_Alloc(sizeof_zCCamera);
+    //const int zCCamera__zCCamera = 5545568; //0x549E60
+    //CALL__thiscall(cameraPtr, zCCamera__zCCamera);
+
+    //const int zCCamera__Activate = 5547776; //0x54A700
+    //CALL__thiscall(cameraPtr, zCCamera__Activate);
+
+
+
+
+    // Create cutsceen camera
+
+    // const int sizeof_zCCSCamera = 5340;
+
+    const int zCCSCamera___CreateNewInstance = 5013264; //0x4C7F10
+    var int cameraPtr;
+    const int call3 = 0;
+    if (CALL_Begin(call3)) {
+        CALL_PutRetValTo(_@(cameraPtr));
+        CALL__cdecl(zCCSCamera___CreateNewInstance);
+        call3 = CALL_End();
+    };
+
+    MEM_CopyWords(_@(hero)+60, cameraPtr+60, 16);
+
+    var zCVob vob; vob = _^(cameraPtr);
+    vob._zCObject_objectName = "ownCamera"; // Set name before inserting it
+    // Sauberers Einfügen in die Welt
+    const int oCWorld__AddVobAsChild = 7863856; //0x77FE30
+    CALL_PtrParam(_@(MEM_Vobtree));
+    CALL_PtrParam(cameraPtr);
+    CALL__thiscall(_@(MEM_World), oCWorld__AddVobAsChild);
+
+
+
+
+    const int zCCamTrj_KeyFrame___CreateNewInstance = 5013888; //0x4C8180
+
+    // Create source key 1
+    CALL__cdecl(zCCamTrj_KeyFrame___CreateNewInstance);
+    var int sourceKey1Ptr; sourceKey1Ptr = CALL_RetValAsPtr();
+    MEM_CopyWords(_@(camVob)+60, sourceKey1Ptr+60, 16);
+    var zCVob sourceKey1; sourceKey1 = _^(sourceKey1Ptr);
+    sourceKey1._zCObject_objectName = "source1"; // Set name before inserting it
+    CALL_PtrParam(_@(MEM_Vobtree));
+    CALL_PtrParam(sourceKey1Ptr);
+    CALL__thiscall(_@(MEM_World), oCWorld__AddVobAsChild);
+
+    // Create target key 1
+    CALL__cdecl(zCCamTrj_KeyFrame___CreateNewInstance);
+    var int targetKey1Ptr; targetKey1Ptr = CALL_RetValAsPtr();
+    MEM_CopyWords(vobPtr+60, targetKey1Ptr+60, 16);
+    var zCVob targetKey1; targetKey1 = _^(targetKey1Ptr);
+    //targetKey1.trafoObjToWorld[ 3] = addf(targetKey1.trafoObjToWorld[ 3], mulf(targetKey1.trafoObjToWorld[ 1], FLOAT3C));
+    //targetKey1.trafoObjToWorld[ 7] = addf(targetKey1.trafoObjToWorld[ 7], mulf(targetKey1.trafoObjToWorld[ 5], FLOAT3C));
+    //targetKey1.trafoObjToWorld[11] = addf(targetKey1.trafoObjToWorld[11], mulf(targetKey1.trafoObjToWorld[ 9], FLOAT3C));
+    targetKey1._zCObject_objectName = "target1"; // Set name before inserting it
+    CALL_PtrParam(_@(MEM_Vobtree));
+    CALL_PtrParam(targetKey1Ptr);
+    CALL__thiscall(_@(MEM_World), oCWorld__AddVobAsChild);
+
+    // Create source key 2
+    CALL__cdecl(zCCamTrj_KeyFrame___CreateNewInstance);
+    var int sourceKey2Ptr; sourceKey2Ptr = CALL_RetValAsPtr();
+    MEM_CopyWords(_@(camVob)+60, sourceKey2Ptr+60, 16);
+    var zCVob sourceKey2; sourceKey2 = _^(sourceKey2Ptr);
+    sourceKey2._zCObject_objectName = "source2"; // Set name before inserting it
+    CALL_PtrParam(_@(MEM_Vobtree));
+    CALL_PtrParam(sourceKey2Ptr);
+    CALL__thiscall(_@(MEM_World), oCWorld__AddVobAsChild);
+
+    // Create target key 2
+    CALL__cdecl(zCCamTrj_KeyFrame___CreateNewInstance);
+    var int targetKey2Ptr; targetKey2Ptr = CALL_RetValAsPtr();
+    MEM_CopyWords(vobPtr+60, targetKey2Ptr+60, 16);
+    var zCVob targetKey2; targetKey2 = _^(targetKey2Ptr);
+    targetKey2.trafoObjToWorld[ 3] = addf(targetKey2.trafoObjToWorld[ 3], mulf(targetKey2.trafoObjToWorld[ 1], FLOAT3C));
+    targetKey2.trafoObjToWorld[ 7] = addf(targetKey2.trafoObjToWorld[ 7], mulf(targetKey2.trafoObjToWorld[ 5], FLOAT3C));
+    targetKey2.trafoObjToWorld[11] = addf(targetKey2.trafoObjToWorld[11], mulf(targetKey2.trafoObjToWorld[ 9], FLOAT3C));
+    targetKey2._zCObject_objectName = "target2"; // Set name before inserting it
+    CALL_PtrParam(_@(MEM_Vobtree));
+    CALL_PtrParam(targetKey2Ptr);
+    CALL__thiscall(_@(MEM_World), oCWorld__AddVobAsChild);
+
+
+    // Add source key to camera
+    const int zCCSCamera__InsertCamKey = 4975088; //0x4BE9F0
+    CALL_PtrParam(sourceKey1Ptr);
+    CALL__thiscall(cameraPtr, zCCSCamera__InsertCamKey);
+
+    CALL_PtrParam(sourceKey2Ptr);
+    CALL__thiscall(cameraPtr, zCCSCamera__InsertCamKey);
+
+    // Add target keys to camera
+    const int zCCSCamera__InsertTargetKey = 4975936; //0x4BED40
+    CALL_PtrParam(targetKey1Ptr);
+    CALL__thiscall(cameraPtr, zCCSCamera__InsertTargetKey);
+
+    CALL_PtrParam(targetKey2Ptr);
+    CALL__thiscall(cameraPtr, zCCSCamera__InsertTargetKey);
+
+
+    Wld_SendTrigger("ownCamera");
+    // Wld_SendUnTrigger("ownCamera");
+    //FF_ApplyExt(untriggerCam, 250, 1);
 
 
     //var zCCamera camera; camera = _^(MEM_Game._zCSession_camera);
@@ -688,6 +797,11 @@ func void freeAimSetupProjectile() {
     SB("init-basedamage="); SBi(newBaseDamage); SB("/"); SBi(baseDamage);
     MEM_Info(SB_ToString());
     SB_Destroy();
+};
+
+
+func void untriggerCam() {
+    Wld_SendUntrigger("ownCamera");
 };
 
 
