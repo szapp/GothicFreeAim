@@ -70,7 +70,8 @@ manually.
     3. Add the line `Pfx\PfxInstFreeAim.d` to the end of `_work\data\Scripts\System\PFX.src`.
     4. Add the line `sfx\sfxinstfreeaim.d` to the end of `_work\data\Scripts\System\SFX.src`.
     5. Add the line `visualfx\visualfxfreeaim.d` to the end of `_work\data\Scripts\System\VisualFX.src`.
-    6. Add the line `menu\menu_opt_game_freeaim.d` to the end of `_work\data\Scripts\System\Menu.src`.
+    6. Add the line `menu\menu_opt_game_freeaim.d` to `_work\data\Scripts\System\Menu.src` between `_intern\menu.d` and
+       `menu\menu_main.d`
  4. Add a new menu entry to the options game menu. Extend the instance `MENU_OPT_GAME` in
     `_work\data\Scripts\System\Menu\Menu_Opt_Game.d` with these two lines just before
     `items[XX] = "MENUITEM_GAME_BACK";`.
@@ -84,8 +85,8 @@ manually.
     disable free aim from the options menu.
  5. In the same file change `posy = MENU_BACK_Y;` in the instance `MENUITEM_GAME_BACK` to `posy = MENU_BACK_Y+300;`.
     This repositions the menu entries such that everything fits.
- 6. Set the constant `MENU_ID_FREEAIM` either in `Menu_Opt_Game.d` or in `Menu_Opt_Game_FreeAim.d` to the next available
-    slot in the menu, typically `(XX-1)/2`. For example:
+ 6. Set the constant `MENU_ID_FREEAIM` in `Menu_Opt_Game_FreeAim.d` to the next available slot in the menu, typically
+    `(XX-1)/2`. For example:
 
     ```
     const int  MENU_ID_FREEAIM      = 7; // Next available Y-spot in the menu

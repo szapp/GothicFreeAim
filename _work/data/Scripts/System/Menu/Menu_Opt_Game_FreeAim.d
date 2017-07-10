@@ -30,10 +30,12 @@
  * Adjust the item id (MENU_ID_FREEAIM) below to the next available item number and change the labels if needed
  */
 
-//const int  MENU_ID_FREEAIM      = 7; // Next available Y-spot in the menu
-const string MENU_FREEAIM_LABEL   = "Freies Zielen"; // "Free aiming"
-const string MENU_FREEAIM_CHOICES = "aus|an"; // "off|on"
+
+const int    MENU_ID_FREEAIM      = 7;                          // Next available Y-spot in the game menu
+const string MENU_FREEAIM_LABEL   = "Freies Zielen";            // "Free aiming"
+const string MENU_FREEAIM_CHOICES = "aus|an";                   // "off|on"
 const string MENU_FREEAIM_DESCR   = "Erfordert Maus Steuerung"; // "Requires mouse controls"
+
 
 INSTANCE MENUITEM_OPT_FREEAIM(C_MENU_ITEM_DEF) {
     backpic         = MENU_ITEM_BACK_PIC;
@@ -45,7 +47,8 @@ INSTANCE MENUITEM_OPT_FREEAIM(C_MENU_ITEM_DEF) {
     flags           = flags | IT_EFFECTS_NEXT;
 };
 
-instance MENUITEM_OPT_FREEAIM_CHOICE(C_MENU_ITEM_DEF) {
+
+INSTANCE MENUITEM_OPT_FREEAIM_CHOICE(C_MENU_ITEM_DEF) {
     backPic               = MENU_CHOICE_BACK_PIC;
     type                  = MENU_ITEM_CHOICEBOX;
     text[0]               = MENU_FREEAIM_CHOICES;
