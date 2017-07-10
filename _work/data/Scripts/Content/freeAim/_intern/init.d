@@ -27,10 +27,11 @@
  * commands and the retrieval of settings from the INI-file and other initializations.
  */
 func void freeAim_Init() {
-    const int hookFreeAim = 0;
+    const int INITIALIZED = 0;
+    MEM_Info(ConcatStrings(ConcatStrings("Initialize ", FREEAIM_VERSION), "."));
 
     // Only register once per session
-    if (!hookFreeAim) {
+    if (!INITIALIZED) {
 
         // Copyright notice in zSpy
         var int s; s = SB_New();
@@ -41,6 +42,9 @@ func void freeAim_Init() {
         MEM_Info("     Released under the MIT License.");
         MEM_Info("     For more details see <http://opensource.org/licenses/MIT>.");
         MEM_Info("");
+
+        // Menu update
+        HookEngineF(cGameManager__ApplySomeSettings_rtn, 5, freeAimUpdateStatus); // Update status when leaving menu
 
         // Controls
         MEM_Info("Initializing controls.");
@@ -147,33 +151,26 @@ func void freeAim_Init() {
         r_DefaultInit();
 
         // Done
-        hookFreeAim = 1;
+        INITIALIZED = 1;
     };
 
-    // Reset settings to prevent crashes
-    FREEAIM_ACTIVE = 0; // Reset setting constant. Focus instances would not be updated, when loading a game
-    MEM_Call(freeAimManageReticle); // Remove reticle. Would be stuck on screen on level change
-    freeAimRayPrevCalcTime = 0; // Reset aim ray calculation time. Would cause an invalid vob pointer on loading a game
-
-    MEM_Info(ConcatStrings(FREEAIM_VERSION, " initialized successfully."));
-};
-
-
-/*
- * This function assigns the focus instances (see Focus.d). This is necessary after a level change, because Gothic does
- * not do it. The focus instances are, however, critical for enabling/disabling free aiming.
- * The function is called when setting the focus instances, in case of changing the free aiming settings or drawing a
- * spell that supports free aiming after a spell that does not.
- */
-func void freeAimReinitFocus() {
+    // Reset/reinitialize settings to prevent crashes
     if (!_@(Focus_Ranged)) {
-        MEM_Info("Reinitializing focus modes");
+        // Reassign the focus instances (see Focus.d). This is necessary, because Gothic does not do it on level change.
+        // The focus instances are, however, critical for enabling/disabling free aiming.
+        MEM_Info("Initializing focus modes.");
         const int call = 0;
         if (CALL_Begin(call)) {
             CALL__cdecl(oCNpcFocus__InitFocusModes);
             call = CALL_End();
         };
     };
+    FREEAIM_ACTIVE = 0; // Reset setting constant. Focus instances would other not be updated on level change
+    MEM_Call(freeAimUpdateStatus); // Reinitialize settings, to adjust the focus modes
+    MEM_Call(freeAimManageReticle); // Remove reticle. Would be stuck on screen on level change
+    freeAimRayPrevCalcTime = 0; // Reset aim ray calculation time. Would cause an invalid vob pointer on loading a game
+
+    MEM_Info(ConcatStrings(FREEAIM_VERSION, " was initialized successfully."));
 };
 
 
@@ -187,9 +184,7 @@ func void freeAimUpdateSettings(var int on) {
         return; // No change necessary
     };
 
-    MEM_Info("Updating internal free aim settings");
-    freeAimReinitFocus();
-
+    MEM_Info(ConcatStrings("  OPT: Free-Aim: Enabled=", IntToString(on))); // Print to zSpy in same style as options
     if (on) {
         // Set stricter focus collection
         Focus_Ranged.npc_azi = 15.0;
@@ -230,7 +225,7 @@ func void freeAimUpdateSettingsG2Ctrl(var int on) {
         return; // No change necessary
     };
 
-    MEM_Info("Updating internal free aim settings for Gothic 2 controls");
+    MEM_Info(ConcatStrings("  OPT: Free-Aim: G2-controls=", IntToString(on))); // Print to zSpy in same style as options
     if (on) {
         // Gothic 2 controls enabled: Mimic the Gothic 1 controls but change the keys
         MEM_WriteByte(oCAIHuman__BowMode_695F2B, ASMINT_OP_nop); // Skip jump to Gothic 2 controls
@@ -294,28 +289,42 @@ func void freeAimDisableAutoTurn(var int on) {
 
 
 /*
- * This function is called nearly every frame by freeAimManualRotation() to check whether free aiming is enabled and
- * active (player in either magic or ranged combat). It sets the constant FREEAIM_ACTIVE accordingly:
- *  0 if disabled in menu or mouse disabled
- *  1 if enabled but not active (not currently aiming)
- *  5 if enabled and currently aiming in ranged fight mode (FMODE_FAR)
- *  7 if enabled and currently aiming in magic fight mode with free aiming suported spell (FMODE_MAGIC)
- *
- * Different checks are performed in performance-favoring order (exiting the function as early as possible) to set the
- * constant, which is subsequently used in a lot of functions to determine the state of free aiming.
+ * This function updates the settings when free aiming or the Gothic 2 controls are enabled or disabled. It is called
+ * everytime the Gothic settings are updated (after leaving the game menu), as well as during loading and level changes.
+ * The function hooks cGameManager::ApplySomeSettings() at the very end (after all other settings are processed!).
+ * The constant FREEAIM_ACTIVE is modified in the subsequent function freeAimUpdateSettings().
  */
-func void freeAimIsActive() {
-
+func void freeAimUpdateStatus() {
     // Check if g2freeAim is enabled and mouse controls are enabled
     if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled"))) || (!MEM_ReadInt(mouseEnabled)) {
         // Disable if previously enabled
         freeAimUpdateSettings(0);
         freeAimUpdateSettingsG2Ctrl(0);
         freeAimDisableAutoTurn(0);
-        return;
     } else {
         // Enable if previously disabled
         freeAimUpdateSettings(1);
+        freeAimUpdateSettingsG2Ctrl(!MEM_ReadInt(oCGame__s_bUseOldControls)); // G2 controls = 1, G1 controls = 0
+    };
+};
+
+
+/*
+ * This function is called nearly every frame by freeAimManualRotation(), providing the mouse is enabled, to check
+ * whether free aiming is active (player in either magic or ranged combat). It sets the constant FREEAIM_ACTIVE
+ * accordingly:
+ *  1 if not active (not currently aiming)
+ *  5 if currently aiming in ranged fight mode (FMODE_FAR)
+ *  7 if currently aiming in magic fight mode with free aiming suported spell (FMODE_MAGIC)
+ *
+ * FREEAIM_ACTIVE is prior set to 0 in freeAimUpdateStatus() if free aiming is disabled.
+ *
+ * Different checks are performed in performance-favoring order (exiting the function as early as possible) to set the
+ * constant, which is subsequently used in a lot of functions to determine the state of free aiming.
+ */
+func void freeAimIsActive() {
+    if (!FREEAIM_ACTIVE) {
+        return;
     };
 
     // Check if currently in a menu or in a dialog
@@ -335,12 +344,12 @@ func void freeAimIsActive() {
 
     // Set aiming key depending on control scheme to either action or blocking key
     var String keyAiming;
-    if (MEM_ReadInt(oCGame__s_bUseOldControls)) { // Gothic 1 controls
+    if (MEM_ReadInt(oCGame__s_bUseOldControls)) {
+        // Gothic 1 controls
         keyAiming = "keyAction";
-        freeAimUpdateSettingsG2Ctrl(0);
-    } else { // Gothic 2 controls
+    } else {
+        // Gothic 2 controls
         keyAiming = "keyParade";
-        freeAimUpdateSettingsG2Ctrl(1);
     };
     var int keyStateAiming1; keyStateAiming1 = MEM_KeyState(MEM_GetKey(keyAiming));
     var int keyStateAiming2; keyStateAiming2 = MEM_KeyState(MEM_GetSecondaryKey(keyAiming));
@@ -366,7 +375,6 @@ func void freeAimIsActive() {
         };
 
         // Check if active spell supports free aiming
-        freeAimReinitFocus();
         var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
         if (!freeAimSpellEligible(spell)) {
             // Reset ranged focus collection
