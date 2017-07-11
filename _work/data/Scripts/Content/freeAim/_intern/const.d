@@ -94,6 +94,11 @@ const int zCModel__GetNodePositionWorld           = 5738816; //0x579140
 const int zTBBox3D__Draw                          = 5529312; //0x545EE0
 const int zCLineCache__Line3D                     = 5289040; //0x50B450
 const int zlineCache                              = 9257720; //0x8D42F8
+const int zCCSCamera__playing                     = 9245104; //0x8D11B0
+const int zCCSCamera___CreateNewInstance          = 5013264; //0x4C7F10
+const int zCCSCamera__InsertCamKey                = 4975088; //0x4BE9F0
+const int zCCSCamera__InsertTargetKey             = 4975936; //0x4BED40
+const int zCCamTrj_KeyFrame___CreateNewInstance   = 5013888; //0x4C8180
 const int oCGame__s_bUseOldControls               = 9118144; //0x8B21C0
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
@@ -158,6 +163,11 @@ const int zTraceRay_poly_test_water                 = 1<<9;  // Intersect with w
 const int zTraceRay_vob_ignore_projectiles          = 1<<14; // Ignore projectiles
 
 const int zTTraceRayReport_foundIntersection_offset = 12;  //0x000C
+
+const int zCCSCamera_easeFromLastKey_offset         = 320; //0x0140
+const int zCCSCamera_duration_offset                = 324; //0x0144
+const int zCCSCamera_camKey_array_offset            = 380; //0x017C
+const int zCCSCamera_targetKey_array_offset         = 392; //0x0188
 
 const int sizeof_zVEC3                              = 12;  //0x000C
 const int sizeof_zTBBox3D                           = 24;  //0x0018

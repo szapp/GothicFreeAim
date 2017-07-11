@@ -545,239 +545,112 @@ func void freeAimSetupProjectile() {
 
     // 6th: Add recoil
     var int recoil; recoil = freeAimGetRecoil_();
-    var int recoilAngle; recoilAngle = 45;
 
+    if (recoil) {
+        // Retrieve cutscene camera by name
+        var int cameraPtr; cameraPtr = MEM_SearchVobByName("RECOILCAM");
+        var int keyframePtr;
+        var int camKeyPtr;
+        var int targetKeyPtr;
 
-    //const int zCMovementTracker__GetTracker = 4932816; //0x4B44D0
-    //CALL__cdecl(zCMovementTracker__GetTracker);
-    //var int tracker; tracker = CALL_RetValAsPtr();
+        if (!cameraPtr) {
+            // Create cutsceen camera
+            const int call3 = 0;
+            if (CALL_Begin(call3)) {
+                CALL_PutRetValTo(_@(cameraPtr));
+                CALL__cdecl(zCCSCamera___CreateNewInstance);
+                call3 = CALL_End();
+            };
 
-    //var int flt; flt = castToIntf(45.0);
-    //const int zCMovementTracker__SetElevation = 4935888; //0x4B50D0
-    //CALL_PtrParam(_@(flt));
-    //CALL__thiscall(tracker, zCMovementTracker__SetElevation);
+            // Add name and insert into world
+            var zCVob vob; vob = _^(cameraPtr);
+            vob._zCObject_objectName = "RECOILCAM"; // Set name before inserting it
+            const int call4 = 0;
+            var int vobInsertPtr; vobInsertPtr = cameraPtr;
+            var int worldPtr; worldPtr = _@(MEM_World);
+            var int vobtreePtr; vobtreePtr = _@(MEM_Vobtree);
+            if (CALL_Begin(call4)) {
+                CALL_PtrParam(_@(vobtreePtr));
+                CALL_PtrParam(_@(vobInsertPtr));
+                CALL__thiscall(_@(worldPtr), oCWorld__AddVobAsChild);
+                call4 = CALL_End();
+            };
 
-    //const int zCMovementTracker__Update = 4944880; //0x4B73F0
-    //CALL__thiscall(tracker, zCMovementTracker__Update);
+            // Set camera properties
+            MEM_WriteInt(cameraPtr+zCCSCamera_duration_offset, FLOATNULL); // Ease duration is unaffected
+            MEM_WriteInt(cameraPtr+zCCSCamera_easeFromLastKey_offset, 1); // Ease back to player camera
 
-    //var zCCamera camera; camera = _^(MEM_Game._zCSession_camera);
-    //camera.tremorToggle = 1;
-    //camera.tremorScale = castToIntf(0.2);
-    //camera.tremorAmplitude[0] = castToIntf(0.1);
-    //camera.tremorAmplitude[1] = castToIntf(0.1);
-    //camera.tremorAmplitude[2] = castToIntf(0.1);
-    //camera.tremorOrigin[0] = castToIntf(0.1);
-    //camera.tremorOrigin[1] = castToIntf(0.1);
-    //camera.tremorOrigin[2] = castToIntf(0.1);
-    //camera.tremorVelo = castToIntf(0.1);
+            // Create cam key and target key
+            const int call5 = 0;
+            if (CALL_Begin(call5)) {
+                CALL_PutRetValTo(_@(keyframePtr));
+                CALL__cdecl(zCCamTrj_KeyFrame___CreateNewInstance);
+                call5 = CALL_End();
+            };
 
+            // Cam key
+            camKeyPtr = keyframePtr;
+            var zCVob camKey; camKey = _^(camKeyPtr);
+            camKey._zCObject_objectName = "RECOILCAM_CAMKEY"; // Set name before inserting it
 
+            // Target key
+            CALL_Begin(call5);
+            targetKeyPtr = keyframePtr;
+            var zCVob targetKey; targetKey = _^(targetKeyPtr);
+            targetKey._zCObject_objectName = "RECOILCAM_TARGETKEY"; // Set name before inserting it
 
-    //const int sizeof_zCCamera = 2356;
-    //var int cameraPtr; cameraPtr = MEM_Alloc(sizeof_zCCamera);
-    //const int zCCamera__zCCamera = 5545568; //0x549E60
-    //CALL__thiscall(cameraPtr, zCCamera__zCCamera);
+            // Add key frames to world
+            vobInsertPtr = camKeyPtr;
+            CALL_Begin(call4);
+            vobInsertPtr = targetKeyPtr;
+            CALL_Begin(call4);
 
-    //const int zCCamera__Activate = 5547776; //0x54A700
-    //CALL__thiscall(cameraPtr, zCCamera__Activate);
+            // Add cam key to camera
+            CALL_PtrParam(camKeyPtr);
+            CALL__thiscall(cameraPtr, zCCSCamera__InsertCamKey);
 
+            // Add target key to camera
+            CALL_PtrParam(targetKeyPtr);
+            CALL__thiscall(cameraPtr, zCCSCamera__InsertTargetKey);
 
+        } else {
+            camKeyPtr = MEM_ReadInt(MEM_ReadInt(cameraPtr+zCCSCamera_camKey_array_offset));
+            targetKeyPtr = MEM_ReadInt(MEM_ReadInt(cameraPtr+zCCSCamera_targetKey_array_offset));
+        };
 
+        // Get current camera position
+        var int camPosVec[3];
+        camPosVec[0] = camPos.v0[zMAT4_position];
+        camPosVec[1] = camPos.v1[zMAT4_position];
+        camPosVec[2] = camPos.v2[zMAT4_position];
+        var int camPosVecPtr; camPosVecPtr = _@(camPosVec);
 
-    // Create cutsceen camera
+        // Update cam key position to player camera
+        keyframePtr = camKeyPtr;
+        const int call6 = 0;
+        if (CALL_Begin(call6)) {
+            CALL_PtrParam(_@(camPosVecPtr));
+            CALL__thiscall(_@(keyframePtr), zCVob__SetPositionWorld);
+            call6 = CALL_End();
+        };
 
-    // const int sizeof_zCCSCamera = 5340;
+        // Update target key position in front of the player camera, recoil/3 is the slope grade
+        camPosVec[1] = addf(camPosVec[1], mkf(recoil)); // Height
+        camPosVec[0] = addf(camPosVec[0], mulf(camPos.v0[zMAT4_outVec], FLOAT3C));
+        camPosVec[2] = addf(camPosVec[2], mulf(camPos.v2[zMAT4_outVec], FLOAT3C));
+        keyframePtr = targetKeyPtr;
+        CALL_Begin(call6);
 
-    const int zCCSCamera___CreateNewInstance = 5013264; //0x4C7F10
-    var int cameraPtr;
-    const int call3 = 0;
-    if (CALL_Begin(call3)) {
-        CALL_PutRetValTo(_@(cameraPtr));
-        CALL__cdecl(zCCSCamera___CreateNewInstance);
-        call3 = CALL_End();
+        // Update and reset camera splines
+        const int zCCSCamera__Refresh = 4976784; //0x4BF090
+        const int call7 = 0;
+        if (CALL_Begin(call7)) {
+            CALL__thiscall(_@(cameraPtr), zCCSCamera__Refresh);
+            call7 = CALL_End();
+        };
+
+        Wld_SendTrigger("RECOILCAM");
     };
-
-    MEM_CopyWords(_@(hero)+60, cameraPtr+60, 16);
-
-    var zCVob vob; vob = _^(cameraPtr);
-    vob._zCObject_objectName = "ownCamera"; // Set name before inserting it
-    // Sauberers Einfügen in die Welt
-    const int oCWorld__AddVobAsChild = 7863856; //0x77FE30
-    CALL_PtrParam(_@(MEM_Vobtree));
-    CALL_PtrParam(cameraPtr);
-    CALL__thiscall(_@(MEM_World), oCWorld__AddVobAsChild);
-
-
-
-
-    const int zCCamTrj_KeyFrame___CreateNewInstance = 5013888; //0x4C8180
-
-    // Create source key 1
-    CALL__cdecl(zCCamTrj_KeyFrame___CreateNewInstance);
-    var int sourceKey1Ptr; sourceKey1Ptr = CALL_RetValAsPtr();
-    MEM_CopyWords(_@(camVob)+60, sourceKey1Ptr+60, 16);
-    var zCVob sourceKey1; sourceKey1 = _^(sourceKey1Ptr);
-    sourceKey1._zCObject_objectName = "source1"; // Set name before inserting it
-    CALL_PtrParam(_@(MEM_Vobtree));
-    CALL_PtrParam(sourceKey1Ptr);
-    CALL__thiscall(_@(MEM_World), oCWorld__AddVobAsChild);
-
-    // Create target key 1
-    CALL__cdecl(zCCamTrj_KeyFrame___CreateNewInstance);
-    var int targetKey1Ptr; targetKey1Ptr = CALL_RetValAsPtr();
-    MEM_CopyWords(vobPtr+60, targetKey1Ptr+60, 16);
-    var zCVob targetKey1; targetKey1 = _^(targetKey1Ptr);
-    //targetKey1.trafoObjToWorld[ 3] = addf(targetKey1.trafoObjToWorld[ 3], mulf(targetKey1.trafoObjToWorld[ 1], FLOAT3C));
-    //targetKey1.trafoObjToWorld[ 7] = addf(targetKey1.trafoObjToWorld[ 7], mulf(targetKey1.trafoObjToWorld[ 5], FLOAT3C));
-    //targetKey1.trafoObjToWorld[11] = addf(targetKey1.trafoObjToWorld[11], mulf(targetKey1.trafoObjToWorld[ 9], FLOAT3C));
-    targetKey1._zCObject_objectName = "target1"; // Set name before inserting it
-    CALL_PtrParam(_@(MEM_Vobtree));
-    CALL_PtrParam(targetKey1Ptr);
-    CALL__thiscall(_@(MEM_World), oCWorld__AddVobAsChild);
-
-    // Create source key 2
-    CALL__cdecl(zCCamTrj_KeyFrame___CreateNewInstance);
-    var int sourceKey2Ptr; sourceKey2Ptr = CALL_RetValAsPtr();
-    MEM_CopyWords(_@(camVob)+60, sourceKey2Ptr+60, 16);
-    var zCVob sourceKey2; sourceKey2 = _^(sourceKey2Ptr);
-    sourceKey2._zCObject_objectName = "source2"; // Set name before inserting it
-    CALL_PtrParam(_@(MEM_Vobtree));
-    CALL_PtrParam(sourceKey2Ptr);
-    CALL__thiscall(_@(MEM_World), oCWorld__AddVobAsChild);
-
-    // Create target key 2
-    CALL__cdecl(zCCamTrj_KeyFrame___CreateNewInstance);
-    var int targetKey2Ptr; targetKey2Ptr = CALL_RetValAsPtr();
-    MEM_CopyWords(vobPtr+60, targetKey2Ptr+60, 16);
-    var zCVob targetKey2; targetKey2 = _^(targetKey2Ptr);
-    targetKey2.trafoObjToWorld[ 3] = addf(targetKey2.trafoObjToWorld[ 3], mulf(targetKey2.trafoObjToWorld[ 1], FLOAT3C));
-    targetKey2.trafoObjToWorld[ 7] = addf(targetKey2.trafoObjToWorld[ 7], mulf(targetKey2.trafoObjToWorld[ 5], FLOAT3C));
-    targetKey2.trafoObjToWorld[11] = addf(targetKey2.trafoObjToWorld[11], mulf(targetKey2.trafoObjToWorld[ 9], FLOAT3C));
-    targetKey2._zCObject_objectName = "target2"; // Set name before inserting it
-    CALL_PtrParam(_@(MEM_Vobtree));
-    CALL_PtrParam(targetKey2Ptr);
-    CALL__thiscall(_@(MEM_World), oCWorld__AddVobAsChild);
-
-
-    // Add source key to camera
-    const int zCCSCamera__InsertCamKey = 4975088; //0x4BE9F0
-    CALL_PtrParam(sourceKey1Ptr);
-    CALL__thiscall(cameraPtr, zCCSCamera__InsertCamKey);
-
-    CALL_PtrParam(sourceKey2Ptr);
-    CALL__thiscall(cameraPtr, zCCSCamera__InsertCamKey);
-
-    // Add target keys to camera
-    const int zCCSCamera__InsertTargetKey = 4975936; //0x4BED40
-    CALL_PtrParam(targetKey1Ptr);
-    CALL__thiscall(cameraPtr, zCCSCamera__InsertTargetKey);
-
-    CALL_PtrParam(targetKey2Ptr);
-    CALL__thiscall(cameraPtr, zCCSCamera__InsertTargetKey);
-
-
-    Wld_SendTrigger("ownCamera");
-    // Wld_SendUnTrigger("ownCamera");
-    //FF_ApplyExt(untriggerCam, 250, 1);
-
-
-    //var zCCamera camera; camera = _^(MEM_Game._zCSession_camera);
-    //var zCVob cam; cam = _^(camera.connectedVob);
-    //camPos = _^(_@(cam.trafoObjToWorld[0]));
-    ////var zCCamera cam; cam = _^(MEM_Game._zCSession_camera);
-    ////camPos = _^(_@(cam.trafoView));
-
-    //// Rotate around x-axis by recoil percent
-    //SinCosApprox(Print_ToRadian(recoilAngle));
-
-    //// Rotate At-Vector (z)
-    //var int y_; y_ = subf(mulf(camPos.v1[zMAT4_outVec], cosApprox), mulf(camPos.v2[zMAT4_outVec], sinApprox));
-    //var int z_; z_ = addf(mulf(camPos.v1[zMAT4_outVec], sinApprox), mulf(camPos.v2[zMAT4_outVec], cosApprox));
-    //camPos.v1[zMAT4_outVec] = y_;
-    //camPos.v2[zMAT4_outVec] = z_;
-
-    //// Rotate Up-Vector (y)
-    //y_ = subf(mulf(camPos.v1[zMAT4_upVec], cosApprox), mulf(camPos.v2[zMAT4_upVec], sinApprox));
-    //z_ = addf(mulf(camPos.v1[zMAT4_upVec], sinApprox), mulf(camPos.v2[zMAT4_upVec], cosApprox));
-    //camPos.v1[zMAT4_upVec] = y_;
-    //camPos.v2[zMAT4_upVec] = z_;
-
-    //var int d[3];
-    //d[0] = camPos.v0[zMAT4_position];
-    //d[1] = camPos.v1[zMAT4_position];
-    //d[2] = camPos.v2[zMAT4_position];
-
-
-
-    //var int XM11_CamAngleHead; XM11_CamAngleHead = 0;
-    //var int XM11_CamAngleElev; XM11_CamAngleElev = FLOATHALF;
-
-    ////var zCCamera camera; camera = _^(MEM_Game._zCSession_camera);
-
-
-    ////if(!camera.connectedVob) {
-    ////    MEM_Error("Could not find and update camera?");
-    ////    return;
-    ////};
-
-    /////* In the case XM11_CamAngleHead == 0 && XM11_CamAngleElev == 0 there is some
-    //// * serious bullshit going down. I have NO idea what it could be. I know:
-    //// * The Matrix (cam.trafoObjToWorld) that I calculate is correct:
-    //// *
-    //// * ( 0 0 1)
-    //// * ( 0 1 0)
-    //// * (-1 0 0)
-    //// *
-    //// * But sometimes (not always!) setting this matrix will unleash hell:
-    //// * -For at least one frame the screen will have a brownish colour.
-    //// * -From this point on every frame will take very long (~1 sec) to render
-    //// * -SetPositionWorldVec will take very long (~1 sec) to complete on the camera vob (why???)
-    //// *
-    //// * This bug is bugging me and my "fix" is an evil hack that
-    //// * seems to work but may not be sufficient (avoids looking along the x-axis,
-    //// * but how do I know this is the only problematic situation?)
-    //// */
-
-    //if (XM11_CamAngleHead == 0) { XM11_CamAngleHead = fracf(1, 10000); };
-    //if (XM11_CamAngleElev == 0) { XM11_CamAngleElev = fracf(1, 10000); };
-
-    //var int ce; var int se;
-    //var int ch; var int sh;
-    //SinCosApprox(XM11_CamAngleHead);
-    //ch = cosApprox; sh = sinApprox;
-    //SinCosApprox(XM11_CamAngleElev);
-    //ce = cosApprox; se = sinApprox;
-
-    ///* set rotation mat */
-    ////var zCVob cam; cam = _^(camera.connectedVob);
-    ///* right                           up                                           front */
-    //cam.trafoObjToWorld[0] = sh;       cam.trafoObjToWorld[1] = mulf(negf(se), ch); cam.trafoObjToWorld[ 2] = mulf(ch, ce);
-    //cam.trafoObjToWorld[4] = 0;        cam.trafoObjToWorld[5] = ce;                 cam.trafoObjToWorld[ 6] = se;
-    //cam.trafoObjToWorld[8] = negf(ch); cam.trafoObjToWorld[9] = mulf(negf(se), sh); cam.trafoObjToWorld[10] = mulf(sh, ce);
-
-    /////* set position */
-    ////var int d[3]; /* - front */
-    ////d[0] = negf(mulf(ce, ch));
-    ////d[1] = negf(se);
-    ////d[2] = negf(mulf(sh, ce));
-    //////ScaleVec(_@(d), mkf(XM11_CamDist + XM11_CamDistToObjects));
-
-    //////if (TraceRay(_@(XM11_PivotPos), _@(d),
-    //////             zTRACERAY_POLY_TEST_WATER | zTRACERAY_VOB_IGNORE_NO_CD_DYN | zTRACERAY_POLY_NORMAL)) {
-    //////    /* get away from the intersection (with the normal) */
-    //////    ScaleVec(_@(MEM_World.foundPolyNormal), mkf(XM11_CamDistToObjects));
-    //////    AddToVec(_@(MEM_World.foundIntersection), _@(MEM_World.foundPolyNormal));
-    //////    SetPositionWorldVec(MEM_Camera.connectedVob, _@(MEM_World.foundIntersection));
-    //////} else {
-    //////    AddToVec(_@(d), _@(XM11_PivotPos));
-    //////    SetPositionWorldVec(MEM_Camera.connectedVob, _@(d));
-    //////};
-
-    //const int zCVob_SetPositionWorld = 6404976; //0x61BB70
-
-    //CALL_PtrParam(_@(d));
-    //CALL__thiscall(camera.connectedVob, zCVob_SetPositionWorld);
-
 
 
     // Print info to zSpy
@@ -794,14 +667,10 @@ func void freeAimSetupProjectile() {
         freeAimGetWeaponTalent(0, _@(hitchance));
         SB("scattering disabled (standard hit chance) hit chance="); SBi(hitchance); SB("% ");
     };
+    SB("recoil="); SBi(recoil); SB("% ");
     SB("init-basedamage="); SBi(newBaseDamage); SB("/"); SBi(baseDamage);
     MEM_Info(SB_ToString());
     SB_Destroy();
-};
-
-
-func void untriggerCam() {
-    Wld_SendUntrigger("ownCamera");
 };
 
 
