@@ -63,10 +63,12 @@ func void freeAimManualRotation() {
     };
 
     // Gothic 2 controls only need the rotation if currently shooting
-    if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
+    if (GOTHIC_BASE_VERSION == 2) {
         // Separate if-conditions to increase performance (Gothic checks ALL chained if-conditions)
-        if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) {
-            return;
+        if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
+            if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) {
+                return;
+            };
         };
     };
 

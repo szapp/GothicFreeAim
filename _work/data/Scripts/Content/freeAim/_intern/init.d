@@ -60,10 +60,12 @@ func void freeAim_Init() {
         HookEngineF(oCAIArrowBase__DoAI_6A06D8, 6, freeAimResetGravity); // Reset gravity on collision of projectiles
 
         // Gothic 2 controls
-        MEM_Info("Initializing Gothic 2 controls.");
-        MemoryProtectionOverride(oCAIHuman__BowMode_695F2B, 6); // Skip jump to Gothic 2 controls: jz to 0x696391
-        MemoryProtectionOverride(oCAIHuman__BowMode_6962F2, 2); // Shooting key: push 3
-        MemoryProtectionOverride(oCAIHuman__PC_ActionMove_69A0BB, 5); // Aiming key: mov eax, [esp+8h+4h] // push eax
+        if (GOTHIC_BASE_VERSION == 2) {
+            MEM_Info("Initializing Gothic 2 controls.");
+            MemoryProtectionOverride(oCAIHuman__BowMode_695F2B, 6); // Skip jump to Gothic 2 controls: jz to 0x696391
+            MemoryProtectionOverride(oCAIHuman__BowMode_6962F2, 2); // Shooting key: push 3
+            MemoryProtectionOverride(oCAIHuman__PC_ActionMove_69A0BB, 5); // Aiming key: mov eax, [esp+8h+4h], push eax
+        };
 
         // Reticle
         MEM_Info("Initializing reticle.");
@@ -221,6 +223,10 @@ func void freeAimUpdateSettings(var int on) {
  * This function is called from freeAimIsActive() nearly every frame.
  */
 func void freeAimUpdateSettingsG2Ctrl(var int on) {
+    if (GOTHIC_BASE_VERSION == 1) {
+        return;
+    };
+
     const int SET = 0; // Gothic 1 controls are considered default here
     if (SET == on) {
         return; // No change necessary
@@ -300,12 +306,19 @@ func void freeAimUpdateStatus() {
     if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled"))) || (!MEM_ReadInt(mouseEnabled)) {
         // Disable if previously enabled
         freeAimUpdateSettings(0);
-        freeAimUpdateSettingsG2Ctrl(0);
         freeAimDisableAutoTurn(0);
+
+        if (GOTHIC_BASE_VERSION == 2) {
+            freeAimUpdateSettingsG2Ctrl(0);
+        };
+
     } else {
         // Enable if previously disabled
         freeAimUpdateSettings(1);
-        freeAimUpdateSettingsG2Ctrl(!MEM_ReadInt(oCGame__s_bUseOldControls)); // G2 controls = 1, G1 controls = 0
+
+        if (GOTHIC_BASE_VERSION == 2) {
+            freeAimUpdateSettingsG2Ctrl(!MEM_ReadInt(oCGame__s_bUseOldControls)); // G2 controls = 1, G1 controls = 0
+        };
     };
 };
 
@@ -344,13 +357,12 @@ func void freeAimIsActive() {
     };
 
     // Set aiming key depending on control scheme to either action or blocking key
-    var String keyAiming;
-    if (MEM_ReadInt(oCGame__s_bUseOldControls)) {
-        // Gothic 1 controls
-        keyAiming = "keyAction";
-    } else {
-        // Gothic 2 controls
-        keyAiming = "keyParade";
+    var String keyAiming; keyAiming = "keyAction"; // Gothic 1 controls
+    if (GOTHIC_BASE_VERSION == 2) {
+        if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
+            // Gothic 2 controls
+            keyAiming = "keyParade";
+        };
     };
     var int keyStateAiming1; keyStateAiming1 = MEM_KeyState(MEM_GetKey(keyAiming));
     var int keyStateAiming2; keyStateAiming2 = MEM_KeyState(MEM_GetSecondaryKey(keyAiming));
@@ -369,11 +381,18 @@ func void freeAimIsActive() {
         };
 
         // Gothic 1 controls require action key to be pressed/held
-        if (MEM_ReadInt(oCGame__s_bUseOldControls)) && (!keyPressed) {
+        if (GOTHIC_BASE_VERSION == 2) {
+            if (MEM_ReadInt(oCGame__s_bUseOldControls)) && (!keyPressed) {
+                freeAimDisableAutoTurn(0);
+                FREEAIM_ACTIVE = 1;
+                return;
+            };
+        } else if (!keyPressed) {
             freeAimDisableAutoTurn(0);
             FREEAIM_ACTIVE = 1;
             return;
         };
+
 
         // Check if active spell supports free aiming
         var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
@@ -393,9 +412,12 @@ func void freeAimIsActive() {
         };
 
     } else if (her.fmode >= FMODE_FAR) { // Greater or equal: Crossbow has different fight mode!
-        // Set internally whether the aiming key is held or not (only if using Gothic 2 controls)
-        if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
-            MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+4, keyPressed);
+
+        if (GOTHIC_BASE_VERSION == 2) {
+            // Set internally whether the aiming key is held or not (only if using Gothic 2 controls)
+            if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
+                MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+4, keyPressed);
+            };
         };
 
         // Check if aiming key is not pressed/held
