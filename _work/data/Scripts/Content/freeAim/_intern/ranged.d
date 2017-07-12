@@ -562,21 +562,56 @@ func void freeAimSetupProjectile() {
 
 
     // Print info to zSpy
+    MEM_Info("freeAimSetupProjectile:");
     var int s; s = SB_New();
-    SB("freeAimSetupProjectile: ");
-    SB("distance="); SB(STR_Prefix(toStringf(divf(distPlayer, FLOAT1C)), 4)); SB("m ");
-    SB("drawforce="); SBi(drawForce); SB("% ");
+
+    SB("   distance=");
+    SB(STR_Prefix(toStringf(divf(distPlayer, FLOAT1C)), 4));
+    SB("m");
+    MEM_Info(SB_ToString());
+    SB_Clear();
+
+    SB("   drawforce=");
+    SBi(drawForce);
+    SB("%");
+    MEM_Info(SB_ToString());
+    SB_Clear();
+
     if (FREEAIM_TRUE_HITCHANCE) {
-        SB("accuracy="); SBi(accuracy); SB("% ");
-        SB("scatter="); SB(STR_Prefix(toStringf(angleX), 5)); SBc(176 /* deg */);
-        SB("/"); SB(STR_Prefix(toStringf(angleY), 5)); SBc(176 /* deg */); SB(" ");
+        SB("   accuracy=");
+        SBi(accuracy);
+        SB("%");
+        MEM_Info(SB_ToString());
+        SB_Clear();
+
+        SB("   scatter=");
+        SB(STR_Prefix(toStringf(angleX), 5));
+        SBc(176 /* deg */);
+        SB("/");
+        SB(STR_Prefix(toStringf(angleY), 5));
+        SBc(176 /* deg */);
+        MEM_Info(SB_ToString());
+        SB_Clear();
     } else {
         var int hitchance;
         freeAimGetWeaponTalent(0, _@(hitchance));
-        SB("scattering disabled (standard hit chance) hit chance="); SBi(hitchance); SB("% ");
+        SB("   hit chance=");
+        SBi(hitchance);
+        SB("% (standard hit chance, scattering disabled)");
+        MEM_Info(SB_ToString());
+        SB_Clear();
     };
-    SB("recoil="); SBi(recoil); SB("% ");
-    SB("init-basedamage="); SBi(newBaseDamage); SB("/"); SBi(baseDamage);
+
+    SB("   recoil=");
+    SBi(recoil);
+    SB("%");
+    MEM_Info(SB_ToString());
+    SB_Clear();
+
+    SB("   init-basedamage=");
+    SBi(newBaseDamage);
+    SB("/");
+    SBi(baseDamage);
     MEM_Info(SB_ToString());
     SB_Destroy();
 };

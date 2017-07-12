@@ -256,12 +256,30 @@ func void freeAimDetectCriticalHit() {
     };
 
     // Print info to zSpy
+    MEM_Info("freeAimDetectCriticalHit:");
     var int s; s = SB_New();
-    SB("freeAimDetectCriticalHit: ");
-    SB("criticalhit="); SBi(criticalHit); SB(" ");
-    SB("basedamage="); SBi(roundf(weakspot.bDmg)); SB("/"); SBi(roundf(MEM_ReadInt(damagePtr))); SB(" ");
-    SB("criticalnode='"); SB(weakspot.node); SB("' ");
-    SB(" ("); SBi(weakspot.dimX); SB("x"); SBi(weakspot.dimY); SB(")");
+
+    SB("   criticalhit=");
+    SBi(criticalHit);
+    MEM_Info(SB_ToString());
+    SB_Clear();
+
+    SB("   basedamage=");
+    SBi(roundf(MEM_ReadInt(damagePtr)));
+    MEM_Info(SB_ToString());
+    SB_Clear();
+
+    SB("   critdamage=");
+    SBi(roundf(weakspot.bDmg));
+    MEM_Info(SB_ToString());
+    SB_Clear();
+
+    SB("   criticalnode='");
+    SB(weakspot.node);
+    SB("' (");
+    SBi(weakspot.dimX);
+    SB("x");
+    SBi(weakspot.dimY); SB(")");
     MEM_Info(SB_ToString());
     SB_Destroy();
 

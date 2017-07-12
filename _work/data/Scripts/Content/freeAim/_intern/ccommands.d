@@ -66,10 +66,21 @@ func string freeAimVersion(var string command) {
  */
 func string freeAimLicense(var string command) {
     var int s; s = SB_New();
-    SB(FREEAIM_VERSION); SB(", Copyright "); SBc(169 /* (C) */); SB(" 2016  mud-freak (@szapp)"); SBc(13); SBc(10);
-    SB("<http://github.com/szapp/g2freeAim>"); SBc(13); SBc(10);
-    SB("Released under the MIT License."); SBc(13); SBc(10);
-    SB("For more details see <http://opensource.org/licenses/MIT>."); SBc(13); SBc(10);
+    SB(FREEAIM_VERSION);
+    SB(", Copyright ");
+    SBc(169 /* (C) */);
+    SB(" 2016  mud-freak (@szapp)");
+    SBc(13); SBc(10);
+
+    SB("<http://github.com/szapp/g2freeAim>");
+    SBc(13); SBc(10);
+
+    SB("Released under the MIT License.");
+    SBc(13); SBc(10);
+
+    SB("For more details see <http://opensource.org/licenses/MIT>.");
+    SBc(13); SBc(10);
+
     var string ret; ret = SB_ToString();
     SB_Destroy();
 
@@ -85,12 +96,28 @@ func string freeAimInfo(var string command) {
     const string onOff[2] = {"off", "on"};
 
     var int s; s = SB_New();
-    SB(FREEAIM_VERSION); SBc(13); SBc(10);
-    SB("Enabled: "); SB(MEM_ReadStatStringArr(onOff, STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled")))); SBc(13);SBc(10);
-    SB("Focus: "); SB(MEM_ReadStatStringArr(onOff, FREEAIM_FOCUS_COLLECTION));
-    SB(" ("); SBi(freeAimRayInterval); SB(" ms collection frequency)"); SBc(13); SBc(10);
-    SB("Reuse projectiles: "); SB(MEM_ReadStatStringArr(onOff, FREEAIM_REUSE_PROJECTILES)); SBc(13); SBc(10);
-    SB("Free aim for spells: "); SB(MEM_ReadStatStringArr(onOff, !FREEAIM_DISABLE_SPELLS)); SBc(13); SBc(10);
+    SB(FREEAIM_VERSION);
+    SBc(13); SBc(10);
+
+    SB("Enabled: ");
+    SB(MEM_ReadStatStringArr(onOff, FREEAIM_ACTIVE));
+    SBc(13);SBc(10);
+
+    SB("Focus: ");
+    SB(MEM_ReadStatStringArr(onOff, FREEAIM_FOCUS_COLLECTION));
+    SB(" (");
+    SBi(freeAimRayInterval);
+    SB(" ms collection interval)");
+    SBc(13); SBc(10);
+
+    SB("Reuse projectiles: ");
+    SB(MEM_ReadStatStringArr(onOff, FREEAIM_REUSE_PROJECTILES));
+    SBc(13); SBc(10);
+
+    SB("Free aim for spells: ");
+    SB(MEM_ReadStatStringArr(onOff, !FREEAIM_DISABLE_SPELLS));
+    SBc(13); SBc(10);
+
     var string ret; ret = SB_ToString();
     SB_Destroy();
 
