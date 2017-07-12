@@ -169,6 +169,7 @@ func void freeAim_Init() {
     MEM_Call(freeAimUpdateStatus); // Reinitialize settings, to adjust the focus modes
     MEM_Call(freeAimManageReticle); // Remove reticle. Would be stuck on screen on level change
     freeAimRayPrevCalcTime = 0; // Reset aim ray calculation time. Would cause an invalid vob pointer on loading a game
+    freeAimDebugTRPrevVob = 0; // Reset debug vob pointer. Would cause an invalid vob pointer on loading a game
 
     MEM_Info(ConcatStrings(FREEAIM_VERSION, " was initialized successfully."));
 };
