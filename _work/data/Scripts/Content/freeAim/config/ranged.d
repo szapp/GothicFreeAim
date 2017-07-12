@@ -48,12 +48,6 @@ func int freeAimGetDrawForce(var C_Item weapon, var int talent) {
  * calculation (based on skill and distance from target) is used and the accuracy defined here does not take effect!
  */
 func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
-    // If in recoil, the accuracy is way off
-    if (MEM_ReadInt(zCCSCamera__playing)) {
-        // Recoil camera is active
-        return 0;
-    };
-
     // Here, the talent is scaled by draw force:
     //  Draw force = 100% -> accuracy = talent
     //  Draw force =   0% -> accuracy = talent/2
@@ -75,7 +69,6 @@ func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
 };
 
 
-
 /*
  * This function is called at the point of shooting a bow or a crossbow. The return value scales the recoil of the
  * weapon in percent, where 0 is no recoil and 100 is maximum recoil.
@@ -92,13 +85,20 @@ func int freeAimGetRecoil(var C_Item weapon, var int talent) {
     };
 
     // Here, the recoil is scaled by strengh:
-    //  Strength >= 100 -> recoil =   0
-    //  Strength  =   0 -> recoil = 100
-    var int recoil; recoil = -hero.attribute[ATR_STRENGTH]+100;
+    //  Strength >= 120 -> recoil =  20
+    //  Strength <=  20 -> recoil = 100
+    var int recoil; recoil = (80*(hero.attribute[ATR_STRENGTH]-120)/-100)+20;
+
+    /*
+    // Alternatively, inversely scale with draw force. Keep in mind, that by default, draw force is always 100% for
+    // crossbows, see freeAimGetDrawForce() above.
+    var int recoil; recoil = -freeAimGetDrawForce(weapon, talent)+100;
+    */
 
     // Respect the percentage ranges
-    if (recoil < 0) {
-        recoil = 0;
+    if (recoil < 20) {
+        // Personal preference: always add at least a bit of recoil (20%)
+        recoil = 20;
     } else if (recoil > 100) {
         recoil = 100;
     };
@@ -119,8 +119,8 @@ func int freeAimGetRecoil(var C_Item weapon, var int talent) {
  */
 func int freeAimScaleInitialDamage(var int basePointDamage, var C_Item weapon, var int talent) {
     // Here the damage is scaled by draw force:
-    //  Draw force=100% => baseDamage
-    //  Draw force=  0% => baseDamage/2
+    //  Draw force = 100% -> baseDamage
+    //  Draw force =   0% -> baseDamage/2
 
     // Get draw force from the function above. Already scaled to [0, 100]
     var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent);

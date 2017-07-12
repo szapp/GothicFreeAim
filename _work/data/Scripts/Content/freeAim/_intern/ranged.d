@@ -328,12 +328,13 @@ func int freeAimGetRecoil_() {
 /*
  * Set the projectile direction. This function hooks oCAIArrow::SetupAIVob to overwrite the target vob with the aim vob
  * that is placed in front of the camera at the nearest intersection with the world or an object.
- * Setting up the projectile involves five parts:
- *  1st: Set base damage of projectile:            freeAimScaleInitialDamage()
- *  2nd: Manipulate aiming accuracy (scatter):     freeAimGetAccuracy()
- *  3rd: Set projectile drop-off (by draw force):  freeAimGetDrawForce()
- *  4th: Add trial strip FX for better visibility
- *  5th: Setup the aim vob and overwrite the target
+ * Setting up the projectile involves several parts:
+ *  1st: Set base damage of projectile:             freeAimScaleInitialDamage()
+ *  2nd: Manipulate aiming accuracy (scatter):      freeAimGetAccuracy()
+ *  3rd: Add recoil to mouse movement:              freeAimGetRecoil()
+ *  4th: Set projectile drop-off (by draw force):   freeAimGetDrawForce()
+ *  5th: Add trial strip FX for better visibility
+ *  6th: Setup the aim vob and overwrite the target
  */
 func void freeAimSetupProjectile() {
     // Only if shooter is the player and if FA is enabled
@@ -365,10 +366,6 @@ func void freeAimSetupProjectile() {
     var int distance; // Distance to camera (used for calculating position of target shot in local space)
     var int distPlayer; // Distance to player (used for debugging output in zSpy)
     freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, _@(pos), _@(distPlayer), _@(distance));
-
-    // Get camera vob (not camera itself, because it does not offer a reliable position)
-    var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
-    var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
 
     // Scattering with different hit chance calcualtion (optional)
     if (FREEAIM_TRUE_HITCHANCE) {
@@ -467,6 +464,10 @@ func void freeAimSetupProjectile() {
         localPos[0] = mulf(localPos[2], sinApprox);       //  x*cos + z*sin = x'
         localPos[2] = mulf(localPos[2], cosApprox);       // -x*sin + z*cos = z'
 
+        // Get camera vob (not camera itself, because it does not offer a reliable position)
+        var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
+        var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
+
         // Translation into local coordinate system of camera (rotation): rightVec*x + upVec*y + outVec*z
         // rightVec*x
         pos[0] = mulf(camPos.v0[zMAT4_rightVec], localPos[0]);
@@ -488,7 +489,12 @@ func void freeAimSetupProjectile() {
     };
 
 
-    // 3rd: Set projectile drop-off (by draw force)
+    // 3rd: Add recoil
+    var int recoil; recoil = freeAimGetRecoil_();
+    freeAimRecoil = (FREEAIM_MAX_RECOIL*recoil)/100;
+
+
+    // 4th: Set projectile drop-off (by draw force)
     // The curved trajectory of the projectile is achieved by setting a fixed gravity, but applying it only after a
     // certain air time. This air time is adjustable and depends on draw force: freeAimGetDrawForce().
     // First get rigidBody of the projectile which is responsible for gravity. The rigidBody object does not exist yet
@@ -522,7 +528,7 @@ func void freeAimSetupProjectile() {
     freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_RELOAD;
 
 
-    // 4th: Add trail strip FX for better visibility
+    // 5th: Add trail strip FX for better visibility
     // The horizontal position of the camera is aligned with the arrow trajectory, to counter the parallax effect and to
     // allow reasonable aiming. Unfortunately, when the projectile flies along the out vector of the camera (exactly
     // away from the camera), it is barely to not at all visible. To aid visibility, an additional trail strip FX is
@@ -538,15 +544,9 @@ func void freeAimSetupProjectile() {
     };
 
 
-    // 5th: Reposition the aim vob and overwrite the target vob
+    // 6th: Reposition the aim vob and overwrite the target vob
     var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos));
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
-
-
-    // 6th: Add recoil
-    var int recoil; recoil = freeAimGetRecoil_();
-    freeAimRecoilStart = MEM_Timer.totalTime;
-    FF_ApplyOnce(recoilMouse);
 
 
     // Print info to zSpy
@@ -567,24 +567,6 @@ func void freeAimSetupProjectile() {
     SB("init-basedamage="); SBi(newBaseDamage); SB("/"); SBi(baseDamage);
     MEM_Info(SB_ToString());
     SB_Destroy();
-};
-
-
-/*
- * Manipulate the mouse movement to simulate recoil. This is a self-terminating frame function activated from
- * freeAimSetupProjectile().
- */
-func void recoilMouse() {
-    if (freeAimRecoilStart+250 < MEM_Timer.totalTime) {
-        FF_Remove(recoilMouse);
-    };
-
-    //const int mouseDeltaY = 9246304; //0x8D1660
-    //MEM_WriteInt(mouseDeltaY, 20);
-
-    var _Cursor c; c = _^(Cursor_Ptr);
-    c.relX = r_MinMax(-2, 2);
-    c.relY = r_MinMax(-5, -3);
 };
 
 

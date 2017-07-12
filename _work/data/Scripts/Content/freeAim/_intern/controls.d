@@ -46,6 +46,22 @@ func void freeAimManualRotation() {
         return;
     };
 
+    // Add recoil to mouse movement
+    if (freeAimRecoil) {
+        // Manipulate vertical mouse movement: Add negative (upwards) movement
+        var int manipulateY;
+        manipulateY = MEM_ReadInt(mouseDeltaY)-roundf(divf(mkf(freeAimRecoil), MEM_ReadInt(mouseSensX)));
+        MEM_WriteInt(mouseDeltaY, manipulateY);
+
+        // Reset recoil ASAP, since this function is called in fast succession
+        freeAimRecoil = 0;
+
+        // Manipulate horziontal mouse movement slightly: Add random positive or negative (sideways) movement
+        var int manipulateX; manipulateX = fracf(r_MinMax(-FREEAIM_HORZ_RECOIL*10, FREEAIM_HORZ_RECOIL*10), 10);
+        manipulateX = MEM_ReadInt(mouseDeltaX)+roundf(divf(manipulateX, MEM_ReadInt(mouseSensX)));
+        MEM_WriteInt(mouseDeltaX, manipulateX);
+    };
+
     // Gothic 2 controls only need the rotation if currently shooting
     if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
         // Separate if-conditions to increase performance (Gothic checks ALL chained if-conditions)
@@ -56,8 +72,9 @@ func void freeAimManualRotation() {
 
     // Retrieve vertical mouse movement (along x-axis) and apply mouse sensitivity
     var int deltaX; deltaX = mulf(mkf(MEM_ReadInt(mouseDeltaX)), MEM_ReadInt(mouseSensX));
-    if (deltaX == FLOATNULL) {
-        return; // Only rotate if there was movement along x position
+    if (deltaX == FLOATNULL) || (Cursor_NoEngine) {
+        // Only rotate if there was movement along x position and if mouse movement is not disabled
+        return;
     };
 
     // Apply turn rate
