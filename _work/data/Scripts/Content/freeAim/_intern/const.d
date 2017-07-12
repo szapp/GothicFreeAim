@@ -58,6 +58,7 @@ var   int    freeAimDebugTRTrj[6];                              // Trace ray tra
 var   int    freeAimDebugTRPrevVob;                             // Trace ray detected vob bbox pointer for debugging
 var   int    freeAimReticleHndl;                                // Holds the handle of the reticle
 var   int    freeAimBowDrawOnset;                               // Time onset of drawing the bow
+var   int    freeAimRecoilStart;                                // Time onset of recoil
 
 
 /*

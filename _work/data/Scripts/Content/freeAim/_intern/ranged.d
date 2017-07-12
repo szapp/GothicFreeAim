@@ -545,112 +545,8 @@ func void freeAimSetupProjectile() {
 
     // 6th: Add recoil
     var int recoil; recoil = freeAimGetRecoil_();
-
-    if (recoil) {
-        // Retrieve cutscene camera by name
-        var int cameraPtr; cameraPtr = MEM_SearchVobByName("RECOILCAM");
-        var int keyframePtr;
-        var int camKeyPtr;
-        var int targetKeyPtr;
-
-        if (!cameraPtr) {
-            // Create cutsceen camera
-            const int call3 = 0;
-            if (CALL_Begin(call3)) {
-                CALL_PutRetValTo(_@(cameraPtr));
-                CALL__cdecl(zCCSCamera___CreateNewInstance);
-                call3 = CALL_End();
-            };
-
-            // Add name and insert into world
-            var zCVob vob; vob = _^(cameraPtr);
-            vob._zCObject_objectName = "RECOILCAM"; // Set name before inserting it
-            const int call4 = 0;
-            var int vobInsertPtr; vobInsertPtr = cameraPtr;
-            var int worldPtr; worldPtr = _@(MEM_World);
-            var int vobtreePtr; vobtreePtr = _@(MEM_Vobtree);
-            if (CALL_Begin(call4)) {
-                CALL_PtrParam(_@(vobtreePtr));
-                CALL_PtrParam(_@(vobInsertPtr));
-                CALL__thiscall(_@(worldPtr), oCWorld__AddVobAsChild);
-                call4 = CALL_End();
-            };
-
-            // Set camera properties
-            MEM_WriteInt(cameraPtr+zCCSCamera_duration_offset, FLOATNULL); // Ease duration is unaffected
-            MEM_WriteInt(cameraPtr+zCCSCamera_easeFromLastKey_offset, 1); // Ease back to player camera
-
-            // Create cam key and target key
-            const int call5 = 0;
-            if (CALL_Begin(call5)) {
-                CALL_PutRetValTo(_@(keyframePtr));
-                CALL__cdecl(zCCamTrj_KeyFrame___CreateNewInstance);
-                call5 = CALL_End();
-            };
-
-            // Cam key
-            camKeyPtr = keyframePtr;
-            var zCVob camKey; camKey = _^(camKeyPtr);
-            camKey._zCObject_objectName = "RECOILCAM_CAMKEY"; // Set name before inserting it
-
-            // Target key
-            CALL_Begin(call5);
-            targetKeyPtr = keyframePtr;
-            var zCVob targetKey; targetKey = _^(targetKeyPtr);
-            targetKey._zCObject_objectName = "RECOILCAM_TARGETKEY"; // Set name before inserting it
-
-            // Add key frames to world
-            vobInsertPtr = camKeyPtr;
-            CALL_Begin(call4);
-            vobInsertPtr = targetKeyPtr;
-            CALL_Begin(call4);
-
-            // Add cam key to camera
-            CALL_PtrParam(camKeyPtr);
-            CALL__thiscall(cameraPtr, zCCSCamera__InsertCamKey);
-
-            // Add target key to camera
-            CALL_PtrParam(targetKeyPtr);
-            CALL__thiscall(cameraPtr, zCCSCamera__InsertTargetKey);
-
-        } else {
-            camKeyPtr = MEM_ReadInt(MEM_ReadInt(cameraPtr+zCCSCamera_camKey_array_offset));
-            targetKeyPtr = MEM_ReadInt(MEM_ReadInt(cameraPtr+zCCSCamera_targetKey_array_offset));
-        };
-
-        // Get current camera position
-        var int camPosVec[3];
-        camPosVec[0] = camPos.v0[zMAT4_position];
-        camPosVec[1] = camPos.v1[zMAT4_position];
-        camPosVec[2] = camPos.v2[zMAT4_position];
-        var int camPosVecPtr; camPosVecPtr = _@(camPosVec);
-
-        // Update cam key position to player camera
-        keyframePtr = camKeyPtr;
-        const int call6 = 0;
-        if (CALL_Begin(call6)) {
-            CALL_PtrParam(_@(camPosVecPtr));
-            CALL__thiscall(_@(keyframePtr), zCVob__SetPositionWorld);
-            call6 = CALL_End();
-        };
-
-        // Update target key position in front of the player camera, recoil/3 is the slope grade
-        camPosVec[1] = addf(camPosVec[1], mkf(recoil)); // Height
-        camPosVec[0] = addf(camPosVec[0], mulf(camPos.v0[zMAT4_outVec], FLOAT3C));
-        camPosVec[2] = addf(camPosVec[2], mulf(camPos.v2[zMAT4_outVec], FLOAT3C));
-        keyframePtr = targetKeyPtr;
-        CALL_Begin(call6);
-
-        // Update and reset camera splines
-        const int zCCSCamera__Refresh = 4976784; //0x4BF090
-        const int call7 = 0;
-        if (CALL_Begin(call7)) {
-            CALL__thiscall(_@(cameraPtr), zCCSCamera__Refresh);
-            call7 = CALL_End();
-        };
-
-        Wld_SendTrigger("RECOILCAM");
-    };
+    freeAimRecoilStart = MEM_Timer.totalTime;
+    FF_ApplyOnce(recoilMouse);
 
 
     // Print info to zSpy
@@ -671,6 +567,24 @@ func void freeAimSetupProjectile() {
     SB("init-basedamage="); SBi(newBaseDamage); SB("/"); SBi(baseDamage);
     MEM_Info(SB_ToString());
     SB_Destroy();
+};
+
+
+/*
+ * Manipulate the mouse movement to simulate recoil. This is a self-terminating frame function activated from
+ * freeAimSetupProjectile().
+ */
+func void recoilMouse() {
+    if (freeAimRecoilStart+250 < MEM_Timer.totalTime) {
+        FF_Remove(recoilMouse);
+    };
+
+    //const int mouseDeltaY = 9246304; //0x8D1660
+    //MEM_WriteInt(mouseDeltaY, 20);
+
+    var _Cursor c; c = _^(Cursor_Ptr);
+    c.relX = r_MinMax(-2, 2);
+    c.relY = r_MinMax(-5, -3);
 };
 
 
