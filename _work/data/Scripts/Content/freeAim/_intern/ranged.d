@@ -275,7 +275,7 @@ func int freeAimGetAccuracy_() {
  * Internal helper function for freeAimScaleInitialDamage(). It is called from freeAimSetupProjectile().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
-func int freeAimScaleInitialDamage_(var int basePointDamage) {
+func int freeAimScaleInitialDamage_(var int basePointDamage, var int aimingDistance) {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
     if (!freeAimGetWeaponTalent(_@(weaponPtr), _@(talent))) {
@@ -284,11 +284,23 @@ func int freeAimScaleInitialDamage_(var int basePointDamage) {
     };
     var C_Item weapon; weapon = _^(weaponPtr);
 
+    // Scale distance between [0, 100] for [RANGED_CHANCE_MINDIST, RANGED_CHANCE_MAXDIST], see AI_Constants.d
+    // For readability: 100*(aimingDistance-RANGED_CHANCE_MINDIST)/(RANGED_CHANCE_MAXDIST-RANGED_CHANCE_MINDIST)
+    aimingDistance = roundf(divf(mulf(FLOAT1C, subf(aimingDistance, castToIntf(RANGED_CHANCE_MINDIST))),
+                                 subf(castToIntf(RANGED_CHANCE_MAXDIST), castToIntf(RANGED_CHANCE_MINDIST))));
+    // Clip to range [0, 100]
+    if (aimingDistance > 100) {
+        aimingDistance = 100;
+    } else if (aimingDistance < 0) {
+        aimingDistance = 0;
+    };
+
     // Call customized function to retrieve adjusted damage value
     MEM_PushIntParam(basePointDamage);
     MEM_PushInstParam(weapon);
     MEM_PushIntParam(talent);
-    MEM_Call(freeAimScaleInitialDamage); // freeAimScaleInitialDamage(basePointDamage, weapon, talent);
+    MEM_PushIntParam(aimingDistance);
+    MEM_Call(freeAimScaleInitialDamage); // freeAimScaleInitialDamage(basePointDamage, weapon, talent, aimingDistance);
     basePointDamage = MEM_PopIntResult();
 
     // No negative damage
@@ -349,23 +361,23 @@ func void freeAimSetupProjectile() {
     };
     var oCItem projectile; projectile = _^(projectilePtr);
 
+    // Before anything: Create target position vector for shot by taking the nearest ray intersection with world/objects
+    var int pos[3]; // Position of the target shot
+    var int distance; // Distance to camera (used for calculating position of target shot in local space)
+    var int distPlayer; // Distance to player (used for debugging output in zSpy)
+    freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, _@(pos), _@(distPlayer), _@(distance));
+
 
     // 1st: Modify the base damage of the projectile
     // This allows for dynamical adjustment of damage (e.g. based on draw force).
     var int baseDamage; baseDamage = projectile.damage[DAM_INDEX_POINT]; // Only point damage is considered
-    var int newBaseDamage; newBaseDamage = freeAimScaleInitialDamage_(baseDamage);
+    var int newBaseDamage; newBaseDamage = freeAimScaleInitialDamage_(baseDamage, distPlayer);
     projectile.damage[DAM_INDEX_POINT] = newBaseDamage;
 
 
     // 2nd: Manipulate aiming accuracy (scatter)
     // The scattering is optional: If disabled, the default hit chance from Gothic is used, where shots are always
     // accurate, but only register damage in a fraction of shots depending on skill and distance
-
-    // Create the target position vector for the shot by taking the nearest ray intersection with world/objects
-    var int pos[3]; // Position of the target shot
-    var int distance; // Distance to camera (used for calculating position of target shot in local space)
-    var int distPlayer; // Distance to player (used for debugging output in zSpy)
-    freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, _@(pos), _@(distPlayer), _@(distance));
 
     // Scattering with different hit chance calcualtion (optional)
     if (FREEAIM_TRUE_HITCHANCE) {

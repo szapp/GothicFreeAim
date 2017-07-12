@@ -117,7 +117,7 @@ func int freeAimGetRecoil(var C_Item weapon, var int talent) {
  *
  * Here, the damage is scaled by draw force to yield less damage when the bow is only briefly drawn.
  */
-func int freeAimScaleInitialDamage(var int basePointDamage, var C_Item weapon, var int talent) {
+func int freeAimScaleInitialDamage(var int basePointDamage, var C_Item weapon, var int talent, var int aimingDistance) {
     // Here the damage is scaled by draw force:
     //  Draw force = 100% -> baseDamage
     //  Draw force =   0% -> baseDamage/2
@@ -130,6 +130,14 @@ func int freeAimScaleInitialDamage(var int basePointDamage, var C_Item weapon, v
 
     // Scale initial point damage by draw force
     basePointDamage = (basePointDamage * drawForce) / 100;
+
+    /*
+    // Optionally, it is possible to decrease the damage with distance. Note, however, that the aimingDistance argument
+    // is the aiming distance, not the actual distance between the object and the shooter. The argument aimingDistance
+    // is scaled between 0 (<= RANGED_CHANCE_MINDIST) and 100 (>= RANGED_CHANCE_MAXDIST), see AI_Constants.d.
+    aimingDistance = (-aimingDistance+100); // Inverse distance percentage
+    basePointDamage = (basePointDamage * aimingDistance) / 100;
+    */
 
     return basePointDamage;
 };
