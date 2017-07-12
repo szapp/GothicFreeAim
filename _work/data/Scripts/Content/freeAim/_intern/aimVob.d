@@ -89,7 +89,7 @@ func void freeAimManipulateAimVobPos(var int posPtr) {
 
     // Call customized function to check whether aim vob should be shifted, function not defined yet at time of parsing
     MEM_PushIntParam(spell);
-    MEM_Call(freeAimShiftAimVob); // freeAimShiftAimVob();
+    MEM_Call(freeAimShiftAimVob); // freeAimShiftAimVob(spell);
     var int shifted; shifted = MEM_PopIntResult();
 
     if (shifted) {

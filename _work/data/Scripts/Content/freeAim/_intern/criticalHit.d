@@ -35,7 +35,7 @@ func void freeAimCriticalHitEvent_(var C_Npc target) {
     // Call customized function to start an event
     MEM_PushInstParam(target);
     MEM_PushInstParam(weapon);
-    MEM_PushIntParam(!!FREEAIM_ACTIVE);
+    MEM_PushIntParam((FREEAIM_ACTIVE && FREEAIM_RANGED));
     MEM_Call(freeAimCriticalHitEvent); // freeAimCriticalHitEvent(target, weapon);
 };
 
@@ -126,7 +126,7 @@ func void freeAimDetectCriticalHit() {
     };
 
     var int criticalHit; criticalHit = 0; // Variable that holds whether a critical hit was detected
-    if (!FREEAIM_ACTIVE) {
+    if (!FREEAIM_ACTIVE) || (!FREEAIM_RANGED) {
 
         // Because critical hits cause an advantage when playing with free aiming enabled compared to auto aim, where
         // there are not critical hits, they are introduced here for balancing reasons
@@ -279,7 +279,8 @@ func void freeAimDetectCriticalHit() {
     SB("' (");
     SBi(weakspot.dimX);
     SB("x");
-    SBi(weakspot.dimY); SB(")");
+    SBi(weakspot.dimY);
+    SB(")");
     MEM_Info(SB_ToString());
     SB_Destroy();
 

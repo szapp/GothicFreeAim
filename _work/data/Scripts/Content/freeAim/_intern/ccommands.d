@@ -93,29 +93,41 @@ func string freeAimLicense(var string command) {
  * When entered in the console, the g2freeAim config is displayed as the console output.
  */
 func string freeAimInfo(var string command) {
-    const string onOff[2] = {"off", "on"};
+    const string onOff[2] = {"OFF", "ON"};
 
     var int s; s = SB_New();
     SB(FREEAIM_VERSION);
     SBc(13); SBc(10);
 
-    SB("Enabled: ");
+    SB("Free aiming: ");
     SB(MEM_ReadStatStringArr(onOff, FREEAIM_ACTIVE));
-    SBc(13);SBc(10);
+    if (FREEAIM_ACTIVE) {
+        SB(" for");
+        if (FREEAIM_RANGED) {
+            SB(" (ranged)");
+        };
+        if (FREEAIM_SPELLS) {
+            SB(" (spells)");
+        };
 
-    SB("Focus: ");
-    SB(MEM_ReadStatStringArr(onOff, FREEAIM_FOCUS_COLLECTION));
-    SB(" (");
-    SBi(freeAimRayInterval);
-    SB(" ms collection interval)");
+        SB(". Focus: ");
+        SB(MEM_ReadStatStringArr(onOff, FREEAIM_FOCUS_COLLECTION));
+        SB(" (");
+        SBi(freeAimRayInterval);
+        SB(" ms collection interval)");
+    };
     SBc(13); SBc(10);
 
-    SB("Reuse projectiles: ");
+    SB("Reusable projectiles: ");
     SB(MEM_ReadStatStringArr(onOff, FREEAIM_REUSE_PROJECTILES));
     SBc(13); SBc(10);
 
-    SB("Free aim for spells: ");
-    SB(MEM_ReadStatStringArr(onOff, !FREEAIM_DISABLE_SPELLS));
+    SB("Custom collision behaviors: ");
+    SB(MEM_ReadStatStringArr(onOff, FREEAIM_CUSTOM_COLLISIONS));
+    SBc(13); SBc(10);
+
+    SB("Criticial hit detection: ");
+    SB(MEM_ReadStatStringArr(onOff, FREEAIM_CRITICALHITS));
     SBc(13); SBc(10);
 
     var string ret; ret = SB_ToString();
