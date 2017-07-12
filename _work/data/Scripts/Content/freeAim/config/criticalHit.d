@@ -237,8 +237,8 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon, var int f
 func int freeAimCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int talent) {
 
     // Here, scale the critical hit chance between MIN (0% skill) and MAX (100% skill)
-    const int MIN = 10; // With   0% skill, 10% of the hits are critical hits
-    const int MAX = 35; // With 100% skill, 35% of the hits are critical hits
+    const int MIN =  2; // With   0% skill,  2% of the hits are critical hits
+    const int MAX = 20; // With 100% skill, 20% of the hits are critical hits
     var int critChance; critChance = (MAX-MIN)*talent/100+MIN;
 
     /*
