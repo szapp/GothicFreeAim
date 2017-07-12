@@ -50,12 +50,18 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
     // Color (do not set the color to preserve the original texture color)
     if (Hlp_IsValidNpc(target)) {
         // The argument 'target' might be empty!
+
         var int att; att = Npc_GetAttitude(target, hero);
+        /* // For now, do not color friendly NPCs green (reticle stays white)
         if (att == ATT_FRIENDLY) {
             reticle.color = Focusnames_Color_Friendly();
-        } else if (att == ATT_HOSTILE) {
+        } else */ if (att == ATT_HOSTILE) {
             reticle.color = Focusnames_Color_Hostile();
         };
+
+    } else {
+        // If no NPC is in focus color it slightly gray
+        reticle.color = RGBA(175, 175, 175, 255);
     };
 
     // Size (scale between [0, 100]: 0 is smallest, 100 is biggest)
@@ -115,12 +121,18 @@ func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell 
     // The color (do not set the color to preserve the original texture color)
     if (Hlp_IsValidNpc(target)) {
         // The argument 'target' might be empty!
+
         var int att; att = Npc_GetAttitude(target, hero);
+        /* // For now, do not color friendly NPCs green (reticle stays white)
         if (att == ATT_FRIENDLY) {
             reticle.color = Focusnames_Color_Friendly();
-        } else if (att == ATT_HOSTILE) {
+        } else */ if (att == ATT_HOSTILE) {
             reticle.color = Focusnames_Color_Hostile();
         };
+
+    } else {
+        // If no NPC is in focus color it slightly gray
+        reticle.color = RGBA(175, 175, 175, 255);
     };
 
     // The size (scale between [0, 100]: 0 is smallest, 100 is biggest)
