@@ -14,9 +14,14 @@
  * Examples are written below and commented out and serve as inspiration of what is possible.
  * Here, preliminary weak spots for almost all Gothic 2 monsters are defined (all headshots).
  */
-func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int damage, var int rtrnPtr) {
+func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int talent, var int damage, var int rtrnPtr) {
     // Get weak spot instance from call-by-reference argument
     var Weakspot weakspot; weakspot = _^(rtrnPtr);
+
+    // Only allow critical hits, if a non-critical shot would cause damage (damage + dexterity > protection of target)
+    if (roundf(damage)+hero.attribute[ATR_DEXTERITY] < target.protection[PROT_POINT]) {
+        return;
+    };
 
     /*
     if (target.guild < GIL_SEPERATOR_HUM) {
@@ -235,7 +240,6 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon, var int f
  * Examples are written below and commented out and serve as inspiration of what is possible.
  */
 func int freeAimCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int talent) {
-
     // Here, scale the critical hit chance between MIN (0% skill) and MAX (100% skill)
     const int MIN =  2; // With   0% skill,  2% of the hits are critical hits
     const int MAX = 20; // With 100% skill, 20% of the hits are critical hits

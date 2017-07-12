@@ -46,13 +46,14 @@ func void freeAimCriticalHitEvent_(var C_Npc target) {
  */
 func void freeAimCriticalHitDef_(var C_Npc target, var int damage, var int returnPtr) {
     // Get readied/equipped ranged weapon
-    var int weaponPtr;
-    freeAimGetWeaponTalent(_@(weaponPtr), 0);
+    var int talent; var int weaponPtr;
+    freeAimGetWeaponTalent(_@(weaponPtr), _@(talent));
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Call customized function to define a critical hit/weak spot
     MEM_PushInstParam(target);
     MEM_PushInstParam(weapon);
+    MEM_PushIntParam(talent);
     MEM_PushIntParam(damage);
     MEM_PushIntParam(returnPtr);
     MEM_Call(freeAimCriticalHitDef); // freeAimCriticalHitDef(target, weapon, damage, returnPtr);
