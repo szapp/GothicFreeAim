@@ -74,11 +74,14 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
         reticle.texture = freeAimAnimateReticleByPercent(RETICLE_NOTCH, drawForce, 17);
 
     } else if (weapon.flags & ITEM_CROSSBOW) {
-        // Change reticle texture by distance
-        reticle.size = 75; // Keep the size fixed here
+        // Reticle is fixed, but resized with distance
+        reticle.texture = RETICLE_PEAK;
 
-        // Animate reticle by distance
-        reticle.texture = freeAimAnimateReticleByPercent(RETICLE_DROP, dist, 8);
+        /*
+        // Alternatively, change the reticle texture with distance
+        reticle.size = 75; // Keep the size fixed here
+        reticle.texture = freeAimAnimateReticleByPercent(RETICLE_DROP, dist, 8); // Animate reticle with distance
+        */
     };
 };
 

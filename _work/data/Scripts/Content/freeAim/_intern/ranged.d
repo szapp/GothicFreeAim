@@ -299,15 +299,42 @@ func int freeAimScaleInitialDamage_(var int basePointDamage) {
 };
 
 
+
+func int freeAimGetRecoil_() {
+    // Get readied/equipped ranged weapon
+    var int talent; var int weaponPtr;
+    if (!freeAimGetWeaponTalent(_@(weaponPtr), _@(talent))) {
+        // On error return 50% accuracy
+        return 50;
+    };
+    var C_Item weapon; weapon = _^(weaponPtr);
+
+    // Call customized function to retrieve accuracy value
+    MEM_PushInstParam(weapon);
+    MEM_PushIntParam(talent);
+    MEM_Call(freeAimGetRecoil); // freeAimGetRecoil(weapon, talent);
+    var int recoil; recoil = MEM_PopIntResult();
+
+    // Must be a percentage in range of [0, 100]
+    if (recoil > 100) {
+        recoil = 100;
+    } else if (recoil < 0) {
+        recoil = 1;
+    };
+    return recoil;
+};
+
+
 /*
  * Set the projectile direction. This function hooks oCAIArrow::SetupAIVob to overwrite the target vob with the aim vob
  * that is placed in front of the camera at the nearest intersection with the world or an object.
- * Setting up the projectile involves five parts:
- *  1st: Set base damage of projectile:            freeAimScaleInitialDamage()
- *  2nd: Manipulate aiming accuracy (scatter):     freeAimGetAccuracy()
- *  3rd: Set projectile drop-off (by draw force):  freeAimGetDrawForce()
- *  4th: Add trial strip FX for better visibility
- *  5th: Setup the aim vob and overwrite the target
+ * Setting up the projectile involves several parts:
+ *  1st: Set base damage of projectile:             freeAimScaleInitialDamage()
+ *  2nd: Manipulate aiming accuracy (scatter):      freeAimGetAccuracy()
+ *  3rd: Add recoil to mouse movement:              freeAimGetRecoil()
+ *  4th: Set projectile drop-off (by draw force):   freeAimGetDrawForce()
+ *  5th: Add trial strip FX for better visibility
+ *  6th: Setup the aim vob and overwrite the target
  */
 func void freeAimSetupProjectile() {
     // Only if shooter is the player and if FA is enabled
@@ -462,7 +489,12 @@ func void freeAimSetupProjectile() {
     };
 
 
-    // 3rd: Set projectile drop-off (by draw force)
+    // 3rd: Add recoil
+    var int recoil; recoil = freeAimGetRecoil_();
+    freeAimRecoil = (FREEAIM_MAX_RECOIL*recoil)/100;
+
+
+    // 4th: Set projectile drop-off (by draw force)
     // The curved trajectory of the projectile is achieved by setting a fixed gravity, but applying it only after a
     // certain air time. This air time is adjustable and depends on draw force: freeAimGetDrawForce().
     // First get rigidBody of the projectile which is responsible for gravity. The rigidBody object does not exist yet
@@ -496,7 +528,7 @@ func void freeAimSetupProjectile() {
     freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_RELOAD;
 
 
-    // 4th: Add trail strip FX for better visibility
+    // 5th: Add trail strip FX for better visibility
     // The horizontal position of the camera is aligned with the arrow trajectory, to counter the parallax effect and to
     // allow reasonable aiming. Unfortunately, when the projectile flies along the out vector of the camera (exactly
     // away from the camera), it is barely to not at all visible. To aid visibility, an additional trail strip FX is
@@ -512,9 +544,10 @@ func void freeAimSetupProjectile() {
     };
 
 
-    // 5th: Reposition the aim vob and overwrite the target vob
+    // 6th: Reposition the aim vob and overwrite the target vob
     var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos));
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
+
 
     // Print info to zSpy
     var int s; s = SB_New();
@@ -530,6 +563,7 @@ func void freeAimSetupProjectile() {
         freeAimGetWeaponTalent(0, _@(hitchance));
         SB("scattering disabled (standard hit chance) hit chance="); SBi(hitchance); SB("% ");
     };
+    SB("recoil="); SBi(recoil); SB("% ");
     SB("init-basedamage="); SBi(newBaseDamage); SB("/"); SBi(baseDamage);
     MEM_Info(SB_ToString());
     SB_Destroy();

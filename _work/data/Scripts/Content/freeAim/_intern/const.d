@@ -58,6 +58,7 @@ var   int    freeAimDebugTRTrj[6];                              // Trace ray tra
 var   int    freeAimDebugTRPrevVob;                             // Trace ray detected vob bbox pointer for debugging
 var   int    freeAimReticleHndl;                                // Holds the handle of the reticle
 var   int    freeAimBowDrawOnset;                               // Time onset of drawing the bow
+var   int    freeAimRecoil;                                     // Amount of vertical mouse manipulation
 
 
 /*
@@ -98,6 +99,7 @@ const int oCGame__s_bUseOldControls               = 9118144; //0x8B21C0
 const int mouseEnabled                            = 9248108; //0x8D1D6C
 const int mouseSensX                              = 9019720; //0x89A148
 const int mouseDeltaX                             = 9246300; //0x8D165C
+const int mouseDeltaY                             = 9246304; //0x8D1660
 const int projectileDeflectOffNpcAddr             = 6949734; //0x6A0B66
 const int oCAIVobMove__CreateNewInstance          = 6959968; //0x6A3360
 const int oCAIHuman__BowMode_695F2B               = 6905643; //0x695F2B
