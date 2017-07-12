@@ -133,7 +133,7 @@ func void freeAimDoNpcHit() {
     // The hit chance percentage is either determined by skill and distance (default Gothic hit chance) or is always
     // 100%, if free aiming is enabled and the accuracy is defined by the scattering (FREEAIM_TRUE_HITCHANCE == TRUE).
     var int hitchance;
-    if (FREEAIM_ACTIVE) && (FREEAIM_TRUE_HITCHANCE) {
+    if (FREEAIM_ACTIVE) && (FREEAIM_RANGED) && (FREEAIM_TRUE_HITCHANCE) {
         // Always hits (100% of all times)
         hitchance = 100;
     } else {
