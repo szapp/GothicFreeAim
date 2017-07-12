@@ -63,6 +63,12 @@ func void freeAim_Init() {
                 HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Set projectile trajectory
                 HookEngineF(oCAIArrowBase__DoAI_6A06D8, 6, freeAimResetGravity); // Reset gravity on collision
 
+                if (FREEAIM_TRUE_HITCHANCE) {
+                    // The custom collision feature is automatically enabled if ranged free aiming and scattering are
+                    // enabled, because then the collision of NPCs needs to be manipulated
+                    FREEAIM_CUSTOM_COLLISIONS = TRUE;
+                };
+
                 // Gothic 2 controls
                 if (GOTHIC_BASE_VERSION == 2) {
                     MEM_Info("Initializing Gothic 2 controls.");
