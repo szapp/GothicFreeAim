@@ -11,7 +11,8 @@ _intern\aimVob.d
 _intern\aimRay.d
 _intern\reticle.d
 
-_intern\ranged.d
+_intern\rangedAiming.d
+_intern\rangedShooting.d
 _intern\spell.d
 
 _intern\collision.d
