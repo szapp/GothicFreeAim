@@ -26,6 +26,11 @@
  * Free aim internal constants, do not modify! Change the settings in freeAim\config\settings.d
  */
 const string FREEAIM_VERSION            = "G2 Free Aim v0.1.2"; // Do not change under any circumstances
+const int    FREEAIM_LEGO_FLAGS         = (LeGo_HookEngine      // For initializing all hooks
+                                         | LeGo_FrameFunctions  // For projectile gravity
+                                         | LeGo_ConsoleCommands // For console commands and debugging
+                                         | LeGo_Random          // For scattering and other uses of random numbers
+                                         | LeGo_PrintS);        // To be safe (in case it is used in critical hit event)
 
 const int    FREEAIM_DRAWTIME_READY     = 650;                  // Time (ms) for readying the bow. Fixed by animation
 const int    FREEAIM_DRAWTIME_RELOAD    = 1110;                 // Time (ms) for reloading the bow. Fixed by animation

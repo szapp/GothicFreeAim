@@ -28,13 +28,38 @@
  */
 func void freeAim_Init() {
     const int INITIALIZED = 0;
-    MEM_Info(ConcatStrings(ConcatStrings("Initialize ", FREEAIM_VERSION), "."));
+
+    // Ikarus and LeGo need to be initialized before
+    if (!_LeGo_Init) {
+        LeGo_Init(_LeGo_Flags | FREEAIM_LEGO_FLAGS);
+    } else if (!_LeGo_Loaded) {
+        LeGo_Init(_LeGo_Flags);
+    };
+    Timer_SetPauseInMenu(1); // Pause frame functions when in menu
+
+    var int s; s = SB_New();
+    SB("Initialize "); SB(FREEAIM_VERSION); SB(" for Gothic "); SBi(GOTHIC_BASE_VERSION); SB(".");
+    MEM_Info(SB_ToString()); SB_Destroy();
 
     // Only perform once per session
     if (!INITIALIZED) {
 
+        // This condition should be removed on successful Gothic 1 port
+        if (GOTHIC_BASE_VERSION == 1) {
+            MEM_Error("G2 Free Aim does not support Gothic 1 yet.");
+            MEM_Info(ConcatStrings(FREEAIM_VERSION, " failed to initialize."));
+            return;
+        };
+
+        // Make sure LeGo is initialized with the required flags
+        if ((_LeGo_Flags & FREEAIM_LEGO_FLAGS) != FREEAIM_LEGO_FLAGS) {
+            MEM_Error("Insufficient LeGo flags for G2 Free Aim.");
+            MEM_Info(ConcatStrings(FREEAIM_VERSION, " failed to initialize."));
+            return;
+        };
+
         // Copyright notice in zSpy
-        var int s; s = SB_New();
+        s = SB_New();
         SB("     "); SB(FREEAIM_VERSION); SB(", Copyright "); SBc(169 /* (C) */); SB(" 2016  mud-freak (@szapp)");
         MEM_Info("");
         MEM_Info(SB_ToString()); SB_Destroy();
@@ -121,7 +146,7 @@ func void freeAim_Init() {
 
         // FEATURE: Custom collision behaviors
         if (FREEAIM_CUSTOM_COLLISIONS) {
-            MEM_Info("Initializing collision behaviors.");
+            MEM_Info("Initializing custom collision behaviors.");
             HookEngineF(onArrowHitChanceAddr, 5, freeAimDoNpcHit); // Decide whether a projectile hits or not
             HookEngineF(onArrowCollVobAddr, 5, freeAimOnArrowCollide); // Collision behavior on non-NPC vob material
             HookEngineF(onArrowCollStatAddr, 5, freeAimOnArrowCollide); // Collision behavior on static world material
@@ -173,10 +198,6 @@ func void freeAim_Init() {
                 CC_Register(freeAimDebugTraceRay, "debug freeaim traceray", "turn debug visualization on/off");
             };
         };
-
-
-        // Initialize random number generator
-        r_DefaultInit();
 
         // Done
         INITIALIZED = 1;
