@@ -51,15 +51,15 @@ func void freeAimManualRotation() {
 
     // Add recoil to mouse movement
     if (freeAimRecoil) {
-        // Manipulate vertical mouse movement: Add negative (upwards) movement
-        mouse.relY -= roundf(divf(mkf(freeAimRecoil), MEM_ReadInt(mouseSensX))); // Mouse sensitivity same for X and Y
+        // Manipulate vertical mouse movement: Add negative (upwards) movement (multiplied by sensitivity)
+        mouse.relY -= roundf(divf(mkf(freeAimRecoil), MEM_ReadInt(Cursor_sY)));
 
         // Reset recoil ASAP, since this function is called in fast succession
         freeAimRecoil = 0;
 
         // Manipulate horziontal mouse movement slightly: Add random positive or negative (sideways) movement
         var int manipulateX; manipulateX = fracf(r_MinMax(-FREEAIM_HORZ_RECOIL*10, FREEAIM_HORZ_RECOIL*10), 10);
-        mouse.relX += roundf(divf(manipulateX, MEM_ReadInt(mouseSensX)));
+        mouse.relX += roundf(divf(manipulateX, MEM_ReadInt(Cursor_sX)));
     };
 
     // Gothic 2 controls only need the rotation if currently shooting
@@ -73,7 +73,7 @@ func void freeAimManualRotation() {
     };
 
     // Retrieve vertical mouse movement (along x-axis) and apply mouse sensitivity
-    var int deltaX; deltaX = mulf(mkf(mouse.relX), MEM_ReadInt(mouseSensX));
+    var int deltaX; deltaX = mulf(mkf(mouse.relX), MEM_ReadInt(Cursor_sX));
     if (deltaX == FLOATNULL) || (Cursor_NoEngine) {
         // Only rotate if there was movement along x position and if mouse movement is not disabled
         return;

@@ -57,7 +57,6 @@ const int zCLineCache__Line3D                     = 5289040; //0x50B450
 const int zlineCache                              = 9257720; //0x8D42F8
 const int oCGame__s_bUseOldControls               = 9118144; //0x8B21C0
 const int mouseEnabled                            = 9248108; //0x8D1D6C
-const int mouseSensX                              = 9019720; //0x89A148
 const int projectileDeflectOffNpcAddr             = 6949734; //0x6A0B66
 const int oCAIHuman__BowMode_695F2B               = 6905643; //0x695F2B
 const int oCAIHuman__BowMode_6962F2               = 6906610; //0x6962F2
