@@ -23,7 +23,7 @@
 
 
 /*
- * Internal helper function for freeAimCriticalHitEvent(). It is called from freeAimDetectCriticalHit().
+ * Wrapper function for the config function freeAimCriticalHitEvent(). It is called from freeAimDetectCriticalHit().
  * This function supplies the readied weapon.
  */
 func void freeAimCriticalHitEvent_(var C_Npc target) {
@@ -32,16 +32,13 @@ func void freeAimCriticalHitEvent_(var C_Npc target) {
     freeAimGetWeaponTalent(_@(weaponPtr), 0);
     var C_Item weapon; weapon = _^(weaponPtr);
 
-    // Call customized function to start an event
-    MEM_PushInstParam(target);
-    MEM_PushInstParam(weapon);
-    MEM_PushIntParam((FREEAIM_ACTIVE && FREEAIM_RANGED));
-    MEM_Call(freeAimCriticalHitEvent); // freeAimCriticalHitEvent(target, weapon);
+    // Start an event from config
+    freeAimCriticalHitEvent(target, weapon, (FREEAIM_ACTIVE && FREEAIM_RANGED));
 };
 
 
 /*
- * Internal helper function for freeAimCriticalHitDef(). It is called from freeAimDetectCriticalHit().
+ * Wrapper function for the config function freeAimCriticalHitDef(). It is called from freeAimDetectCriticalHit().
  * This function is necessary for error handling and to supply the readied weapon.
  */
 func void freeAimCriticalHitDef_(var C_Npc target, var int damage, var int returnPtr) {
@@ -50,13 +47,8 @@ func void freeAimCriticalHitDef_(var C_Npc target, var int damage, var int retur
     freeAimGetWeaponTalent(_@(weaponPtr), _@(talent));
     var C_Item weapon; weapon = _^(weaponPtr);
 
-    // Call customized function to define a critical hit/weak spot
-    MEM_PushInstParam(target);
-    MEM_PushInstParam(weapon);
-    MEM_PushIntParam(talent);
-    MEM_PushIntParam(damage);
-    MEM_PushIntParam(returnPtr);
-    MEM_Call(freeAimCriticalHitDef); // freeAimCriticalHitDef(target, weapon, damage, returnPtr);
+    // Define a critical hit/weak spot in config
+    freeAimCriticalHitDef(target, weapon, talent, damage, returnPtr);
 
     // Correct the node string to be always upper case
     var Weakspot weakspot; weakspot = _^(returnPtr);
@@ -70,7 +62,7 @@ func void freeAimCriticalHitDef_(var C_Npc target, var int damage, var int retur
 
 
 /*
- * Internal helper function for freeAimCriticalHitAutoAim(). It is called from freeAimDetectCriticalHit().
+ * Wrapper function for the config function freeAimCriticalHitAutoAim(). It is called from freeAimDetectCriticalHit().
  * This function is necessary to supply the readied weapon and respective talent value.
  */
 func int freeAimCriticalHitAutoAim_(var C_Npc target) {
@@ -79,12 +71,8 @@ func int freeAimCriticalHitAutoAim_(var C_Npc target) {
     freeAimGetWeaponTalent(_@(weaponPtr), _@(talent));
     var C_Item weapon; weapon = _^(weaponPtr);
 
-    // Call customized function to retrieve critical hit chance
-    MEM_PushInstParam(target);
-    MEM_PushInstParam(weapon);
-    MEM_PushIntParam(talent);
-    MEM_Call(freeAimCriticalHitAutoAim); // freeAimCriticalHitAutoAim(target, weapon, talent);
-    var int criticalHitChance; criticalHitChance = MEM_PopIntResult();
+    // Retrieve critical hit chance from config
+    var int criticalHitChance; criticalHitChance = freeAimCriticalHitAutoAim(target, weapon, talent);
 
     // Must be a percentage in range of [0, 100]
     if (criticalHitChance > 100) {

@@ -66,13 +66,9 @@ func void freeAimKeepProjectileInWorld() {
             };
         };
 
-        // Replace the projectile if desired:
-        // Call customized function to retrieve new projectile instance
+        // Replace the projectile if desired, retrieve new projectile instance from config
         var C_Npc emptyNpc; emptyNpc = MEM_NullToInst(); // No NPC was hit, so pass an empty instance as argument
-        MEM_PushIntParam(projectile.instanz);
-        MEM_PushInstParam(emptyNpc);
-        MEM_Call(freeAimGetUsedProjectileInstance); // freeAimGetUsedProjectileInstance(projectile.instanz, emptyNpc);
-        var int projInst; projInst = MEM_PopIntResult();
+        var int projInst; projInst = freeAimGetUsedProjectileInstance(projectile.instanz, emptyNpc);
 
         // Check if the new projectile instance is valid, -1 for invalid instance, 0 for empty
         if (projInst > 0) {
@@ -119,11 +115,8 @@ func void freeAimOnArrowHitNpc() {
         // it in the inventory of the victim
         var C_Npc victim; victim = _^(EDI);
 
-        // Call customized function to retrieve new projectile instance
-        MEM_PushIntParam(projectile.instanz);
-        MEM_PushInstParam(victim);
-        MEM_Call(freeAimGetUsedProjectileInstance); // freeAimGetUsedProjectileInstance(projectile.instanz, victim);
-        var int projInst; projInst = MEM_PopIntResult();
+        // Replace the projectile if desired, retrieve new projectile instance from config
+        var int projInst; projInst = freeAimGetUsedProjectileInstance(projectile.instanz, victim);
         if (projInst > 0) {
             CreateInvItem(victim, projInst); // Put respective instance in inventory
         };

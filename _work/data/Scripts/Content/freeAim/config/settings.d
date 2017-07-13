@@ -10,6 +10,14 @@
  *
  * If FREEAIM_RANGED and FREEAIM_SPELLS are both set to false, the free aiming feature is completely disabled, not
  * affecting the other features, however.
+ *
+ * A list to the config files that correspond to each feature and offer more indepth customization:
+ *  ranged.d        FREEAIM_RANGED
+ *  spell.d         FREEAIM_SPELLS
+ *  reticle.d       FREEAIM_RANGED and FREEAIM_SPELLS
+ *  collectable.d   FREEAIM_REUSE_PROJECTILES
+ *  collision.d     FREEAIM_CUSTOM_COLLISIONS
+ *  criticalHit.d   FREEAIM_CRITICALHITS
  */
 const int    FREEAIM_RANGED             = TRUE;            // Free aiming for ranged combat (bow and crossbow)
 const int    FREEAIM_SPELLS             = TRUE;            // Free aiming for magic combat (spells)

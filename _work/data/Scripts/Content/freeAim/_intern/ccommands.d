@@ -110,11 +110,9 @@ func string freeAimInfo(var string command) {
             SB(" (spells)");
         };
 
-        SB(". Focus: ");
-        SB(MEM_ReadStatStringArr(onOff, FREEAIM_FOCUS_COLLECTION));
-        SB(" (");
+        SB(". Focus update every ");
         SBi(freeAimRayInterval);
-        SB(" ms collection interval)");
+        SB(" ms");
     };
     SBc(13); SBc(10);
 

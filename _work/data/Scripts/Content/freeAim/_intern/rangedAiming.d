@@ -23,68 +23,13 @@
 
 
 /*
- * Collect focus for aiming in ranged mode. This function is called from two different functions: While aiming, and
- * while shooting, to prevent the focus from changing while shooting. Additionally, this function checks the distance
- * to the nearest intersection (or to the focus) from the camera (not the player model!).
- */
-func void freeAimRangedFocus(var int targetPtr, var int distancePtr) {
-    if (!FREEAIM_ACTIVE) {
-        return;
-    };
-
-    // Retrieve target NPC and the distance to it from the camera(!)
-    var int distance; var int target;
-
-    if (FREEAIM_FOCUS_COLLECTION) {
-        // Shoot aim trace ray, to retrieve the distance to an intersection and a possible target
-        freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, _@(target), 0, _@(distance), 0);
-        distance = roundf(divf(mulf(distance, FLOAT1C), mkf(FREEAIM_MAX_DIST))); // Distance scaled between [0, 100]
-
-    } else {
-        // FREEAIM_FOCUS_COLLECTION can be set to false (see INI-file) for weaker computers. However, it is not
-        // recommended, as there will be NO focus at all (otherwise it would get stuck on NPCs)
-
-        var oCNpc her; her = Hlp_GetNpc(hero);
-        var int herPtr; herPtr = _@(her);
-
-        // Remove focus completely
-        const int call = 0; var int zero; // Set the focus vob properly: reference counter
-        if (CALL_Begin(call)) {
-            CALL_PtrParam(_@(zero)); // This will remove the focus
-            CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
-            call = CALL_End();
-        };
-
-        // Always remove oCNpc.enemy. With no focus, there is also no target NPC. Caution: This invalidates the use of
-        // Npc_GetTarget()
-        if (her.enemy) {
-            const int call2 = 0; // Remove the enemy properly: reference counter
-            if (CALL_Begin(call2)) {
-                CALL_PtrParam(_@(zero));
-                CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
-                call2 = CALL_End();
-            };
-        };
-        distance = 25; // No distance check ever. Set it to medium distance
-        target = 0; // No focus target ever
-    };
-
-    if (distancePtr) {
-        MEM_WriteInt(distancePtr, distance);
-    };
-    if (targetPtr) {
-        MEM_WriteInt(targetPtr, target);
-    };
-};
-
-
-/*
  * Collect focus during shooting. Otherwise the focus collection changes during the shooting animation. This function
  * hooks oCAIHuman::BowMode at a position where the player model is carrying out the animation of shooting.
  */
 func void freeAimRangedShooting() {
     if (FREEAIM_ACTIVE) {
-        freeAimRangedFocus(0, 0);
+        // Shoot aim trace ray to update focus
+        freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, 0);
     };
 };
 
@@ -99,9 +44,10 @@ func void freeAimAnimation() {
         return;
     };
 
-    // Retrieve target NPC and the distance to it from the camera(!)
+    // Shoot aim trace ray to retrieve the focus NPC and distance to it from the camera(!)
     var int distance; var int target;
-    freeAimRangedFocus(_@(target), _@(distance));
+    freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, _@(target), 0, _@(distance), 0);
+    distance = roundf(divf(mulf(distance, FLOAT1C), mkf(FREEAIM_MAX_DIST))); // Distance scaled between [0, 100]
 
     // Create reticle
     var int reticlePtr; reticlePtr = MEM_Alloc(sizeof_Reticle);
@@ -118,7 +64,7 @@ func void freeAimAnimation() {
     // Pointing distance: Take the max distance, otherwise it looks strange on close range targets
     distance = mkf(FREEAIM_MAX_DIST);
 
-    // Get camera vob (not camera itself, because it does not offer a reliable position)
+    // Get camera vob
     var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
     var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
 

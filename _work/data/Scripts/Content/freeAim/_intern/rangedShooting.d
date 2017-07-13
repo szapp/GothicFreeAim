@@ -23,51 +23,7 @@
 
 
 /*
- * Internal helper function to retrieve the readied weapon and the respective talent value. This function is called by
- * several wrapper/helper functions.
- * Returns 1 on success, 0 otherwise.
- */
-func int freeAimGetWeaponTalent(var int weaponPtr, var int talentPtr) {
-    var C_Npc slf; slf = Hlp_GetNpc(hero);
-    var int error; error = 0;
-
-    // Get readied/equipped ranged weapon
-    var C_Item weapon;
-    if (Npc_IsInFightMode(slf, FMODE_FAR)) {
-        weapon = Npc_GetReadiedWeapon(slf);
-    } else if (Npc_HasEquippedRangedWeapon(slf)) {
-        weapon = Npc_GetEquippedRangedWeapon(slf);
-    } else {
-        MEM_Warn("freeAimGetWeaponTalent: No valid weapon equipped/readied!");
-        weapon = MEM_NullToInst();
-        error = 1;
-    };
-    if (weaponPtr) {
-        MEM_WriteInt(weaponPtr, _@(weapon));
-    };
-
-    // Distinguish between (cross-)bow talent
-    if (talentPtr) {
-        var int talent; talent = 0;
-        if (!error) {
-            if (weapon.flags & ITEM_BOW) {
-                talent = slf.HitChance[NPC_TALENT_BOW];
-            } else if (weapon.flags & ITEM_CROSSBOW) {
-                talent = slf.HitChance[NPC_TALENT_CROSSBOW];
-            } else {
-                MEM_Warn("freeAimGetWeaponTalent: No valid weapon equipped/readied!");
-                error = 1;
-            };
-        };
-        MEM_WriteInt(talentPtr, talent);
-    };
-
-    return !error;
-};
-
-
-/*
- * Internal helper function for freeAimGetDrawForce(). It is called from freeAimSetupProjectile().
+ * Wrapper function for the config function freeAimGetDrawForce(). It is called from freeAimSetupProjectile().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
 func int freeAimGetDrawForce_() {
@@ -79,11 +35,8 @@ func int freeAimGetDrawForce_() {
     };
     var C_Item weapon; weapon = _^(weaponPtr);
 
-    // Call customized function to retrieve draw force value
-    MEM_PushInstParam(weapon);
-    MEM_PushIntParam(talent);
-    MEM_Call(freeAimGetDrawForce); // freeAimGetDrawForce(weapon, talent);
-    var int drawForce; drawForce = MEM_PopIntResult();
+    // Retrieve draw force value from config
+    var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent);
 
     // Must be a percentage in range of [0, 100]
     if (drawForce > 100) {
@@ -96,7 +49,7 @@ func int freeAimGetDrawForce_() {
 
 
 /*
- * Internal helper function for freeAimGetAccuracy(). It is called from freeAimSetupProjectile().
+ * Wrapper function for the config function freeAimGetAccuracy(). It is called from freeAimSetupProjectile().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
 func int freeAimGetAccuracy_() {
@@ -108,11 +61,8 @@ func int freeAimGetAccuracy_() {
     };
     var C_Item weapon; weapon = _^(weaponPtr);
 
-    // Call customized function to retrieve accuracy value
-    MEM_PushInstParam(weapon);
-    MEM_PushIntParam(talent);
-    MEM_Call(freeAimGetAccuracy); // freeAimGetAccuracy(weapon, talent);
-    var int accuracy; accuracy = MEM_PopIntResult();
+    // Retrieve accuracy value from config
+    var int accuracy; accuracy = freeAimGetAccuracy(weapon, talent);
 
     // Must be a percentage in range of [1, 100], division by 0!
     if (accuracy > 100) {
@@ -126,7 +76,7 @@ func int freeAimGetAccuracy_() {
 
 
 /*
- * Internal helper function for freeAimScaleInitialDamage(). It is called from freeAimSetupProjectile().
+ * Wrapper function for the config function freeAimScaleInitialDamage(). It is called from freeAimSetupProjectile().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
 func int freeAimScaleInitialDamage_(var int basePointDamage, var int aimingDistance) {
@@ -149,13 +99,8 @@ func int freeAimScaleInitialDamage_(var int basePointDamage, var int aimingDista
         aimingDistance = 0;
     };
 
-    // Call customized function to retrieve adjusted damage value
-    MEM_PushIntParam(basePointDamage);
-    MEM_PushInstParam(weapon);
-    MEM_PushIntParam(talent);
-    MEM_PushIntParam(aimingDistance);
-    MEM_Call(freeAimScaleInitialDamage); // freeAimScaleInitialDamage(basePointDamage, weapon, talent, aimingDistance);
-    basePointDamage = MEM_PopIntResult();
+    // Retrieve adjusted damage value from config
+    basePointDamage = freeAimScaleInitialDamage(basePointDamage, weapon, talent, aimingDistance);
 
     // No negative damage
     if (basePointDamage < 0) {
@@ -166,7 +111,7 @@ func int freeAimScaleInitialDamage_(var int basePointDamage, var int aimingDista
 
 
 /*
- * Internal helper function for freeAimGetRecoil(). It is called from freeAimSetupProjectile().
+ * Wrapper function for the config function freeAimGetRecoil(). It is called from freeAimSetupProjectile().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
 func int freeAimGetRecoil_() {
@@ -178,11 +123,8 @@ func int freeAimGetRecoil_() {
     };
     var C_Item weapon; weapon = _^(weaponPtr);
 
-    // Call customized function to retrieve recoil value
-    MEM_PushInstParam(weapon);
-    MEM_PushIntParam(talent);
-    MEM_Call(freeAimGetRecoil); // freeAimGetRecoil(weapon, talent);
-    var int recoil; recoil = MEM_PopIntResult();
+    // Retrieve recoil value from config
+    var int recoil; recoil = freeAimGetRecoil(weapon, talent);
 
     // Must be a percentage in range of [0, 100]
     if (recoil > 100) {
@@ -234,12 +176,11 @@ func void freeAimSetupProjectile() {
 
     // 2nd: Manipulate aiming accuracy (scatter)
     // The scattering is optional: If disabled, the default hit chance from Gothic is used, where shots are always
-    // accurate, but only register damage in a fraction of shots depending on skill and distance
-
-    // Scattering with different hit chance calcualtion (optional)
+    // accurate, but register damage in a fraction of shots only, depending on skill and distance
     if (FREEAIM_TRUE_HITCHANCE) {
         // The accuracy is first used as a probability to decide whether a projectile should hit or not. Depending on
-        // this, the minimum (rmin) and maximum (rmax) scattering angles are designed by which the shot is deviated.
+        // this, the minimum (rmin) and maximum (rmax) scattering angles (half the visual angle) are designed by which
+        // the shot is deviated.
         // Not-a-hit results in rmin=FREEAIM_SCATTER_MISS and rmax=FREEAIM_SCATTER_MAX.
         // A positive hit results in rmin=0 and rmax=FREEAIM_SCATTER_HIT*(-accuracy+100).
         var int rmin;
@@ -333,7 +274,7 @@ func void freeAimSetupProjectile() {
         localPos[0] = mulf(localPos[2], sinApprox);       //  x*cos + z*sin = x'
         localPos[2] = mulf(localPos[2], cosApprox);       // -x*sin + z*cos = z'
 
-        // Get camera vob (not camera itself, because it does not offer a reliable position)
+        // Get camera vob
         var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
         var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
 

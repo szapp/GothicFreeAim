@@ -1,5 +1,5 @@
 /*
- * Helper classes
+ * Classes
  *
  * G2 Free Aim v0.1.2 - Free aiming for the video game Gothic 2 by Piranha Bytes
  * Copyright (C) 2016  mud-freak (@szapp)
@@ -23,7 +23,7 @@
 
 
 /*
- * Helper class: Critical hit definitions
+ * Class: Critical hit definitions
  */
 const int sizeof_Weakspot = 32;
 
@@ -36,7 +36,7 @@ class Weakspot {
 
 
 /*
- * Helper class: Reticle definitions
+ * Class: Reticle definitions
  */
 const int sizeof_Reticle = 28;
 

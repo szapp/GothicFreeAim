@@ -23,7 +23,7 @@
 
 
 /*
- * Internal helper function for freeAimHitRegNpc(). It is called from freeAimDoNpcHit().
+ * Wrapper function for the config function freeAimHitRegNpc(). It is called from freeAimDoNpcHit().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
 func int freeAimHitRegNpc_(var C_Npc target) {
@@ -42,17 +42,13 @@ func int freeAimHitRegNpc_(var C_Npc target) {
         material = -1;
     };
 
-    // Call customized function to retrieve collision definition
-    MEM_PushInstParam(target);
-    MEM_PushInstParam(weapon);
-    MEM_PushIntParam(material);
-    MEM_Call(freeAimHitRegNpc); // freeAimHitRegNpc(target, weapon, material);
-    return MEM_PopIntResult();
+    // Retrieve collision definition from config
+    return freeAimHitRegNpc(target, weapon, material);
 };
 
 
 /*
- * Internal helper function for freeAimHitRegWld(). It is called from freeAimOnArrowCollide().
+ * Wrapper function for the config function freeAimHitRegWld(). It is called from freeAimOnArrowCollide().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
 func int freeAimHitRegWld_(var C_Npc shooter, var int material, var string texture) {
@@ -61,13 +57,8 @@ func int freeAimHitRegWld_(var C_Npc shooter, var int material, var string textu
     freeAimGetWeaponTalent(_@(weaponPtr), 0);
     var C_Item weapon; weapon = _^(weaponPtr);
 
-    // Call customized function to retrieve collision definition
-    MEM_PushInstParam(shooter);
-    MEM_PushInstParam(weapon);
-    MEM_PushIntParam(material);
-    MEM_PushStringParam(texture);
-    MEM_Call(freeAimHitRegWld); // freeAimHitRegWld(shooter, weapon, material, texture);
-    return MEM_PopIntResult();
+    // Retrieve collision definition from config
+    return freeAimHitRegWld(shooter, weapon, material, texture);
 };
 
 

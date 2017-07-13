@@ -27,22 +27,23 @@
  * overwrite the focus collection with a desired focus type. This function is customized for aiming and it is not
  * recommended to use for any other matter.
  * This function is very complex, but well tested.
- * To increase performance, increase the value of FREEAIM.focusCollIntvMS in the Gothic INI-file. It determines the
- * interval in milliseconds of how ofter the trace ray is recomputed. The upper bound is 500ms, which already
- * introduces a slight lag in the focus collection and reticle size (if applicable). A recommended value is below 50ms.
+ *
+ * To increase performance, increase the value of FREEAIM.focusUpdateIntervalMS in the Gothic INI-file. It determines
+ * the interval in milliseconds in which the trace ray is recomputed. The upper bound is 500ms, which already introduces
+ * a slight lag in the focus collection and reticle size (if applicable). A recommended value is below 50ms.
  */
 func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int posPtr, var int distPtr,
         var int trueDistPtr) {
 
     // Only run full trace ray machinery every so often (see freeAimRayInterval) to allow weaker machines to run this
     var int curTime; curTime = MEM_Timer.totalTime; // Get current time
-    if (curTime-freeAimRayPrevCalcTime >= freeAimRayInterval) { // If the interval is passed, recompute trace ray
+    if (curTime-freeAimRayPrevCalcTime >= freeAimRayInterval) { // If the interval has passed, recompute trace ray
         // Update time of previous calculation
         freeAimRayPrevCalcTime = curTime;
 
         // The trace ray is cast along the camera viewing angle from a start point towards a direction/length vector
 
-        // Get camera vob (not camera itself, because it does not offer a reliable position)
+        // Get camera vob
         var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
         var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
 

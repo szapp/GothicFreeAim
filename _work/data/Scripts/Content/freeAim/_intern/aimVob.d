@@ -87,15 +87,13 @@ func void freeAimManipulateAimVobPos(var int posPtr) {
         return;
     };
 
-    // Call customized function to check whether aim vob should be shifted, function not defined yet at time of parsing
-    MEM_PushIntParam(spell);
-    MEM_Call(freeAimShiftAimVob); // freeAimShiftAimVob(spell);
-    var int shifted; shifted = MEM_PopIntResult();
+    // Check whether aim vob should be shifted
+    var int shifted; shifted = freeAimShiftAimVob(spell);
 
     if (shifted) {
         shifted = mkf(shifted); // Amount to shift the aim vob along the out vector of the camera
 
-        // Get camera vob (not camera itself, because it does not offer a reliable position)
+        // Get camera vob
         var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
         var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
 
@@ -139,7 +137,7 @@ func int freeAimSetupAimVob(var int posPtr) {
 
     // Update position and rotation
     if (posPtr) {
-        // Copy rotation from the player model
+        // Copy rotation from the player model (not necessary for free aiming, but might be important for some spells)
         MEM_CopyBytes(_@(hero)+zCVob_trafoObjToWorld_offset, vobPtr+zCVob_trafoObjToWorld_offset, sizeof_zMAT4);
 
         // Additionally shift the vob (for certain spells, adjust in freeAimShiftAimVob())

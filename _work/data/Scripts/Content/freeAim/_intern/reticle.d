@@ -115,77 +115,24 @@ func void freeAimManageReticle() {
  * is called during loading of a level change before Ikarus, LeGo or g2freeAim are initialized.
  */
 func void freeAimSwitchMode() {
-    if (!_@(MEM_Timer)) { // Cheap check if Ikarus was initialized
-        MEM_InitAll(); // Important, as this here function is called during level change before any initialization
+    if (!_@(MEM_Timer)) {
+        // This function is called multiple times during level change prior to any initialization
+        return;
     };
+
     freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_READY; // Reset draw force onset
     freeAimManageReticle();
 };
 
 
 /*
- * Return texture file name for an animated texture. This function is not used internally, but is offered as a feature
- * for the config functions of g2freeAim. It allows for animated reticles dependent on time.
- * 'numFrames' files must exist with the postfix '_[frameNo].tga', e.g. 'TEXTURE_00.TGA', 'TEXTURE_01.TGA',...
- */
-func string freeAimAnimateReticleByTime(var string fileName, var int fps, var int numFrames) {
-    // Time of one frame
-    var int frameTime; frameTime = 1000/fps;
-
-    // Cycle through [0, numFrames-1] by time
-    var int cycle; cycle = (MEM_Timer.totalTime % (frameTime*numFrames)) / frameTime;
-
-    // Base name (without extension)
-    var string prefix; prefix = STR_SubStr(fileName, 0, STR_Len(fileName)-4);
-
-    // Add leading zero
-    var string postfix;
-    if (cycle < 10) {
-        postfix = ConcatStrings("0", IntToString(cycle));
-    } else {
-        postfix = IntToString(cycle);
-    };
-
-    return ConcatStrings(ConcatStrings(ConcatStrings(prefix, "_"), postfix), ".TGA");
-};
-
-
-/*
- * Return texture file name for an animated texture. This function is not used internally, but is offered as a feature
- * for the config functions of g2freeAim. It allows for animated reticles dependent on a given percentage. This is
- * useful to indicate progress of draw force or distance to target or any gradual spell property.
- * 'numFrames' files must exist with the postfix '_[frameNo].tga', e.g. 'TEXTURE_00.TGA', 'TEXTURE_01.TGA',...
- */
-func string freeAimAnimateReticleByPercent(var string fileName, var int percent, var int numFrames) {
-    // Cycle through [0, numFrames-1] by percentage
-    var int cycle; cycle = roundf(mulf(mkf(percent), divf(mkf(numFrames-1), FLOAT1C)));
-
-    // Base name (without extension)
-    var string prefix; prefix = STR_SubStr(fileName, 0, STR_Len(fileName)-4);
-
-    // Add leading zero
-    var string postfix;
-    if (cycle < 10) {
-        postfix = ConcatStrings("0", IntToString(cycle));
-    } else {
-        postfix = IntToString(cycle);
-    };
-
-    return ConcatStrings(ConcatStrings(ConcatStrings(prefix, "_"), postfix), ".TGA");
-};
-
-
-/*
- * Internal helper function for freeAimGetReticleRanged() for ranged combat. It is called from freeAimAnimation().
+ * Wrapper function for the config function freeAimGetReticleRanged(). It is called from freeAimAnimation().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
 func void freeAimGetReticleRanged_(var int target, var int distance, var int returnPtr) {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
-    MEM_PushIntParam(_@(weaponPtr));
-    MEM_PushIntParam(_@(talent));
-    MEM_Call(freeAimGetWeaponTalent); // freeAimGetWeaponTalent(_@(weaponPtr), _@(talent));
-    if (!MEM_PopIntResult()) {
+    if (!freeAimGetWeaponTalent(_@(weaponPtr), _@(talent))) {
         return;
     };
     var C_Item weapon; weapon = _^(weaponPtr);
@@ -197,18 +144,13 @@ func void freeAimGetReticleRanged_(var int target, var int distance, var int ret
         targetNpc = MEM_NullToInst();
     };
 
-    // Call customized function to retrieve reticle specifications
-    MEM_PushInstParam(targetNpc);
-    MEM_PushInstParam(weapon);
-    MEM_PushIntParam(talent);
-    MEM_PushIntParam(distance);
-    MEM_PushIntParam(returnPtr);
-    MEM_Call(freeAimGetReticleRanged); // freeAimGetReticleRanged(targetNpc, weapon, talent, distance, returnPtr);
+    // Retrieve reticle specifications from config
+    freeAimGetReticleRanged(targetNpc, weapon, talent, distance, returnPtr);
 };
 
 
 /*
- * Internal helper function for freeAimGetReticleSpell() for magic combat. It is called from freeAimSpellReticle().
+ * Wrapper function for the config function freeAimGetReticleSpell(). It is called from freeAimSpellReticle().
  * This function supplies a lot of spell properties.
  */
 func void freeAimGetReticleSpell_(var int target, var C_Spell spellInst, var int distance, var int returnPtr) {
@@ -228,14 +170,6 @@ func void freeAimGetReticleSpell_(var int target, var C_Spell spellInst, var int
         targetNpc = MEM_NullToInst();
     };
 
-    // Call customized function to retrieve reticle specifications
-    MEM_PushInstParam(targetNpc);
-    MEM_PushIntParam(spellID);
-    MEM_PushInstParam(spellInst);
-    MEM_PushIntParam(spellLvl);
-    MEM_PushIntParam(isScroll);
-    MEM_PushIntParam(manaInvested);
-    MEM_PushIntParam(distance);
-    MEM_PushIntParam(returnPtr);
-    MEM_Call(freeAimGetReticleSpell); // freeAimGetReticleSpell(target, spellID, spellInst, spellLvl, isScroll, ...);
+    // Retrieve reticle specifications from config
+    freeAimGetReticleSpell(targetNpc, spellID, spellInst, spellLvl, isScroll, manaInvested, distance, returnPtr);
 };

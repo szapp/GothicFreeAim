@@ -82,9 +82,10 @@ func void freeAimSpellReticle() {
     var int distance;
     var int target;
 
-    if (FREEAIM_FOCUS_COLLECTION) && (spell.targetCollectRange > 0) {
-        // Determine the focus type. If focusType is 0, then no focus will be collect, but only an intersection with the
-        // world; same if TARGET_COLLECT_NONE. The latter is good for spells like Blink, that do not concern targeting
+    if (spell.targetCollectRange > 0) {
+        // Determine the focus type. If focusType is 0, then no focus will be collected, but only an intersection with
+        // the world; same for TARGET_COLLECT_NONE. The latter is good for spells like Blink, that are not concerned
+        // with targeting but only with aiming distance
         var int focusType;
         if (!spell.targetCollectAlgo) || (spell.targetCollectAzi <= 0) || (spell.targetCollectElev <= 0) {
             focusType = 0;
@@ -97,21 +98,22 @@ func void freeAimSpellReticle() {
         distance = roundf(divf(mulf(distance, FLOAT1C), mkf(spell.targetCollectRange))); // Distance scaled to [0, 100]
 
     } else {
-        // FREEAIM_FOCUS_COLLECTION can be set to false (see INI-file) for weaker computers. However, it is not
-        // recommended, as there will be NO focus at all (otherwise it would get stuck on NPCs)
+        // No focus collection (this condition is necessary for light and teleport spells)
 
-        // Remove focus completely
         var oCNpc her; her = Hlp_GetNpc(hero);
         var int herPtr; herPtr = _@(her);
-        const int call = 0; var int zero; // Set the focus vob properly: reference counter
-        if (CALL_Begin(call)) {
-            CALL_PtrParam(_@(zero)); // This will remove the focus
-            CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
-            call = CALL_End();
+
+        // Remove focus completely
+        if (her.focus_vob) {
+            const int call = 0; var int zero; // Set the focus vob properly: reference counter
+            if (CALL_Begin(call)) {
+                CALL_PtrParam(_@(zero)); // This will remove the focus
+                CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
+                call = CALL_End();
+            };
         };
 
-        // Always remove oCNpc.enemy. With no focus, there is also no target NPC. Caution: This invalidates the use of
-        // Npc_GetTarget()
+        // Remove oCNpc.enemy. No focus = no target NPC. Caution: This invalidates the use of Npc_GetTarget()
         if (her.enemy) {
             const int call2 = 0; // Remove the enemy properly: reference counter
             if (CALL_Begin(call2)) {
@@ -120,8 +122,10 @@ func void freeAimSpellReticle() {
                 call2 = CALL_End();
             };
         };
-        distance = 25; // No distance check ever. Set it to medium distance
-        target = 0; // No focus target ever
+
+        // No distance check ever. Set it to medium distance
+        distance = 25;
+        target = 0;
     };
 
     // Create reticle
