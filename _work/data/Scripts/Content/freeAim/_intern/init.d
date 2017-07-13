@@ -29,13 +29,18 @@
 func void freeAim_Init() {
     const int INITIALIZED = 0;
 
-    // Ikarus and LeGo need to be initialized before
+    // Ikarus and LeGo need to be initialized first
+    const int INIT_LEGO_NEEDED = 0; // Set to 1, if LeGo is not initialized by user (in INIT_Global())
     if (!_LeGo_Init) {
         LeGo_Init(_LeGo_Flags | FREEAIM_LEGO_FLAGS);
-    } else if (!_LeGo_Loaded) {
+        INIT_LEGO_NEEDED = 1;
+    } else if (INIT_LEGO_NEEDED) {
+        // If user does not initialize LeGo in INIT_Global(), as determined by INIT_LEGO_NEEDED, reinitialize Ikarus and
+        // LeGo on every level change and loading here
         LeGo_Init(_LeGo_Flags);
     };
-    Timer_SetPauseInMenu(1); // Pause frame functions when in menu
+    // Pause frame functions when in menu
+    Timer_SetPauseInMenu(1);
 
     var int s; s = SB_New();
     SB("Initialize "); SB(FREEAIM_VERSION); SB(" for Gothic "); SBi(GOTHIC_BASE_VERSION); SB(".");
