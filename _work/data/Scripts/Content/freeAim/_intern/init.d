@@ -42,6 +42,7 @@ func void freeAimInitFeatureFreeAiming() {
         HookEngineF(oCAIHuman__BowMode_696296, 5, freeAimAnimation); // Interpolate aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Setup projectile trajectory (shooting)
         HookEngineF(oCAIArrowBase__DoAI_6A06D8, 6, freeAimResetGravity); // Reset gravity of projectile on collision
+        // HookEngineF(oCAIHuman__BowMode_6962A4, 6, freeAimRangedStrafing); // Strafing while aiming. NOT WORKING
 
         // Gothic 2 controls
         if (GOTHIC_BASE_VERSION == 2) {

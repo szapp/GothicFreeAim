@@ -112,3 +112,43 @@ func void freeAimAnimation() {
     MEM_WriteInt(ESP+20, FLOATHALF); // First argument: Always aim at center (azimuth) (esp+44h-30h)
     ECX = angleY; // Second argument: New elevation
 };
+
+
+/*
+ * Enable strafing while aiming. This function hooks oCAIHuman::BowMode() at an offset, where the player is aiming.
+ *
+ * CAUTION: This is just an attempt or more of a test to realize strafing. This is not ready to be used, and thus its
+ * hook is not initialized (commented out int _intern\init.d). So far it also only works with Gothic 2 controls, as
+ * there is another key press condition in oCAIHuman::PC_Strafe(), preventing strafing on action key press.
+ * This function has been deliberately left in the scripts to inspire, in case somebody wants to finish this feature.
+ *
+ * Here is an explanation of this attempt:
+ * Strafing can simply be injected into oCAIHuman::BowMode, resulting in fully functioning strafing while aiming. Of
+ * course, the bow is not maintaining the aiming animation, and when stopping to strafe the bow is drawn again.
+ * What can be done now, is to create an animation, in which the bow is drawn and centered (that is where the bow always
+ * is while aiming) while strafing and figuring out a way to prevent redrawing the bow after strafing. The latter is not
+ * guaranteed to work.
+ */
+func void freeAimRangedStrafing() {
+    var oCNpc her; her = Hlp_GetNpc(hero);
+
+    // Call strafing function. It handles button presses and directions
+    const int call = 0;
+    var int herAIPtr; herAIPtr = her.human_ai;
+    var int zero; zero = 1;
+    var int ret;
+    if (CALL_Begin(call)) {
+        CALL_IntParam(_@(zero)); // Argument ignored by function
+        CALL_PutRetValTo(_@(ret));
+        CALL__thiscall(_@(herAIPtr), oCAIHuman__PC_Strafe);
+        call = CALL_End();
+    };
+
+    // The return value specifies whether the player is currently strafing or not
+    if (ret) {
+        MEM_Info("Strafing now"); // Debug
+
+        // Exchange animation or something like that (actually needs to be done before starting to strafe)
+        // her.anictrl._t_strafel = aniID; // zTModelAniID* of new animation
+    };
+};
