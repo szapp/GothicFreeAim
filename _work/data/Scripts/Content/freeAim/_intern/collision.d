@@ -84,7 +84,7 @@ func void freeAimDoNpcHit() {
     var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
 
     // This function does not affect NPCs and also only affects the player if FA is enabled
-    if (!Npc_IsPlayer(shooter)) {
+    if (!Npc_IsPlayer(shooter)) && (FREEAIM_CUSTOM_COLLISIONS) {
         // Reset to Gothic's default hit registration and leave the function
         MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to default collision behavior on npcs
         MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59); // jz to 0x6A0BA3
@@ -99,35 +99,40 @@ func void freeAimDoNpcHit() {
     // Boolean to specify, whether damage will be applied or not
     var int hit;
 
-    var int collision;
-    const int DESTROY = 0; // Projectile doest not cause damage and vanishes
-    const int DAMAGE  = 1; // Projectile causes damage and may stay in the inventory of the victim
-    const int DEFLECT = 2; // Projectile deflects of the surfaces and bounces off
+    if (FREEAIM_CUSTOM_COLLISIONS) {
+        var int collision;
+        const int DESTROY = 0; // Projectile doest not cause damage and vanishes
+        const int DAMAGE  = 1; // Projectile causes damage and may stay in the inventory of the victim
+        const int DEFLECT = 2; // Projectile deflects of the surfaces and bounces off
 
-    if (MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset)) {
-        // Adjust collision behavior for NPCs if the projectile bounced off a surface before
-        collision = FREEAIM_COLL_PRIOR_NPC;
+        if (MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset)) {
+            // Adjust collision behavior for NPCs if the projectile bounced off a surface before
+            collision = FREEAIM_COLL_PRIOR_NPC;
+        } else {
+            // Retrieve the collision behavior based on the shooter, target and the material type of their armor
+            collision = freeAimHitRegNpc_(target);
+        };
+
+        if (collision == DEFLECT) {
+            // Deflect projectile (no damage)
+            MEM_WriteByte(projectileDeflectOffNpcAddr, ASMINT_OP_nop); // Skip npc armor collision check, deflect always
+            MEM_WriteByte(projectileDeflectOffNpcAddr+1, ASMINT_OP_nop);
+            hit = FALSE;
+        } else if (collision == DAMAGE) {
+            // Apply damage or destroy projectile
+            MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Jump beyond armor collision check, deflect never
+            MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*60*/ 96); // jz to 0x6A0BC8
+            hit = TRUE;
+        } else if (collision == DESTROY) {
+            // Destroy (no damage)
+            MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Jump beyond armor collision check, deflect never
+            MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*60*/ 96); // jz to 0x6A0BC8
+            projectile.instanz = -1; // Delete item instance (it will not be put into the inventory)
+            hit = FALSE;
+        };
     } else {
-        // Retrieve the collision behavior based on the shooter, target and the material type of their armor
-        collision = freeAimHitRegNpc_(target);
-    };
-
-    if (collision == DEFLECT) {
-        // Deflect projectile (no damage)
-        MEM_WriteByte(projectileDeflectOffNpcAddr, ASMINT_OP_nop); // Skip npc armor collision check, deflect always
-        MEM_WriteByte(projectileDeflectOffNpcAddr+1, ASMINT_OP_nop);
-        hit = FALSE;
-    } else if (collision == DAMAGE) {
-        // Apply damage or destroy projectile
-        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Jump beyond armor collision check, deflect never
-        MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*60*/ 96); // jz to 0x6A0BC8
+        // Default behavior (no custom collision behavior)
         hit = TRUE;
-    } else if (collision == DESTROY) {
-        // Destroy (no damage)
-        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Jump beyond armor collision check, deflect never
-        MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*60*/ 96); // jz to 0x6A0BC8
-        projectile.instanz = -1; // Delete item instance (it will not be put into the inventory)
-        hit = FALSE;
     };
 
     // The hit chance percentage is either determined by skill and distance (default Gothic hit chance) or is always

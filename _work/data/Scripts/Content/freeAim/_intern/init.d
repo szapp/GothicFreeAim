@@ -93,12 +93,6 @@ func void freeAim_Init() {
                 HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Set projectile trajectory
                 HookEngineF(oCAIArrowBase__DoAI_6A06D8, 6, freeAimResetGravity); // Reset gravity on collision
 
-                if (FREEAIM_TRUE_HITCHANCE) {
-                    // The custom collision feature is automatically enabled if ranged free aiming and scattering are
-                    // enabled, because then the collision of NPCs needs to be manipulated
-                    FREEAIM_CUSTOM_COLLISIONS = TRUE;
-                };
-
                 // Gothic 2 controls
                 if (GOTHIC_BASE_VERSION == 2) {
                     MEM_Info("Initializing Gothic 2 controls.");
@@ -150,9 +144,12 @@ func void freeAim_Init() {
 
 
         // FEATURE: Custom collision behaviors
+        if (FREEAIM_CUSTOM_COLLISIONS) || ((FREEAIM_RANGED) && (FREEAIM_TRUE_HITCHANCE)) {
+            HookEngineF(onArrowHitChanceAddr, 5, freeAimDoNpcHit); // Decide whether projectile hits, change hit chance
+        };
+
         if (FREEAIM_CUSTOM_COLLISIONS) {
             MEM_Info("Initializing custom collision behaviors.");
-            HookEngineF(onArrowHitChanceAddr, 5, freeAimDoNpcHit); // Decide whether a projectile hits or not
             HookEngineF(onArrowCollVobAddr, 5, freeAimOnArrowCollide); // Collision behavior on non-NPC vob material
             HookEngineF(onArrowCollStatAddr, 5, freeAimOnArrowCollide); // Collision behavior on static world material
             MemoryProtectionOverride(projectileDeflectOffNpcAddr, 2); // Collision behavior on NPCs: jz to 0x6A0BA3

@@ -8,8 +8,8 @@
  * Features that can be independently enabled and disabled. It is possible, to not use free aiming at all, but still
  * make use of the other features. Any combination of features is possible, while completely disabling the others.
  *
- * An exception is the custom collision feature: It can be used without free aiming, but if free aiming for ranged
- * combat and scattering (FREEAIM_TRUE_HITCHANCE) are both enabled, custom collision will be enabled automatically.
+ * If FREEAIM_RANGED and FREEAIM_SPELLS are both set to false, the free aiming feature is completely disabled, not
+ * affecting the other features, however.
  */
 const int    FREEAIM_RANGED             = TRUE;            // Free aiming for ranged combat (bow and crossbow)
 const int    FREEAIM_SPELLS             = TRUE;            // Free aiming for magic combat (spells)
