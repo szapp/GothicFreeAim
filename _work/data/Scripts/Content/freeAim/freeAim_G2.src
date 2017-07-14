@@ -6,6 +6,8 @@ _intern\auxiliary.d
 config\settings.d
 config\ranged.d
 config\spell.d
+config\reticleTextures.d
+config\reticleBySpellID_G2.d
 config\reticle.d
 config\collision.d
 config\collectable.d
