@@ -23,6 +23,12 @@
 
 
 /*
+ * Constants missing/renamed in Gothic 1
+ */
+const int FIGHT_DIST_CANCEL = HAI_DIST_ABORT_RANGED;
+
+
+/*
  * Emulate the Gothic 2 external function Npc_GetActiveSpellIsScroll(), oCNpc::GetActiveSpellIsScroll() 0x73D020
  */
 func int Npc_GetActiveSpellIsScroll(var C_Npc slf) {

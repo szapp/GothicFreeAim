@@ -11,6 +11,7 @@ config\spell.d
 config\reticle.d
 config\collision.d
 config\collectable.d
+config\headshots_G1.d
 config\criticalHit.d
 
 _intern\activate.d
