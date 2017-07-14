@@ -32,6 +32,7 @@ const int zCVob__SetAI                            = 0; //0x5FE8F0
 const int zCArray_zCVob__IsInList                 = 0; //0x6D3D80
 const int zCWorld__TraceRayNearestHit_Vob         = 0; //0x621FA0
 const int oCWorld__AddVobAsChild                  = 0; //0x77FE30
+const int zCWorld__SearchVobListByClass           = 6249792; //0x5F5D40
 const int zCMaterial__vtbl                        = 0; //0x832214
 const int zCTrigger_vtbl                          = 0; //0x83A3FC
 const int zCTriggerScript_vtbl                    = 0; //0x82F404
@@ -52,6 +53,8 @@ const int oCItem__MultiSlot                       = 6758192; //0x671F30
 const int oCMag_Book__GetSelectedSpell            = 0; //0x477780
 const int oCMag_Book__GetSelectedSpellNr          = 4655888; //0x470B10
 const int oCMag_Book__GetSpellItem                = 4664896; //0x472E40
+const int oCVisualFX__classDef                    = 8822272; //0x869E00
+const int oCVisualFX__Stop                        = 4766512; //0x48BB30
 const int zCModel__SearchNode                     = 0; //0x57DFF0
 const int zCModel__GetBBox3DNodeWorld             = 0; //0x5790F0
 const int zCModel__GetNodePositionWorld           = 0; //0x579140
@@ -100,6 +103,8 @@ const int oCItem_effect_offset                      = 0;   // Does not exist in 
 const int oCSpell_spellCasterNpc_offset             = 52;  //0x0034
 const int oCSpell_manaInvested_offset               = 72;  //0x0048
 const int oCSpell_C_Spell_offset                    = 128; //0x0080
+
+const int oCVisualFX_instanceName_offset            = 1140;//0x0474
 
 const int oCAIArrowBase_collision_offset            = 52;  //0x0034
 const int oCAIArrowBase_lifeTime_offset             = 56;  //0x0038
