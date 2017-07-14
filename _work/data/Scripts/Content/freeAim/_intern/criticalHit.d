@@ -72,7 +72,13 @@ func int freeAimCriticalHitAutoAim_(var C_Npc target) {
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Retrieve critical hit chance from config
-    var int criticalHitChance; criticalHitChance = freeAimCriticalHitAutoAim(target, weapon, talent);
+    // Do not call the function directly, because it does not exist in the scripts for Gothic 1. Calling it like this,
+    // will go unnoticed while parsing
+    MEM_PushInstParam(target);
+    MEM_PushInstParam(weapon);
+    MEM_PushIntParam(talent);
+    MEM_CallByString("freeAimCriticalHitAutoAim"); // freeAimCriticalHitAutoAim(target, weapon, talent);
+    var int criticalHitChance; criticalHitChance = MEM_PopIntResult();
 
     // Must be a percentage in range of [0, 100]
     if (criticalHitChance > 100) {
@@ -117,10 +123,15 @@ func void freeAimDetectCriticalHit() {
     if (!FREEAIM_ACTIVE) || (!FREEAIM_RANGED) {
 
         // Because critical hits cause an advantage when playing with free aiming enabled compared to auto aim, where
-        // there are not critical hits, they are introduced here for balancing reasons
-        var int critChance;
-        critChance = freeAimCriticalHitAutoAim_(targetNpc);
+        // there are not critical hits (Gothic 2!), they are introduced here for balancing reasons
 
+        if (GOTHIC_BASE_VERSION == 1) {
+            // Gothic 1 already has critical hits for ranged combat
+            return;
+        };
+
+        // Else: Gothic 2
+        var int critChance; critChance = freeAimCriticalHitAutoAim_(targetNpc);
         criticalHit = (r_MinMax(1, 100) <= critChance); // Allow critChance=0 to disable this feature
 
     } else {

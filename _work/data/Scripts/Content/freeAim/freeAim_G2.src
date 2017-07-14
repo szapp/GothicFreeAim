@@ -11,6 +11,7 @@ config\collision.d
 config\collectable.d
 config\headshots_G2.d
 config\criticalHit.d
+config\criticalHitAutoAim_G2.d
 
 _intern\activate.d
 _intern\controls.d
