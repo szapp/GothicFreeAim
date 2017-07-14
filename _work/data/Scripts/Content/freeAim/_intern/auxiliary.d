@@ -103,13 +103,28 @@ func int freeAimGetWeaponTalent(var int weaponPtr, var int talentPtr) {
     if (talentPtr) {
         var int talent; talent = 0;
         if (!error) {
-            if (weapon.flags & ITEM_BOW) {
-                talent = slf.HitChance[NPC_TALENT_BOW];
-            } else if (weapon.flags & ITEM_CROSSBOW) {
-                talent = slf.HitChance[NPC_TALENT_CROSSBOW];
+
+            // Difference between Gothic 1 and Gothic 2: Hit chance is dexterity or talent value, respectively
+            if (GOTHIC_BASE_VERSION == 1) {
+                // Gothic 1: Hit chance is dexterity (same for bow and crossbow)
+                talent = hero.attribute[ATR_DEXTERITY];
+
             } else {
-                MEM_Warn("freeAimGetWeaponTalent: No valid weapon equipped/readied!");
-                error = 1;
+                // Gothic 2: Hit chance is talent value (differentiate between bow and crossbow)
+                if (weapon.flags & ITEM_BOW) {
+                    talent = NPC_TALENT_BOW;
+                } else if (weapon.flags & ITEM_CROSSBOW) {
+                    talent = NPC_TALENT_CROSSBOW;
+                } else {
+                    MEM_Warn("freeAimGetWeaponTalent: No valid weapon equipped/readied!");
+                    error = 1;
+                };
+
+                if (talent) {
+                    // talent = slf.hitChance[NPC_TALENT_BOW]; // Cannot write this, because of Gothic 1 compatibility
+                    var oCNpc slfOC; slfOC = Hlp_GetNpc(slf);
+                    talent = MEM_ReadStatArr(_@(slfOC)+oCNpc_hitChance_offset, talent);
+                };
             };
         };
         MEM_WriteInt(talentPtr, talent);
