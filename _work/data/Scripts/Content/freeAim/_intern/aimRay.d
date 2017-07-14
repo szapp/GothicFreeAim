@@ -47,8 +47,8 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
         var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
         var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
 
-        var int herPtr; herPtr = _@(hero);
-        var oCNpc her; her = _^(herPtr);
+        var oCNpc her; her = Hlp_GetNpc(hero);
+        var int herPtr; herPtr = _@(her);
 
         // Shift the start point for the trace ray beyond the player model. This is necessary, because if zooming out
         //  (a) there might be something between camera and hero (unlikely) and

@@ -76,7 +76,8 @@ func void freeAimAnimation() {
     pos[2] = addf(camPos.v2[zMAT4_position], mulf(camPos.v2[zMAT4_outVec], distance));
 
     // Get aiming angles
-    var int herPtr; herPtr = _@(hero);
+    var oCNpc her; her = Hlp_GetNpc(hero);
+    var int herPtr; herPtr = _@(her);
     var int angleX; var int angXptr; angXptr = _@(angleX);
     var int angleY; var int angYptr; angYptr = _@(angleY);
     var int posPtr; posPtr = _@(pos);
