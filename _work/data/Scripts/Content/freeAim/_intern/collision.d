@@ -152,8 +152,12 @@ func void freeAimOnArrowCollide() {
     // differentiated between zCMaterial and zCPolygon first, before reading the material type from it
     var int matPtr; matPtr = MEM_ReadInt(ECX); // zCMaterial* or zCPolygon* depending on hooked address
     if (MEM_ReadInt(matPtr) != zCMaterial__vtbl) { // Static world: Get the zCMaterial from the zCPolygon
-        var zCPolygon polygon; polygon = _^(matPtr);
-        matPtr = polygon.material;
+        if (GOTHIC_BASE_VERSION == 1) {
+            // Not sure yet: zCPolygon does not seem to have a material in Gothic 1
+            return;
+        } else {
+            matPtr = MEM_ReadInt(matPtr+zCPolygon_material_offset);
+        };
     };
 
     // From the zCMaterial the material type can be read (as defined in Constants.d)
@@ -163,8 +167,8 @@ func void freeAimOnArrowCollide() {
     // Additionally, get the texture of the collision object for more customization of collision behavior
     var string texture;
     if (mat.texture) { // Some objects strangely do not have a texture
-        var zCTexture tex; tex = _^(mat.texture);
-        texture = tex._zCObject_objectName;
+        var zCObject tex; tex = _^(mat.texture);
+        texture = tex.objectName;
     } else {
         texture = "";
     };

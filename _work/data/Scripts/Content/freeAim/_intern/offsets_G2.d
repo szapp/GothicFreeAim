@@ -113,6 +113,8 @@ const int zCRigidBody_bitfield_gravityActive        = 1<<0;
 
 const int zCModelNodeInst_visual_offset             = 8;   //0x0008
 
+const int zCPolygon_material_offset                 = 24;  //0x0018
+
 const int zTraceRay_vob_ignore_no_cd_dyn            = 1<<0;  // Ignore vobs without collision
 const int zTraceRay_vob_bbox                        = 1<<2;  // Intersect with bounding boxes (important to detect NPCs)
 const int zTraceRay_poly_ignore_transp              = 1<<8;  // Ignore alpha polygons (without this trace ray is bugged)
