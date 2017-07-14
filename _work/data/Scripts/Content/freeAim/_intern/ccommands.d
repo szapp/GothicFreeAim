@@ -1,8 +1,8 @@
 /*
  * Definition of all console commands
  *
- * G2 Free Aim v0.1.2 - Free aiming for the video game Gothic 2 by Piranha Bytes
- * Copyright (C) 2016  mud-freak (@szapp)
+ * G2 Free Aim v1.0.0-alpha - Free aiming for the video game Gothic 2 by Piranha Bytes
+ * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
  * This file is part of G2 Free Aim.
  * <http://github.com/szapp/g2freeAim>
@@ -69,7 +69,7 @@ func string freeAimLicense(var string command) {
     SB(FREEAIM_VERSION);
     SB(", Copyright ");
     SBc(169 /* (C) */);
-    SB(" 2016  mud-freak (@szapp)");
+    SB(" 2016-2017  mud-freak (@szapp)");
     SBc(13); SBc(10);
 
     SB("<http://github.com/szapp/g2freeAim>");
