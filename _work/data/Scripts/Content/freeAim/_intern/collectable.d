@@ -88,7 +88,7 @@ func void freeAimKeepProjectileInWorld() {
             };
 
             // Make the projectile focusable, i.e. collectable
-            projectile.flags = projectile.flags &~ ITEM_NFOCUS;
+            projectile.flags = projectile.flags & ~ITEM_NFOCUS;
 
             // Detach arrow AI from projectile (projectile will have no AI)
             const int call3 = 0; var int zero;

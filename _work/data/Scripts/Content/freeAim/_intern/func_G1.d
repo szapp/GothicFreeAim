@@ -25,7 +25,10 @@
 /*
  * Constants missing/renamed in Gothic 1
  */
-const int FIGHT_DIST_CANCEL = HAI_DIST_ABORT_RANGED;
+const int   FIGHT_DIST_CANCEL        = HAI_DIST_ABORT_RANGED; // Same, just different name in Gothic 1
+const float RANGED_CHANCE_MINDIST    = 1500;                  // For now, taken from Gothic 2, needs to be adjusted:
+const float RANGED_CHANCE_MAXDIST    = 4500;                  // How is the hit chance calculated in Gothic 1?
+const int   ITEM_NFOCUS              = 1<<23;                 // Same as in Gothic 2 (just not defined in the scripts)
 
 
 /*
@@ -130,5 +133,18 @@ func void Wld_StopEffect(var string effectName) {
         CALL_PtrParam(_@(one));
         CALL__thiscall(_@(effectVob), oCVisualFX__Stop);
         call2 = CALL_End();
+    };
+};
+
+
+/*
+ * Emulate the Gothic 2 deadalus function C_NpcIsUndead(), based on the specifications in
+ * oCSpell::IsTargetTypeValid()+149h 0x47DD09 of Gothic 1
+ */
+func int C_NpcIsUndead(var C_Npc slf) {
+    if (slf.guild == GIL_ZOMBIE)
+    || (slf.guild == GIL_UNDEADORC)
+    || (slf.guild == GIL_SKELETON) {
+        return TRUE;
     };
 };
