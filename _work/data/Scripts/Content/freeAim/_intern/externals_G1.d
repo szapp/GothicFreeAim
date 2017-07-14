@@ -1,5 +1,5 @@
 /*
- * Functions that do not exist in Gothic 1 are defined/emulated here
+ * Constants and (external) functions that do not exist in Gothic 1
  *
  * G2 Free Aim v0.1.2 - Free aiming for the video game Gothic 2 by Piranha Bytes
  * Copyright (C) 2016  mud-freak (@szapp)
@@ -32,7 +32,8 @@ const int   ITEM_NFOCUS              = 1<<23;                 // Same as in Goth
 
 
 /*
- * Emulate the Gothic 2 external function Npc_GetActiveSpellIsScroll(), oCNpc::GetActiveSpellIsScroll() 0x73D020
+ * Emulate the Gothic 2 external function Npc_GetActiveSpellIsScroll()
+ * Gothic 2: oCNpc::GetActiveSpellIsScroll() 0x73D020
  */
 func int Npc_GetActiveSpellIsScroll(var C_Npc slf) {
     if (!Npc_IsInFightMode(slf, FMODE_MAGIC)) {
@@ -80,7 +81,8 @@ func int Npc_GetActiveSpellIsScroll(var C_Npc slf) {
 
 
 /*
- * Emulate the Gothic 2 external function Wld_StopEffect(), sub_006E32B0() 0x6E32B0
+ * Emulate the Gothic 2 external function Wld_StopEffect()
+ * Gothic 2: sub_006E32B0() 0x6E32B0
  */
 func void Wld_StopEffect(var string effectName) {
     var int worldPtr; worldPtr = _@(MEM_World);
@@ -139,7 +141,7 @@ func void Wld_StopEffect(var string effectName) {
 
 /*
  * Emulate the Gothic 2 deadalus function C_NpcIsUndead(), based on the specifications in
- * oCSpell::IsTargetTypeValid()+149h 0x47DD09 of Gothic 1
+ * Gothic 1: oCSpell::IsTargetTypeValid()+149h 0x47DD09
  */
 func int C_NpcIsUndead(var C_Npc slf) {
     if (slf.guild == GIL_ZOMBIE)
