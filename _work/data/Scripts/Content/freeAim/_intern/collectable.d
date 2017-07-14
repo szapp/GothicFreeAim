@@ -58,11 +58,14 @@ func void freeAimKeepProjectileInWorld() {
         };
 
         // Remove the FX; only if the projectile does not have a different effect (like magic arrows)
-        if (Hlp_StrCmp(projectile.effect, FREEAIM_TRAIL_FX)) { // Check for the trail strip FX
-            const int call = 0;
-            if (CALL_Begin(call)) {
-                CALL__thiscall(_@(projectilePtr), oCItem__RemoveEffect);
-                call = CALL_End();
+        if (GOTHIC_BASE_VERSION == 2) {
+            // Gothic 1 does not offer effects on items
+            if (Hlp_StrCmp(MEM_ReadString(projectilePtr+oCItem_effect_offset), FREEAIM_TRAIL_FX)) { // Check trail strip
+                const int call = 0;
+                if (CALL_Begin(call)) {
+                    CALL__thiscall(_@(projectilePtr), oCItem__RemoveEffect);
+                    call = CALL_End();
+                };
             };
         };
 

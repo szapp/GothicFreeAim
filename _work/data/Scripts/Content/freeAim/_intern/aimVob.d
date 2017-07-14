@@ -27,6 +27,11 @@
  * the aim vob. An example is the spell blink.
  */
 func void freeAimAttachFX(var string effectInst) {
+    if (GOTHIC_BASE_VERSION == 1) {
+        // Gothic 1 does not offer effects on items
+        return;
+    };
+
     // Retrieve vob by name
     var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB");
     if (!vobPtr) {
@@ -34,8 +39,7 @@ func void freeAimAttachFX(var string effectInst) {
     };
 
     // Set the FX property
-    var oCItem vob; vob = _^(vobPtr);
-    vob.effect = effectInst;
+    MEM_WriteString(vobPtr+oCItem_effect_offset, effectInst);
 
     // Start the FX
     const int call = 0;
@@ -52,14 +56,18 @@ func void freeAimAttachFX(var string effectInst) {
  * the side of g2freeAim and this function is called on every weapon change, specifically in freeAimManageReticle().
  */
 func void freeAimDetachFX() {
+    if (GOTHIC_BASE_VERSION == 1) {
+        // Gothic 1 does not offer effects on items
+        return;
+    };
+
     // Retrieve vob by name
     var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB");
     if (!vobPtr) {
         return;
     };
 
-    var oCItem vob; vob = _^(vobPtr);
-    if (Hlp_StrCmp(vob.effect, "")) {
+    if (Hlp_StrCmp(MEM_ReadString(vobPtr+oCItem_effect_offset), "")) {
         // If there is no FX, no action is necessary
         return;
     };
@@ -72,7 +80,7 @@ func void freeAimDetachFX() {
     };
 
     // Clear the FX property
-    vob.effect = "";
+    MEM_WriteString(vobPtr+oCItem_effect_offset, "");
 };
 
 

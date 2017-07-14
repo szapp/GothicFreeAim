@@ -92,6 +92,8 @@ const int mouseUpdate                             = 5062907; //0x4D40FB // Hook 
 const int zCVob_bbox3D_offset                       = 124; //0x007C
 const int zCVob_trafoObjToWorld_offset              = 60;  //0x003C
 
+const int oCItem_effect_offset                      = 564; //0x0234
+
 const int oCSpell_spellCasterNpc_offset             = 52;  //0x0034
 const int oCSpell_manaInvested_offset               = 72;  //0x0048
 const int oCSpell_C_Spell_offset                    = 128; //0x0080

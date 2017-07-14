@@ -46,8 +46,8 @@ const int oCNpc__GetModel                         = 0; //0x738720
 const int oCNpcFocus__InitFocusModes              = 0; //0x6BEA80
 const int oCItem___CreateNewInstance              = 0; //0x714440
 const int oCItem__InitByScript                    = 0; //0x711BD0
-const int oCItem__InsertEffect                    = 0; //0x712C40
-const int oCItem__RemoveEffect                    = 0; //0x712C00
+const int oCItem__InsertEffect                    = 0; // Does not exist in Gothic 1
+const int oCItem__RemoveEffect                    = 0; // Does not exist in Gothic 1
 const int oCMag_Book__GetSelectedSpell            = 0; //0x477780
 const int zCModel__SearchNode                     = 0; //0x57DFF0
 const int zCModel__GetBBox3DNodeWorld             = 0; //0x5790F0
@@ -91,6 +91,8 @@ const int mouseUpdate                             = 0; //0x4D40FB // Hook length
  */
 const int zCVob_bbox3D_offset                       = 124; //0x007C
 const int zCVob_trafoObjToWorld_offset              = 60;  //0x003C
+
+const int oCItem_effect_offset                      = 0;   // Does not exist in Gothic 1
 
 const int oCSpell_spellCasterNpc_offset             = 52;  //0x0034
 const int oCSpell_manaInvested_offset               = 72;  //0x0048

@@ -344,15 +344,17 @@ func void freeAimSetupProjectile() {
     // away from the camera), it is barely to not at all visible. To aid visibility, an additional trail strip FX is
     // applied. This is only necessary when the projectile does not have an FX anyway (e.g. magic arrows). The trail
     // strip FX will be removed later once the projectile stops moving.
-    if (Hlp_StrCmp(projectile.effect, "")) { // Projectile has no FX
-        projectile.effect = FREEAIM_TRAIL_FX;
-        const int call2 = 0;
-        if (CALL_Begin(call2)) {
-            CALL__thiscall(_@(projectilePtr), oCItem__InsertEffect);
-            call2 = CALL_End();
+    if (GOTHIC_BASE_VERSION == 2) {
+        // Gothic 1 does not offer effects on items
+        if (Hlp_StrCmp(MEM_ReadString(projectilePtr+oCItem_effect_offset), "")) { // Projectile has no FX
+            MEM_WriteString(projectilePtr+oCItem_effect_offset, FREEAIM_TRAIL_FX);
+            const int call2 = 0;
+            if (CALL_Begin(call2)) {
+                CALL__thiscall(_@(projectilePtr), oCItem__InsertEffect);
+                call2 = CALL_End();
+            };
         };
     };
-
 
     // 6th: Reposition the aim vob and overwrite the target vob
     var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos));
