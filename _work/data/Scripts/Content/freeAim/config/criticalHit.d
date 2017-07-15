@@ -240,11 +240,11 @@ func int freeAimCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int 
 
 /*
  * This function is called when a critical hit occurred and can be used to print something to the screen, play a sound
- * jingle or, as done here by default, show a hitmarker. Leave this function blank for no event.
+ * jingle or, as done here by default, show a hit marker. Leave this function blank for no event.
  * This function is also called when free aiming is disabled, depending on the configuration in
  * freeAimCriticalHitAutoAim(), see below.
  *
- * Idea: The critical hits could be counted here to give an XP reward after 25 headshots
+ * Idea: The critical hits could be counted here to give an XP reward after 25 head shots
  * Examples are written below and commented out and serve as inspiration of what is possible.
  */
 func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon, var int freeAimingIsEnabled) {
@@ -271,21 +271,20 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon, var int f
     // Shooter-like hit marker
     if (freeAimingIsEnabled) {
         // Only show the hit marker if free aiming is enabled (this function is also called for auto aim critical hits)
-        var int hitmark;
-        if (!Hlp_IsValidHandle(hitmark)) {
-            // Create hitmark if it does not exist
+        var int hitmarker;
+        if (!Hlp_IsValidHandle(hitmarker)) {
+            // Create it (if it does not exist) in the center of the screen
             var zCView screen; screen = _^(MEM_Game._zCSession_viewport);
-
-            // Create it in the center of the screen
-            hitmark = View_CreateCenterPxl(screen.psizex/2, screen.psizey/2, 64, 64);
+            hitmarker = View_CreateCenterPxl(screen.psizex/2, screen.psizey/2, // Coordinates
+                FREEAIM_RETICLE_MAX_SIZE, FREEAIM_RETICLE_MAX_SIZE);           // Dimensions
 
             // Get 7th frame of animated texture as static texture
-            View_SetTexture(hitmark, freeAimAnimateReticleByPercent(RETICLE_TRI_IN, 100, 7));
+            View_SetTexture(hitmarker, freeAimAnimateReticleByPercent(RETICLE_TRI_IN, 100, 7));
         };
-        View_Open(hitmark);
+        View_Open(hitmarker);
 
-        // Close the hit marker after 300 ms
-        FF_ApplyExtData(View_Close, 300, 1, hitmark);
+        // Hide the hit marker after 300 ms
+        FF_ApplyExtData(View_Close, 300, 1, hitmarker);
     };
 
     // Sound notification
