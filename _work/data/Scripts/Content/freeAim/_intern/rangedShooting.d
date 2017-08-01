@@ -354,6 +354,9 @@ func void freeAimSetupProjectile() {
                 call2 = CALL_End();
             };
         };
+    } else {
+        // Simplified mechanics for Gothic 1
+        Wld_PlayEffect(FREEAIM_TRAIL_FX_SIMPLE, projectile, projectile, 0, 0, 0, FALSE);
     };
 
     // 6th: Reposition the aim vob and overwrite the target vob

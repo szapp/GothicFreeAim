@@ -22,7 +22,7 @@
  */
 
 INSTANCE freeAim_TRAIL (CFx_Base_Proto) {
-    emFXLifeSpan            =   1.0;
+    emFXLifeSpan            = 1.0;
 };
 
 // NPC is in focus
@@ -37,6 +37,12 @@ INSTANCE freeAim_TRAIL_KEY_INVEST_2 (C_ParticleFxEmitKey) {
 INSTANCE freeAim_TRAIL_KEY_INVEST_3 (C_ParticleFxEmitKey) {
     visname_s               = ""; // Remove effect after collision
     pfx_ppsIsLoopingChg     = 1;
+};
+
+// Same but simplified for Wld_PlayEffect (used for Gothic 1)
+INSTANCE freeAim_TRAIL_INST (CFx_Base_Proto) {
+    emFXLifeSpan            = 0.5;
+    visname_s               = "FREEAIM_TRAIL";
 };
 
 INSTANCE freeAim_DESTROY (CFx_Base_Proto) {

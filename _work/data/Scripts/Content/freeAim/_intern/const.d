@@ -41,6 +41,7 @@ const int    FREEAIM_RETICLE_MAX_SIZE = 64;                   // Biggest reticle
 var   int    freeAimReticleHndl;                              // Handle of the reticle
 
 const string FREEAIM_TRAIL_FX         = "freeAim_TRAIL";      // Trailstrip FX. Should not be changed
+const string FREEAIM_TRAIL_FX_SIMPLE  = "freeAim_TRAIL_INST"; // Simplified trailstrip FX for use in Gothic 1
 const string FREEAIM_BREAK_FX         = "freeAim_DESTROY";    // FX of projectile breaking on impact with world
 
 const int    FREEAIM_MAX_DIST         = 5000;                 // Distance for shooting/reticle. Do not change
