@@ -99,18 +99,18 @@ func void freeAimAnimation() {
         };
     };
 
-    // This following paragraph is inspired by oCAIHuman::BowMode (0x695F00 in g2)
+    // This following paragraph is inspired by oCAIHuman::BowMode (0x6961FA in Gothic 2)
     angleY = negf(subf(mulf(angleY, /* 0.0055 */ 1001786197), FLOATHALF)); // Scale and flip Y [-90° +90°] to [+1 0]
-    if (lef(angleY, FLOATNULL)) {
+    if (lf(angleY, FLOATNULL)) {
         // Maximum aim height (straight up)
         angleY = FLOATNULL;
-    } else if (gef(angleY, FLOATONE)) {
+    } else if (gf(angleY, FLOATONE)) {
         // Minimum aim height (down)
         angleY = FLOATONE;
     };
 
     // New aiming coordinates. Overwrite the arguments one and two passed to oCAniCtrl_Human::InterpolateCombineAni
-    MEM_WriteInt(ESP+20, FLOATHALF); // First argument: Always aim at center (azimuth) (esp+44h-30h)
+    MEM_WriteInt(ESP+20, FLOATHALF); // First argument: Always aim at center (azimuth). G2: esp+44h-30h, G1: esp+2Ch-18h
     ECX = angleY; // Second argument: New elevation
 };
 

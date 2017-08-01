@@ -43,7 +43,7 @@ func void freeAimInitFeatureFreeAiming() {
     if (FREEAIM_RANGED) {
         MEM_Info("Initializing free aiming for ranged combat.");
         HookEngineF(oCAIHuman__BowMode_43B, 6, freeAimRangedShooting); // Fix focus collection while shooting
-        HookEngineF(oCAIHuman__BowMode_396, 5, freeAimAnimation); // Interpolate aiming animation
+        HookEngineF(oCAIHuman__BowMode_interpolateAim, 5, freeAimAnimation); // Interpolate aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Setup projectile trajectory (shooting)
         HookEngineF(oCAIArrowBase__DoAI_98, 6, freeAimResetGravity); // Reset gravity of projectile on collision
         // HookEngineF(oCAIHuman__BowMode_3A4, 6, freeAimRangedStrafing); // Strafing while aiming. NOT WORKING
