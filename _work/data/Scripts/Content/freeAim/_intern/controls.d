@@ -46,7 +46,7 @@ func void freeAimManualRotation() {
         return;
     };
 
-    // The _Cursor class from LeGo is used here. It's not necessarily a cursor: it holds mouse movement
+    // The _Cursor class from LeGo is used here. It is not necessarily a cursor: it holds mouse movement
     var _Cursor mouse; mouse = _^(Cursor_Ptr);
 
     // Add recoil to mouse movement
@@ -82,13 +82,36 @@ func void freeAimManualRotation() {
     // Apply turn rate
     deltaX = mulf(deltaX, castToIntf(FREEAIM_ROTATION_SCALE));
 
+    // Gothic 1 needs some adjustments
+    if (GOTHIC_BASE_VERSION == 1) {
+        // The function hooks at an offset that is executed way too often in Gothic 1, causing the game to freeze
+        if (MEM_Timer.totalTime == prevExec) {
+            // Practically allow turning only once per frame
+            return;
+        };
+        var int prevExec; prevExec = MEM_Timer.totalTime;
+
+        // Gothic 1 has a slightly different turn rate (apply after custom turn rate)
+        deltaX = mulf(deltaX, castToIntf(1.1));
+
+        // Gothic 1 has a maximum turn rate
+        const float MAX_TURN_RATE_G1 = 2.0;
+
+        if (gf(deltaX, castToIntf(MAX_TURN_RATE_G1))) {
+            deltaX = castToIntf(MAX_TURN_RATE_G1);
+        } else if (lf(deltaX, negf(castToIntf(MAX_TURN_RATE_G1)))) {
+            deltaX = negf(castToIntf(MAX_TURN_RATE_G1));
+        };
+    };
+
     // Turn player model
     var oCNpc her; her = Hlp_GetNpc(hero);
     var int hAniCtrl; hAniCtrl = her.anictrl;
-    const int call = 0; var int zero;
+    const int call = 0; var int zero; var int ret;
     if (CALL_Begin(call)) {
         CALL_IntParam(_@(zero)); // 0 = disable turn animation (there is none while aiming anyways)
         CALL_FloatParam(_@(deltaX));
+        CALL_PutRetValTo(_@(ret)); // Get return value from stack
         CALL__thiscall(_@(hAniCtrl), oCAniCtrl_Human__Turn);
         call = CALL_End();
     };

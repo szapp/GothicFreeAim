@@ -132,17 +132,35 @@ func void freeAimDisableAutoTurn(var int on) {
     };
 
     // MEM_Info("Updating internal free aim settings for auto turning"); // Happens too often
-    if (on) {
-        // Jump from 0x737D75 to 0x737E32: 7568946-7568757 = 189-5 = 184 // Length of instruction: 5
-        MEM_WriteByte(oCNpc__TurnToEnemy_737D75, /*E9*/ 233); // jmp
-        MEM_WriteByte(oCNpc__TurnToEnemy_737D75+1, /*B8*/ 184); // B8 instead of B7 because jmp is of length 5 not 6
-        MEM_WriteByte(oCNpc__TurnToEnemy_737D75+2, /*00*/ 0);
-        MEM_WriteByte(oCNpc__TurnToEnemy_737D75+5, ASMINT_OP_nop);
+    if (GOTHIC_BASE_VERSION == 2) {
+        if (on) {
+            // Jump from 0x737D75 to 0x737E32: 7568946-7568757 = 189-5 = 184 // Length of instruction: 5
+            MEM_WriteByte(oCNpc__TurnToEnemy_737D75, /*E9*/ 233); // jmp
+            MEM_WriteByte(oCNpc__TurnToEnemy_737D75+1, /*B8*/ 184); // B8 instead of B7 because jmp is of length 5 not 6
+            MEM_WriteByte(oCNpc__TurnToEnemy_737D75+2, /*00*/ 0);
+            MEM_WriteByte(oCNpc__TurnToEnemy_737D75+5, ASMINT_OP_nop);
+        } else {
+            MEM_WriteByte(oCNpc__TurnToEnemy_737D75, /*0F*/ 15); // Revert to default: jnz loc_00737E32
+            MEM_WriteByte(oCNpc__TurnToEnemy_737D75+1, /*85*/ 133);
+            MEM_WriteByte(oCNpc__TurnToEnemy_737D75+2, /*B7*/ 183);
+            MEM_WriteByte(oCNpc__TurnToEnemy_737D75+5, /*00*/ 0);
+        };
     } else {
-        MEM_WriteByte(oCNpc__TurnToEnemy_737D75, /*0F*/ 15); // Revert to default: jnz loc_00737E32
-        MEM_WriteByte(oCNpc__TurnToEnemy_737D75+1, /*85*/ 133);
-        MEM_WriteByte(oCNpc__TurnToEnemy_737D75+2, /*B7*/ 183);
-        MEM_WriteByte(oCNpc__TurnToEnemy_737D75+5, /*00*/ 0);
+        // In Gothic 1 there is only auto turning during magic combat. But it is not done by oCNpc::TurnToEnemy
+        if (on) {
+            // Skip focus vob check to always jump beyond auto turning
+            MEM_WriteByte(oCAIHuman__MagicMode_D0, /*33*/ 51); // Clear register: xor eax, eax
+            MEM_WriteByte(oCAIHuman__MagicMode_D0+1, /*C0*/ 192);
+            MEM_WriteByte(oCAIHuman__MagicMode_D0+2, ASMINT_OP_nop);
+            MEM_WriteByte(oCAIHuman__MagicMode_D0+3, ASMINT_OP_nop);
+            MEM_WriteByte(oCAIHuman__MagicMode_D0+4, ASMINT_OP_nop);
+        } else {
+            MEM_WriteByte(oCAIHuman__MagicMode_D0, /*E8*/ 232); // Revert to default: call oCNpc::GetFocusVob(void)
+            MEM_WriteByte(oCAIHuman__MagicMode_D0+1, /*8B*/ 139);
+            MEM_WriteByte(oCAIHuman__MagicMode_D0+2, /*2C*/ 44);
+            MEM_WriteByte(oCAIHuman__MagicMode_D0+3, /*22*/ 34);
+            MEM_WriteByte(oCAIHuman__MagicMode_D0+4, /*00*/ 0);
+        };
     };
     SET = !SET;
 };
@@ -219,10 +237,18 @@ func void freeAimIsActive() {
     };
     var int keyStateAiming1; keyStateAiming1 = MEM_KeyState(MEM_GetKey(keyAiming));
     var int keyStateAiming2; keyStateAiming2 = MEM_KeyState(MEM_GetSecondaryKey(keyAiming));
+    var int keyStateAiming3; // Gothic 1 has fixed bindings for the mouse buttons: LMB is always aiming
+
+    if (GOTHIC_BASE_VERSION == 1) {
+        // The _Cursor class from LeGo is used here. It is not necessarily a cursor: it holds mouse movement
+        var _Cursor mouse; mouse = _^(Cursor_Ptr);
+        Cursor_KeyState(_@(keyStateAiming3), mouse.keyLeft);
+    };
 
     // Check if aiming button is pressed/held
     var int keyPressed; keyPressed = (keyStateAiming1 == KEY_PRESSED) || (keyStateAiming1 == KEY_HOLD)
-                                  || (keyStateAiming2 == KEY_PRESSED) || (keyStateAiming2 == KEY_HOLD);
+                                  || (keyStateAiming2 == KEY_PRESSED) || (keyStateAiming2 == KEY_HOLD)
+                                  || (keyStateAiming3 == KEY_PRESSED) || (keyStateAiming3 == KEY_HOLD);
 
     // Check fight mode
     if (her.fmode == FMODE_MAGIC) {
@@ -290,7 +316,7 @@ func void freeAimIsActive() {
         };
 
         // Get onset for drawing the bow - right when pressing down the aiming key
-        if (keyStateAiming1 == KEY_PRESSED) || (keyStateAiming2 == KEY_PRESSED) {
+        if (keyStateAiming1 == KEY_PRESSED) || (keyStateAiming2 == KEY_PRESSED) || (keyStateAiming3 == KEY_PRESSED) {
             freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_READY;
         };
     };

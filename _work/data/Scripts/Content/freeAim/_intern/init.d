@@ -32,8 +32,12 @@ func void freeAimInitFeatureFreeAiming() {
     // Controls
     MEM_Info("Initializing free aiming mouse controls.");
     HookEngineF(mouseUpdate, 5, freeAimManualRotation); // Rotate the player model by mouse input
-    MemoryProtectionOverride(oCNpc__TurnToEnemy_737D75, 6); // Prevent auto turning towards the target (target lock)
-    HookEngineF(onDmgAnimationAddr , 9, freeAimDmgAnimation); // Disable damage animation while aiming
+    if (GOTHIC_BASE_VERSION == 2) {
+        MemoryProtectionOverride(oCNpc__TurnToEnemy_737D75, 6); // G2: Prevent auto turning towards target (target lock)
+    } else {
+        MemoryProtectionOverride(oCAIHuman__MagicMode_D0, 5); // G1: Prevent auto turning towards target in magic combat
+    };
+    HookEngineF(onDmgAnimationAddr, 9, freeAimDmgAnimation); // Disable damage animation while aiming
 
     // Free aiming for ranged combat aiming and shooting
     if (FREEAIM_RANGED) {
@@ -257,6 +261,12 @@ func void freeAim_Init() {
         // If user does not initialize LeGo in INIT_Global(), as determined by INIT_LEGO_NEEDED, reinitialize Ikarus and
         // LeGo on every level change and loading here
         LeGo_Init(_LeGo_Flags);
+    };
+
+    // Fix zTimer for Gothic 1 (the address in Ikarus is wrong)
+    if (GOTHIC_BASE_VERSION == 1) {
+        MEMINT_zTimer_Address = zCTimer__ztimer;
+        MEM_Timer = _^(MEMINT_zTimer_Address);
     };
 
     MEM_Info(ConcatStrings(ConcatStrings("Initialize ", FREEAIM_VERSION), "."));
