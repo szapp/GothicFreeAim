@@ -265,7 +265,7 @@ func void freeAim_Init() {
 
     // Fix zTimer for Gothic 1 (the address in Ikarus is wrong)
     if (GOTHIC_BASE_VERSION == 1) {
-        MEMINT_zTimer_Address = zCTimer__ztimer;
+        MEMINT_zTimer_Address = ztimer;
         MEM_Timer = _^(MEMINT_zTimer_Address);
     };
 
