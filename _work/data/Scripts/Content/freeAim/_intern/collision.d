@@ -260,7 +260,7 @@ func void freeAimTriggerCollisionCheck() {
     var zCVob vob; vob = _^(MEM_ReadInt(vobPtr));
 
     // Check if the collision object is a trigger
-    if (vob._vtbl != zCTrigger_vtbl) && (vob._vtbl != zCTriggerScript_vtbl) {
+    if (vob._vtbl != zCTrigger__vtbl) && (vob._vtbl != zCTriggerScript__vtbl) {
         return;
     };
     var zCTrigger trigger; trigger = _^(MEM_ReadInt(vobPtr));

@@ -23,7 +23,7 @@
 
 INSTANCE CamModFreeAim (CCamSys_Def)
 {
-    bestRange           = 1.8; // Decrease from 2.5
+    bestRange           = 1.8; // Decreased from 2.5
     minRange            = 1.4;
     maxRange            = 5.0; // Decreased from 10.0
     bestElevation       = 23.0; // Decreased from 35.0

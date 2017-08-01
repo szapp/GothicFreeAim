@@ -41,13 +41,13 @@ func void freeAimUpdateSettings(var int on) {
             // Set stricter focus collection
             Focus_Ranged.npc_azi = 15.0;
 
-            // New camera mode, upper case is important
+            // New camera mode (does not affect Gothic 1)
             MEM_WriteString(zString_CamModRanged, STR_Upper(FREEAIM_CAMERA));
 
         };
 
         if (FREEAIM_SPELLS) {
-            // New camera mode, upper case is important
+            // New camera mode (does not affect Gothic 1)
             MEM_WriteString(zString_CamModMagic, STR_Upper(FREEAIM_CAMERA));
         };
 
@@ -57,7 +57,7 @@ func void freeAimUpdateSettings(var int on) {
         Focus_Magic.npc_azi = 45.0;
         Focus_Magic.item_prio = -1;
 
-        // Restore camera modes, upper case is important
+        // Restore camera modes (does not affect Gothic 1)
         MEM_WriteString(zString_CamModRanged, "CAMMODRANGED");
         MEM_WriteString(zString_CamModMagic, "CAMMODMAGIC");
 
@@ -115,6 +115,42 @@ func void freeAimUpdateSettingsG2Ctrl(var int on) {
         MEM_WriteByte(oCAIHuman__PC_ActionMove_15B+2, /*24*/ 36);
         MEM_WriteByte(oCAIHuman__PC_ActionMove_15B+3, /*0C*/ 12); // Revert action key to default: push eax
         MEM_WriteByte(oCAIHuman__PC_ActionMove_15B+4, /*50*/ 80);
+    };
+    SET = !SET;
+};
+
+
+/*
+ * Overwrite/reset camera modes for Gothic 1. Gothic 1 does not use the different camera modes (CCamSys_Def) defined.
+ * Instead of CamModRanged and CamModMagic, mostly CamModNormal and CamModMelee are used. A free aiming specific camera
+ * is thus not possible. To solve this issue, the camera modes are overwritten and reset whenever needed.
+ * This function is called from freeAimIsActive() nearly every frame.
+ */
+func void freeAimSetCameraMode_G1(var int on) {
+    if (GOTHIC_BASE_VERSION != 1) {
+        return;
+    };
+
+    const int SET = 0;
+    if (on == SET) {
+        return; // No change necessary
+    };
+
+    if (on) {
+        // Overwrite all camera modes, Gothic 1 just throws them around. ALL of them need to be replaced
+        var string mode; mode = STR_Upper(FREEAIM_CAMERA);
+        MEM_WriteString(zString_CamModNormal, mode);
+        MEM_WriteString(zString_CamModMelee, mode);
+        MEM_WriteString(zString_CamModRun, mode);
+        MEM_WriteString(oCAIHuman__Cam_Normal, mode);
+        MEM_WriteString(oCAIHuman__Cam_Fight, mode);
+    } else {
+        // Reset all camera modes
+        MEM_WriteString(zString_CamModNormal, "CAMMODNORMAL");
+        MEM_WriteString(zString_CamModMelee, "CAMMODMELEE");
+        MEM_WriteString(zString_CamModRun, "CAMMODMELEE");
+        MEM_WriteString(oCAIHuman__Cam_Normal, "CAMMODNORMAL");
+        MEM_WriteString(oCAIHuman__Cam_Fight, "CAMMODFIGHT");
     };
     SET = !SET;
 };
@@ -179,10 +215,8 @@ func void freeAimUpdateStatus() {
         // Disable if previously enabled
         freeAimUpdateSettings(0);
         freeAimDisableAutoTurn(0);
-
-        if (GOTHIC_BASE_VERSION == 2) {
-            freeAimUpdateSettingsG2Ctrl(0);
-        };
+        freeAimSetCameraMode_G1(0);
+        freeAimUpdateSettingsG2Ctrl(0);
 
     } else {
         // Enable if previously disabled
@@ -201,7 +235,7 @@ func void freeAimUpdateStatus() {
  * accordingly:
  *  1 if not active (not currently aiming)
  *  5 if currently aiming in ranged fight mode (FMODE_FAR)
- *  7 if currently aiming in magic fight mode with free aiming suported spell (FMODE_MAGIC)
+ *  7 if currently aiming in magic fight mode with free aiming supported spell (FMODE_MAGIC)
  *
  * FREEAIM_ACTIVE is prior set to 0 in freeAimUpdateStatus() if free aiming is disabled.
  *
@@ -215,6 +249,7 @@ func void freeAimIsActive() {
 
     // Check if currently in a menu or in a dialog
     if (MEM_Game.pause_screen) || (!InfoManager_HasFinished()) {
+        freeAimSetCameraMode_G1(0);
         freeAimDisableAutoTurn(0);
         FREEAIM_ACTIVE = 1;
         return;
@@ -223,6 +258,7 @@ func void freeAimIsActive() {
     // Before anything else, check if player is in magic or ranged fight mode
     var oCNpc her; her = Hlp_GetNpc(hero);
     if (her.fmode < FMODE_FAR) {
+        freeAimSetCameraMode_G1(0);
         freeAimDisableAutoTurn(0);
         FREEAIM_ACTIVE = 1;
         return;
@@ -256,9 +292,13 @@ func void freeAimIsActive() {
         // Check if free aiming for spells is disabled
         if (!FREEAIM_SPELLS) {
             freeAimDisableAutoTurn(0);
+            freeAimSetCameraMode_G1(0);
             FREEAIM_ACTIVE = 1;
             return;
         };
+
+        // Gothic 1 does not differentiate between camera modes. Force/overwrite all to free aiming mode
+        freeAimSetCameraMode_G1(1);
 
         // Gothic 1 controls require action key to be pressed/held
         if (GOTHIC_BASE_VERSION == 2) {
@@ -272,7 +312,6 @@ func void freeAimIsActive() {
             FREEAIM_ACTIVE = 1;
             return;
         };
-
 
         // Check if active spell supports free aiming
         var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
@@ -295,9 +334,13 @@ func void freeAimIsActive() {
         // Check if free aiming for ranged combat is disabled
         if (!FREEAIM_RANGED) {
             freeAimDisableAutoTurn(0);
+            freeAimSetCameraMode_G1(0);
             FREEAIM_ACTIVE = 1;
             return;
         };
+
+        // Gothic 1 does not differentiate between camera modes. Force/overwrite all to free aiming mode
+        freeAimSetCameraMode_G1(1);
 
         if (GOTHIC_BASE_VERSION == 2) {
             // Set internally whether the aiming key is held or not (only if using Gothic 2 controls)
