@@ -71,7 +71,7 @@ const int oCAIHuman__MagicMode_D0                 = 4641584; //0x46D330
 const int oCAIHuman__PC_ActionMove_15B            = 0; //0x69A0BB
 const int oCAIHuman__PC_Strafe                    = 0; //0x69AC80
 const int zCWorld__AdvanceClock                   = 6257280; //0x5F7A80 // Hook length 10
-const int cGameManager__ApplySomeSettings_1BC3    = 0; //0x429273 // Hook length 5
+const int cGameManager__ApplySomeSettings_rtn     = 4356499; //0x427993 // Hook length 6
 const int oCAIHuman__BowMode                      = 6358672; //0x610690 // Hook length 6
 const int oCAIHuman__BowMode_interpolateAim       = 6359260; //0x6108DC // Hook length 5
 const int oCAIHuman__BowMode_3A4                  = 0; //0x6962A4 // Hook length 6
@@ -89,8 +89,8 @@ const int onArrowHitChanceAddr                    = 0; //0x6A1A0B // Hook length
 const int onArrowDamageAddr                       = 0; //0x6A1A95 // Hook length 7
 const int onDmgAnimationAddr                      = 0; //0x675F41 // Hook length 9
 const int oCNpcFocus__SetFocusMode                = 6508128; //0x634E60 // Hook length 7
-const int oCAIHuman__MagicMode                    = 0; //0x472FD0 // Hook length 7
-const int oCSpell__Setup_279                      = 0; //0x484BA9 // Hook length 6
+const int oCAIHuman__MagicMode                    = 4641376; //0x46D260 // Hook length 7
+const int oCSpell__Setup_oCVisFXinit              = 4704143; //0x47C78F // Hook length 6
 const int mouseUpdate                             = 5013392; //0x4C7F90 // Hook length 5
 
 

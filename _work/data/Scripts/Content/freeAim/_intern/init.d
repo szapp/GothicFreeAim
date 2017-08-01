@@ -27,7 +27,7 @@
  */
 func void freeAimInitFeatureFreeAiming() {
     // Menu update
-    HookEngineF(cGameManager__ApplySomeSettings_1BC3, 5, freeAimUpdateStatus); // Update settings when leaving menu
+    HookEngineF(cGameManager__ApplySomeSettings_rtn, 6, freeAimUpdateStatus); // Update settings when leaving menu
 
     // Controls
     MEM_Info("Initializing free aiming mouse controls.");
@@ -61,7 +61,7 @@ func void freeAimInitFeatureFreeAiming() {
     if (FREEAIM_SPELLS) {
         MEM_Info("Initializing free aiming for spell combat.");
         HookEngineF(oCAIHuman__MagicMode, 7, freeAimSpellReticle); // Manage focus collection and reticle
-        HookEngineF(oCSpell__Setup_279, 6, freeAimSetupSpell); // Set spell FX trajectory (shooting)
+        HookEngineF(oCSpell__Setup_oCVisFXinit, 6, freeAimSetupSpell); // Set spell FX trajectory (shooting)
     };
 
     // Reticle

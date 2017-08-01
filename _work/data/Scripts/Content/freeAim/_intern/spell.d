@@ -27,7 +27,7 @@
  * that is placed in front of the camera at the nearest intersection with the world or an object.
  */
 func void freeAimSetupSpell() {
-    var int spellOC; spellOC = EBP;
+    var int spellOC; spellOC = MEMINT_SwitchG1G2(ESI, EBP);
     var int casterPtr; casterPtr = MEM_ReadInt(spellOC+oCSpell_spellCasterNpc_offset);
     if (!casterPtr) {
         return;

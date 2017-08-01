@@ -43,6 +43,7 @@ func void freeAimUpdateSettings(var int on) {
 
             // New camera mode, upper case is important
             MEM_WriteString(zString_CamModRanged, STR_Upper(FREEAIM_CAMERA));
+
         };
 
         if (FREEAIM_SPELLS) {

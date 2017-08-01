@@ -65,7 +65,7 @@ const int oCAIHuman__MagicMode_D0                 = 0; // Not needed in Gothic 2
 const int oCAIHuman__PC_ActionMove_15B            = 6922427; //0x69A0BB
 const int oCAIHuman__PC_Strafe                    = 6925440; //0x69AC80
 const int zCWorld__AdvanceClock                   = 6447328; //0x6260E0 // Hook length 10
-const int cGameManager__ApplySomeSettings_1BC3    = 4362867; //0x429273 // Hook length 5
+const int cGameManager__ApplySomeSettings_rtn     = 4362866; //0x429272 // Hook length 6
 const int oCAIHuman__BowMode                      = 6905600; //0x695F00 // Hook length 6
 const int oCAIHuman__BowMode_interpolateAim       = 6906518; //0x696296 // Hook length 5
 const int oCAIHuman__BowMode_3A4                  = 6906532; //0x6962A4 // Hook length 6
@@ -84,7 +84,7 @@ const int onArrowDamageAddr                       = 6953621; //0x6A1A95 // Hook 
 const int onDmgAnimationAddr                      = 6774593; //0x675F41 // Hook length 9
 const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook length 7
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook length 7
-const int oCSpell__Setup_279                      = 4737961; //0x484BA9 // Hook length 6
+const int oCSpell__Setup_oCVisFXinit              = 4737961; //0x484BA9 // Hook length 6
 const int mouseUpdate                             = 5062907; //0x4D40FB // Hook length 5
 
 
