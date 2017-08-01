@@ -88,32 +88,32 @@ func void freeAimUpdateSettingsG2Ctrl(var int on) {
     MEM_Info(ConcatStrings("  OPT: Free-Aim: G2-controls=", IntToString(on))); // Print to zSpy in same style as options
     if (on) {
         // Gothic 2 controls enabled: Mimic the Gothic 1 controls but change the keys
-        MEM_WriteByte(oCAIHuman__BowMode_695F2B, ASMINT_OP_nop); // Skip jump to Gothic 2 controls
-        MEM_WriteByte(oCAIHuman__BowMode_695F2B+1, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__BowMode_695F2B+2, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__BowMode_695F2B+3, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__BowMode_695F2B+4, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__BowMode_695F2B+5, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__BowMode_6962F2+1, 5); // Overwrite shooting key to action button
-        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+1, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+2, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+3, /*6A*/ 106); // push 0
-        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+4, 0); // Will be set to 0 or 1 depending on key press
+        MEM_WriteByte(oCAIHuman__BowMode_2B, ASMINT_OP_nop); // Skip jump to Gothic 2 controls
+        MEM_WriteByte(oCAIHuman__BowMode_2B+1, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIHuman__BowMode_2B+2, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIHuman__BowMode_2B+3, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIHuman__BowMode_2B+4, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIHuman__BowMode_2B+5, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIHuman__BowMode_3F2+1, 5); // Overwrite shooting key to action button
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_15B, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_15B+1, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_15B+2, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_15B+3, /*6A*/ 106); // push 0
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_15B+4, 0); // Will be set to 0 or 1 depending on key press
     } else {
         // Gothic 2 controls disabled: Revert to original Gothic 2 controls
-        MEM_WriteByte(oCAIHuman__BowMode_695F2B, /*0F*/ 15); // Revert G2 controls to default: jz to 0x696391
-        MEM_WriteByte(oCAIHuman__BowMode_695F2B+1, /*84*/ 132);
-        MEM_WriteByte(oCAIHuman__BowMode_695F2B+2, /*60*/ 96);
-        MEM_WriteByte(oCAIHuman__BowMode_695F2B+3, /*04*/ 4);
-        MEM_WriteByte(oCAIHuman__BowMode_695F2B+4, /*00*/ 0);
-        MEM_WriteByte(oCAIHuman__BowMode_695F2B+5, /*00*/ 0);
-        MEM_WriteByte(oCAIHuman__BowMode_6962F2+1, 3); // Revert to default: push 3
-        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB, /*8B*/ 139); // Revert action key to default: mov eax, [esp+8+a3]
-        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+1, /*44*/ 68);
-        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+2, /*24*/ 36);
-        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+3, /*0C*/ 12); // Revert action key to default: push eax
-        MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+4, /*50*/ 80);
+        MEM_WriteByte(oCAIHuman__BowMode_2B, /*0F*/ 15); // Revert G2 controls to default: jz to 0x696391
+        MEM_WriteByte(oCAIHuman__BowMode_2B+1, /*84*/ 132);
+        MEM_WriteByte(oCAIHuman__BowMode_2B+2, /*60*/ 96);
+        MEM_WriteByte(oCAIHuman__BowMode_2B+3, /*04*/ 4);
+        MEM_WriteByte(oCAIHuman__BowMode_2B+4, /*00*/ 0);
+        MEM_WriteByte(oCAIHuman__BowMode_2B+5, /*00*/ 0);
+        MEM_WriteByte(oCAIHuman__BowMode_3F2+1, 3); // Revert to default: push 3
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_15B, /*8B*/ 139); // Revert action key to default: mov eax, [esp+8+a3]
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_15B+1, /*44*/ 68);
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_15B+2, /*24*/ 36);
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_15B+3, /*0C*/ 12); // Revert action key to default: push eax
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_15B+4, /*50*/ 80);
     };
     SET = !SET;
 };
@@ -135,15 +135,15 @@ func void freeAimDisableAutoTurn(var int on) {
     if (GOTHIC_BASE_VERSION == 2) {
         if (on) {
             // Jump from 0x737D75 to 0x737E32: 7568946-7568757 = 189-5 = 184 // Length of instruction: 5
-            MEM_WriteByte(oCNpc__TurnToEnemy_737D75, /*E9*/ 233); // jmp
-            MEM_WriteByte(oCNpc__TurnToEnemy_737D75+1, /*B8*/ 184); // B8 instead of B7 because jmp is of length 5 not 6
-            MEM_WriteByte(oCNpc__TurnToEnemy_737D75+2, /*00*/ 0);
-            MEM_WriteByte(oCNpc__TurnToEnemy_737D75+5, ASMINT_OP_nop);
+            MEM_WriteByte(oCNpc__TurnToEnemy_A5, /*E9*/ 233); // jmp
+            MEM_WriteByte(oCNpc__TurnToEnemy_A5+1, /*B8*/ 184); // B8 instead of B7 because jmp is of length 5 not 6
+            MEM_WriteByte(oCNpc__TurnToEnemy_A5+2, /*00*/ 0);
+            MEM_WriteByte(oCNpc__TurnToEnemy_A5+5, ASMINT_OP_nop);
         } else {
-            MEM_WriteByte(oCNpc__TurnToEnemy_737D75, /*0F*/ 15); // Revert to default: jnz loc_00737E32
-            MEM_WriteByte(oCNpc__TurnToEnemy_737D75+1, /*85*/ 133);
-            MEM_WriteByte(oCNpc__TurnToEnemy_737D75+2, /*B7*/ 183);
-            MEM_WriteByte(oCNpc__TurnToEnemy_737D75+5, /*00*/ 0);
+            MEM_WriteByte(oCNpc__TurnToEnemy_A5, /*0F*/ 15); // Revert to default: jnz loc_00737E32
+            MEM_WriteByte(oCNpc__TurnToEnemy_A5+1, /*85*/ 133);
+            MEM_WriteByte(oCNpc__TurnToEnemy_A5+2, /*B7*/ 183);
+            MEM_WriteByte(oCNpc__TurnToEnemy_A5+5, /*00*/ 0);
         };
     } else {
         // In Gothic 1 there is only auto turning during magic combat. But it is not done by oCNpc::TurnToEnemy
@@ -301,7 +301,7 @@ func void freeAimIsActive() {
         if (GOTHIC_BASE_VERSION == 2) {
             // Set internally whether the aiming key is held or not (only if using Gothic 2 controls)
             if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
-                MEM_WriteByte(oCAIHuman__PC_ActionMove_69A0BB+4, keyPressed);
+                MEM_WriteByte(oCAIHuman__PC_ActionMove_15B+4, keyPressed);
             };
         };
 

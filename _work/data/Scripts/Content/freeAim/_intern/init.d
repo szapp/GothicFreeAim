@@ -27,13 +27,13 @@
  */
 func void freeAimInitFeatureFreeAiming() {
     // Menu update
-    HookEngineF(cGameManager__ApplySomeSettings_rtn, 5, freeAimUpdateStatus); // Update settings when leaving menu
+    HookEngineF(cGameManager__ApplySomeSettings_1BC3, 5, freeAimUpdateStatus); // Update settings when leaving menu
 
     // Controls
     MEM_Info("Initializing free aiming mouse controls.");
     HookEngineF(mouseUpdate, 5, freeAimManualRotation); // Rotate the player model by mouse input
     if (GOTHIC_BASE_VERSION == 2) {
-        MemoryProtectionOverride(oCNpc__TurnToEnemy_737D75, 6); // G2: Prevent auto turning towards target (target lock)
+        MemoryProtectionOverride(oCNpc__TurnToEnemy_A5, 6); // G2: Prevent auto turning towards target (target lock)
     } else {
         MemoryProtectionOverride(oCAIHuman__MagicMode_D0, 5); // G1: Prevent auto turning towards target in magic combat
     };
@@ -42,18 +42,18 @@ func void freeAimInitFeatureFreeAiming() {
     // Free aiming for ranged combat aiming and shooting
     if (FREEAIM_RANGED) {
         MEM_Info("Initializing free aiming for ranged combat.");
-        HookEngineF(oCAIHuman__BowMode_69633B, 6, freeAimRangedShooting); // Fix focus collection while shooting
-        HookEngineF(oCAIHuman__BowMode_696296, 5, freeAimAnimation); // Interpolate aiming animation
+        HookEngineF(oCAIHuman__BowMode_43B, 6, freeAimRangedShooting); // Fix focus collection while shooting
+        HookEngineF(oCAIHuman__BowMode_396, 5, freeAimAnimation); // Interpolate aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Setup projectile trajectory (shooting)
-        HookEngineF(oCAIArrowBase__DoAI_6A06D8, 6, freeAimResetGravity); // Reset gravity of projectile on collision
-        // HookEngineF(oCAIHuman__BowMode_6962A4, 6, freeAimRangedStrafing); // Strafing while aiming. NOT WORKING
+        HookEngineF(oCAIArrowBase__DoAI_98, 6, freeAimResetGravity); // Reset gravity of projectile on collision
+        // HookEngineF(oCAIHuman__BowMode_3A4, 6, freeAimRangedStrafing); // Strafing while aiming. NOT WORKING
 
         // Gothic 2 controls
         if (GOTHIC_BASE_VERSION == 2) {
             MEM_Info("Initializing free aiming Gothic 2 controls.");
-            MemoryProtectionOverride(oCAIHuman__BowMode_695F2B, 6); // Skip jump to G2 controls: jz to 0x696391
-            MemoryProtectionOverride(oCAIHuman__BowMode_6962F2, 2); // Shooting key: push 3
-            MemoryProtectionOverride(oCAIHuman__PC_ActionMove_69A0BB, 5); // Aim key: mov eax [esp+8+4], push eax
+            MemoryProtectionOverride(oCAIHuman__BowMode_2B, 6); // Skip jump to G2 controls: jz to 0x696391
+            MemoryProtectionOverride(oCAIHuman__BowMode_3F2, 2); // Shooting key: push 3
+            MemoryProtectionOverride(oCAIHuman__PC_ActionMove_15B, 5); // Aim key: mov eax [esp+8+4], push eax
         };
     };
 
@@ -61,7 +61,7 @@ func void freeAimInitFeatureFreeAiming() {
     if (FREEAIM_SPELLS) {
         MEM_Info("Initializing free aiming for spell combat.");
         HookEngineF(oCAIHuman__MagicMode, 7, freeAimSpellReticle); // Manage focus collection and reticle
-        HookEngineF(oCSpell__Setup_484BA9, 6, freeAimSetupSpell); // Set spell FX trajectory (shooting)
+        HookEngineF(oCSpell__Setup_279, 6, freeAimSetupSpell); // Set spell FX trajectory (shooting)
     };
 
     // Reticle
@@ -133,7 +133,7 @@ func void freeAimInitFeatureCriticalHits() {
  */
 func void freeAimInitFeatureReuseProjectiles() {
     MEM_Info("Initializing collectable projectiles.");
-    HookEngineF(oCAIArrow__DoAI_6A1489, 6, freeAimKeepProjectileInWorld); // Keep projectiles when stop moving
+    HookEngineF(oCAIArrow__DoAI_29, 6, freeAimKeepProjectileInWorld); // Keep projectiles when stop moving
     HookEngineF(onArrowHitNpcAddr, 5, freeAimOnArrowHitNpc); // Put projectile into inventory
     HookEngineF(onArrowHitVobAddr, 5, freeAimOnArrowGetStuck); // Reposition projectile when stuck in vob
     HookEngineF(onArrowHitStatAddr, 5, freeAimOnArrowGetStuck); // Reposition projectile when stuck in world
