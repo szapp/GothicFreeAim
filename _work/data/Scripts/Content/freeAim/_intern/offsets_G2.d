@@ -86,6 +86,7 @@ const int onArrowCollVobAddr                      = 6949440; //0x6A0C18 // Hook 
 const int onArrowCollStatAddr                     = 6949912; //0x6A0A40 // Hook length 5
 const int oCAIArrow__ReportCollisionToAI_hitChc   = 6953483; //0x6A1A0B // Hook length 5
 const int oCAIArrow__ReportCollisionToAI_damage   = 6953711; //0x6A1AEF // Hook length 7
+const int oCNpc__OnDamage_Hit_criticalHit         = 6718100; //0x668294 // Hook length 5   // Not used for Gothic 2
 const int oCNpc__OnDamage_Anim_getModel           = 6774593; //0x675F41 // Hook length 9
 const int oCNpcFocus__SetFocusMode                = 7072800; //0x6BEC20 // Hook length 7
 const int oCAIHuman__MagicMode                    = 4665296; //0x472FD0 // Hook length 7
@@ -100,6 +101,8 @@ const int zCVob_bbox3D_offset                       = 124; //0x007C
 const int zCVob_trafoObjToWorld_offset              = 60;  //0x003C
 
 const int oCNpc_hitChance_offset                    = 472; //0x01D8
+
+const int oSDamageDescriptor_origin_offset          = 8;   //0x0008                        // Not used for Gothic 2
 
 const int oCItem_effect_offset                      = 564; //0x0234
 

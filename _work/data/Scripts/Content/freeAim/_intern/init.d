@@ -128,6 +128,9 @@ func void freeAimInitFeatureCustomCollisions() {
 func void freeAimInitFeatureCriticalHits() {
     MEM_Info("Initializing critical hit detection.");
     HookEngineF(oCAIArrow__ReportCollisionToAI_damage, 5, freeAimDetectCriticalHit); // Perform critical hit detection
+    if (GOTHIC_BASE_VERSION == 1) {
+        HookEngineF(oCNpc__OnDamage_Hit_criticalHit, 5, freeAimDisableDefaultCriticalHits); // Disable critical hits
+    };
 };
 
 

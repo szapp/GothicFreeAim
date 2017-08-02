@@ -278,3 +278,19 @@ func void freeAimDetectCriticalHit() {
     };
     MEM_Free(weakspotPtr);
 };
+
+
+/*
+ * Disable ranged critical hits in Gothic 1. This mechanic is replaced by freeAimCriticalHitAutoAim(). This function
+ * hooks oCNpc::OnDamage_Hit() at an offset where the critical hit chance is retrieved. This value is replaced with
+ * zero to disable internal critical hits for ranged combat.
+ * This function is only called for Gothic 1, as there are no internal critical hits in Gothic 2 for ranged weapons.
+ */
+func void freeAimDisableDefaultCriticalHits() {
+    // Check if shooter is player or if not in ranged combat
+    var int dmgDescriptor; dmgDescriptor = MEM_ReadInt(ESP+548); // esp+220h+4h // oCNpc::oSDamageDescriptor*
+    var C_Npc shooter; shooter = _^(MEM_ReadInt(dmgDescriptor+oSDamageDescriptor_origin_offset)); // oCNpc*
+    if (Npc_IsPlayer(shooter)) && (Npc_IsInFightMode(shooter, FMODE_FAR)) {
+        EBP = 0;
+    };
+};
