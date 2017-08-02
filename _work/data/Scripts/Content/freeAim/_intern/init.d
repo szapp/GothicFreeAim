@@ -127,7 +127,7 @@ func void freeAimInitFeatureCustomCollisions() {
  */
 func void freeAimInitFeatureCriticalHits() {
     MEM_Info("Initializing critical hit detection.");
-    HookEngineF(onArrowDamageAddr, 7, freeAimDetectCriticalHit); // Perform critical hit detection
+    HookEngineF(oCAIArrow__ReportCollisionToAI_damage, 5, freeAimDetectCriticalHit); // Perform critical hit detection
 };
 
 
@@ -182,7 +182,7 @@ func int freeAimInitOnce() {
         FREEAIM_CUSTOM_COLLISIONS = FALSE;
     };
     if (FREEAIM_CUSTOM_COLLISIONS) || ((FREEAIM_RANGED) && (FREEAIM_TRUE_HITCHANCE)) {
-        HookEngineF(oCAIArrow__ReportCollisionToAI_hit, 5, freeAimDoNpcHit); // Change hit chance
+        HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 5, freeAimDoNpcHit); // Hit registration, change hit chance
     };
     if (FREEAIM_CUSTOM_COLLISIONS) {
         freeAimInitFeatureCustomCollisions();

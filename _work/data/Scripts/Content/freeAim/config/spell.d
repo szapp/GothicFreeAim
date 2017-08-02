@@ -1,5 +1,7 @@
 /*
  * This file contains all configurations for magic combat (spells).
+ *
+ * Supported: Gothic 1 and Gothic 2
  */
 
 

@@ -71,14 +71,8 @@ func int freeAimCriticalHitAutoAim_(var C_Npc target) {
     freeAimGetWeaponTalent(_@(weaponPtr), _@(talent));
     var C_Item weapon; weapon = _^(weaponPtr);
 
-    // Retrieve critical hit chance from config
-    // Do not call the function directly, because it does not exist in the scripts for Gothic 1. Calling it like this,
-    // will go unnoticed while parsing
-    MEM_PushInstParam(target);
-    MEM_PushInstParam(weapon);
-    MEM_PushIntParam(talent);
-    MEM_CallByString("freeAimCriticalHitAutoAim"); // freeAimCriticalHitAutoAim(target, weapon, talent);
-    var int criticalHitChance; criticalHitChance = MEM_PopIntResult();
+    // Retrieve auto aim critical hit chance from config
+    var int criticalHitChance; criticalHitChance = freeAimCriticalHitAutoAim(target, weapon, talent);
 
     // Must be a percentage in range of [0, 100]
     if (criticalHitChance > 100) {
@@ -97,15 +91,14 @@ func int freeAimCriticalHitAutoAim_(var C_Npc target) {
  */
 func void freeAimDetectCriticalHit() {
     // First check if shooter is player and if FA is enabled
-    var int arrowAI; arrowAI = EBP;
+    var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EBP);
     var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
     if (!Npc_IsPlayer(shooter)) {
         return;
     };
 
-    var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
-    var int damagePtr; damagePtr = ESP+228; // esp+1ACh-C8h // zREAL*
-    var int targetPtr; targetPtr = MEM_ReadInt(ESP+28); // esp+1ACh-190h // oCNpc*
+    var int damagePtr; damagePtr = MEMINT_SwitchG1G2(/*esp+48h-48h*/ ESP, /*esp+1B0h-C8h*/ ESP+232); // zREAL*
+    var int targetPtr; targetPtr = MEMINT_SwitchG1G2(EBX, MEM_ReadInt(/*esp+1ACh-190h*/ ESP+28)); // oCNpc*
     var C_Npc targetNpc; targetNpc = _^(targetPtr);
 
     // Get weak spot node from target model
@@ -122,15 +115,9 @@ func void freeAimDetectCriticalHit() {
     var int criticalHit; criticalHit = 0; // Variable that holds whether a critical hit was detected
     if (!FREEAIM_ACTIVE) || (!FREEAIM_RANGED) {
 
-        // Because critical hits cause an advantage when playing with free aiming enabled compared to auto aim, where
-        // there are not critical hits (Gothic 2!), they are introduced here for balancing reasons
-
-        if (GOTHIC_BASE_VERSION == 1) {
-            // Gothic 1 already has critical hits for ranged combat
-            return;
-        };
-
-        // Else: Gothic 2
+        // Critical hits cause an advantage when playing with free aiming enabled compared to auto aim. This is, because
+        // there are not critical hits for ranged combat in Gothic 2. Here, they are introduced for balancing reasons.
+        // Note: Gothic 1 already has critical hits for auto aiming. This is replaced here.
         var int critChance; critChance = freeAimCriticalHitAutoAim_(targetNpc);
         criticalHit = (r_MinMax(1, 100) <= critChance); // Allow critChance=0 to disable this feature
 
@@ -223,6 +210,7 @@ func void freeAimDetectCriticalHit() {
 
         // The internal engine functions are not accurate enough for detecting a shot through a bounding box. Instead
         // check here if "any" point along the line of projectile direction lies inside the bounding box of the node
+        var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
 
         // Direction of collision line along the right-vector of the projectile (projectile flies sideways)
         var int dir[3];

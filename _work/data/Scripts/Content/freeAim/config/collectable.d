@@ -1,5 +1,7 @@
 /*
  * This file contains all configurations for collectable projectiles.
+ *
+ * Supported: Gothic 2 only
  */
 
 

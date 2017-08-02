@@ -397,7 +397,13 @@ func void freeAimSetupProjectile() {
         SB_Clear();
     } else {
         var int hitchance;
-        freeAimGetWeaponTalent(0, _@(hitchance));
+        if (GOTHIC_BASE_VERSION == 1) {
+            // In Gothic 1, the hit chance is determined by dexterity (for both bows and crossbows)
+            hitchance = hero.attribute[ATR_DEXTERITY];
+        } else {
+            // In Gothic 2, the hit chance is the learned skill value (talent)
+            freeAimGetWeaponTalent(0, _@(hitchance));
+        };
         SB("   hit chance=");
         SBi(hitchance);
         SB("% (standard hit chance, scattering disabled)");

@@ -58,7 +58,7 @@ func void freeAimVisualizeLine(var int pos1Ptr, var int pos2Ptr, var int color) 
  * lines disappear.
  */
 func void freeAimVisualizeTraceRay() {
-    if (!FREEAIM_DEBUG_TRACERAY) {
+    if (!FREEAIM_DEBUG_TRACERAY) || (MEM_Game.pause_screen) {
         return;
     };
 
@@ -85,7 +85,7 @@ func void freeAimVisualizeTraceRay() {
  * drawn lines disappear.
  */
 func void freeAimVisualizeWeakspot() {
-    if (!FREEAIM_DEBUG_WEAKSPOT) {
+    if (!FREEAIM_DEBUG_WEAKSPOT) || (MEM_Game.pause_screen) {
         return;
     };
 

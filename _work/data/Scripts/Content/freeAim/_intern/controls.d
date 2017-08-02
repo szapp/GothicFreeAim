@@ -119,6 +119,53 @@ func void freeAimManualRotation() {
 
 
 /*
+ * Disable/re-enable auto turning of player model towards enemy while aiming. The auto turning prevents free aiming, as
+ * it moves the player model to always face the focus. Of course, this should only by prevented during aiming such that
+ * the melee combat is not affected. Consequently, it needs to be disabled and enabled continuously.
+ * This function is called from freeAimIsActive() nearly every frame.
+ */
+func void freeAimDisableAutoTurn(var int on) {
+    const int SET = 0;
+    if (on == SET) {
+        return; // No change necessary
+    };
+
+    // MEM_Info("Updating internal free aim settings for auto turning"); // Happens too often
+    if (GOTHIC_BASE_VERSION == 2) {
+        if (on) {
+            // Jump from 0x737D75 to 0x737E32: 7568946-7568757 = 189-5 = 184 // Length of instruction: 5
+            MEM_WriteByte(oCNpc__TurnToEnemy_camCheck, /*E9*/ 233); // jmp
+            MEM_WriteByte(oCNpc__TurnToEnemy_camCheck+1, /*B8*/ 184); // B8 instead of B7, because jmp is 5 not 6 long
+            MEM_WriteByte(oCNpc__TurnToEnemy_camCheck+2, /*00*/ 0);
+            MEM_WriteByte(oCNpc__TurnToEnemy_camCheck+5, ASMINT_OP_nop);
+        } else {
+            MEM_WriteByte(oCNpc__TurnToEnemy_camCheck, /*0F*/ 15); // Revert to default: jnz loc_00737E32
+            MEM_WriteByte(oCNpc__TurnToEnemy_camCheck+1, /*85*/ 133);
+            MEM_WriteByte(oCNpc__TurnToEnemy_camCheck+2, /*B7*/ 183);
+            MEM_WriteByte(oCNpc__TurnToEnemy_camCheck+5, /*00*/ 0);
+        };
+    } else {
+        // In Gothic 1 there is only auto turning during magic combat. But it is not done by oCNpc::TurnToEnemy
+        if (on) {
+            // Skip focus vob check to always jump beyond auto turning
+            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget, /*33*/ 51); // Clear register: xor eax, eax
+            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+1, /*C0*/ 192);
+            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+2, ASMINT_OP_nop);
+            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+3, ASMINT_OP_nop);
+            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+4, ASMINT_OP_nop);
+        } else {
+            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget, /*E8*/ 232); // Revert to default: call oCNpc::GetFocusVob
+            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+1, /*8B*/ 139);
+            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+2, /*2C*/ 44);
+            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+3, /*22*/ 34);
+            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+4, /*00*/ 0);
+        };
+    };
+    SET = !SET;
+};
+
+
+/*
  * Update internal settings for Gothic 2 controls.
  * The support for the Gothic 2 controls is accomplished by emulating the Gothic 1 controls with different sets of
  * aiming and shooting keys. To do this, the condition to differentiate between the control schemes is skipped and the
@@ -197,56 +244,9 @@ func void freeAimSetCameraMode_G1(var int on) {
         // Reset all camera modes
         MEM_WriteString(zString_CamModNormal, "CAMMODNORMAL");
         MEM_WriteString(zString_CamModMelee, "CAMMODMELEE");
-        MEM_WriteString(zString_CamModRun, "CAMMODMELEE");
+        MEM_WriteString(zString_CamModRun, "CAMMODRUN");
         MEM_WriteString(oCAIHuman__Cam_Normal, "CAMMODNORMAL");
-        MEM_WriteString(oCAIHuman__Cam_Fight, "CAMMODFIGHT");
-    };
-    SET = !SET;
-};
-
-
-/*
- * Disable/re-enable auto turning of player model towards enemy while aiming. The auto turning prevents free aiming, as
- * it moves the player model to always face the focus. Of course, this should only by prevented during aiming such that
- * the melee combat is not affected. Consequently, it needs to be disabled and enabled continuously.
- * This function is called from freeAimIsActive() nearly every frame.
- */
-func void freeAimDisableAutoTurn(var int on) {
-    const int SET = 0;
-    if (on == SET) {
-        return; // No change necessary
-    };
-
-    // MEM_Info("Updating internal free aim settings for auto turning"); // Happens too often
-    if (GOTHIC_BASE_VERSION == 2) {
-        if (on) {
-            // Jump from 0x737D75 to 0x737E32: 7568946-7568757 = 189-5 = 184 // Length of instruction: 5
-            MEM_WriteByte(oCNpc__TurnToEnemy_camCheck, /*E9*/ 233); // jmp
-            MEM_WriteByte(oCNpc__TurnToEnemy_camCheck+1, /*B8*/ 184); // B8 instead of B7, because jmp is 5 not 6 long
-            MEM_WriteByte(oCNpc__TurnToEnemy_camCheck+2, /*00*/ 0);
-            MEM_WriteByte(oCNpc__TurnToEnemy_camCheck+5, ASMINT_OP_nop);
-        } else {
-            MEM_WriteByte(oCNpc__TurnToEnemy_camCheck, /*0F*/ 15); // Revert to default: jnz loc_00737E32
-            MEM_WriteByte(oCNpc__TurnToEnemy_camCheck+1, /*85*/ 133);
-            MEM_WriteByte(oCNpc__TurnToEnemy_camCheck+2, /*B7*/ 183);
-            MEM_WriteByte(oCNpc__TurnToEnemy_camCheck+5, /*00*/ 0);
-        };
-    } else {
-        // In Gothic 1 there is only auto turning during magic combat. But it is not done by oCNpc::TurnToEnemy
-        if (on) {
-            // Skip focus vob check to always jump beyond auto turning
-            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget, /*33*/ 51); // Clear register: xor eax, eax
-            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+1, /*C0*/ 192);
-            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+2, ASMINT_OP_nop);
-            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+3, ASMINT_OP_nop);
-            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+4, ASMINT_OP_nop);
-        } else {
-            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget, /*E8*/ 232); // Revert to default: call oCNpc::GetFocusVob
-            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+1, /*8B*/ 139);
-            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+2, /*2C*/ 44);
-            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+3, /*22*/ 34);
-            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+4, /*00*/ 0);
-        };
+        MEM_WriteString(oCAIHuman__Cam_Fight, "CAMMODNORMAL"); // Note: This is not CAMMODFIGHT!
     };
     SET = !SET;
 };

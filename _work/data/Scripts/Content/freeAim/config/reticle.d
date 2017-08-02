@@ -1,5 +1,7 @@
 /*
  * This file contains all configurations for reticles. For a list of reticle textures, see config\reticleTextures.d.
+ *
+ * Supported: Gothic 1 and Gothic 2
  */
 
 
@@ -20,12 +22,14 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
         // The argument 'target' might be empty!
 
         var int att; att = Npc_GetAttitude(target, hero);
-        /* // For now, do not color friendly NPCs green (reticle stays white)
-        if (att == ATT_FRIENDLY) {
-            reticle.color = Focusnames_Color_Friendly();
-        } else */ if (att == ATT_HOSTILE) {
+        if (att == ATT_HOSTILE) {
             reticle.color = Focusnames_Color_Hostile();
         };
+        /*
+        // For now, do not color friendly NPCs green (reticle stays white)
+        if (att == ATT_FRIENDLY) {
+            reticle.color = Focusnames_Color_Friendly();
+        }; */
 
     } else {
         // If no NPC is in focus color it slightly gray
@@ -54,8 +58,7 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
         /*
         // Alternatively, change the reticle texture with distance
         reticle.size = 75; // Keep the size fixed here
-        reticle.texture = freeAimAnimateReticleByPercent(RETICLE_DROP, dist, 8); // Animate reticle with distance
-        */
+        reticle.texture = freeAimAnimateReticleByPercent(RETICLE_DROP, dist, 8); // Animate reticle with distance */
     };
 };
 
@@ -84,19 +87,21 @@ func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell 
         reticle.texture = RETICLE_CIRCLECROSS;
     } else if (spellInst.spellType == SPELL_BAD) {
         reticle.texture = RETICLE_CIRCLECROSS;
-    };*/
+    }; */
 
     // The color (do not set the color to preserve the original texture color)
     if (Hlp_IsValidNpc(target)) {
         // The argument 'target' might be empty!
 
         var int att; att = Npc_GetAttitude(target, hero);
-        /* // For now, do not color friendly NPCs green (reticle stays white)
-        if (att == ATT_FRIENDLY) {
-            reticle.color = Focusnames_Color_Friendly();
-        } else */ if (att == ATT_HOSTILE) {
+        if (att == ATT_HOSTILE) {
             reticle.color = Focusnames_Color_Hostile();
         };
+        /*
+        // For now, do not color friendly NPCs green (reticle stays white)
+        if (att == ATT_FRIENDLY) {
+            reticle.color = Focusnames_Color_Friendly();
+        }; */
 
     } else {
         // If no NPC is in focus color it slightly gray

@@ -1,5 +1,7 @@
 /*
  * This file contains all configurations for collision and hit registration of projectiles.
+ *
+ * Supported: Gothic 2 only
  */
 
 

@@ -1,5 +1,7 @@
 /*
  * This file contains all configurations for critical hits for bows and crossbows.
+ *
+ * Supported: Gothic 1 and Gothic 2
  */
 
 
@@ -18,13 +20,9 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int tal
     // Get weak spot instance from call-by-reference argument
     var Weakspot weakspot; weakspot = _^(rtrnPtr);
 
-    // Only allow critical hits, if a non-critical shot would cause damage
-    if (GOTHIC_BASE_VERSION == 1) {
-        // Gothic 1: (damage > protection of target)
-        if (roundf(damage) < target.protection[PROT_POINT]) {
-            return;
-        };
-    } else {
+    // Only allow critical hits, if a non-critical shot would cause damage. Gothic 2 only, Gothic 1 allows critical hits
+    // always. This is part of the fighting mechanics
+    if (GOTHIC_BASE_VERSION == 2) {
         // Gothic 2: (damage + dexterity > protection of target)
         if (roundf(damage)+hero.attribute[ATR_DEXTERITY] < target.protection[PROT_POINT]) {
             return;
@@ -47,10 +45,95 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int tal
     }; */
 
     // Here, simply increase the base damage for all critical hits (for all creatures)
-    weakspot.bDmg = mulf(damage, castToIntf(1.5)); // This is a float
+    if (GOTHIC_BASE_VERSION == 1) {
+        // In Gothic 1 critical hits receive weapon damage x2 (this is the default)
+        weakspot.bDmg = mulf(damage, castToIntf(2.0)); // This is a float
+    } else {
+        // In Gothic 2 there are no critical hits for ranged combat. Here, x1.5 seems more reasonable, because in
+        // Gothic 2, the dexterity is added to weapon damage.
+        weakspot.bDmg = mulf(damage, castToIntf(1.5)); // This is a float
+    };
 
     // For examples for cricital hit definitions, see this function in config\headshots_G1.d or config\headshots_G2.d
     headshots(target, rtrnPtr);
+};
+
+
+/*
+ * This function is called when a critical hit occurred; but only if free aiming is disabled. It allows to define a
+ * critical hit chance even for the standard auto aiming.
+ * Although not existing in the original Gothic 2, this is important here to balance the damage output between free aim
+ * and auto aim, as free aim can be disabled in the options during a running game.
+ *
+ * Note, that this is not necessary for Gothic 1, as it already has critical hits for auto aiming. Nevertheless, the
+ * original critical hit calculation of Gothic 1 is disabled and replaced by this function. This way, the critical hit
+ * chance can be manipulated if desired. The lines for Gothic 1 are the same as default by Gothic.
+ *
+ * The return value is a percentage (chance level or hit chance), where 0 is no critical hit ever and and 100 always
+ * causes a critical hit. Everything in between is dependent on a respective probability.
+ * To disable this feature, simply have the function always return 0.
+ *
+ * Some examples are written below (section of Gothic 2) and commented out and serve as inspiration of what is possible.
+ */
+func int freeAimCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int talent) {
+    if (GOTHIC_BASE_VERSION == 1) {
+        // Gothic 1 already has a critical hit chance by default
+        return talent;
+
+    } else {
+        // For Gothic 2 the critical hit chance for auto aim can be introduced here
+
+        // Here, scale the critical hit chance between MIN (0% skill) and MAX (100% skill)
+        var int min; // With   0% skill, min% of the hits are critical hits
+        var int max; // With 100% skill, max% of the hits are critical hits
+
+        // Also take the distance into account
+        var int distance; distance = Npc_GetDistToPlayer(target);
+        if (distance <= FloatToInt(RANGED_CHANCE_MINDIST)/2) {
+            // Close range
+            min = 3;
+            max = 30;
+        } else if (distance <= FloatToInt(RANGED_CHANCE_MINDIST)) {
+            // Medium range
+            min = 2;
+            max = 20;
+        } else if (distance < FloatToInt(RANGED_CHANCE_MAXDIST)) {
+            // Far range
+            min = 1;
+            max = 10;
+        } else {
+            // To far away for critical hits
+            min = 0;
+            max = 0;
+        };
+
+        // Scale the critical hit chance between min and max
+        var int critChance; critChance = (max-min)*talent/100+min;
+
+        /*
+        if (target.guild < GIL_SEPERATOR_HUM) {
+            // The critical hit chance may depend on the target NPC. Make use of 'target' argument
+            // ...
+        }; */
+
+        /*
+        if (Hlp_IsValidItem(weapon)) {
+            // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
+            // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
+            if (weapon.certainProperty > 10) {
+                // E.g. special case for weapon property
+            };
+        }; */
+
+        // Respect the percentage ranges
+        if (critChance < 0) {
+            critChance = 0;
+        } else if (critChance > 100) {
+            critChance = 100;
+        };
+
+        return critChance;
+    };
 };
 
 
@@ -69,7 +152,7 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon, var int f
     if (target.guild < GIL_SEPERATOR_HUM) {
         // The event may depend on the target NPC (e.g. different sound for monsters). Make use of 'target' argument
         // ...
-    };*/
+    }; */
 
     /*
     if (Hlp_IsValidItem(weapon)) {
@@ -82,7 +165,7 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon, var int f
 
     /*
     // Simple screen notification
-    PrintS("Critical hit");*/
+    PrintS("Critical hit"); */
 
     // Shooter-like hit marker
     if (freeAimingIsEnabled) {

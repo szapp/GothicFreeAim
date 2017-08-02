@@ -43,6 +43,7 @@ var   int    freeAimReticleHndl;                              // Handle of the r
 const string FREEAIM_TRAIL_FX         = "freeAim_TRAIL";      // Trailstrip FX. Should not be changed
 const string FREEAIM_TRAIL_FX_SIMPLE  = "freeAim_TRAIL_INST"; // Simplified trailstrip FX for use in Gothic 1
 const string FREEAIM_BREAK_FX         = "freeAim_DESTROY";    // FX of projectile breaking on impact with world
+const string FREEAIM_CAMERA           = "CamModFreeAim";      // CCamSys_Def script instance
 
 const int    FREEAIM_MAX_DIST         = 5000;                 // Distance for shooting/reticle. Do not change
 var   int    freeAimRayInterval;                              // Perform trace ray every x ms (change in ini-file)
@@ -60,7 +61,7 @@ const int    FLOAT1K                  = 1148846080;           // 1000 as float
 
 const int    FREEAIM_ACTIVE           = 0;                    // Status indicator of free aiming
 
-var   int    freeAimDebugWSBBox[6];                           // Weaksopt boundingbox for debug visualization
+var   int    freeAimDebugWSBBox[6];                           // Weakspot bounding box for debug visualization
 var   int    freeAimDebugWSTrj[6];                            // Projectile trajectory for debug visualization
 var   int    freeAimDebugTRBBox[6];                           // Trace ray intersection for debug visualization
 var   int    freeAimDebugTRTrj[6];                            // Trace ray trajectory for debug visualization

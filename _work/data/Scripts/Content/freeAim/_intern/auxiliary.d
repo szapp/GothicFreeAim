@@ -78,6 +78,10 @@ func int freeAimSpellEligible(var C_Spell spell) {
 /*
  * Wrapper function to retrieve the readied weapon and the respective talent value. This function is called by several
  * other wrapper functions.
+ *
+ * For Gothic 2, the learned skill level of the respective weapon type is returned as talent, for Gothic 1 the critical
+ * hit chance is returned, instead. This is not the hit chance! In Gothic 1 the hit chance is determined by dexterity.
+ *
  * Returns 1 on success, 0 otherwise.
  */
 func int freeAimGetWeaponTalent(var int weaponPtr, var int talentPtr) {
@@ -103,24 +107,22 @@ func int freeAimGetWeaponTalent(var int weaponPtr, var int talentPtr) {
     if (talentPtr) {
         var int talent; talent = 0;
         if (!error) {
-
-            // Difference between Gothic 1 and Gothic 2: Hit chance is dexterity or talent value, respectively
-            if (GOTHIC_BASE_VERSION == 1) {
-                // Gothic 1: Hit chance is dexterity (same for bow and crossbow)
-                talent = hero.attribute[ATR_DEXTERITY];
-
+            if (weapon.flags & ITEM_BOW) {
+                talent = NPC_TALENT_BOW;
+            } else if (weapon.flags & ITEM_CROSSBOW) {
+                talent = NPC_TALENT_CROSSBOW;
             } else {
-                // Gothic 2: Hit chance is talent value (differentiate between bow and crossbow)
-                if (weapon.flags & ITEM_BOW) {
-                    talent = NPC_TALENT_BOW;
-                } else if (weapon.flags & ITEM_CROSSBOW) {
-                    talent = NPC_TALENT_CROSSBOW;
-                } else {
-                    MEM_Warn("freeAimGetWeaponTalent: No valid weapon equipped/readied!");
-                    error = 1;
-                };
+                MEM_Warn("freeAimGetWeaponTalent: No valid weapon equipped/readied!");
+                error = 1;
+            };
 
-                if (talent) {
+            if (talent) {
+                if (GOTHIC_BASE_VERSION == 1) {
+                    // Caution: The hit chance in Gothic 1 is defined by dexterity (same for bow and crossbow). This
+                    // function returns the critical hit chance!
+                    talent = Npc_GetTalentValue(hero, talent);
+                } else {
+                    // In Gothic 2 the hit chance is the skill level
                     // talent = slf.hitChance[NPC_TALENT_BOW]; // Cannot write this, because of Gothic 1 compatibility
                     var oCNpc slfOC; slfOC = Hlp_GetNpc(slf);
                     talent = MEM_ReadStatArr(_@(slfOC)+oCNpc_hitChance_offset, talent);
