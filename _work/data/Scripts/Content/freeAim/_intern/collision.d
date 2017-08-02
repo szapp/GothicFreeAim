@@ -23,6 +23,46 @@
 
 
 /*
+ * Set/reset the collision behavior of projectiles with NPCs. There are two different behaviors plus one auto (default).
+ * This function is specific to Gothic 2 only. This function is called from freeAimDoNpcHit() and from
+ * freeAimUpdateSettings().
+ */
+func void freeAimCollisionWithNPC(var int setting) {
+    if (GOTHIC_BASE_VERSION != 2) || (!FREEAIM_CUSTOM_COLLISIONS) {
+        return;
+    };
+
+    // Collision behaviors
+    const int AUTO    = 0; // Projectile bounces off depending on material of armor (Gothic 2 default)
+    const int VANISH  = 1; // Projectile vanishes
+    const int DEFLECT = 2; // Projectile deflects of the surfaces and bounces off
+
+    const int SET = AUTO; // Default is Gothic's default collision behavior
+    if (setting == SET) {
+        return; // No change necessary
+    };
+
+    // Manipulate op code
+    if (setting == DEFLECT) {
+        // Deflect off target
+        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_npc, ASMINT_OP_nop); // Skip NPC armor collision check
+        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_npc+1, ASMINT_OP_nop); // Deflect always
+        SET = DEFLECT;
+    } else if (setting == VANISH) {
+        // Collide with target
+        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_npc, /*74*/ 116); // Jump beyond NPC armor collision check:
+        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_npc+1, /*60*/ 96); // Deflect never (jz to 0x6A0BC8)
+        SET = VANISH;
+    } else if (setting == AUTO) {
+        // Reset to Gothic's default collision behavior
+        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_npc, /*74*/ 116); // Reset to default collision on NPCs
+        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_npc+1, /*3B*/ 59); // jz to 0x6A0BA3
+        SET = AUTO;
+    };
+};
+
+
+/*
  * Wrapper function for the config function freeAimHitRegNpc(). It is called from freeAimDoNpcHit().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
@@ -71,21 +111,15 @@ func int freeAimHitRegWld_(var C_Npc shooter, var int material, var string textu
  * This function is only manipulating anything if the shooter is the player.
  */
 func void freeAimDoNpcHit() {
-    var int arrowAI; arrowAI = EBP;
+    var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EBP);
     var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
 
     // This function does not affect NPCs and also only affects the player if FA is enabled
-    if (!Npc_IsPlayer(shooter)) && (FREEAIM_CUSTOM_COLLISIONS) {
+    if (!Npc_IsPlayer(shooter)) {
         // Reset to Gothic's default hit registration and leave the function
-        MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Reset to default collision behavior on npcs
-        MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*3B*/ 59); // jz to 0x6A0BA3
+        freeAimCollisionWithNPC(0);
         return;
     };
-
-    // Retrieve some variables
-    var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
-    var int hitChancePtr; hitChancePtr = ESP+24; // esp+1ACh-194h
-    var C_Npc target; target = _^(MEM_ReadInt(ESP+28)); // esp+1ACh-190h
 
     // Boolean to specify, whether damage will be applied or not
     var int hit;
@@ -97,30 +131,24 @@ func void freeAimDoNpcHit() {
         const int DEFLECT = 2; // Projectile deflects of the surfaces and bounces off
 
         if (MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset)) {
-            // Adjust collision behavior for NPCs if the projectile bounced off a surface before
+            // Adjust collision behavior for NPCs if the projectile bounced off a surface before (Gothic 2 only)
             collision = FREEAIM_COLL_PRIOR_NPC;
         } else {
             // Retrieve the collision behavior based on the shooter, target and the material type of their armor
+            var C_Npc target; target = _^(MEMINT_SwitchG1G2(EBX, MEM_ReadInt(/*esp+1ACh-190h*/ ESP+28)));
             collision = freeAimHitRegNpc_(target);
         };
 
-        if (collision == DEFLECT) {
-            // Deflect projectile (no damage)
-            MEM_WriteByte(projectileDeflectOffNpcAddr, ASMINT_OP_nop); // Skip npc armor collision check, deflect always
-            MEM_WriteByte(projectileDeflectOffNpcAddr+1, ASMINT_OP_nop);
-            hit = FALSE;
-        } else if (collision == DAMAGE) {
-            // Apply damage or destroy projectile
-            MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Jump beyond armor collision check, deflect never
-            MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*60*/ 96); // jz to 0x6A0BC8
-            hit = TRUE;
-        } else if (collision == DESTROY) {
-            // Destroy (no damage)
-            MEM_WriteByte(projectileDeflectOffNpcAddr, /*74*/ 116); // Jump beyond armor collision check, deflect never
-            MEM_WriteByte(projectileDeflectOffNpcAddr+1, /*60*/ 96); // jz to 0x6A0BC8
-            projectile.instanz = -1; // Delete item instance (it will not be put into the inventory)
-            hit = FALSE;
+        // Set collision behavior
+        freeAimCollisionWithNPC((collision == DEFLECT)+1); // 1 == DAMAGE or DESTROY, 2 == DEFLECT
+        hit = (collision == DAMAGE); // FALSE == DESTROY or DEFLECT, TRUE == DAMAGE
+
+        // Delete projectile instance if collectable feature enabled, such that it will not be put into the inventory
+        if (collision == DESTROY) && (FREEAIM_REUSE_PROJECTILES) {
+            var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
+            projectile.instanz = -1;
         };
+
     } else {
         // Default behavior (no custom collision behavior)
         hit = TRUE;
@@ -128,17 +156,20 @@ func void freeAimDoNpcHit() {
 
     // The hit chance percentage is either determined by skill and distance (default Gothic hit chance) or is always
     // 100%, if free aiming is enabled and the accuracy is defined by the scattering (FREEAIM_TRUE_HITCHANCE == TRUE).
+    var int hitChancePtr; hitChancePtr = MEMINT_SwitchG1G2(/*esp+3Ch-28h*/ ESP+20, /*esp+1ACh-194h*/ ESP+24);
     var int hitchance;
     if (FREEAIM_ACTIVE) && (FREEAIM_RANGED) && (FREEAIM_TRUE_HITCHANCE) {
         // Always hits (100% of all times)
-        hitchance = 100;
+        hitchance = MEMINT_SwitchG1G2(FLOAT1C, 100); // Gothic 1 takes the hit chance as float
     } else {
         // Take the default distance-skill-hit chance provided by Gothic's engine
         hitchance = MEM_ReadInt(hitChancePtr);
     };
 
-    // This is a positive hit, depending on the collision (see above) and the hit chance percentage
-    MEM_WriteInt(hitChancePtr, hit*hitchance);
+    // It is a positive hit depending on the collision (see above) and the hit chance percentage
+    hitchance = MEMINT_SwitchG1G2(mulf(mkf(hit), hitchance), // Gothic 1 takes the hit chance as float
+                                  hit*hitchance);            // Gothic 2 has it as integer
+    MEM_WriteInt(hitChancePtr, hitchance);
 };
 
 

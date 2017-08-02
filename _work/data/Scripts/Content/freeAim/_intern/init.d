@@ -33,27 +33,30 @@ func void freeAimInitFeatureFreeAiming() {
     MEM_Info("Initializing free aiming mouse controls.");
     HookEngineF(mouseUpdate, 5, freeAimManualRotation); // Rotate the player model by mouse input
     if (GOTHIC_BASE_VERSION == 2) {
-        MemoryProtectionOverride(oCNpc__TurnToEnemy_A5, 6); // G2: Prevent auto turning towards target (target lock)
+        MemoryProtectionOverride(oCNpc__TurnToEnemy_camCheck, 6); // G2: Prevent auto turning (target lock)
     } else {
-        MemoryProtectionOverride(oCAIHuman__MagicMode_D0, 5); // G1: Prevent auto turning towards target in magic combat
+        MemoryProtectionOverride(oCAIHuman__MagicMode_turnToTarget, 5); // G1: Prevent auto turning in magic combat
     };
-    HookEngineF(onDmgAnimationAddr, 9, freeAimDmgAnimation); // Disable damage animation while aiming
+    HookEngineF(oCNpc__OnDamage_Anim_getModel, 9, freeAimDmgAnimation); // Disable damage animation while aiming
 
     // Free aiming for ranged combat aiming and shooting
     if (FREEAIM_RANGED) {
         MEM_Info("Initializing free aiming for ranged combat.");
-        HookEngineF(oCAIHuman__BowMode_43B, 6, freeAimRangedShooting); // Fix focus collection while shooting
+        HookEngineF(oCAIHuman__BowMode_shoot, 6, freeAimRangedShooting); // Fix focus collection while shooting
         HookEngineF(oCAIHuman__BowMode_interpolateAim, 5, freeAimAnimation); // Interpolate aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Setup projectile trajectory (shooting)
-        HookEngineF(oCAIArrowBase__DoAI_98, 6, freeAimResetGravity); // Reset gravity of projectile on collision
-        // HookEngineF(oCAIHuman__BowMode_3A4, 6, freeAimRangedStrafing); // Strafing while aiming. NOT WORKING
+        if (GOTHIC_BASE_VERSION == 2) {
+            // Gothic 1 destroys arrows on impact. There is no bouncing off behavior
+            HookEngineF(oCAIArrowBase__DoAI_collision, 6, freeAimResetGravity); // Reset gravity on collision
+        };
+        // HookEngineF(oCAIHuman__BowMode_postInterpolate, 6, freeAimRangedStrafing); // Strafe when aiming. NOT WORKING
 
         // Gothic 2 controls
         if (GOTHIC_BASE_VERSION == 2) {
             MEM_Info("Initializing free aiming Gothic 2 controls.");
-            MemoryProtectionOverride(oCAIHuman__BowMode_2B, 6); // Skip jump to G2 controls: jz to 0x696391
-            MemoryProtectionOverride(oCAIHuman__BowMode_3F2, 2); // Shooting key: push 3
-            MemoryProtectionOverride(oCAIHuman__PC_ActionMove_15B, 5); // Aim key: mov eax [esp+8+4], push eax
+            MemoryProtectionOverride(oCAIHuman__BowMode_g2ctrlCheck, 6); // Skip jump to G2 controls: jz to 0x696391
+            MemoryProtectionOverride(oCAIHuman__BowMode_shootingKey, 2); // Shooting key: push 3
+            MemoryProtectionOverride(oCAIHuman__PC_ActionMove_aimingKey, 5); // Aim key: mov eax [esp+8+4], push eax
         };
     };
 
@@ -105,9 +108,9 @@ func void freeAimInitFeatureCustomCollisions() {
     MEM_Info("Initializing custom collision behaviors.");
     HookEngineF(onArrowCollVobAddr, 5, freeAimOnArrowCollide); // Collision behavior on non-NPC vob material
     HookEngineF(onArrowCollStatAddr, 5, freeAimOnArrowCollide); // Collision behavior on static world material
-    MemoryProtectionOverride(projectileDeflectOffNpcAddr, 2); // Collision behavior on NPCs: jz to 0x6A0BA3
+    MemoryProtectionOverride(oCAIArrowBase__ReportCollisionToAI_npc, 2); // Collision behavior on NPCs (Gothic 2 only)
     if (FREEAIM_COLL_PRIOR_NPC == -1) {
-        // Ignore NPCs after a projectile has bounced off of a surface
+        // Ignore NPCs after a projectile has bounced off of a surface (Gothic 2 only)
         HookEngineF(oCAIArrow__CanThisCollideWith, 7, freeAimDisableNpcCollisionOnBounce);
     };
 
@@ -133,7 +136,7 @@ func void freeAimInitFeatureCriticalHits() {
  */
 func void freeAimInitFeatureReuseProjectiles() {
     MEM_Info("Initializing collectable projectiles.");
-    HookEngineF(oCAIArrow__DoAI_29, 6, freeAimKeepProjectileInWorld); // Keep projectiles when stop moving
+    HookEngineF(oCAIArrow__DoAI_rtn, 6, freeAimKeepProjectileInWorld); // Keep projectiles when stop moving
     HookEngineF(onArrowHitNpcAddr, 5, freeAimOnArrowHitNpc); // Put projectile into inventory
     HookEngineF(onArrowHitVobAddr, 5, freeAimOnArrowGetStuck); // Reposition projectile when stuck in vob
     HookEngineF(onArrowHitStatAddr, 5, freeAimOnArrowGetStuck); // Reposition projectile when stuck in world
@@ -174,8 +177,12 @@ func int freeAimInitOnce() {
     };
 
     // FEATURE: Custom collision behaviors
+    if (GOTHIC_BASE_VERSION == 1) {
+        // Gothic 1 does not support different collision behaviors: This feature is not available for Gothic 1 - FOR NOW
+        FREEAIM_CUSTOM_COLLISIONS = FALSE;
+    };
     if (FREEAIM_CUSTOM_COLLISIONS) || ((FREEAIM_RANGED) && (FREEAIM_TRUE_HITCHANCE)) {
-        HookEngineF(onArrowHitChanceAddr, 5, freeAimDoNpcHit); // Decide whether projectile hits, change hit chance
+        HookEngineF(oCAIArrow__ReportCollisionToAI_hit, 5, freeAimDoNpcHit); // Change hit chance
     };
     if (FREEAIM_CUSTOM_COLLISIONS) {
         freeAimInitFeatureCustomCollisions();

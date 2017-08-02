@@ -16,8 +16,6 @@ config\collectable.d
 config\headshots_G1.d
 config\criticalHit.d
 
-_intern\activate.d
-_intern\controls.d
 _intern\ccommands.d
 _intern\debug.d
 _intern\aimVob.d
@@ -29,4 +27,6 @@ _intern\spell.d
 _intern\collision.d
 _intern\collectable.d
 _intern\criticalHit.d
+_intern\controls.d
+_intern\activate.d
 _intern\init.d
