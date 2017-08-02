@@ -45,18 +45,18 @@ func void freeAimCollisionWithNPC(var int setting) {
     // Manipulate op code
     if (setting == DEFLECT) {
         // Deflect off target
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_npc, ASMINT_OP_nop); // Skip NPC armor collision check
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_npc+1, ASMINT_OP_nop); // Deflect always
+        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_collNpc, ASMINT_OP_nop); // Skip NPC armor collision check
+        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_collNpc+1, ASMINT_OP_nop); // Deflect always
         SET = DEFLECT;
     } else if (setting == VANISH) {
         // Collide with target
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_npc, /*74*/ 116); // Jump beyond NPC armor collision check:
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_npc+1, /*60*/ 96); // Deflect never (jz to 0x6A0BC8)
+        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_collNpc, /*74*/ 116); // Jump beyond NPC armor collision check:
+        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_collNpc+1, /*60*/ 96); // Deflect never (jz to 0x6A0BC8)
         SET = VANISH;
     } else if (setting == AUTO) {
         // Reset to Gothic's default collision behavior
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_npc, /*74*/ 116); // Reset to default collision on NPCs
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_npc+1, /*3B*/ 59); // jz to 0x6A0BA3
+        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_collNpc, /*74*/ 116); // Reset to default collision on NPCs
+        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_collNpc+1, /*3B*/ 59); // jz to 0x6A0BA3
         SET = AUTO;
     };
 };

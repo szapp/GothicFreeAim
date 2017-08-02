@@ -106,9 +106,9 @@ func void freeAimInitFeatureFreeAiming() {
  */
 func void freeAimInitFeatureCustomCollisions() {
     MEM_Info("Initializing custom collision behaviors.");
-    HookEngineF(onArrowCollVobAddr, 5, freeAimOnArrowCollide); // Collision behavior on non-NPC vob material
-    HookEngineF(onArrowCollStatAddr, 5, freeAimOnArrowCollide); // Collision behavior on static world material
-    MemoryProtectionOverride(oCAIArrowBase__ReportCollisionToAI_npc, 2); // Collision behavior on NPCs (Gothic 2 only)
+    HookEngineF(oCAIArrowBase__ReportCollisionToAI_collVob, 5, freeAimOnArrowCollide); // Collision non-NPC vob material
+    HookEngineF(oCAIArrowBase__ReportCollisionToAI_collWld, 5, freeAimOnArrowCollide); // Collision stat world material
+    MemoryProtectionOverride(oCAIArrowBase__ReportCollisionToAI_collNpc, 2); // Collision on NPCs (Gothic 2 only)
     if (FREEAIM_COLL_PRIOR_NPC == -1) {
         // Ignore NPCs after a projectile has bounced off of a surface (Gothic 2 only)
         HookEngineF(oCAIArrow__CanThisCollideWith, 7, freeAimDisableNpcCollisionOnBounce);
@@ -140,9 +140,9 @@ func void freeAimInitFeatureCriticalHits() {
 func void freeAimInitFeatureReuseProjectiles() {
     MEM_Info("Initializing collectable projectiles.");
     HookEngineF(oCAIArrow__DoAI_rtn, 6, freeAimKeepProjectileInWorld); // Keep projectiles when stop moving
-    HookEngineF(onArrowHitNpcAddr, 5, freeAimOnArrowHitNpc); // Put projectile into inventory
-    HookEngineF(onArrowHitVobAddr, 5, freeAimOnArrowGetStuck); // Reposition projectile when stuck in vob
-    HookEngineF(onArrowHitStatAddr, 5, freeAimOnArrowGetStuck); // Reposition projectile when stuck in world
+    HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitNpc, 5, freeAimOnArrowHitNpc); // Put projectile into inventory
+    HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitVob, 5, freeAimOnArrowGetStuck); // Position projectile when stuck
+    HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitWld, 5, freeAimOnArrowGetStuck); // Position projectile when stuck
 };
 
 

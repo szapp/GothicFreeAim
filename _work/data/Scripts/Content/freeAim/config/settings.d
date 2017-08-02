@@ -45,5 +45,5 @@ const int    FREEAIM_DEBUG_WEAKSPOT     = FALSE; // Show weakspot debugging visu
 const int    FREEAIM_DEBUG_TRACERAY     = FALSE; // Show trace ray debugging visualization by default
 
 // FREEAIM_CUSTOM_COLLISIONS (Gothic 2 only)
-const int    FREEAIM_COLL_PRIOR_NPC     = -1;    // After coll: ignre(-1), dstry(0), coll(1), dflct(2) off NPC
+const int    FREEAIM_COLL_PRIOR_NPC     = -1;    // After wld collision: ignre(-1), dstry(0), coll(1), dflct(2) off NPC
 const int    FREEAIM_TRIGGER_COLL_FIX   = TRUE;  // Apply trigger collision fix (disable collision)
