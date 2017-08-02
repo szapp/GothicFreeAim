@@ -12,9 +12,9 @@
  * This function is dynamic: It is called on every hit and the weak spot and damage can be calculated individually.
  * The damage is a float and represents the new base damage (damage of weapon), not the final damage!
  *
- * Ideas: Incorporate weapon-specific stats, headshot talent, dependency on target, ...
+ * Ideas: Incorporate weapon-specific stats, head shot talent, dependency on target, ...
  * Examples are written below and commented out and serve as inspiration of what is possible.
- * Here, preliminary weak spots for almost all Gothic 2 monsters are defined (all headshots).
+ * Here, preliminary weak spots for almost all Gothic 2 monsters are defined (all head shots).
  */
 func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int talent, var int damage, var int rtrnPtr) {
     // Get weak spot instance from call-by-reference argument
@@ -27,6 +27,22 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int tal
         if (roundf(damage)+hero.attribute[ATR_DEXTERITY] < target.protection[PROT_POINT]) {
             return;
         };
+    };
+
+    // Incorporate the critical hit chance (talent value) for Gothic 1. By aiming and targeting, the talent value in
+    // Gothic 1 (which is responsible for the critical hit chance) becomes obsolete. To still have an incentive to
+    // learn the higher stages of ranged weapons, an additional probability for critical hits can be imposed here. Keep
+    // in mind that critical hits are still determined by aiming, but hits are not 100% of the time considered critical
+    if (GOTHIC_BASE_VERSION == 1) {
+        if (!talent) {
+            // With no learned skill level, there are no critical hits (just like in the original Gothic 1)
+            return;
+        } else if (talent < 25) {
+            // Stage 1: Only 50% of the positive hits are in fact critical
+            if (r_Max(1)) { // 0 or 1, approx. 50-50 chance
+                return;
+            };
+        }; // Else stage 2: All positive hits are critical hits (no change)
     };
 
     /*
@@ -54,7 +70,7 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int tal
         weakspot.bDmg = mulf(damage, castToIntf(1.5)); // This is a float
     };
 
-    // For examples for cricital hit definitions, see this function in config\headshots_G1.d or config\headshots_G2.d
+    // For examples for critical hit definitions, see this function in config\headshots_G1.d or config\headshots_G2.d
     headshots(target, rtrnPtr);
 };
 
@@ -139,11 +155,11 @@ func int freeAimCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int 
 
 /*
  * This function is called when a critical hit occurred and can be used to print something to the screen, play a sound
- * jingle or, as done here by default, show a hitmarker. Leave this function blank for no event.
+ * jingle or, as done here by default, show a hit marker. Leave this function blank for no event.
  * This function is also called when free aiming is disabled, depending on the configuration in
  * freeAimCriticalHitAutoAim(), see below.
  *
- * Idea: The critical hits could be counted here to give an XP reward after 25 headshots
+ * Idea: The critical hits could be counted here to give an XP reward after 25 head shots
  * Examples are written below and commented out and serve as inspiration of what is possible.
  */
 func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon, var int freeAimingIsEnabled) {
@@ -172,7 +188,7 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon, var int f
         // Only show the hit marker if free aiming is enabled (this function is also called for auto aim critical hits)
         var int hitmark;
         if (!Hlp_IsValidHandle(hitmark)) {
-            // Create hitmark if it does not exist
+            // Create hit mark if it does not exist
             var zCView screen; screen = _^(MEM_Game._zCSession_viewport);
 
             // Create it in the center of the screen

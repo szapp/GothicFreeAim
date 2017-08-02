@@ -106,14 +106,13 @@ func void freeAimDetectCriticalHit() {
     var Weakspot weakspot; weakspot = _^(weakspotPtr);
     freeAimCriticalHitDef_(targetNpc, MEM_ReadInt(damagePtr), weakspotPtr); // Retrieve weak spot specs
 
-    // Exit if no critical node defined
-    if (Hlp_StrCmp(weakspot.node, "")) {
-        MEM_Free(weakspotPtr);
-        return;
-    };
+    var int criticalHit; // Variable that holds whether a critical hit was detected
 
-    var int criticalHit; criticalHit = 0; // Variable that holds whether a critical hit was detected
-    if (!FREEAIM_ACTIVE) || (!FREEAIM_RANGED) {
+    if (Hlp_StrCmp(weakspot.node, "")) {
+        // No critical node defined
+        criticalHit = 0;
+
+    } else if (!FREEAIM_ACTIVE) || (!FREEAIM_RANGED) {
 
         // Critical hits cause an advantage when playing with free aiming enabled compared to auto aim. This is, because
         // there are not critical hits for ranged combat in Gothic 2. Here, they are introduced for balancing reasons.
@@ -225,6 +224,7 @@ func void freeAimDetectCriticalHit() {
 
 
         // Loop to walk along the trajectory of the projectile
+        criticalHit = 0;
         var int i; i=0; // Loop increment
         var int iter; iter = 700/5; // 7m: Max distance from model bounding box edge to node bounding box (e.g. troll)
         while(i <= iter); i += 1; // Walk along the line in steps of 5 cm
