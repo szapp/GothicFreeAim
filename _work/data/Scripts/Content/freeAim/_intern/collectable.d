@@ -36,7 +36,7 @@ func void freeAimKeepProjectileInWorld() {
     };
 
     // Check validity of projectile an its rigidBody
-    var int arrowAI; arrowAI = EAX; // oCAIArrow* is the arrow AI of the projectile
+    var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EAX); // oCAIArrow* is the arrow AI of the projectile
     var int projectilePtr; projectilePtr = EBX; // oCItem*
     if (!projectilePtr) {
         return;

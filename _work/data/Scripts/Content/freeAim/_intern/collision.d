@@ -117,7 +117,8 @@ func void freeAimDoNpcHit() {
     // This function does not affect NPCs and also only affects the player if FA is enabled
     if (!Npc_IsPlayer(shooter)) {
         // Reset to Gothic's default hit registration and leave the function
-        freeAimCollisionWithNPC(0);
+        freeAimCollisionWithNPC(0); // Gothic 2
+        MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1); // Gothic 1
         return;
     };
 
@@ -140,7 +141,8 @@ func void freeAimDoNpcHit() {
         };
 
         // Set collision behavior
-        freeAimCollisionWithNPC((collision == DEFLECT)+1); // 1 == DAMAGE or DESTROY, 2 == DEFLECT
+        freeAimCollisionWithNPC((collision == DEFLECT)+1); // 1 == DAMAGE or DESTROY, 2 == DEFLECT // G2
+        MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, (collision != DEFLECT)); // Remove projectile //G1
         hit = (collision == DAMAGE); // FALSE == DESTROY or DEFLECT, TRUE == DAMAGE
 
         // Delete projectile instance if collectable feature enabled, such that it will not be put into the inventory
@@ -170,6 +172,35 @@ func void freeAimDoNpcHit() {
     hitchance = MEMINT_SwitchG1G2(mulf(mkf(hit), hitchance), // Gothic 1 takes the hit chance as float
                                   hit*hitchance);            // Gothic 2 has it as integer
     MEM_WriteInt(hitChancePtr, hitchance);
+};
+
+
+/*
+ * Reset and enable gravity after collision with any surface for Gothic 1. Gothic 2 already implements a deflection
+ * behavior of projectiles, while projectiles are destroyed immediately in Gothic 1. When keeping the projectiles alive
+ * in Gothic 1, the gravity after collision needs to be enabled (this is already done in Gothic 2).
+ * This function hooks oCAIArrow::ReportCollisionToAI at an offset, where a positive collision with an object/world was
+ * determined.
+ */
+func void freeAimCollisionGravity() {
+    var int arrowAI; arrowAI = ESI;
+    var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
+    if (!projectile._zCVob_rigidBody) {
+        return;
+    };
+    var int rigidBody; rigidBody = projectile._zCVob_rigidBody;
+
+    // Better safe than writing to an invalid address
+    if (FF_ActiveData(freeAimDropProjectile, rigidBody)) {
+        FF_RemoveData(freeAimDropProjectile, rigidBody);
+    };
+
+    // Reset projectile gravity (zCRigidBody.gravity) after collision (oCAIArrow.collision) to default
+    MEM_WriteInt(rigidBody+zCRigidBody_gravity_offset, FLOATONE);
+
+    // Turn on gravity
+    var int bitfield; bitfield = MEM_ReadByte(rigidBody+zCRigidBody_bitfield_offset);
+    MEM_WriteByte(rigidBody+zCRigidBody_bitfield_offset, bitfield | zCRigidBody_bitfield_gravityActive);
 };
 
 
@@ -265,7 +296,7 @@ func void freeAimDisableNpcCollisionOnBounce() {
         return;
     };
 
-    var int vobPtr; vobPtr = ESP+4;
+    var int vobPtr; vobPtr = MEMINT_SwitchG1G2(ESP+4, ESP+8);
     if (!Hlp_Is_oCNpc(MEM_ReadInt(vobPtr))) {
         return;
     };
@@ -287,7 +318,7 @@ func void freeAimDisableNpcCollisionOnBounce() {
  * Note: This hook is only initialized if FREEAIM_TRIGGER_COLL_FIX is true.
  */
 func void freeAimTriggerCollisionCheck() {
-    var int vobPtr; vobPtr = ESP+4;
+    var int vobPtr; vobPtr = MEMINT_SwitchG1G2(ESP+4, ESP+8);
     var zCVob vob; vob = _^(MEM_ReadInt(vobPtr));
 
     // Check if the collision object is a trigger

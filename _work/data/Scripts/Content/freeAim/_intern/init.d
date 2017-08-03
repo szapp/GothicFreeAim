@@ -106,18 +106,31 @@ func void freeAimInitFeatureFreeAiming() {
  */
 func void freeAimInitFeatureCustomCollisions() {
     MEM_Info("Initializing custom collision behaviors.");
-    HookEngineF(oCAIArrowBase__ReportCollisionToAI_collVob, 5, freeAimOnArrowCollide); // Collision non-NPC vob material
-    HookEngineF(oCAIArrowBase__ReportCollisionToAI_collWld, 5, freeAimOnArrowCollide); // Collision stat world material
-    MemoryProtectionOverride(oCAIArrowBase__ReportCollisionToAI_collNpc, 2); // Collision on NPCs (Gothic 2 only)
+    if (GOTHIC_BASE_VERSION == 1) {
+        MemoryProtectionOverride(oCAIArrow__ReportCollisionToAI_destroyPrj, 7); // Disable destroying of projectiles
+        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj, ASMINT_OP_nop); // Remove fixed destruction
+        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+1, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+2, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+3, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+4, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+5, ASMINT_OP_nop);
+        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+6, ASMINT_OP_nop);
+    } else {
+        // Gothic 2
+        HookEngineF(oCAIArrowBase__ReportCollisionToAI_collVob, 5, freeAimOnArrowCollide); // Coll non-NPC vob material
+        HookEngineF(oCAIArrowBase__ReportCollisionToAI_collWld, 5, freeAimOnArrowCollide); // Coll stat world material
+        MemoryProtectionOverride(oCAIArrowBase__ReportCollisionToAI_collNpc, 2); // Collision behavior on NPCs
+    };
+
     if (FREEAIM_COLL_PRIOR_NPC == -1) {
-        // Ignore NPCs after a projectile has bounced off of a surface (Gothic 2 only)
-        HookEngineF(oCAIArrow__CanThisCollideWith, 7, freeAimDisableNpcCollisionOnBounce);
+        // Ignore NPCs after a projectile has bounced off of a surface
+        HookEngineF(oCAIArrow__CanThisCollideWith, 6, freeAimDisableNpcCollisionOnBounce);
     };
 
     // Trigger collision fix
     if (FREEAIM_TRIGGER_COLL_FIX) {
         MEM_Info("Initializing trigger collision fix.");
-        HookEngineF(oCAIArrow__CanThisCollideWith, 7, freeAimTriggerCollisionCheck); // Trigger collision bug
+        HookEngineF(oCAIArrow__CanThisCollideWith, 6, freeAimTriggerCollisionCheck); // Trigger collision bug
     };
 };
 
@@ -129,7 +142,7 @@ func void freeAimInitFeatureCriticalHits() {
     MEM_Info("Initializing critical hit detection.");
     HookEngineF(oCAIArrow__ReportCollisionToAI_damage, 5, freeAimDetectCriticalHit); // Perform critical hit detection
     if (GOTHIC_BASE_VERSION == 1) {
-        HookEngineF(oCNpc__OnDamage_Hit_criticalHit, 5, freeAimDisableDefaultCriticalHits); // Disable critical hits
+        HookEngineF(oCNpc__OnDamage_Hit_criticalHit, 5, freeAimDisableDefaultCriticalHits); // Disable G1 critical hits
     };
 };
 
@@ -143,6 +156,9 @@ func void freeAimInitFeatureReuseProjectiles() {
     HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitNpc, 5, freeAimOnArrowHitNpc); // Put projectile into inventory
     HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitVob, 5, freeAimOnArrowGetStuck); // Position projectile when stuck
     HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitWld, 5, freeAimOnArrowGetStuck); // Position projectile when stuck
+    if (GOTHIC_BASE_VERSION == 1) {
+        HookEngineF(oCAIArrow__ReportCollisionToAI_gravity, 5, freeAimCollisionGravity); // Apply gravity after coll
+    };
 };
 
 
@@ -180,10 +196,6 @@ func int freeAimInitOnce() {
     };
 
     // FEATURE: Custom collision behaviors
-    if (GOTHIC_BASE_VERSION == 1) {
-        // Gothic 1 does not support different collision behaviors: This feature is not available for Gothic 1 - FOR NOW
-        FREEAIM_CUSTOM_COLLISIONS = FALSE;
-    };
     if (FREEAIM_CUSTOM_COLLISIONS) || ((FREEAIM_RANGED) && (FREEAIM_TRUE_HITCHANCE)) {
         HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 5, freeAimDoNpcHit); // Hit registration, change hit chance
     };
