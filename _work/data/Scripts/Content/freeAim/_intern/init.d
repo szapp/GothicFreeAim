@@ -45,10 +45,7 @@ func void freeAimInitFeatureFreeAiming() {
         HookEngineF(oCAIHuman__BowMode_shoot, 6, freeAimRangedShooting); // Fix focus collection while shooting
         HookEngineF(oCAIHuman__BowMode_interpolateAim, 5, freeAimAnimation); // Interpolate aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Setup projectile trajectory (shooting)
-        if (GOTHIC_BASE_VERSION == 2) {
-            // Gothic 1 destroys arrows on impact. There is no bouncing off behavior
-            HookEngineF(oCAIArrowBase__DoAI_collision, 6, freeAimResetGravity); // Reset gravity on collision
-        };
+        HookEngineF(oCAIArrow__ReportCollisionToAI_validColl, 5, freeAimResetGravity); // Reset gravity on collision
         // HookEngineF(oCAIHuman__BowMode_postInterpolate, 6, freeAimRangedStrafing); // Strafe when aiming. NOT WORKING
 
         // Gothic 2 controls
@@ -107,6 +104,7 @@ func void freeAimInitFeatureFreeAiming() {
 func void freeAimInitFeatureCustomCollisions() {
     MEM_Info("Initializing custom collision behaviors.");
     if (GOTHIC_BASE_VERSION == 1) {
+        HookEngineF(oCAIArrow__ReportCollisionToAI_validColl, 5, freeAimCollisionGravity); // Apply gravity after coll
         MemoryProtectionOverride(oCAIArrow__ReportCollisionToAI_destroyPrj, 7); // Disable destroying of projectiles
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj, ASMINT_OP_nop); // Remove fixed destruction
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+1, ASMINT_OP_nop);
@@ -156,9 +154,6 @@ func void freeAimInitFeatureReuseProjectiles() {
     HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitNpc, 5, freeAimOnArrowHitNpc); // Put projectile into inventory
     HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitVob, 5, freeAimOnArrowGetStuck); // Position projectile when stuck
     HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitWld, 5, freeAimOnArrowGetStuck); // Position projectile when stuck
-    if (GOTHIC_BASE_VERSION == 1) {
-        HookEngineF(oCAIArrow__ReportCollisionToAI_gravity, 5, freeAimCollisionGravity); // Apply gravity after coll
-    };
 };
 
 

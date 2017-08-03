@@ -62,7 +62,7 @@ func void freeAimUpdateSettings(var int on) {
         MEM_WriteString(zString_CamModMagic, "CAMMODMAGIC");
 
         // Reset to collision behavior of projectiles on NPCs to default (does not affect Gothic 1)
-        freeAimCollisionWithNPC(0);
+        freeAimSetCollisionWithNPC(0);
 
     };
     FREEAIM_ACTIVE = !FREEAIM_ACTIVE;

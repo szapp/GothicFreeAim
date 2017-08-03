@@ -27,7 +27,7 @@
  * This function is specific to Gothic 2 only. This function is called from freeAimDoNpcHit() and from
  * freeAimUpdateSettings().
  */
-func void freeAimCollisionWithNPC(var int setting) {
+func void freeAimSetCollisionWithNPC(var int setting) {
     if (GOTHIC_BASE_VERSION != 2) || (!FREEAIM_CUSTOM_COLLISIONS) {
         return;
     };
@@ -117,7 +117,7 @@ func void freeAimDoNpcHit() {
     // This function does not affect NPCs and also only affects the player if FA is enabled
     if (!Npc_IsPlayer(shooter)) {
         // Reset to Gothic's default hit registration and leave the function
-        freeAimCollisionWithNPC(0); // Gothic 2
+        freeAimSetCollisionWithNPC(0); // Gothic 2
         MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1); // Gothic 1
         return;
     };
@@ -141,7 +141,7 @@ func void freeAimDoNpcHit() {
         };
 
         // Set collision behavior
-        freeAimCollisionWithNPC((collision == DEFLECT)+1); // 1 == DAMAGE or DESTROY, 2 == DEFLECT // G2
+        freeAimSetCollisionWithNPC((collision == DEFLECT)+1); // 1 == DAMAGE or DESTROY, 2 == DEFLECT // G2
         MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, (collision != DEFLECT)); // Remove projectile //G1
         hit = (collision == DAMAGE); // FALSE == DESTROY or DEFLECT, TRUE == DAMAGE
 
@@ -189,14 +189,6 @@ func void freeAimCollisionGravity() {
         return;
     };
     var int rigidBody; rigidBody = projectile._zCVob_rigidBody;
-
-    // Better safe than writing to an invalid address
-    if (FF_ActiveData(freeAimDropProjectile, rigidBody)) {
-        FF_RemoveData(freeAimDropProjectile, rigidBody);
-    };
-
-    // Reset projectile gravity (zCRigidBody.gravity) after collision (oCAIArrow.collision) to default
-    MEM_WriteInt(rigidBody+zCRigidBody_gravity_offset, FLOATONE);
 
     // Turn on gravity
     var int bitfield; bitfield = MEM_ReadByte(rigidBody+zCRigidBody_bitfield_offset);
@@ -264,14 +256,7 @@ func void freeAimOnArrowCollide() {
             absf(MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset+4))),
             absf(MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset+8)));
         if (gf(totalVelocity, FLOAT1C)) {
-            // Total velocity is high enough to break the projectile
-
-            // Better safe than writing to an invalid address
-            if (FF_ActiveData(freeAimDropProjectile, rigidBody)) {
-                FF_RemoveData(freeAimDropProjectile, rigidBody);
-            };
-
-            // Breaking sound and visual effect
+            // Total velocity is high enough to break the projectile: Breaking sound and visual effect
             Wld_StopEffect(FREEAIM_BREAK_FX); // Sometimes collides several times, so disable first
             Wld_PlayEffect(FREEAIM_BREAK_FX, projectile, projectile, 0, 0, 0, FALSE);
             MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATNULL); // Set life time to 0: Remove projectile

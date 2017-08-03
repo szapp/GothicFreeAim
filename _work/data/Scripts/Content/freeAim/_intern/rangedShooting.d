@@ -457,12 +457,13 @@ func void freeAimDropProjectile(var int rigidBody) {
 
 /*
  * This function resets the gravity back to its default value, after any collision occured. The function hooks
- * oCAIArrowBase::DoAI at an offset where a collision is detected (so its not called too often).
+ * oCAIArrow::ReportCollisionToAI at an offset where a valid collision was detected.
  * It is important to reset the gravity, because the projectile may bounce of walls (etc.), after which it would float
  * around with the previously set drop-off gravity (FREEAIM_PROJECTILE_GRAVITY).
  */
 func void freeAimResetGravity() {
-    var oCItem projectile; projectile = _^(EBP);
+    var int arrowAI; arrowAI = ESI;
+    var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
     if (!projectile._zCVob_rigidBody) {
         return;
     };

@@ -51,12 +51,6 @@ func void freeAimKeepProjectileInWorld() {
 
     // Check if the projectile stopped moving
     if (!(projectile._zCVob_bitfield[0] & zCVob_bitfield0_physicsEnabled)) {
-
-        // Better safe than writing to an invalid address
-        if (FF_ActiveData(freeAimDropProjectile, projectile._zCVob_rigidBody)) {
-            FF_RemoveData(freeAimDropProjectile, projectile._zCVob_rigidBody);
-        };
-
         // Remove the FX; only if the projectile does not have a different effect (like magic arrows)
         if (GOTHIC_BASE_VERSION == 2) {
             // Gothic 1 does not offer effects on items
@@ -111,23 +105,23 @@ func void freeAimKeepProjectileInWorld() {
  */
 func void freeAimOnArrowHitNpc() {
     var int arrowAI; arrowAI = ESI;
-    var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
 
-    if (MEM_ReadInt(arrowAI+oCAIArrowBase_hasHit_offset)) {
+    // Differentiate between positive hit and collision without damage
+    var int positiveHit; positiveHit = MEMINT_SwitchG1G2(
+        lef(mkf(MEM_ReadInt(/*esp+3Ch-2C*/ ESP+16)), MEM_ReadInt(/*esp+3Ch-28*/ ESP+20)), // Gothic 1: by hit chance
+        MEM_ReadInt(arrowAI+oCAIArrowBase_hasHit_offset)); // Gothic 2: dedicated property (does not exist in Gothic 1)
+
+    if (positiveHit) {
         // Check if the projectile actually caused damage (in case of auto aim hit registration). Only in that case put
         // it in the inventory of the victim
-        var C_Npc victim; victim = _^(EDI);
+        var C_Npc victim; victim = _^(MEMINT_SwitchG1G2(EBX, EDI));
 
         // Replace the projectile if desired, retrieve new projectile instance from config
+        var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
         var int projInst; projInst = freeAimGetUsedProjectileInstance(projectile.instanz, victim);
         if (projInst > 0) {
             CreateInvItem(victim, projInst); // Put respective instance in inventory
         };
-    };
-
-    // Better safe than writing to an invalid address
-    if (FF_ActiveData(freeAimDropProjectile, projectile._zCVob_rigidBody)) {
-        FF_RemoveData(freeAimDropProjectile, projectile._zCVob_rigidBody);
     };
 
     // Set life time to zero to remove this projectile
@@ -142,11 +136,6 @@ func void freeAimOnArrowHitNpc() {
 func void freeAimOnArrowGetStuck() {
     var int arrowAI; arrowAI = ESI;
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
-
-    // Better safe than writing to an invalid address
-    if (FF_ActiveData(freeAimDropProjectile, projectile._zCVob_rigidBody)) {
-        FF_RemoveData(freeAimDropProjectile, projectile._zCVob_rigidBody);
-    };
 
     // Have the projectile not go in too deep. RightVec will be multiplied later
     projectile._zCVob_trafoObjToWorld[0] = mulf(projectile._zCVob_trafoObjToWorld[0], -1096111445); // -33.3 cm
