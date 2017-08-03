@@ -27,7 +27,13 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int tal
         if (roundf(damage)+hero.attribute[ATR_DEXTERITY] < target.protection[PROT_POINT]) {
             return;
         };
-    };
+    } else {
+        // Gothic 1: Do not signal a critical hit, if the total damage would still not cause damage:
+        // (damage * 2 < protection of target)
+        if (roundf(damage)*2 < target.protection[PROT_POINT]) {
+            return;
+        };
+    }
 
     // Incorporate the critical hit chance (talent value) for Gothic 1. By aiming and targeting, the talent value in
     // Gothic 1 (which is responsible for the critical hit chance) becomes obsolete. To still have an incentive to
