@@ -25,16 +25,19 @@
 /*
  * All addresses used (Gothic 2). Hooked functions indicated by the hook length in the in-line comments
  */
+const int zCVob__classDef                            = 10106072; //0x9A34D8
 const int zCVob__SetPositionWorld                    =  6404976; //0x61BB70
 const int zCVob__GetRigidBody                        =  6285664; //0x5FE960
 const int zCVob__TraceRay                            =  6291008; //0x5FFE40
 const int zCVob__SetAI                               =  6285552; //0x5FE8F0
 const int zCArray_zCVob__IsInList                    =  7159168; //0x6D3D80
+const int zCRigidBody__StopTransRot                  =  5989776; //0x5B6590                // Not used for Gothic 2
+const int zCRigidBody__SetVelocity                   =  5990096; //0x5B66D0                // Not used for Gothic 2
 const int zCWorld__TraceRayNearestHit_Vob            =  6430624; //0x621FA0
 const int oCWorld__AddVobAsChild                     =  7863856; //0x77FE30
-const int zCMaterial__vtbl                           =  8593940; //0x832214
+const int zCWorld__SearchVobListByClass              =  6439504; //0x624250
 const int zCTrigger__vtbl                            =  8627196; //0x83A3FC
-const int zCTriggerScript__vtbl                      =  8582148; //0x82F404
+const int oCTriggerScript__vtbl                      =  8582148; //0x82F404
 const int zString_CamModRanged                       =  9234704; //0x8CE910
 const int zString_CamModMagic                        =  9235048; //0x8CEA68
 const int zString_CamModNormal                       =  9234928; //0x8CE9F0                // Not used for Gothic 2
@@ -54,6 +57,9 @@ const int oCItem__InitByScript                       =  7412688; //0x711BD0
 const int oCItem__InsertEffect                       =  7416896; //0x712C40
 const int oCItem__RemoveEffect                       =  7416832; //0x712C00
 const int oCMag_Book__GetSelectedSpell               =  4683648; //0x477780
+const int zCProgMeshProto__classDef                  =  9972552; //0x982B48
+const int oCVisualFX__classDef                       =  9234008; //0x8CE658
+const int oCVisualFX__Stop                           =  4799456; //0x493BE0
 const int zCModel__SearchNode                        =  5758960; //0x57DFF0
 const int zCModel__GetBBox3DNodeWorld                =  5738736; //0x5790F0
 const int zCModel__GetNodePositionWorld              =  5738816; //0x579140
@@ -70,6 +76,7 @@ const int oCAIHuman__BowMode_shootingKey             =  6906610; //0x6962F2
 const int oCAIHuman__MagicMode_turnToTarget          =  0;                                 // Does not exist in Gothic 2
 const int oCAIHuman__PC_ActionMove_aimingKey         =  6922427; //0x69A0BB
 const int oCAIHuman__PC_Strafe                       =  6925440; //0x69AC80
+const int zCCollObjectLevelPolys__s_oCollObjClass    =  9274192; //0x8D8350
 
 const int zCWorld__AdvanceClock                      =  6447328; //0x6260E0 // Hook len 10
 const int cGameManager__ApplySomeSettings_rtn        =  4362866; //0x429272 // Hook len 6
@@ -85,9 +92,9 @@ const int oCAIArrowBase__ReportCollisionToAI_hitVob  =  6949929; //0x6A0C29 // H
 const int oCAIArrowBase__ReportCollisionToAI_hitWld  =  6949460; //0x6A0A54 // Hook len 5
 const int oCAIArrowBase__ReportCollisionToAI_collVob =  6949440; //0x6A0C18 // Hook len 5
 const int oCAIArrowBase__ReportCollisionToAI_collWld =  6949912; //0x6A0A40 // Hook len 5
+const int oCAIArrow__ReportCollisionToAI_collAll     =  6949323; //0x6A09CB // Hook len 8
 const int oCAIArrow__ReportCollisionToAI_hitChc      =  6953483; //0x6A1A0B // Hook len 5
 const int oCAIArrow__ReportCollisionToAI_damage      =  6953711; //0x6A1AEF // Hook len 7
-const int oCAIArrow__ReportCollisionToAI_validColl   =  6949380; //0x6A0A04 // Hook len 5
 const int oCNpc__OnDamage_Hit_criticalHit            =  6718100; //0x668294 // Hook len 5  // Not used for Gothic 2
 const int oCNpc__OnDamage_Anim_getModel              =  6774593; //0x675F41 // Hook len 9
 const int oCNpcFocus__SetFocusMode                   =  7072800; //0x6BEC20 // Hook len 7
@@ -99,6 +106,8 @@ const int mouseUpdate                                =  5062907; //0x4D40FB // H
 /*
  * Class offsets (Gothic 2)
  */
+const int zCClassDef_baseClassDef_offset             = 60;  //0x003C
+
 const int zCVob_bbox3D_offset                        = 124; //0x007C
 const int zCVob_trafoObjToWorld_offset               = 60;  //0x003C
 
@@ -111,6 +120,10 @@ const int oCItem_effect_offset                       = 564; //0x0234
 const int oCSpell_spellCasterNpc_offset              = 52;  //0x0034
 const int oCSpell_manaInvested_offset                = 72;  //0x0048
 const int oCSpell_C_Spell_offset                     = 128; //0x0080
+
+const int oCVisualFX_originVob_offset                = 1192;//0x04A8
+const int oCVisualFX_targetVob_offset                = 1200;//0x04B0
+const int oCVisualFX_instanceName_offset             = 1220;//0x04C4
 
 const int oCAIArrowBase_collision_offset             = 52;  //0x0034
 const int oCAIArrowBase_lifeTime_offset              = 56;  //0x0038
@@ -128,7 +141,15 @@ const int zCRigidBody_bitfield_gravityActive         = 1<<0;
 
 const int zCModelNodeInst_visual_offset              = 8;   //0x0008
 
+const int zCVisual_materials_offset                  = 164; //0x00A4
+const int zCVisual_numMaterials_offset               = 168; //0x00A8
+
 const int zCPolygon_material_offset                  = 24;  //0x0018
+
+const int zCCollisionReport_hitCollObj_offset        = 48;  //0x0030
+
+const int zCCollisionObject_parent_offset            = 132; //0x0084
+const int zCCollObjectLevelPolys_polyList_offset     = 140; //0x008C
 
 const int zTraceRay_vob_ignore_no_cd_dyn             = 1<<0;  // Ignore vobs without collision
 const int zTraceRay_vob_bbox                         = 1<<2;  // Intersect bounding boxes (important to detect NPCs)

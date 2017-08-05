@@ -45,7 +45,7 @@ func void freeAimInitFeatureFreeAiming() {
         HookEngineF(oCAIHuman__BowMode_shoot, 6, freeAimRangedShooting); // Fix focus collection while shooting
         HookEngineF(oCAIHuman__BowMode_interpolateAim, 5, freeAimAnimation); // Interpolate aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, freeAimSetupProjectile); // Setup projectile trajectory (shooting)
-        HookEngineF(oCAIArrow__ReportCollisionToAI_validColl, 5, freeAimResetGravity); // Reset gravity on collision
+        HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, freeAimResetGravity); // Reset gravity on collision
         // HookEngineF(oCAIHuman__BowMode_postInterpolate, 6, freeAimRangedStrafing); // Strafe when aiming. NOT WORKING
 
         // Gothic 2 controls
@@ -104,7 +104,6 @@ func void freeAimInitFeatureFreeAiming() {
 func void freeAimInitFeatureCustomCollisions() {
     MEM_Info("Initializing custom collision behaviors.");
     if (GOTHIC_BASE_VERSION == 1) {
-        HookEngineF(oCAIArrow__ReportCollisionToAI_validColl, 5, freeAimCollisionGravity); // Apply gravity after coll
         MemoryProtectionOverride(oCAIArrow__ReportCollisionToAI_destroyPrj, 7); // Disable destroying of projectiles
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj, ASMINT_OP_nop); // Remove fixed destruction
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+1, ASMINT_OP_nop);
@@ -113,6 +112,7 @@ func void freeAimInitFeatureCustomCollisions() {
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+4, ASMINT_OP_nop);
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+5, ASMINT_OP_nop);
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+6, ASMINT_OP_nop);
+        HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, freeAimOnArrowCollide); // Collision behavior of world
     } else {
         // Gothic 2
         HookEngineF(oCAIArrowBase__ReportCollisionToAI_collVob, 5, freeAimOnArrowCollide); // Coll non-NPC vob material
@@ -122,11 +122,11 @@ func void freeAimInitFeatureCustomCollisions() {
 
     if (FREEAIM_COLL_PRIOR_NPC == -1) {
         // Ignore NPCs after a projectile has bounced off of a surface
-        HookEngineF(oCAIArrow__CanThisCollideWith, 6, freeAimDisableNpcCollisionOnBounce);
+        HookEngineF(oCAIArrow__CanThisCollideWith, 6, freeAimDisableNpcCollisionOnRebound);
     };
 
-    // Trigger collision fix
-    if (FREEAIM_TRIGGER_COLL_FIX) {
+    // Trigger collision fix (only necessary for Gothic 2)
+    if (FREEAIM_TRIGGER_COLL_FIX) && (GOTHIC_BASE_VERSION == 2) {
         MEM_Info("Initializing trigger collision fix.");
         HookEngineF(oCAIArrow__CanThisCollideWith, 6, freeAimTriggerCollisionCheck); // Trigger collision bug
     };
@@ -152,8 +152,11 @@ func void freeAimInitFeatureReuseProjectiles() {
     MEM_Info("Initializing collectable projectiles.");
     HookEngineF(oCAIArrow__DoAI_rtn, 6, freeAimKeepProjectileInWorld); // Keep projectiles when stop moving
     HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitNpc, 5, freeAimOnArrowHitNpc); // Put projectile into inventory
-    HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitVob, 5, freeAimOnArrowGetStuck); // Position projectile when stuck
-    HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitWld, 5, freeAimOnArrowGetStuck); // Position projectile when stuck
+    if (GOTHIC_BASE_VERSION == 2) {
+        // Reposition projectiles when they are stuck in the surface, only necessary for Gothic 2
+        HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitVob, 5, freeAimOnArrowGetStuck);
+        HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitWld, 5, freeAimOnArrowGetStuck);
+    };
 };
 
 
@@ -163,12 +166,6 @@ func void freeAimInitFeatureReuseProjectiles() {
  * function is call from freeAim_Init().
  */
 func int freeAimInitOnce() {
-    // This condition should be removed on successful Gothic 1 port
-    if (GOTHIC_BASE_VERSION == 1) {
-        MEM_Error("G2 Free Aim does not support Gothic 1 yet.");
-        return FALSE;
-    };
-
     // Make sure LeGo is initialized with the required flags
     if ((_LeGo_Flags & FREEAIM_LEGO_FLAGS) != FREEAIM_LEGO_FLAGS) {
         MEM_Error("Insufficient LeGo flags for G2 Free Aim.");

@@ -63,6 +63,92 @@ func void freeAimSetCollisionWithNPC(var int setting) {
 
 
 /*
+ * Re-implementation of the deflection behavior of projectiles found in Gothic 2, but missing in Gothic 1. Hence, this
+ * function is only of interest for Gothic 1. It is called from freeAimDoNpcHit() and freeAimOnArrowCollide().
+ * This code inspired by 0x6A0ACF (oCAIArrowBase::ReportCollisionToAI() of Gothic 2)
+ */
+func void freeAimProjectileDeflect(var int rigidBody) {
+    if (!rigidBody) {
+        return;
+    };
+
+    // Turn on gravity
+    var int bitfield; bitfield = MEM_ReadByte(rigidBody+zCRigidBody_bitfield_offset);
+    MEM_WriteByte(rigidBody+zCRigidBody_bitfield_offset, bitfield | zCRigidBody_bitfield_gravityActive);
+
+    // Get velocity
+    var int vel[3];
+    MEM_CopyBytes(rigidBody+zCRigidBody_velocity_offset, _@(vel), sizeof_zVEC3); // zCRigidBody.velocity[3]
+
+    // Adjust velocity
+    vel[0] = mulf(vel[0], 1061997773); // 0.8 as in 0x6A0AF7 (Gothic 2)
+    vel[1] = mulf(vel[1], 1061997773);
+    vel[2] = mulf(vel[2], 1061997773);
+
+    // Apply velocity
+    var int velPtr; velPtr = _@(vel);
+    const int call2 = 0;
+    if (CALL_Begin(call2)) {
+        CALL_PtrParam(_@(velPtr));
+        CALL__thiscall(_@(rigidBody), zCRigidBody__SetVelocity);
+        call2 = CALL_End();
+    };
+};
+
+
+/*
+ * Gothic 1 does not implement that projectiles stop and get stuck in the surface (as found in Gothic 2). Hence, this
+ * function is only of interest for Gothic 1. It is called from freeAimOnArrowCollide().
+ * The code is inspired by 0x6A0A54 (oCAIArrowBase::ReportCollisionToAI() of Gothic 2).
+ *
+ * Note: As of now, this implementation does not satisfy: For some reason, the projectiles are stuck at different depths
+ * causing some of the to not be focusable (collectable) and other floating in the air. This still needs some adjustment
+ */
+func void freeAimProjectileStuck(var int projectilePtr) {
+    if (!projectilePtr) {
+        return;
+    };
+    var oCItem projectile; projectile = _^(projectilePtr);
+    if (!projectile._zCVob_rigidBody) {
+        return;
+    };
+    var int rigidBody; rigidBody = projectile._zCVob_rigidBody;
+
+    if (GOTHIC_BASE_VERSION == 1) {
+        // First of all, remove trail strip FX
+        Wld_StopEffect_Ext(FREEAIM_TRAIL_FX_SIMPLE, projectile, projectile, 0);
+    };
+
+    // Stop movement of projectile
+    projectile._zCVob_bitfield[0] = projectile._zCVob_bitfield[0] & ~(zCVob_bitfield0_collDetectionStatic
+                                                                    | zCVob_bitfield0_collDetectionDynamic
+                                                                    | zCVob_bitfield0_physicsEnabled);
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL__thiscall(_@(rigidBody), zCRigidBody__StopTransRot);
+        call = CALL_End();
+    };
+
+    // Shift back out of the surface to be visible
+    var int shift; shift = -1040187392; // -32.0 Extremely squishy in Gothic 1, sometimes too far in, sometimes floating
+    var zMAT4 trafo; trafo = _^(projectilePtr+zCVob_trafoObjToWorld_offset);
+    var int pos[3];
+    pos[0] = addf(trafo.v0[zMAT4_position], mulf(trafo.v0[zMAT4_rightVec], shift));
+    pos[1] = addf(trafo.v1[zMAT4_position], mulf(trafo.v1[zMAT4_rightVec], shift));
+    pos[2] = addf(trafo.v2[zMAT4_position], mulf(trafo.v2[zMAT4_rightVec], shift));
+    var int posPtr; posPtr = _@(pos);
+
+    // Reposition the projectile
+    const int call1 = 0;
+    if (CALL_Begin(call1)) {
+        CALL_PtrParam(_@(posPtr));
+        CALL__thiscall(_@(projectilePtr), zCVob__SetPositionWorld);
+        call1 = CALL_End();
+    };
+};
+
+
+/*
  * Wrapper function for the config function freeAimHitRegNpc(). It is called from freeAimDoNpcHit().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
@@ -122,6 +208,8 @@ func void freeAimDoNpcHit() {
         return;
     };
 
+    var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
+
     // Boolean to specify, whether damage will be applied or not
     var int hit;
 
@@ -142,18 +230,27 @@ func void freeAimDoNpcHit() {
 
         // Set collision behavior
         freeAimSetCollisionWithNPC((collision == DEFLECT)+1); // 1 == DAMAGE or DESTROY, 2 == DEFLECT // G2
-        MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, (collision != DEFLECT)); // Remove projectile //G1
+        MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, (collision != DEFLECT)); // Remove projectile // G1
         hit = (collision == DAMAGE); // FALSE == DESTROY or DEFLECT, TRUE == DAMAGE
 
-        // Delete projectile instance if collectable feature enabled, such that it will not be put into the inventory
-        if (collision == DESTROY) && (FREEAIM_REUSE_PROJECTILES) {
-            var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
+        if (collision == DEFLECT) && (GOTHIC_BASE_VERSION == 1) {
+            // Gothic 1: Adjust the projectile to deflect
+            freeAimProjectileDeflect(projectile._zCVob_rigidBody);
+            MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, -1); // Mark as deflecting, such that it is ignored
+
+        } else if (collision == DESTROY) && (FREEAIM_REUSE_PROJECTILES) {
+            // Delete projectile instance if collectable feature enabled, such that it will not be put into inventory
             projectile.instanz = -1;
         };
 
     } else {
         // Default behavior (no custom collision behavior)
         hit = TRUE;
+
+        if (GOTHIC_BASE_VERSION == 1) {
+            // Remove trail strip FX
+            Wld_StopEffect_Ext(FREEAIM_TRAIL_FX_SIMPLE, projectile, projectile, 0);
+        };
     };
 
     // The hit chance percentage is either determined by skill and distance (default Gothic hit chance) or is always
@@ -176,91 +273,169 @@ func void freeAimDoNpcHit() {
 
 
 /*
- * Reset and enable gravity after collision with any surface for Gothic 1. Gothic 2 already implements a deflection
- * behavior of projectiles, while projectiles are destroyed immediately in Gothic 1. When keeping the projectiles alive
- * in Gothic 1, the gravity after collision needs to be enabled (this is already done in Gothic 2).
- * This function hooks oCAIArrow::ReportCollisionToAI at an offset, where a positive collision with an object/world was
- * determined.
+ * Determine the collision behavior when a projectile collides with the world (static or non-NPC vob). Either destroy,
+ * deflect or collide. This function hooks oCAIArrowBase::ReportCollisionToAI() at two different offsets for vobs and
+ * the static world (Gothic 2), at an offset where a valid collision was determined (Gothic 1).
+ * Because the surface may belong to several material groups and have several textures, they are iterated over and
+ * collected in a bit field (materials) and in a concatenated string (textures).
  */
-func void freeAimCollisionGravity() {
+func void freeAimOnArrowCollide() {
+    // Retrieve the projectile or leave if does not exist
     var int arrowAI; arrowAI = ESI;
-    var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
+    var int projectilePtr; projectilePtr = MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset);
+    if (!projectilePtr) {
+        return;
+    };
+    var oCItem projectile; projectile = _^(projectilePtr);
+
+    // Retrieve the collision object (collision surface)
+    var int collReport; collReport = MEMINT_SwitchG1G2(/*esp+3Ch+4h*/ MEM_ReadInt(ESP+64), // zCCollisionReport*
+                                                       /*esp+30h+4h*/ MEM_ReadInt(ESP+52));
+    // Collision object: the surface
+    var int collObj; collObj = MEM_ReadInt(collReport+zCCollisionReport_hitCollObj_offset); // zCCollisionObject*
+
+    // The collision surface may have different materials and textures, all of which need to be considered
+    var int numMaterials; // Number of materials on the collision surface
+    var int materialList; // This is not an actual list. It will be iterated to collect all materials
+
+    // Differentiate between static world and vobs
+    if (MEM_GetClassDef(collObj) == zCCollObjectLevelPolys__s_oCollObjClass) {
+        // Projectile collided with static world
+
+        // Get material list (it is actually a zCPolygon array)
+        var zCArray polyList; polyList = _^(collObj+zCCollObjectLevelPolys_polyList_offset); // zCArray<zCPolygon*>
+        numMaterials = polyList.numInArray;
+        materialList = _@(polyList);
+    } else {
+        // Projectile collided with zCVob
+        var int vobPtr; vobPtr = MEM_ReadInt(collObj+zCCollisionObject_parent_offset); // zCVob*
+        if (!vobPtr) {
+            return;
+        };
+
+        // Get visual
+        var zCVob vob; vob = _^(vobPtr);
+        if (!vob.visual) {
+            return;
+        };
+        if (MEM_GetClassDef(vob.visual) != zCProgMeshProto__classDef) || (Hlp_Is_oCNpc(vobPtr)) {
+            return;
+        };
+
+        // Get material list (this is not a list or an array, just a concatenation of zCMaterial(?) instances)
+        numMaterials = MEM_ReadInt(vob.visual+zCVisual_numMaterials_offset);
+        materialList = MEM_ReadInt(vob.visual+zCVisual_materials_offset); // First item
+    };
+
+    var int firstMat; firstMat = -1; // Material group of the first material. -1 causes deflection of projectile
+    var int materials; materials = 0; // Bit field of all materials
+    var string textures; textures = ""; // Concatenated string of all textures delimited by the pipe character
+
+    // Iterate over all materials part of the collision surface
+    repeat(i, numMaterials); var int i;
+        var int matPtr;
+        if (MEM_GetClassDef(collObj) == zCCollObjectLevelPolys__s_oCollObjClass) {
+            // Static world iterates over polygons (zCPolygon)
+            matPtr = MEM_ArrayRead(materialList, i); // zCPolygon*
+            matPtr = MEM_ReadInt(matPtr+zCPolygon_material_offset); // zCMaterial*
+        } else {
+            // Vob iterates over materials (zCMaterial) directly
+            matPtr = MEM_ReadInt(materialList+i*88); // 0x0058 magic number? Taken from 0x6A0C20 in Gothic 2
+        };
+        if (!matPtr) {
+            continue;
+        };
+        var zCMaterial mat; mat = _^(matPtr);
+
+        // Collect material group (enable bits) and texture name (concatenate texture names in string)
+        materials = materials | (1<<mat.matGroup);
+        if (mat.texture) {
+            textures = ConcatStrings(textures, "|"); // Delimiter
+            textures = ConcatStrings(textures, zCTexture_GetName(mat.texture));
+        };
+
+        if (firstMat == -1) {
+            // Retrieve the material group of the first material to prevent jump in op code (see below, Gothic 2 only)
+            firstMat = mat.matGroup;
+        };
+    end;
+
+    // Get the shooter and the rigid body
+    var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
     if (!projectile._zCVob_rigidBody) {
         return;
     };
     var int rigidBody; rigidBody = projectile._zCVob_rigidBody;
 
-    // Turn on gravity
-    var int bitfield; bitfield = MEM_ReadByte(rigidBody+zCRigidBody_bitfield_offset);
-    MEM_WriteByte(rigidBody+zCRigidBody_bitfield_offset, bitfield | zCRigidBody_bitfield_gravityActive);
-};
-
-
-/*
- * Determine the collision behavior when a projectile collides with the world (static or non-NPC vob). Either destroy,
- * deflect or collide. This function hooks oCAIArrowBase::ReportCollisionToAI() at two different offsets for vobs and
- * the static world.
- */
-func void freeAimOnArrowCollide() {
-    // Get the material of the collision object. Since this function hooks at two different addresses, it has to be
-    // differentiated between zCMaterial and zCPolygon first, before reading the material type from it
-    var int matPtr; matPtr = MEM_ReadInt(ECX); // zCMaterial* or zCPolygon* depending on hooked address
-    if (MEM_ReadInt(matPtr) != zCMaterial__vtbl) { // Static world: Get the zCMaterial from the zCPolygon
-        if (GOTHIC_BASE_VERSION == 1) {
-            // Not sure yet: zCPolygon does not seem to have a material in Gothic 1
-            return;
-        } else {
-            matPtr = MEM_ReadInt(matPtr+zCPolygon_material_offset);
-        };
-    };
-
-    // From the zCMaterial the material type can be read (as defined in Constants.d)
-    var zCMaterial mat; mat = _^(matPtr);
-    var int material; material = mat.matGroup;
-
-    // Additionally, get the texture of the collision object for more customization of collision behavior
-    var string texture;
-    if (mat.texture) { // Some objects strangely do not have a texture
-        var zCObject tex; tex = _^(mat.texture);
-        texture = tex.objectName;
-    } else {
-        texture = "";
-    };
-
-    // Get the shooter
-    var int arrowAI; arrowAI = ESI;
-    var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
 
     // Retrieve the collision behavior based on the shooter, the material type and the texture of the collision object
-    var int collision; collision = freeAimHitRegWld_(shooter, material, texture);
+    var int collision; collision = freeAimHitRegWld_(shooter, materials, textures);
     const int DESTROY = 0; // Projectile breaks and vanishes
     const int STUCK   = 1; // Projectile stays and is stuck in the surface of the collision object
     const int DEFLECT = 2; // Projectile deflects of the surfaces and bounces off
 
     if (collision == STUCK) {
-        // Collide and get stuck in the object
-        EDI = material; // Sets the condition at 0x6A0A45 and 0x6A0C1A to true: Projectile stays
-    } else if (collision == DEFLECT) {
-        // Deflect the projectile
-        EDI = -1;  // Sets the condition at 0x6A0A45 and 0x6A0C1A to false: Projectile deflects
+        if (GOTHIC_BASE_VERSION == 1) {
+            // Gothic 1: Adjust the projectile to get stuck
+            freeAimProjectileStuck(projectilePtr);
+        } else {
+            // Gothic 2: Has this already implemented
+            EDI = firstMat; // Sets the condition at 0x6A0A45 and 0x6A0C1A to true: Projectile stays
+        };
+
     } else if (collision == DESTROY) {
-        // Destroy the projectile
-        EDI = -1;  // Sets the condition at 0x6A0A45 and 0x6A0C1A to false: Projectile deflects
+        if (GOTHIC_BASE_VERSION == 2) {
+            EDI = -1;  // Sets the condition at 0x6A0A45 and 0x6A0C1A to false: Projectile deflects
+        };
 
-        var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
+        // Destroy the projectile only if it is still fast enough to break reasonably
+        var int vel[3];
+        MEM_CopyBytes(rigidBody+zCRigidBody_velocity_offset, _@(vel), sizeof_zVEC3); // zCRigidBody.velocity[3]
+        var int speed; speed = sqrtf(addf(addf(sqrf(vel[0]), sqrf(vel[1])), sqrf(vel[2]))); // Norm of vel
+        // Check if speed is higher than 300
+        if (gf(speed, FLOAT3C)) {
+            if (GOTHIC_BASE_VERSION == 1) {
+                // First of all, remove trail strip FX
+                Wld_StopEffect_Ext(FREEAIM_TRAIL_FX_SIMPLE, projectile, projectile, 0);
+            };
 
-        // Only destroy projectile, if it did not bounce off and is still fast enough to reasonably break
-        var int rigidBody; rigidBody = projectile._zCVob_rigidBody;
-        var int totalVelocity; totalVelocity = addf(addf(
-            absf(MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset)), // zCRigidBody.velocity[3]
-            absf(MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset+4))),
-            absf(MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset+8)));
-        if (gf(totalVelocity, FLOAT1C)) {
-            // Total velocity is high enough to break the projectile: Breaking sound and visual effect
+            // Speed is high enough to break the projectile: Breaking sound and visual effect
             Wld_StopEffect(FREEAIM_BREAK_FX); // Sometimes collides several times, so disable first
             Wld_PlayEffect(FREEAIM_BREAK_FX, projectile, projectile, 0, 0, 0, FALSE);
-            MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATNULL); // Set life time to 0: Remove projectile
+
+            // Automatically remove projectile
+            MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1); // Gothic 1
+            MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATNULL); // Gothic 2
+        } else {
+            // If the projectile is too slow, it bounces off
+            collision = DEFLECT;
         };
+    };
+
+    if (collision == DEFLECT) {
+        if (GOTHIC_BASE_VERSION == 1) {
+            // Gothic 1: Adjust the projectile to deflect
+            freeAimProjectileDeflect(rigidBody);
+        } else {
+            // Gothic 2: Has this already implemented
+            EDI = -1;  // Sets the condition at 0x6A0A45 and 0x6A0C1A to false: Projectile deflects
+        };
+    };
+
+    if (GOTHIC_BASE_VERSION == 1) {
+        // Gothic 1: Play collision sounds. This was never fully implemented in the original Gothic 1 for some reason
+        if (collision != DEFLECT) {
+            // Do not play when bouncing off
+            var C_Npc fakeNpc; fakeNpc = _^(projectilePtr);
+            Snd_Play3d(fakeNpc, "CS_IHL_ST_EA");
+        };
+
+        // Force PFX on impact and set this property (needed for freeAimDisableNpcCollisionOnRebound())
+        MEM_WriteInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset, 1);
+
+    } else {
+        // Gothic 2: Fulfill exit condition of material check loop (EAX is incremented until reaching numMaterials)
+        EAX = numMaterials;
     };
 };
 
@@ -273,7 +448,7 @@ func void freeAimOnArrowCollide() {
  *
  * Note: This hook is only initialized if FREEAIM_COLL_PRIOR_NPC == -1.
  */
-func void freeAimDisableNpcCollisionOnBounce() {
+func void freeAimDisableNpcCollisionOnRebound() {
     var int arrowAI; arrowAI = ECX;
 
     // Check if the projectile bounced off a surface before
@@ -294,10 +469,10 @@ func void freeAimDisableNpcCollisionOnBounce() {
 
 /*
  * Fix trigger collision bug. When shooting a projectile inside a trigger of certain properties, the projectile collides
- * continuously causing a nerve recking sound. Like freeAimDisableNpcCollisionOnBounce(), this function hooks
+ * continuously causing a nerve recking sound. Like freeAimDisableNpcCollisionOnRebound(), this function hooks
  * oCAIArrow::CanThisCollideWith() and checks whether the object in question is a trigger with certain properties to
  * prevent the collision. The hook is done in a separate function to increase performance, if only one of the two
- * settings is enabled.
+ * settings is enabled. This fix is only necessary for Gothic 2.
  * Taken from http://forum.worldofplayers.de/forum/threads/1126551/page10?p=20894916
  *
  * Note: This hook is only initialized if FREEAIM_TRIGGER_COLL_FIX is true.
@@ -307,7 +482,7 @@ func void freeAimTriggerCollisionCheck() {
     var zCVob vob; vob = _^(MEM_ReadInt(vobPtr));
 
     // Check if the collision object is a trigger
-    if (vob._vtbl != zCTrigger__vtbl) && (vob._vtbl != zCTriggerScript__vtbl) {
+    if (vob._vtbl != zCTrigger__vtbl) && (vob._vtbl != oCTriggerScript__vtbl) {
         return;
     };
     var zCTrigger trigger; trigger = _^(MEM_ReadInt(vobPtr));

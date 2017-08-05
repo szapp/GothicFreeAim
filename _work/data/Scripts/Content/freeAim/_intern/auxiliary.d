@@ -186,3 +186,139 @@ func string freeAimAnimateReticleByPercent(var string fileName, var int percent,
 
     return ConcatStrings(ConcatStrings(ConcatStrings(prefix, "_"), postfix), ".TGA");
 };
+
+
+/*
+ * Check the inheritance of a zCObject against a zCClassDef. Emulating zCObject::CheckInheritance() at 0x476E30 in G2.
+ * This function is used in Wld_StopEffect_Ext().
+ *
+ * Taken from https://forum.worldofplayers.de/forum/threads/1495001?p=25548652
+ */
+func int objCheckInheritance(var int objPtr, var int classDef) {
+    if (!objPtr) || (!classDef) {
+        return 0;
+    };
+
+    // Iterate over base classes
+    var int curClassDef; curClassDef = MEM_GetClassDef(objPtr);
+    while((curClassDef) && (curClassDef != classDef));
+        curClassDef = MEM_ReadInt(curClassDef+zCClassDef_baseClassDef_offset);
+    end;
+
+    return (curClassDef == classDef);
+};
+
+
+/*
+ * Emulate the Gothic 2 external function Wld_StopEffect(), with additional settings: Usually it is not clear which
+ * effect will be stopped, leading to effects getting "stuck". Here, Wld_StopEffect is extended with additional checks
+ * for origin and/or target vob and whether to stop all matching FX or only the first one found (like in Wld_StopEffect)
+ * The function returns the number of stopped effects, or zero if none was found or an error occured.
+ * Compatible with Gothic 1 and Gothic 2.
+ *
+ * Taken from https://forum.worldofplayers.de/forum/threads/1495001?p=25548652
+ */
+func int Wld_StopEffect_Ext(var string effectName, var int originInst, var int targetInst, var int all) {
+    var int worldPtr; worldPtr = _@(MEM_World);
+    if (!worldPtr) {
+        return 0;
+    };
+
+    // Create array from all oCVisualFX vobs
+    var int vobArrayPtr; vobArrayPtr = MEM_ArrayCreate();
+    var zCArray vobArray; vobArray = _^(vobArrayPtr);
+    const int call = 0; var int zero;
+    if (CALL_Begin(call)) {
+        CALL_PtrParam(_@(zero));                 // Vob tree (0 == globalVobTree)
+        CALL_PtrParam(_@(vobArrayPtr));          // Array to store found vobs in
+        CALL_PtrParam(_@(oCVisualFX__classDef)); // Class definition
+        CALL__thiscall(_@(worldPtr), zCWorld__SearchVobListByClass);
+        call = CALL_End();
+    };
+
+    if (!vobArray.numInArray) {
+        MEM_ArrayFree(vobArrayPtr);
+        return 0;
+    };
+
+    effectName = STR_Upper(effectName);
+
+    var zCPar_Symbol symb;
+
+    // Validate origin vob instance
+    if (originInst) {
+        // Get pointer from instance symbol
+        if (originInst > 0) && (originInst < MEM_Parser.symtab_table_numInArray) {
+            symb = _^(MEM_ReadIntArray(contentSymbolTableAddress, originInst));
+            originInst = symb.offset;
+        } else {
+            originInst = 0;
+        };
+
+        if (!objCheckInheritance(originInst, zCVob__classDef)) {
+            MEM_Warn("Wld_StopEffect_Ext: Origin is not a valid vob");
+            return 0;
+        };
+    };
+
+    // Validate target vob instance
+    if (targetInst) {
+        // Get pointer from instance symbol
+        if (targetInst > 0) && (targetInst < MEM_Parser.symtab_table_numInArray) {
+            symb = _^(MEM_ReadIntArray(contentSymbolTableAddress, targetInst));
+            targetInst = symb.offset;
+        } else {
+            targetInst = 0;
+        };
+
+        if (!objCheckInheritance(targetInst, zCVob__classDef)) {
+            MEM_Warn("Wld_StopEffect_Ext: Target is not a valid vob");
+            return 0;
+        };
+    };
+
+    // Search all vobs for the matching name
+    var int stopped; stopped = 0; // Number of FX stopped
+    repeat(i, vobArray.numInArray); var int i;
+        var int vobPtr; vobPtr = MEM_ArrayRead(vobArrayPtr, i);
+        if (!vobPtr) {
+            continue;
+        };
+
+        // Search for FX with matching name
+        if (Hlp_StrCmp(MEM_ReadString(vobPtr+oCVisualFX_instanceName_offset), effectName)) {
+
+            // Search for a specific origin vob
+            if (originInst) {
+                var int originVob; originVob = MEM_ReadInt(vobPtr+oCVisualFX_originVob_offset);
+                if (originVob != originInst) {
+                    continue;
+                };
+            };
+
+            // Search for a specific target vob
+            if (targetInst) {
+                var int targetVob; targetVob = MEM_ReadInt(vobPtr+oCVisualFX_targetVob_offset);
+                if (targetVob != targetInst) {
+                    continue;
+                };
+            };
+
+            // Stop the oCVisualFX
+            const int call2 = 0; const int one = 1;
+            if (CALL_Begin(call2)) {
+                CALL_PtrParam(_@(one));
+                CALL__thiscall(_@(vobPtr), oCVisualFX__Stop);
+                call2 = CALL_End();
+            };
+            stopped += 1;
+
+            if (!all) {
+                break;
+            };
+        };
+    end;
+    MEM_ArrayFree(vobArrayPtr);
+
+    return stopped;
+};

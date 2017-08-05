@@ -41,8 +41,9 @@ INSTANCE freeAim_TRAIL_KEY_INVEST_3 (C_ParticleFxEmitKey) {
 
 // Same but simplified for Wld_PlayEffect (used for Gothic 1)
 INSTANCE freeAim_TRAIL_INST (CFx_Base_Proto) {
-    emFXLifeSpan            = 0.5;
     visname_s               = "FREEAIM_TRAIL";
+    emTrjOriginNode         = "BIP01";
+    emFXLifeSpan            = 0.5;
 };
 
 INSTANCE freeAim_DESTROY (CFx_Base_Proto) {

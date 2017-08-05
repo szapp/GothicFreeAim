@@ -23,7 +23,7 @@
 
 
 /*
- * A minimal version of the class zCMaterial. Assumed to be the same size as in Gothic 2
+ * A minimal version of the class zCMaterial. Assumed to be the similar to Gothic 2
  */
 class zCMaterial {
 //zCObject {
@@ -33,11 +33,12 @@ class zCMaterial {
     var int    _zCObject_hashNext;      // 0x000C
     var string _zCObject_objectName;    // 0x0010
 //}
-    var int data1[4];                   // 0x0024 unkown
+    var int    data1[4];                // 0x0024 unknown
 
-    var int texture;                    // 0x0034 zCTexture*
-    var int data2;                      // 0x0038 unkown
-    var int matGroup;                   // 0x0040 zTMat_Group
+    var int    texture;                 // 0x0034 zCTexture*
+    var int    color;                   // 0x0038 zCOLOR
+    var int    smoothAngle;             // 0x003C zREAL
+    var int    matGroup;                // 0x0040 enum zTMat_Group { UNDEF, METAL, STONE, WOOD, EARTH, WATER }
 
-    var int data3[20];                  // 0x0044 unkown
+    var int    data3[20];               // 0x0044 unknown
 };                                      // 0x0094

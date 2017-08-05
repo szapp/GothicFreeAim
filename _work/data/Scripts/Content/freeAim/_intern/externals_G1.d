@@ -85,57 +85,7 @@ func int Npc_GetActiveSpellIsScroll(var C_Npc slf) {
  * Gothic 2: sub_006E32B0() 0x6E32B0
  */
 func void Wld_StopEffect(var string effectName) {
-    var int worldPtr; worldPtr = _@(MEM_World);
-    if (!worldPtr) {
-        return;
-    };
-
-    // Create array from all oCVisualFX vobs
-    var int vobArrayPtr; vobArrayPtr = MEM_ArrayCreate();
-    var zCArray vobArray; vobArray = _^(vobArrayPtr);
-    const int call = 0; var int zero;
-    if (CALL_Begin(call)) {
-        CALL_PtrParam(_@(zero));
-        CALL_PtrParam(_@(vobArrayPtr));
-        CALL_PtrParam(_@(oCVisualFX__classDef));
-        CALL__thiscall(_@(worldPtr), zCWorld__SearchVobListByClass);
-        call = CALL_End();
-    };
-
-    if (!vobArray.numInArray) {
-        MEM_ArrayFree(vobArrayPtr);
-        return;
-    };
-
-    effectName = STR_Upper(effectName);
-
-    // Search all vobs for the matching name
-    var int effectVob; effectVob = 0;
-    repeat(i, vobArray.numInArray); var int i;
-        var int vobPtr; vobPtr = MEM_ArrayRead(vobArrayPtr, i);
-        if (!vobPtr) {
-            continue;
-        };
-
-        if (Hlp_StrCmp(MEM_ReadString(vobPtr+oCVisualFX_instanceName_offset), effectName)) {
-            effectVob = vobPtr;
-            break;
-        };
-    end;
-    MEM_ArrayFree(vobArrayPtr);
-
-    // No matching effect found
-    if (!effectVob) {
-        return;
-    };
-
-    // Stop the oCVisualFX
-    const int call2 = 0; const int one = 1;
-    if (CALL_Begin(call2)) {
-        CALL_PtrParam(_@(one));
-        CALL__thiscall(_@(effectVob), oCVisualFX__Stop);
-        call2 = CALL_End();
-    };
+    Wld_StopEffect_Ext(effectName, 0, 0, 0);
 };
 
 
