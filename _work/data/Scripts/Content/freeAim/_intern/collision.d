@@ -376,6 +376,10 @@ func void freeAimOnArrowCollide() {
     };
     var int rigidBody; rigidBody = projectile._zCVob_rigidBody;
 
+    // Calculate the speed of the projectile to decide whether to break it and whether to play a collision sound
+    var int vel[3];
+    MEM_CopyBytes(rigidBody+zCRigidBody_velocity_offset, _@(vel), sizeof_zVEC3); // zCRigidBody.velocity[3]
+    var int speed; speed = sqrtf(addf(addf(sqrf(vel[0]), sqrf(vel[1])), sqrf(vel[2]))); // Norm of vel
 
     // Retrieve the collision behavior based on the shooter, the material type and the texture of the collision object
     var int collision; collision = freeAimHitRegWld_(shooter, materials, textures);
@@ -406,11 +410,7 @@ func void freeAimOnArrowCollide() {
             EDI = -1;  // Sets the condition at 0x6A0A45 and 0x6A0C1A to false: Projectile deflects
         };
 
-        // Destroy the projectile only if it is still fast enough to break reasonably
-        var int vel[3];
-        MEM_CopyBytes(rigidBody+zCRigidBody_velocity_offset, _@(vel), sizeof_zVEC3); // zCRigidBody.velocity[3]
-        var int speed; speed = sqrtf(addf(addf(sqrf(vel[0]), sqrf(vel[1])), sqrf(vel[2]))); // Norm of vel
-        // Check if speed is higher than 300 and number of prior collisions
+        // Destroy the projectile only if it is still fast enough and check number of prior collisions
         if (gf(speed, FLOAT3C)) && (collisionCounter < 2) {
             if (GOTHIC_BASE_VERSION == 1) {
                 // First of all, remove trail strip FX
@@ -444,11 +444,28 @@ func void freeAimOnArrowCollide() {
     // Extra settings
     if (GOTHIC_BASE_VERSION == 1) {
         // Gothic 1: Play collision sounds. This was never fully implemented in the original Gothic 1 for some reason
-        //if (collision != DEFLECT) {
-        if (collisionCounter < 2) { // Play sound on first two collisions
-            // Do not play when bouncing off
-            var C_Npc fakeNpc; fakeNpc = _^(projectilePtr);
-            Snd_Play3d(fakeNpc, "CS_IHL_ST_EA");
+        // Additionally, the material sounds of Gothic 1 do not really work well with a small projectile. Therefore,
+        // here are some other sound instances that resemble the different sounds quite well
+
+        const int UNDEF = 1<<0;
+        const int METAL = 1<<1;
+        const int STONE = 1<<2;
+        const int WOOD  = 1<<3;
+        const int EARTH = 1<<4;
+        const int WATER = 1<<5;
+        const int SNOW  = 1<<6;
+
+        if (gf(speed, FLOAT3C)) && (collisionCounter < 3) {
+            // Play sound on first collisions and if fast enough only
+            if (materials & METAL) {
+                Snd_Play3d(projectile, "RUN_METAL_A4");
+            } else if (materials & STONE) && (collisionCounter < 2) {
+                Snd_Play3d(projectile, "RUN_WOOD_A4");
+            } else if (collision == STUCK) || (collision == DESTROY) {
+                Snd_Play3d(projectile, "CS_IHL_ST_EA");
+            } else {
+                Snd_Play3d(projectile, "SCRATCH_SMALL");
+            };
         };
 
     } else {
