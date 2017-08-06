@@ -13,12 +13,17 @@ func void headshots(var C_Npc target, var int rtrnPtr) {
     // Get weak spot instance from call-by-reference argument
     var Weakspot weakspot; weakspot = _^(rtrnPtr);
 
+    // In case this helps with differentiating:
+    var zCPar_Symbol sym; sym = _^(MEM_GetSymbolByIndex(Hlp_GetInstanceID(target)));
+    var string instName; instName = sym.name; // Exact instance name, e.g. "ORCWARRIOR_LOBART1"
+
     // Here, set the head to the default weak spot
     weakspot.node = "Bip01 Head"; // Upper/lower case is not important, but spelling and spaces are
 
     // Here, there are preliminary definitions for nearly all Gothic 2 creatures for headshots
     if (target.guild < GIL_SEPERATOR_HUM)
-    || ((target.guild > GIL_SEPERATOR_ORC) && (target.guild < GIL_DRACONIAN))
+    || ((target.guild > GIL_SEPERATOR_ORC) && (target.guild < GIL_UNDEADORC))
+    || ((target.guild == GIL_UNDEADORC) && (target.aivar[AIV_MM_REAL_ID] != ID_UNDEADORCWARRIOR)) // Has no head visual!
     || (target.guild == GIL_ZOMBIE)
     || (target.guild == GIL_SUMMONEDZOMBIE) {
         // Here is also room for story-dependent exceptions (e.g. a specific NPC may have a different weak spot)
@@ -43,7 +48,12 @@ func void headshots(var C_Npc target, var int rtrnPtr) {
     || (target.guild == GIL_SHADOWBEAST_SKELETON) {
         // Disable critical hits this way
         weakspot.node = "";
+        weakspot.debugInfo = ConcatStrings(instName, " does not have a weak spot by design");
 
+    } else if (target.aivar[AIV_MM_REAL_ID] == ID_UNDEADORCWARRIOR) {
+        // Model has no separate head visual, that is why it is not up there with the other orcs for auto detection
+        weakspot.dimX = 45;
+        weakspot.dimY = 55;
     } else if (target.aivar[AIV_MM_REAL_ID] == ID_BLATTCRAWLER) {
         // Blattcrawler has a tiny head that is not centered. ZM_Fuehler_01 is, though
         weakspot.node = "ZM_Fuehler_01";
@@ -141,5 +151,6 @@ func void headshots(var C_Npc target, var int rtrnPtr) {
         // Default size for any non-listed monster
         weakspot.dimX = 50; // 50x50cm size
         weakspot.dimY = 50;
+        weakspot.debugInfo = ConcatStrings(instName, " has no weak spot definition, assumed default head dimensions");
     };
 };

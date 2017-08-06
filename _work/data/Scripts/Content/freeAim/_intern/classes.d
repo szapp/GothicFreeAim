@@ -25,13 +25,14 @@
 /*
  * Class: Critical hit definitions
  */
-const int sizeof_Weakspot = 32;
+const int sizeof_Weakspot = 52;
 
 class Weakspot {
     var string node;
     var int dimX;
     var int dimY;
     var int bDmg;
+    var string debugInfo;
 };
 
 

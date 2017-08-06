@@ -97,7 +97,7 @@ func void freeAimDetectCriticalHit() {
         return;
     };
 
-    var int damagePtr; damagePtr = MEMINT_SwitchG1G2(/*esp+48h-48h*/ ESP, /*esp+1B0h-C8h*/ ESP+232); // zREAL*
+    var int damagePtr; damagePtr = MEMINT_SwitchG1G2(/*esp+48h-48h*/ ESP, /*esp+1ACh-C8h*/ ESP+228); // zREAL*
     var int targetPtr; targetPtr = MEMINT_SwitchG1G2(EBX, MEM_ReadInt(/*esp+1ACh-190h*/ ESP+28)); // oCNpc*
     var C_Npc targetNpc; targetNpc = _^(targetPtr);
 
@@ -107,10 +107,12 @@ func void freeAimDetectCriticalHit() {
     freeAimCriticalHitDef_(targetNpc, MEM_ReadInt(damagePtr), weakspotPtr); // Retrieve weak spot specs
 
     var int criticalHit; // Variable that holds whether a critical hit was detected
+    var string debugInfo; debugInfo = ""; // Internal debugging info string to be displayed in zSpy
 
     if (Hlp_StrCmp(weakspot.node, "")) {
         // No critical node defined
         criticalHit = 0;
+        debugInfo = "No weak spot defined in config";
 
     } else if (!FREEAIM_ACTIVE) || (!FREEAIM_RANGED) {
 
@@ -119,6 +121,8 @@ func void freeAimDetectCriticalHit() {
         // Note: Gothic 1 already has critical hits for auto aiming. This is replaced here.
         var int critChance; critChance = freeAimCriticalHitAutoAim_(targetNpc);
         criticalHit = (r_MinMax(1, 100) <= critChance); // Allow critChance=0 to disable this feature
+
+        debugInfo = "Auto aiming: critical hit by probability (critical hit chance)";
 
     } else {
         // When free aiming is enabled the critical hit is determined by the actual node/bone, the projectile hits
@@ -182,8 +186,8 @@ func void freeAimDetectCriticalHit() {
 
         } else {
             // Create bounding box by dimensions
-            weakspot.dimX /= 2;
-            weakspot.dimY /= 2;
+            var int dimX; dimX = mkf(weakspot.dimX/2); // Do not overwrite weakspot properties, needed for zSpy output
+            var int dimY; dimY = mkf(weakspot.dimY/2);
 
             // Although zCModelNodeInst has a position class variable, it is empty the first time and needs to be
             // retrieved by calling this engine function:
@@ -199,12 +203,12 @@ func void freeAimDetectCriticalHit() {
             MEM_Free(nodPosPtr);
 
             // Build a bounding box by the passed node dimensions
-            freeAimDebugWSBBox[0] = subf(nodePos[0], mkf(weakspot.dimX));
-            freeAimDebugWSBBox[1] = subf(nodePos[1], mkf(weakspot.dimY));
-            freeAimDebugWSBBox[2] = subf(nodePos[2], mkf(weakspot.dimX));
-            freeAimDebugWSBBox[3] = addf(nodePos[0], mkf(weakspot.dimX));
-            freeAimDebugWSBBox[4] = addf(nodePos[1], mkf(weakspot.dimY));
-            freeAimDebugWSBBox[5] = addf(nodePos[2], mkf(weakspot.dimX));
+            freeAimDebugWSBBox[0] = subf(nodePos[0], dimX);
+            freeAimDebugWSBBox[1] = subf(nodePos[1], dimY);
+            freeAimDebugWSBBox[2] = subf(nodePos[2], dimX);
+            freeAimDebugWSBBox[3] = addf(nodePos[0], dimX);
+            freeAimDebugWSBBox[4] = addf(nodePos[1], dimY);
+            freeAimDebugWSBBox[5] = addf(nodePos[2], dimX);
         };
 
         // The internal engine functions are not accurate enough for detecting a shot through a bounding box. Instead
@@ -246,22 +250,61 @@ func void freeAimDetectCriticalHit() {
     MEM_Info("freeAimDetectCriticalHit:");
     var int s; s = SB_New();
 
-    SB("   criticalhit=");
-    SBi(criticalHit);
+    SB("   critical hit:      ");
+    var int shotDamage;
+    if (criticalhit) {
+        SB("yes");
+        shotDamage = roundf(weakspot.bDmg);
+    } else {
+        SB("no");
+        shotDamage = roundf(MEM_ReadInt(damagePtr));
+    };
     MEM_Info(SB_ToString());
     SB_Clear();
 
-    SB("   basedamage=");
+    SB("   base damage:       ");
     SBi(roundf(MEM_ReadInt(damagePtr)));
     MEM_Info(SB_ToString());
     SB_Clear();
 
-    SB("   critdamage=");
+    SB("   critical damage:   ");
     SBi(roundf(weakspot.bDmg));
     MEM_Info(SB_ToString());
     SB_Clear();
 
-    SB("   criticalnode='");
+    SB("   damage on target:  ");
+    // Calculate damage by formular (incl. protection of target, etc.)
+    if (GOTHIC_BASE_VERSION == 1) {
+        SB("(");
+        SBi(shotDamage);
+        SB(" - ");
+        SBi(targetNpc.protection[PROT_POINT]);
+        SB(") = ");
+        shotDamage = shotDamage-targetNpc.protection[PROT_POINT];
+        if (shotDamage < 0) {
+            shotDamage = 0;
+        };
+        SBi(shotDamage);
+    } else {
+        SB("max[ (");
+        SBi(shotDamage);
+        SB(" + ");
+        SBi(hero.attribute[ATR_DEXTERITY]);
+        SB(" - ");
+        SBi(targetNpc.protection[PROT_POINT]);
+        SB("), ");
+        SBi(NPC_MINIMAL_DAMAGE);
+        SB(" ] = ");
+        shotDamage = (shotDamage+hero.attribute[ATR_DEXTERITY])-targetNpc.protection[PROT_POINT];
+        if (shotDamage < NPC_MINIMAL_DAMAGE) {
+            shotDamage = NPC_MINIMAL_DAMAGE; // Minimum damage in Gothic 2 as defined in AI_Constants.s
+        };
+        SBi(shotDamage);
+    };
+    MEM_Info(SB_ToString());
+    SB_Clear();
+
+    SB("   weak spot:         '");
     SB(weakspot.node);
     SB("' (");
     SBi(weakspot.dimX);
@@ -270,6 +313,16 @@ func void freeAimDetectCriticalHit() {
     SB(")");
     MEM_Info(SB_ToString());
     SB_Destroy();
+
+    // Internal debug info
+    if (!Hlp_StrCmp(debugInfo, "")) {
+        MEM_Info(ConcatStrings("   ", debugInfo));
+    };
+
+    // Config debug info
+    if (!Hlp_StrCmp(weakspot.debugInfo, "")) {
+        MEM_Info(ConcatStrings("   ", weakspot.debugInfo));
+    };
 
     // Create an event, if a critical hit was detected
     if (criticalHit) {

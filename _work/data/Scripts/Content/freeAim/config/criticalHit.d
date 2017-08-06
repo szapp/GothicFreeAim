@@ -25,12 +25,14 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int tal
     if (GOTHIC_BASE_VERSION == 2) {
         // Gothic 2: (damage + dexterity > protection of target)
         if (roundf(damage)+hero.attribute[ATR_DEXTERITY] < target.protection[PROT_POINT]) {
+            weakspot.debugInfo = "Damage does not exceed protection"; // Some debugging info to be displayed in zSpy
             return;
         };
     } else {
         // Gothic 1: Do not signal a critical hit, if the total damage would still not cause damage:
         // (damage * 2 < protection of target)
         if (roundf(damage)*2 < target.protection[PROT_POINT]) {
+            weakspot.debugInfo = "Critical hit would not exceed protection";
             return;
         };
     };
@@ -42,9 +44,11 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int tal
     if (GOTHIC_BASE_VERSION == 1) {
         if (!talent) {
             // With no learned skill level, there are no critical hits (just like in the original Gothic 1)
+            weakspot.debugInfo = "Critical hits not yet learned, critical hit chance = 0% (see character menu)";
             return;
         } else if (talent < 25) {
             // Stage 1: Only 50% of the positive hits are in fact critical
+            weakspot.debugInfo = "First level critical hit chance (see character menu), adjusted to 50-50 chance";
             if (r_Max(1)) { // 0 or 1, approx. 50-50 chance
                 return;
             };
