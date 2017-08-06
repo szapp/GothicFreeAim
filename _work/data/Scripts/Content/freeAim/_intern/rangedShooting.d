@@ -166,6 +166,11 @@ func void freeAimSetupProjectile() {
     var int distPlayer; // Distance to player (used for debugging output in zSpy)
     freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, _@(pos), _@(distPlayer), _@(distance));
 
+    // When the target is too close, shots go vertically up, because the reticle is targeted. To solve this problem,
+    // restrict the minimum distance
+    if (lf(distPlayer, mkf(FREEAIM_MIN_AIM_DIST))) {
+        distance = addf(distance, mkf(FREEAIM_MIN_AIM_DIST));
+    };
 
     // 1st: Modify the base damage of the projectile
     // This allows for dynamical adjustment of damage (e.g. based on draw force).
@@ -368,31 +373,32 @@ func void freeAimSetupProjectile() {
     MEM_Info("freeAimSetupProjectile:");
     var int s; s = SB_New();
 
-    SB("   distance=");
+    SB("   aiming distance:   ");
     SB(STR_Prefix(toStringf(divf(distPlayer, FLOAT1C)), 4));
     SB("m");
     MEM_Info(SB_ToString());
     SB_Clear();
 
-    SB("   drawforce=");
+    SB("   draw force:        ");
     SBi(drawForce);
     SB("%");
     MEM_Info(SB_ToString());
     SB_Clear();
 
     if (FREEAIM_TRUE_HITCHANCE) {
-        SB("   accuracy=");
+        SB("   accuracy:          ");
         SBi(accuracy);
         SB("%");
         MEM_Info(SB_ToString());
         SB_Clear();
 
-        SB("   scatter=");
+        SB("   scatter:           (");
         SB(STR_Prefix(toStringf(angleX), 5));
         SBc(176 /* deg */);
-        SB("/");
+        SB(", ");
         SB(STR_Prefix(toStringf(angleY), 5));
         SBc(176 /* deg */);
+        SB(") visual angles");
         MEM_Info(SB_ToString());
         SB_Clear();
     } else {
@@ -404,23 +410,24 @@ func void freeAimSetupProjectile() {
             // In Gothic 2, the hit chance is the learned skill value (talent)
             freeAimGetWeaponTalent(0, _@(hitchance));
         };
-        SB("   hit chance=");
+        SB("   hit chance:        ");
         SBi(hitchance);
         SB("% (standard hit chance, scattering disabled)");
         MEM_Info(SB_ToString());
         SB_Clear();
     };
 
-    SB("   recoil=");
+    SB("   recoil:            ");
     SBi(recoil);
     SB("%");
     MEM_Info(SB_ToString());
     SB_Clear();
 
-    SB("   init-basedamage=");
+    SB("   base damage:       ");
     SBi(newBaseDamage);
-    SB("/");
+    SB(" (of ");
     SBi(baseDamage);
+    SB(" normal base damage)");
     MEM_Info(SB_ToString());
     SB_Destroy();
 };

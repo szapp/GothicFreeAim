@@ -45,6 +45,7 @@ const string FREEAIM_TRAIL_FX_SIMPLE  = "freeAim_TRAIL_INST"; // Simplified trai
 const string FREEAIM_BREAK_FX         = "freeAim_DESTROY";    // FX of projectile breaking on impact with world
 const string FREEAIM_CAMERA           = "CamModFreeAim";      // CCamSys_Def script instance
 
+const int    FREEAIM_MIN_AIM_DIST     = 140;                  // Minimum targeting distance. Fixes vertical shooting bug
 const int    FREEAIM_MAX_DIST         = 5000;                 // Distance for shooting/reticle. Do not change
 var   int    freeAimRayInterval;                              // Perform trace ray every x ms (change in ini-file)
 var   int    freeAimRayPrevCalcTime;                          // Time of last trace ray calculation
