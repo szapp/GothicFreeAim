@@ -210,6 +210,9 @@ func void freeAimDoNpcHit() {
 
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
 
+    // Abusing this class variable as collision counter (starting at zero, will be incremented at end of function)
+    var int collisionCounter; collisionCounter = MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset);
+
     // Boolean to specify, whether damage will be applied or not
     var int hit;
 
@@ -242,6 +245,9 @@ func void freeAimDoNpcHit() {
             // Delete projectile instance if collectable feature enabled, such that it will not be put into inventory
             projectile.instanz = -1;
         };
+
+        // This property is abused as collision counter
+        MEM_WriteInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset, collisionCounter+1);
 
     } else {
         // Default behavior (no custom collision behavior)
@@ -287,6 +293,9 @@ func void freeAimOnArrowCollide() {
         return;
     };
     var oCItem projectile; projectile = _^(projectilePtr);
+
+    // Abusing this class variable as collision counter (starting at zero, will be incremented at end of function)
+    var int collisionCounter; collisionCounter = MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset);
 
     // Retrieve the collision object (collision surface)
     var int collReport; collReport = MEMINT_SwitchG1G2(/*esp+3Ch+4h*/ MEM_ReadInt(ESP+64), // zCCollisionReport*
@@ -374,13 +383,22 @@ func void freeAimOnArrowCollide() {
     const int STUCK   = 1; // Projectile stays and is stuck in the surface of the collision object
     const int DEFLECT = 2; // Projectile deflects of the surfaces and bounces off
 
+    MEM_Info(IntToString(MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset)));
+
     if (collision == STUCK) {
-        if (GOTHIC_BASE_VERSION == 1) {
-            // Gothic 1: Adjust the projectile to get stuck
-            freeAimProjectileStuck(projectilePtr);
+        // Prevent projectiles from getting stuck on rebound. Otherwise, they get stuck in awkward orientations.
+        if (!MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset)) { // Abusing as collision counter
+            // Has not collided yet
+
+            if (GOTHIC_BASE_VERSION == 1) {
+                // Gothic 1: Adjust the projectile to get stuck
+                freeAimProjectileStuck(projectilePtr);
+            } else {
+                // Gothic 2: Has this already implemented
+                EDI = firstMat; // Sets the condition at 0x6A0A45 and 0x6A0C1A to true: Projectile stays
+            };
         } else {
-            // Gothic 2: Has this already implemented
-            EDI = firstMat; // Sets the condition at 0x6A0A45 and 0x6A0C1A to true: Projectile stays
+            collision = DEFLECT;
         };
 
     } else if (collision == DESTROY) {
@@ -392,8 +410,8 @@ func void freeAimOnArrowCollide() {
         var int vel[3];
         MEM_CopyBytes(rigidBody+zCRigidBody_velocity_offset, _@(vel), sizeof_zVEC3); // zCRigidBody.velocity[3]
         var int speed; speed = sqrtf(addf(addf(sqrf(vel[0]), sqrf(vel[1])), sqrf(vel[2]))); // Norm of vel
-        // Check if speed is higher than 300
-        if (gf(speed, FLOAT3C)) {
+        // Check if speed is higher than 300 and number of prior collisions
+        if (gf(speed, FLOAT3C)) && (collisionCounter < 2) {
             if (GOTHIC_BASE_VERSION == 1) {
                 // First of all, remove trail strip FX
                 Wld_StopEffect_Ext(FREEAIM_TRAIL_FX_SIMPLE, projectile, projectile, 0);
@@ -418,25 +436,28 @@ func void freeAimOnArrowCollide() {
             freeAimProjectileDeflect(rigidBody);
         } else {
             // Gothic 2: Has this already implemented
-            EDI = -1;  // Sets the condition at 0x6A0A45 and 0x6A0C1A to false: Projectile deflects
+            EDI = -1; // Sets the condition at 0x6A0A45 and 0x6A0C1A to false: Projectile deflects
         };
     };
 
+
+    // Extra settings
     if (GOTHIC_BASE_VERSION == 1) {
         // Gothic 1: Play collision sounds. This was never fully implemented in the original Gothic 1 for some reason
-        if (collision != DEFLECT) {
+        //if (collision != DEFLECT) {
+        if (collisionCounter < 2) { // Play sound on first two collisions
             // Do not play when bouncing off
             var C_Npc fakeNpc; fakeNpc = _^(projectilePtr);
             Snd_Play3d(fakeNpc, "CS_IHL_ST_EA");
         };
 
-        // Force PFX on impact and set this property (needed for freeAimDisableNpcCollisionOnRebound())
-        MEM_WriteInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset, 1);
-
     } else {
         // Gothic 2: Fulfill exit condition of material check loop (EAX is incremented until reaching numMaterials)
         EAX = numMaterials;
     };
+
+    // Play PFX on impact and increment this property as counter (needed for freeAimDisableNpcCollisionOnRebound())
+    MEM_WriteInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset, collisionCounter+1);
 };
 
 

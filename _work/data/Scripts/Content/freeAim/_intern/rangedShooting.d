@@ -469,7 +469,7 @@ func void freeAimDropProjectile(var int rigidBody) {
  * around with the previously set drop-off gravity (FREEAIM_PROJECTILE_GRAVITY).
  */
 func void freeAimResetGravity() {
-    var int arrowAI; arrowAI = ESI;
+    var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, ECX);
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
     if (!projectile._zCVob_rigidBody) {
         return;

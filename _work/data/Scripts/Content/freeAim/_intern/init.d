@@ -115,6 +115,22 @@ func void freeAimInitFeatureCustomCollisions() {
         HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, freeAimOnArrowCollide); // Collision behavior of world
     } else {
         // Gothic 2
+        MemoryProtectionOverride(/*oCAIArrowBase__ReportCollisionToAI_PFXon1 0x6A09CC*/ 6949324, 7); // Prevent too early setting of impact PFX
+        MemoryProtectionOverride(/*oCAIArrowBase__ReportCollisionToAI_PFXon2 0x6A0A14*/ 6949396, 7);
+        MEM_WriteByte(/*oCAIArrowBase__ReportCollisionToAI_PFXon1 0x6A09CC*/ 6949324, ASMINT_OP_nop); // First occurrence
+        MEM_WriteByte(/*oCAIArrowBase__ReportCollisionToAI_PFXon1 0x6A09CC*/ 6949324+1, ASMINT_OP_nop);
+        MEM_WriteByte(/*oCAIArrowBase__ReportCollisionToAI_PFXon1 0x6A09CC*/ 6949324+2, ASMINT_OP_nop);
+        MEM_WriteByte(/*oCAIArrowBase__ReportCollisionToAI_PFXon1 0x6A09CC*/ 6949324+3, ASMINT_OP_nop);
+        MEM_WriteByte(/*oCAIArrowBase__ReportCollisionToAI_PFXon1 0x6A09CC*/ 6949324+4, ASMINT_OP_nop);
+        MEM_WriteByte(/*oCAIArrowBase__ReportCollisionToAI_PFXon1 0x6A09CC*/ 6949324+5, ASMINT_OP_nop);
+        MEM_WriteByte(/*oCAIArrowBase__ReportCollisionToAI_PFXon1 0x6A09CC*/ 6949324+6, ASMINT_OP_nop);
+        MEM_WriteByte(/*oCAIArrowBase__ReportCollisionToAI_PFXon2 0x6A0A14*/ 6949396, ASMINT_OP_nop); // Second occurrence
+        MEM_WriteByte(/*oCAIArrowBase__ReportCollisionToAI_PFXon2 0x6A0A14*/ 6949396+1, ASMINT_OP_nop);
+        MEM_WriteByte(/*oCAIArrowBase__ReportCollisionToAI_PFXon2 0x6A0A14*/ 6949396+2, ASMINT_OP_nop);
+        MEM_WriteByte(/*oCAIArrowBase__ReportCollisionToAI_PFXon2 0x6A0A14*/ 6949396+3, ASMINT_OP_nop);
+        MEM_WriteByte(/*oCAIArrowBase__ReportCollisionToAI_PFXon2 0x6A0A14*/ 6949396+4, ASMINT_OP_nop);
+        MEM_WriteByte(/*oCAIArrowBase__ReportCollisionToAI_PFXon2 0x6A0A14*/ 6949396+5, ASMINT_OP_nop);
+        MEM_WriteByte(/*oCAIArrowBase__ReportCollisionToAI_PFXon2 0x6A0A14*/ 6949396+6, ASMINT_OP_nop);
         HookEngineF(oCAIArrowBase__ReportCollisionToAI_collVob, 5, freeAimOnArrowCollide); // Coll non-NPC vob material
         HookEngineF(oCAIArrowBase__ReportCollisionToAI_collWld, 5, freeAimOnArrowCollide); // Coll stat world material
         MemoryProtectionOverride(oCAIArrowBase__ReportCollisionToAI_collNpc, 2); // Collision behavior on NPCs
