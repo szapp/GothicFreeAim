@@ -387,8 +387,6 @@ func void freeAimOnArrowCollide() {
     const int STUCK   = 1; // Projectile stays and is stuck in the surface of the collision object
     const int DEFLECT = 2; // Projectile deflects of the surfaces and bounces off
 
-    MEM_Info(IntToString(MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset)));
-
     if (collision == STUCK) {
         // Prevent projectiles from getting stuck on rebound. Otherwise, they get stuck in awkward orientations.
         if (!MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset)) { // Abusing as collision counter
