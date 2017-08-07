@@ -51,15 +51,22 @@ func void freeAimManualRotation() {
 
     // Add recoil to mouse movement
     if (freeAimRecoil) {
+        // These mouse manipulations work great and are consistent in Gothic 2. Not so much in Gothic 1. This is NOT due
+        // to differences in mouse handling (it is pretty much exactly the same, except for some additional mouse
+        // smoothing in Gothic 2), but because of the camera easing: Once the camera is moving in Gothic 1, a single
+        // mouse input has much more impact than when the camera is still.
+        // This easing cannot be controlled with the CCamSys_Def instance and its not clear where this easing is done
+        // internally. Thus, recoil just works a bit different in Gothic 1. (Varying with mouse/camera movement.)
+
         // Manipulate vertical mouse movement: Add negative (upwards) movement (multiplied by sensitivity)
-        mouse.relY -= roundf(divf(mkf(freeAimRecoil), MEM_ReadInt(Cursor_sY)));
+        mouse.relY = -roundf(divf(mkf(freeAimRecoil), MEM_ReadInt(Cursor_sY)));
 
         // Reset recoil ASAP, since this function is called in fast succession
         freeAimRecoil = 0;
 
         // Manipulate horziontal mouse movement slightly: Add random positive or negative (sideways) movement
         var int manipulateX; manipulateX = fracf(r_MinMax(-FREEAIM_HORZ_RECOIL*10, FREEAIM_HORZ_RECOIL*10), 10);
-        mouse.relX += roundf(divf(manipulateX, MEM_ReadInt(Cursor_sX)));
+        mouse.relX = roundf(divf(manipulateX, MEM_ReadInt(Cursor_sX)));
     };
 
     // Gothic 2 controls only need the rotation if currently shooting
@@ -84,6 +91,9 @@ func void freeAimManualRotation() {
 
     // Gothic 1 has a maximum turn rate
     if (GOTHIC_BASE_VERSION == 1) {
+        // Also add another mulitplier for Gothic 1
+        deltaX = mulf(deltaX, castToIntf(0.5));
+
         if (gf(deltaX, castToIntf(FREEAIM_MAX_TURN_RATE_G1))) {
             deltaX = castToIntf(FREEAIM_MAX_TURN_RATE_G1);
         } else if (lf(deltaX, negf(castToIntf(FREEAIM_MAX_TURN_RATE_G1)))) {

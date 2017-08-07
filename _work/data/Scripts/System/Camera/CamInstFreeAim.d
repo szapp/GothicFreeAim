@@ -36,5 +36,6 @@ INSTANCE CamModFreeAim (CCamSys_Def)
     rotOffsetY          = 0.0;
     targetOffsetY       = 40.0;  // A little up for more visibility
     targetOffsetX       = 15.0;  // A little to the right (make the projectile fly in a straigh line). Most important
+    veloTrans           = 10000;
     veloRot             = 10000; // More responsive mouse movement (value from CamModFirstPerson)
 };
