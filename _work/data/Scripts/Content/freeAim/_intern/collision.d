@@ -127,6 +127,24 @@ func void freeAimProjectileStuck(var int projectilePtr) {
 
 
 /*
+ * Flag a projectile for removal (will be done by the engine with oCAIArrow::DoAI). This function is
+ * called also from outside this function (from outside this file), especially from the collectable projectile feature.
+ * It is called for both Gothic 1 and Gothic 2
+ */
+func void freeAimProjectileDestroy(var int arrowAI) {
+    if (GOTHIC_BASE_VERSION == 1) {
+        // First of all, remove trail strip FX
+        var C_Item projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
+        Wld_StopEffect_Ext(FREEAIM_TRAIL_FX_SIMPLE, projectile, projectile, 0);
+    };
+
+    // Automatically remove projectile
+    MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1); // Gothic 1
+    MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATNULL); // Gothic 2
+};
+
+
+/*
  * Wrapper function for the config function freeAimHitRegNpc(). It is called from freeAimDoNpcHit().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
@@ -272,6 +290,11 @@ func void freeAimOnArrowCollide() {
     };
     var oCItem projectile; projectile = _^(projectilePtr);
 
+    if (GOTHIC_BASE_VERSION == 1) {
+        // First of all, remove trail strip FX
+        Wld_StopEffect_Ext(FREEAIM_TRAIL_FX_SIMPLE, projectile, projectile, 0);
+    };
+
     // Abusing this class variable as collision counter (starting at zero, will be incremented at end of function)
     var int collisionCounter; collisionCounter = MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset);
 
@@ -388,18 +411,12 @@ func void freeAimOnArrowCollide() {
 
         // Destroy the projectile only if it is still fast enough and check number of prior collisions
         if (gf(speed, FLOAT3C)) && (collisionCounter < 2) {
-            if (GOTHIC_BASE_VERSION == 1) {
-                // First of all, remove trail strip FX
-                Wld_StopEffect_Ext(FREEAIM_TRAIL_FX_SIMPLE, projectile, projectile, 0);
-            };
+            // For both Gothic 1 and Gothic 2
+            freeAimProjectileDestroy(arrowAI);
 
             // Speed is high enough to break the projectile: Breaking sound and visual effect
             Wld_StopEffect(FREEAIM_BREAK_FX); // Sometimes collides several times, so disable first
             Wld_PlayEffect(FREEAIM_BREAK_FX, projectile, projectile, 0, 0, 0, FALSE);
-
-            // Automatically remove projectile
-            MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1); // Gothic 1
-            MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATNULL); // Gothic 2
         } else {
             // If the projectile is too slow, it bounces off
             collision = DEFLECT;

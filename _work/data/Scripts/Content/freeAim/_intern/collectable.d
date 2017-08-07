@@ -51,11 +51,11 @@ func void freeAimKeepProjectileInWorld() {
 
     // Check if the projectile stopped moving
     if (!(projectile._zCVob_bitfield[0] & zCVob_bitfield0_physicsEnabled)) {
-        // Remove the FX; only if the projectile does not have a different effect (like magic arrows)
         if (GOTHIC_BASE_VERSION == 1) {
+            // Gothic 1 does not offer effects on items
             Wld_StopEffect_Ext(FREEAIM_TRAIL_FX_SIMPLE, projectile, projectile, 0);
         } else {
-            // Gothic 1 does not offer effects on items
+            // Remove the FX; only if the projectile does not have a different effect (like magic arrows)
             if (Hlp_StrCmp(MEM_ReadString(projectilePtr+oCItem_effect_offset), FREEAIM_TRAIL_FX)) { // Check trail strip
                 const int call = 0;
                 if (CALL_Begin(call)) {
@@ -95,13 +95,7 @@ func void freeAimKeepProjectileInWorld() {
             };
 
         } else { // Else: New projectile instance is empty or invalid. Let oCAIArrow::DoAI remove the projectile
-            MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1); // Gothic 1
-            MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATNULL); // Gothic 2
-
-            if (GOTHIC_BASE_VERSION == 1) {
-                // Remove trail strip FX
-                Wld_StopEffect_Ext(FREEAIM_TRAIL_FX_SIMPLE, projectile, projectile, 0);
-            };
+            freeAimProjectileDestroy(arrowAI);
         };
     };
 };
@@ -141,14 +135,7 @@ func void freeAimOnArrowHitNpc() {
         };
     };
 
-    // Set life time to zero to remove this projectile
-    MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1); // Gothic 1
-    MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATNULL); // Gothic 2
-
-    if (GOTHIC_BASE_VERSION == 1) {
-        // Remove trail strip FX
-        Wld_StopEffect_Ext(FREEAIM_TRAIL_FX_SIMPLE, projectile, projectile, 0);
-    };
+    freeAimProjectileDestroy(arrowAI);
 };
 
 
