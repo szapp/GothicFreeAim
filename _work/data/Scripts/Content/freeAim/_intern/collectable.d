@@ -1,8 +1,8 @@
 /*
  * Collectable projectiles
  *
- * G2 Free Aim v0.1.2 - Free aiming for the video game Gothic 2 by Piranha Bytes
- * Copyright (C) 2016  mud-freak (@szapp)
+ * G2 Free Aim v1.0.0-alpha - Free aiming for the video game Gothic 2 by Piranha Bytes
+ * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
  * This file is part of G2 Free Aim.
  * <http://github.com/szapp/g2freeAim>
@@ -109,8 +109,8 @@ func void freeAimOnArrowHitNpc() {
     var int arrowAI; arrowAI = ESI;
 
     // Since deflection of projectiles (collision feature) does not exist in Gothic 1 by default, it is not inherently
-    // clear at this point, whether the projectile as deflecting off of this NPC, like it is here for Gothic 2.
-    // To help out, the projectile AI is marked as deflecting (-1) by freeAimDoNpcHit().
+    // clear at this point, whether the projectile is deflecting off of this NPC, like it is clear here for Gothic 2.
+    // To help out, the projectile AI is prior marked as deflecting (-1) by freeAimDoNpcHit().
     if (MEM_ReadInt(arrowAI+oCAIArrow_destroyProjectile_offset) == -1) {
         MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 0);
         return;

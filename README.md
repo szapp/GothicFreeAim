@@ -275,7 +275,7 @@ above).
     intersection. This should only be useful if the underlying g2freeAim mechanics are modified (which is not
     recommended).
  5. Additional information about the selected settings of g2freeAim can be displayed in the console by the commands
-    - `freeaim version` displays the current version of g2freeAim, e.g. "G2 Free Aim v0.1.2"
+    - `freeaim version` displays the current version of g2freeAim, e.g. "G2 Free Aim v1.0.0-alpha"
     - `freeaim license` displays the license information of g2freeAim
     - `freeaim info` displays the settings of g2freeAim
         - Whether free aiming is enabled

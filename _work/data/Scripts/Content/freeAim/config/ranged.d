@@ -1,7 +1,5 @@
 /*
  * This file contains all configurations for ranged combat (bows and crossbows).
- *
- * Supported: Gothic 1 and Gothic 2
  */
 
 

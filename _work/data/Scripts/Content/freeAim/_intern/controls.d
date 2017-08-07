@@ -1,8 +1,8 @@
 /*
  * Input and controls manipulation
  *
- * G2 Free Aim v0.1.2 - Free aiming for the video game Gothic 2 by Piranha Bytes
- * Copyright (C) 2016  mud-freak (@szapp)
+ * G2 Free Aim v1.0.0-alpha - Free aiming for the video game Gothic 2 by Piranha Bytes
+ * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
  * This file is part of G2 Free Aim.
  * <http://github.com/szapp/g2freeAim>
@@ -53,9 +53,9 @@ func void freeAimManualRotation() {
     if (freeAimRecoil) {
         // These mouse manipulations work great and are consistent in Gothic 2. Not so much in Gothic 1. This is NOT due
         // to differences in mouse handling (it is pretty much exactly the same, except for some additional mouse
-        // smoothing in Gothic 2), but because of the camera easing: Once the camera is moving in Gothic 1, a single
-        // mouse input has much more impact than when the camera is still.
-        // This easing cannot be controlled with the CCamSys_Def instance and its not clear where this easing is done
+        // smoothing in Gothic 2, which is ignored for free aiming), but because of the camera easing: Once the camera
+        // is moving in Gothic 1, a single mouse input has much more impact than when the camera is still.
+        // This easing cannot be controlled with the CCamSys_Def instance and it is not clear where this easing is done
         // internally. Thus, recoil just works a bit different in Gothic 1. (Varying with mouse/camera movement.)
 
         // Manipulate vertical mouse movement: Add negative (upwards) movement (multiplied by sensitivity)

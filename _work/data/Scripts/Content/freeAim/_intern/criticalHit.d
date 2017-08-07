@@ -1,8 +1,8 @@
 /*
  * Critical hits for projectiles
  *
- * G2 Free Aim v0.1.2 - Free aiming for the video game Gothic 2 by Piranha Bytes
- * Copyright (C) 2016  mud-freak (@szapp)
+ * G2 Free Aim v1.0.0-alpha - Free aiming for the video game Gothic 2 by Piranha Bytes
+ * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
  * This file is part of G2 Free Aim.
  * <http://github.com/szapp/g2freeAim>
@@ -117,7 +117,7 @@ func void freeAimDetectCriticalHit() {
     } else if (!FREEAIM_ACTIVE) || (!FREEAIM_RANGED) {
 
         // Critical hits cause an advantage when playing with free aiming enabled compared to auto aim. This is, because
-        // there are not critical hits for ranged combat in Gothic 2. Here, they are introduced for balancing reasons.
+        // there are no critical hits for ranged combat in Gothic 2. Here, they are introduced for balancing reasons.
         // Note: Gothic 1 already has critical hits for auto aiming. This is replaced here.
         var int critChance; critChance = freeAimCriticalHitAutoAim_(targetNpc);
         criticalHit = (r_MinMax(1, 100) <= critChance); // Allow critChance=0 to disable this feature
@@ -297,7 +297,7 @@ func void freeAimDetectCriticalHit() {
         SB(" ] = ");
         shotDamage = (shotDamage+hero.attribute[ATR_DEXTERITY])-targetNpc.protection[PROT_POINT];
         if (shotDamage < NPC_MINIMAL_DAMAGE) {
-            shotDamage = NPC_MINIMAL_DAMAGE; // Minimum damage in Gothic 2 as defined in AI_Constants.s
+            shotDamage = NPC_MINIMAL_DAMAGE; // Minimum damage in Gothic 2 as defined in AI_Constants.d
         };
         SBi(shotDamage);
     };

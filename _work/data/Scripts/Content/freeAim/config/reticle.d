@@ -1,7 +1,5 @@
 /*
  * This file contains all configurations for reticles. For a list of reticle textures, see config\reticleTextures.d.
- *
- * Supported: Gothic 1 and Gothic 2
  */
 
 

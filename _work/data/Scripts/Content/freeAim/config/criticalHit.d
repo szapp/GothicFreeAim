@@ -1,7 +1,5 @@
 /*
  * This file contains all configurations for critical hits for bows and crossbows.
- *
- * Supported: Gothic 1 and Gothic 2
  */
 
 
@@ -196,21 +194,20 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon, var int f
     // Shooter-like hit marker
     if (freeAimingIsEnabled) {
         // Only show the hit marker if free aiming is enabled (this function is also called for auto aim critical hits)
-        var int hitmark;
-        if (!Hlp_IsValidHandle(hitmark)) {
-            // Create hit mark if it does not exist
+        var int hitmarker;
+        if (!Hlp_IsValidHandle(hitmarker)) {
+            // Create it (if it does not exist) in the center of the screen
             var zCView screen; screen = _^(MEM_Game._zCSession_viewport);
-
-            // Create it in the center of the screen
-            hitmark = View_CreateCenterPxl(screen.psizex/2, screen.psizey/2, 64, 64);
+            hitmarker = View_CreateCenterPxl(screen.psizex/2, screen.psizey/2, // Coordinates
+                FREEAIM_RETICLE_MAX_SIZE, FREEAIM_RETICLE_MAX_SIZE);           // Dimensions
 
             // Get 7th frame of animated texture as static texture
-            View_SetTexture(hitmark, freeAimAnimateReticleByPercent(RETICLE_TRI_IN, 100, 7));
+            View_SetTexture(hitmarker, freeAimAnimateReticleByPercent(RETICLE_TRI_IN, 100, 7));
         };
-        View_Open(hitmark);
+        View_Open(hitmarker);
 
-        // Close the hit marker after 300 ms
-        FF_ApplyExtData(View_Close, 300, 1, hitmark);
+        // Hide the hit marker after 300 ms
+        FF_ApplyExtData(View_Close, 300, 1, hitmarker);
     };
 
     // Sound notification
