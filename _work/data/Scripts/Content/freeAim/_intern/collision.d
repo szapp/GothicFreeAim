@@ -123,28 +123,6 @@ func void freeAimProjectileStuck(var int projectilePtr) {
     projectile._zCVob_bitfield[0] = projectile._zCVob_bitfield[0] & ~(zCVob_bitfield0_collDetectionStatic
                                                                     | zCVob_bitfield0_collDetectionDynamic
                                                                     | zCVob_bitfield0_physicsEnabled);
-    const int call = 0;
-    if (CALL_Begin(call)) {
-        CALL__thiscall(_@(rigidBody), zCRigidBody__StopTransRot);
-        call = CALL_End();
-    };
-
-    // Shift back out of the surface to be visible
-    var int shift; shift = -1040187392; // -32.0 Extremely squishy in Gothic 1, sometimes too far in, sometimes floating
-    var zMAT4 trafo; trafo = _^(projectilePtr+zCVob_trafoObjToWorld_offset);
-    var int pos[3];
-    pos[0] = addf(trafo.v0[zMAT4_position], mulf(trafo.v0[zMAT4_rightVec], shift));
-    pos[1] = addf(trafo.v1[zMAT4_position], mulf(trafo.v1[zMAT4_rightVec], shift));
-    pos[2] = addf(trafo.v2[zMAT4_position], mulf(trafo.v2[zMAT4_rightVec], shift));
-    var int posPtr; posPtr = _@(pos);
-
-    // Reposition the projectile
-    const int call1 = 0;
-    if (CALL_Begin(call1)) {
-        CALL_PtrParam(_@(posPtr));
-        CALL__thiscall(_@(projectilePtr), zCVob__SetPositionWorld);
-        call1 = CALL_End();
-    };
 };
 
 
