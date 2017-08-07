@@ -27,25 +27,28 @@
  * the aim vob. An example is the spell blink.
  */
 func void freeAimAttachFX(var string effectInst) {
-    if (GOTHIC_BASE_VERSION == 1) {
-        // Gothic 1 does not offer effects on items
-        return;
-    };
-
     // Retrieve vob by name
     var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB");
     if (!vobPtr) {
         return;
     };
 
-    // Set the FX property
-    MEM_WriteString(vobPtr+oCItem_effect_offset, effectInst);
+    if (GOTHIC_BASE_VERSION == 1) {
+        // In Gothic 1 there are no item effects
+        var C_Item vob; vob = _^(vobPtr);
+        Wld_PlayEffect(effectInst, vob, vob, 0, 0, 0, FALSE);
+    } else {
+        // Much nicer in Gothic 2
 
-    // Start the FX
-    const int call = 0;
-    if (CALL_Begin(call)) {
-        CALL__thiscall(_@(vobPtr), oCItem__InsertEffect);
-        call = CALL_End();
+        // Set the FX property
+        MEM_WriteString(vobPtr+oCItem_effect_offset, effectInst);
+
+        // Start the FX
+        const int call = 0;
+        if (CALL_Begin(call)) {
+            CALL__thiscall(_@(vobPtr), oCItem__InsertEffect);
+            call = CALL_End();
+        };
     };
 };
 
@@ -56,31 +59,34 @@ func void freeAimAttachFX(var string effectInst) {
  * the side of g2freeAim and this function is called on every weapon change, specifically in freeAimManageReticle().
  */
 func void freeAimDetachFX() {
-    if (GOTHIC_BASE_VERSION == 1) {
-        // Gothic 1 does not offer effects on items
-        return;
-    };
-
     // Retrieve vob by name
     var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB");
     if (!vobPtr) {
         return;
     };
 
-    if (Hlp_StrCmp(MEM_ReadString(vobPtr+oCItem_effect_offset), "")) {
-        // If there is no FX, no action is necessary
-        return;
-    };
+    if (GOTHIC_BASE_VERSION == 1) {
+        // In Gothic 1 there are no item effects
+        var C_Item vob; vob = _^(vobPtr);
+        Wld_StopEffect_Ext("", vob, 0, TRUE); // Remove all effects "from" the aim vob
+        Wld_StopEffect_Ext("", 0, vob, TRUE); // Remove all effects "to" the aim vob
+    } else {
+        // Much easier in Gothic 2
+        if (Hlp_StrCmp(MEM_ReadString(vobPtr+oCItem_effect_offset), "")) {
+            // If there is no FX, no action is necessary
+            return;
+        };
 
-    // Remove FX immediately
-    const int call = 0;
-    if (CALL_Begin(call)) {
-        CALL__thiscall(_@(vobPtr), oCItem__RemoveEffect);
-        call = CALL_End();
-    };
+        // Remove FX immediately
+        const int call = 0;
+        if (CALL_Begin(call)) {
+            CALL__thiscall(_@(vobPtr), oCItem__RemoveEffect);
+            call = CALL_End();
+        };
 
-    // Clear the FX property
-    MEM_WriteString(vobPtr+oCItem_effect_offset, "");
+        // Clear the FX property
+        MEM_WriteString(vobPtr+oCItem_effect_offset, "");
+    };
 };
 
 
