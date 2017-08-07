@@ -76,6 +76,7 @@ const int oCAIArrowBase__ReportCollisionToAI_PFXon1  =  0;                      
 const int oCAIArrowBase__ReportCollisionToAI_PFXon2  =  0;                                 // Does not exist in Gothic 1
 const int oCAIArrowBase__ReportCollisionToAI_collNpc =  0;                                 // Does not exist in Gothic 1
 const int oCAIArrow__ReportCollisionToAI_destroyPrj  =  6396025; //0x619879
+const int oCAIArrow__ReportCollisionToAI_keepPlyStrp =  6395401; //0x619609
 const int oCAIHuman__BowMode_g2ctrlCheck             =  0;                                 // Does not exist in Gothic 1
 const int oCAIHuman__BowMode_shootingKey             =  0;                                 // Does not exist in Gothic 1
 const int oCAIHuman__MagicMode_turnToTarget          =  4641584; //0x46D330

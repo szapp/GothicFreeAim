@@ -113,6 +113,9 @@ func void freeAimInitFeatureCustomCollisions() {
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+5, ASMINT_OP_nop);
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+6, ASMINT_OP_nop);
         HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, freeAimOnArrowCollide); // Collision behavior of world
+        MemoryProtectionOverride(oCAIArrow__ReportCollisionToAI_keepPlyStrp, 2); // Keep projectile strip after coll
+        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_keepPlyStrp, /*EB*/ 235); // jmp
+        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_keepPlyStrp+1, /*3D*/ 61); // to 0x619648
     } else {
         // Gothic 2
         MemoryProtectionOverride(oCAIArrowBase__ReportCollisionToAI_PFXon1, 7); // Prevent too early setting of dust PFX
