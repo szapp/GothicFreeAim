@@ -216,7 +216,7 @@ func int objCheckInheritance(var int objPtr, var int classDef) {
  * The function returns the number of stopped effects, or zero if none was found or an error occured.
  * Compatible with Gothic 1 and Gothic 2.
  *
- * Taken from https://forum.worldofplayers.de/forum/threads/1495001?p=25548652
+ * Modified (to allow empty effect string) from https://forum.worldofplayers.de/forum/threads/1495001?p=25548652
  */
 func int Wld_StopEffect_Ext(var string effectName, var int originInst, var int targetInst, var int all) {
     var int worldPtr; worldPtr = _@(MEM_World);
@@ -286,36 +286,40 @@ func int Wld_StopEffect_Ext(var string effectName, var int originInst, var int t
         };
 
         // Search for FX with matching name
-        if (Hlp_StrCmp(MEM_ReadString(vobPtr+oCVisualFX_instanceName_offset), effectName)) {
-
-            // Search for a specific origin vob
-            if (originInst) {
-                var int originVob; originVob = MEM_ReadInt(vobPtr+oCVisualFX_originVob_offset);
-                if (originVob != originInst) {
-                    continue;
-                };
+        if (!Hlp_StrCmp(effectName, "")) {
+            var string effectInst; effectInst = MEM_ReadString(vobPtr+oCVisualFX_instanceName_offset);
+            if (!Hlp_StrCmp(effectInst, effectName)) {
+                continue;
             };
+        };
 
-            // Search for a specific target vob
-            if (targetInst) {
-                var int targetVob; targetVob = MEM_ReadInt(vobPtr+oCVisualFX_targetVob_offset);
-                if (targetVob != targetInst) {
-                    continue;
-                };
+        // Search for a specific origin vob
+        if (originInst) {
+            var int originVob; originVob = MEM_ReadInt(vobPtr+oCVisualFX_originVob_offset);
+            if (originVob != originInst) {
+                continue;
             };
+        };
 
-            // Stop the oCVisualFX
-            const int call2 = 0; const int one = 1;
-            if (CALL_Begin(call2)) {
-                CALL_PtrParam(_@(one));
-                CALL__thiscall(_@(vobPtr), oCVisualFX__Stop);
-                call2 = CALL_End();
+        // Search for a specific target vob
+        if (targetInst) {
+            var int targetVob; targetVob = MEM_ReadInt(vobPtr+oCVisualFX_targetVob_offset);
+            if (targetVob != targetInst) {
+                continue;
             };
-            stopped += 1;
+        };
 
-            if (!all) {
-                break;
-            };
+        // Stop the oCVisualFX
+        const int call2 = 0; const int one = 1;
+        if (CALL_Begin(call2)) {
+            CALL_PtrParam(_@(one));
+            CALL__thiscall(_@(vobPtr), oCVisualFX__Stop);
+            call2 = CALL_End();
+        };
+        stopped += 1;
+
+        if (!all) {
+            break;
         };
     end;
     MEM_ArrayFree(vobArrayPtr);
