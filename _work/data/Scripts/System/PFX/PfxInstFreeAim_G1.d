@@ -23,20 +23,22 @@
 
 INSTANCE freeAim_trail (C_PARTICLEFX)
 {
-    ppsvalue = 100.000000000;
-    ppsislooping = 1;
-    ppsscalekeys_s = "1";
+    ppsvalue = 4.000000000;
+    ppsislooping = 0;
+    ppsscalekeys_s = "1 1 1 1 40 40 40 40 40 40   40 40 40 40 40 40 40 40 40 40"; // Artificial delay of 0.4 sec
+    ppsFPS = 10; // Ten keys = second, that makes 2 seconds total
+    ppsissmooth = 0; // Do not interpolate keys
     shptype_s = "POINT";
     shpfor_s = "object";
     shpoffsetvec_s = "0 0 0";
     dirmode_s = "DIR";
     dirfor_s = "object";
     dirmodetargetfor_s = "OBJECT";
-    dirmodetargetpos_s = "0 0 0";
+    dirmodetargetpos_s = "20 0 0";
     diranglehead = 270.0;
     dirangleheadvar = 0.000000000;
     dirangleelevvar = 0.000000000;
-    velavg = 0.0000001;
+    velavg = 0.7000001;
     lsppartavg = 300.000000000;
     lsppartvar = 0.0000001;
     flygravity_s = "0 0 0";

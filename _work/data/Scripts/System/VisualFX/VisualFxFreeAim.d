@@ -22,7 +22,7 @@
  */
 
 INSTANCE freeAim_TRAIL (CFx_Base_Proto) {
-    emFXLifeSpan            = 1.0;
+    emFXLifeSpan            = 2.0;
 };
 
 // NPC is in focus
@@ -43,7 +43,7 @@ INSTANCE freeAim_TRAIL_KEY_INVEST_3 (C_ParticleFxEmitKey) {
 INSTANCE freeAim_TRAIL_INST (CFx_Base_Proto) {
     visname_s               = "FREEAIM_TRAIL";
     emTrjOriginNode         = "BIP01";
-    emFXLifeSpan            = 0.5;
+    emFXLifeSpan            = 2.0;
 };
 
 INSTANCE freeAim_DESTROY (CFx_Base_Proto) {
