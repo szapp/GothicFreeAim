@@ -26,8 +26,8 @@
  * Hide reticle. This function is called from various functions to ensure that the reticle disappears.
  */
 func void freeAimRemoveReticle() {
-    if (Hlp_IsValidHandle(freeAimReticleHndl)) {
-        View_Close(freeAimReticleHndl);
+    if (Hlp_IsValidHandle(GFA_ReticleHndl)) {
+        View_Close(GFA_ReticleHndl);
     };
 };
 
@@ -45,47 +45,47 @@ func void freeAimInsertReticle(var int reticlePtr) {
     // Only draw the reticle if the texture is specified. An empty texture removes the reticle
     if (!Hlp_StrCmp(reticle.texture, "")) {
         // Scale the reticle size percentage is scaled with the minimum and maximum pixel sizes
-        size = (((FREEAIM_RETICLE_MAX_SIZE-FREEAIM_RETICLE_MIN_SIZE)*(reticle.size))/100)+FREEAIM_RETICLE_MIN_SIZE;
+        size = (((GFA_RETICLE_MAX_SIZE-GFA_RETICLE_MIN_SIZE)*(reticle.size))/100)+GFA_RETICLE_MIN_SIZE;
 
         // The ranges are corrected should the percentage lie out of [0, 100]
-        if (size > FREEAIM_RETICLE_MAX_SIZE) {
-            size = FREEAIM_RETICLE_MAX_SIZE;
-        } else if (size < FREEAIM_RETICLE_MIN_SIZE) {
-            size = FREEAIM_RETICLE_MIN_SIZE;
+        if (size > GFA_RETICLE_MAX_SIZE) {
+            size = GFA_RETICLE_MAX_SIZE;
+        } else if (size < GFA_RETICLE_MIN_SIZE) {
+            size = GFA_RETICLE_MIN_SIZE;
         };
 
         // Get the screen to retrieve the center
         var zCView screen; screen = _^(MEM_Game._zCSession_viewport);
 
-        if (!Hlp_IsValidHandle(freeAimReticleHndl)) {
+        if (!Hlp_IsValidHandle(GFA_ReticleHndl)) {
             // Create reticle if it does not exist
-            freeAimReticleHndl = View_CreateCenterPxl(screen.psizex/2, screen.psizey/2, size, size);
-            View_SetTexture(freeAimReticleHndl, reticle.texture);
-            View_SetColor(freeAimReticleHndl, reticle.color);
-            View_Open(freeAimReticleHndl);
+            GFA_ReticleHndl = View_CreateCenterPxl(screen.psizex/2, screen.psizey/2, size, size);
+            View_SetTexture(GFA_ReticleHndl, reticle.texture);
+            View_SetColor(GFA_ReticleHndl, reticle.color);
+            View_Open(GFA_ReticleHndl);
         } else {
             // If the reticle already exist adjust it to the new texture, size and color
-            if (!Hlp_StrCmp(View_GetTexture(freeAimReticleHndl), reticle.texture)) {
+            if (!Hlp_StrCmp(View_GetTexture(GFA_ReticleHndl), reticle.texture)) {
                 // Update its texture
-                View_SetTexture(freeAimReticleHndl, reticle.texture);
+                View_SetTexture(GFA_ReticleHndl, reticle.texture);
             };
 
-            if (View_GetColor(freeAimReticleHndl) != reticle.color) {
+            if (View_GetColor(GFA_ReticleHndl) != reticle.color) {
                 // Update its color
-                View_SetColor(freeAimReticleHndl, reticle.color);
+                View_SetColor(GFA_ReticleHndl, reticle.color);
             };
 
-            var zCView crsHr; crsHr = _^(getPtr(freeAimReticleHndl));
+            var zCView crsHr; crsHr = _^(getPtr(GFA_ReticleHndl));
             if (crsHr.psizex != size) || (screen.psizex/2 != centerX) {
                 // Update its size and re-position it to center
                 var int centerX; centerX = screen.psizex/2;
-                View_ResizePxl(freeAimReticleHndl, size, size);
-                View_MoveToPxl(freeAimReticleHndl, screen.psizex/2-(size/2), screen.psizey/2-(size/2));
+                View_ResizePxl(GFA_ReticleHndl, size, size);
+                View_MoveToPxl(GFA_ReticleHndl, screen.psizex/2-(size/2), screen.psizey/2-(size/2));
             };
 
             if (!crsHr.isOpen) {
                 // Show the reticle if it is not visible
-                View_Open(freeAimReticleHndl);
+                View_Open(GFA_ReticleHndl);
             };
         };
     } else {
@@ -100,7 +100,7 @@ func void freeAimInsertReticle(var int reticlePtr) {
  * reticle disappears if changing the weapon or stopping to aim.
  */
 func void freeAimManageReticle() {
-    if (FREEAIM_ACTIVE < FMODE_FAR) {
+    if (GFA_ACTIVE < FMODE_FAR) {
         // Remove the visual FX from the aim vob (if present)
         freeAimDetachFX();
         // Hide reticle
@@ -120,7 +120,7 @@ func void freeAimSwitchMode() {
         return;
     };
 
-    freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_READY; // Reset draw force onset
+    GFA_BowDrawOnset = MEM_Timer.totalTime + GFA_DRAWTIME_READY; // Reset draw force onset
     freeAimManageReticle();
 };
 

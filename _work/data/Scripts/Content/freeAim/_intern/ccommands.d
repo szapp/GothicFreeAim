@@ -28,8 +28,8 @@
  * bounding boxes and lines.
  */
 func string freeAimDebugWeakspot(var string command) {
-    FREEAIM_DEBUG_WEAKSPOT = !FREEAIM_DEBUG_WEAKSPOT;
-    if (FREEAIM_DEBUG_WEAKSPOT) {
+    GFA_DEBUG_WEAKSPOT = !GFA_DEBUG_WEAKSPOT;
+    if (GFA_DEBUG_WEAKSPOT) {
         return "Debug weak spot on.";
     } else {
         return "Debug weak spot off.";
@@ -42,8 +42,8 @@ func string freeAimDebugWeakspot(var string command) {
  * When enabled, the trace ray is continuously drawn, as well as the intersection of it.
  */
 func string freeAimDebugTraceRay(var string command) {
-    FREEAIM_DEBUG_TRACERAY = !FREEAIM_DEBUG_TRACERAY;
-    if (FREEAIM_DEBUG_TRACERAY) {
+    GFA_DEBUG_TRACERAY = !GFA_DEBUG_TRACERAY;
+    if (GFA_DEBUG_TRACERAY) {
         return "Debug trace ray on.";
     } else {
         return "Debug trace ray off.";
@@ -56,7 +56,7 @@ func string freeAimDebugTraceRay(var string command) {
  * When entered in the console, the current g2freeAim version is displayed as the console output.
  */
 func string freeAimVersion(var string command) {
-    return FREEAIM_VERSION;
+    return GFA_VERSION;
 };
 
 
@@ -66,7 +66,7 @@ func string freeAimVersion(var string command) {
  */
 func string freeAimLicense(var string command) {
     var int s; s = SB_New();
-    SB(FREEAIM_VERSION);
+    SB(GFA_VERSION);
     SB(", Copyright ");
     SBc(169 /* (C) */);
     SB(" 2016-2017  mud-freak (@szapp)");
@@ -96,36 +96,36 @@ func string freeAimInfo(var string command) {
     const string onOff[2] = {"OFF", "ON"};
 
     var int s; s = SB_New();
-    SB(FREEAIM_VERSION);
+    SB(GFA_VERSION);
     SBc(13); SBc(10);
 
     SB("Free aiming: ");
-    SB(MEM_ReadStatStringArr(onOff, FREEAIM_ACTIVE));
-    if (FREEAIM_ACTIVE) {
+    SB(MEM_ReadStatStringArr(onOff, GFA_ACTIVE));
+    if (GFA_ACTIVE) {
         SB(" for");
-        if (FREEAIM_RANGED) {
+        if (GFA_RANGED) {
             SB(" (ranged)");
         };
-        if (FREEAIM_SPELLS) {
+        if (GFA_SPELLS) {
             SB(" (spells)");
         };
 
         SB(". Focus update every ");
-        SBi(freeAimRayInterval);
+        SBi(GFA_AimRayInterval);
         SB(" ms");
     };
     SBc(13); SBc(10);
 
     SB("Reusable projectiles: ");
-    SB(MEM_ReadStatStringArr(onOff, FREEAIM_REUSE_PROJECTILES));
+    SB(MEM_ReadStatStringArr(onOff, GFA_REUSE_PROJECTILES));
     SBc(13); SBc(10);
 
     SB("Custom collision behaviors: ");
-    SB(MEM_ReadStatStringArr(onOff, FREEAIM_CUSTOM_COLLISIONS));
+    SB(MEM_ReadStatStringArr(onOff, GFA_CUSTOM_COLLISIONS));
     SBc(13); SBc(10);
 
     SB("Criticial hit detection: ");
-    SB(MEM_ReadStatStringArr(onOff, FREEAIM_CRITICALHITS));
+    SB(MEM_ReadStatStringArr(onOff, GFA_CRITICALHITS));
     SBc(13); SBc(10);
 
     var string ret; ret = SB_ToString();

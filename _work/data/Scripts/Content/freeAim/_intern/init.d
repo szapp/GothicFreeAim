@@ -40,7 +40,7 @@ func void freeAimInitFeatureFreeAiming() {
     HookEngineF(oCNpc__OnDamage_Anim_getModel, 9, freeAimDmgAnimation); // Disable damage animation while aiming
 
     // Free aiming for ranged combat aiming and shooting
-    if (FREEAIM_RANGED) {
+    if (GFA_RANGED) {
         MEM_Info("Initializing free aiming for ranged combat.");
         HookEngineF(oCAIHuman__BowMode_shoot, 6, freeAimRangedShooting); // Fix focus collection while shooting
         HookEngineF(oCAIHuman__BowMode_interpolateAim, 5, freeAimAnimation); // Interpolate aiming animation
@@ -58,7 +58,7 @@ func void freeAimInitFeatureFreeAiming() {
     };
 
     // Free aiming for spells
-    if (FREEAIM_SPELLS) {
+    if (GFA_SPELLS) {
         MEM_Info("Initializing free aiming for spell combat.");
         HookEngineF(oCAIHuman__MagicMode, 7, freeAimSpellReticle); // Manage focus collection and reticle
         HookEngineF(oCSpell__Setup_oCVisFXinit, 6, freeAimSetupSpell); // Set spell FX trajectory (shooting)
@@ -66,17 +66,17 @@ func void freeAimInitFeatureFreeAiming() {
 
     // Reticle
     MEM_Info("Initializing reticle.");
-    if (FREEAIM_RANGED) {
+    if (GFA_RANGED) {
         HookEngineF(oCAIHuman__BowMode, 6, freeAimManageReticle); // Hide reticle when not pressing aiming key
     };
     HookEngineF(oCNpcFocus__SetFocusMode, 7, freeAimSwitchMode); // Hide reticle when changing weapons, reset draw force
 
     // Debugging
-    if (FREEAIM_DEBUG_CONSOLE) || (FREEAIM_DEBUG_WEAKSPOT) || (FREEAIM_DEBUG_TRACERAY) {
+    if (GFA_DEBUG_CONSOLE) || (GFA_DEBUG_WEAKSPOT) || (GFA_DEBUG_TRACERAY) {
         MEM_Info("Initializing debug visualizations.");
         HookEngineF(zCWorld__AdvanceClock, 10, freeAimVisualizeWeakspot); // FrameFunctions hook too late for rendering
         HookEngineF(zCWorld__AdvanceClock, 10, freeAimVisualizeTraceRay);
-        if (FREEAIM_DEBUG_CONSOLE) {
+        if (GFA_DEBUG_CONSOLE) {
             // Enable console commands for debugging
             CC_Register(freeAimDebugWeakspot, "debug freeaim weakspot", "turn debug visualization on/off");
             CC_Register(freeAimDebugTraceRay, "debug freeaim traceray", "turn debug visualization on/off");
@@ -139,13 +139,13 @@ func void freeAimInitFeatureCustomCollisions() {
         MemoryProtectionOverride(oCAIArrowBase__ReportCollisionToAI_collNpc, 2); // Collision behavior on NPCs
     };
 
-    if (FREEAIM_COLL_PRIOR_NPC == -1) {
+    if (GFA_COLL_PRIOR_NPC == -1) {
         // Ignore NPCs after a projectile has bounced off of a surface
         HookEngineF(oCAIArrow__CanThisCollideWith, 6, freeAimDisableNpcCollisionOnRebound);
     };
 
     // Trigger collision fix (only necessary for Gothic 2)
-    if (FREEAIM_TRIGGER_COLL_FIX) && (GOTHIC_BASE_VERSION == 2) {
+    if (GFA_TRIGGER_COLL_FIX) && (GOTHIC_BASE_VERSION == 2) {
         MEM_Info("Initializing trigger collision fix.");
         HookEngineF(oCAIArrow__CanThisCollideWith, 6, freeAimTriggerCollisionCheck); // Trigger collision bug
     };
@@ -186,14 +186,14 @@ func void freeAimInitFeatureReuseProjectiles() {
  */
 func int freeAimInitOnce() {
     // Make sure LeGo is initialized with the required flags
-    if ((_LeGo_Flags & FREEAIM_LEGO_FLAGS) != FREEAIM_LEGO_FLAGS) {
+    if ((_LeGo_Flags & GFA_LEGO_FLAGS) != GFA_LEGO_FLAGS) {
         MEM_Error("Insufficient LeGo flags for G2 Free Aim.");
         return FALSE;
     };
 
     // Copyright notice in zSpy
     var int s; s = SB_New();
-    SB("     "); SB(FREEAIM_VERSION); SB(", Copyright "); SBc(169 /* (C) */); SB(" 2016-2017  mud-freak (@szapp)");
+    SB("     "); SB(GFA_VERSION); SB(", Copyright "); SBc(169 /* (C) */); SB(" 2016-2017  mud-freak (@szapp)");
     MEM_Info("");
     MEM_Info(SB_ToString()); SB_Destroy();
     MEM_Info("     <http://github.com/szapp/g2freeAim>");
@@ -202,25 +202,25 @@ func int freeAimInitOnce() {
     MEM_Info("");
 
     // FEATURE: Free aiming
-    if ((FREEAIM_RANGED) || (FREEAIM_SPELLS)) {
+    if ((GFA_RANGED) || (GFA_SPELLS)) {
         freeAimInitFeatureFreeAiming();
     };
 
     // FEATURE: Custom collision behaviors
-    if (FREEAIM_CUSTOM_COLLISIONS) || ((FREEAIM_RANGED) && (FREEAIM_TRUE_HITCHANCE)) {
+    if (GFA_CUSTOM_COLLISIONS) || ((GFA_RANGED) && (GFA_TRUE_HITCHANCE)) {
         HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 5, freeAimDoNpcHit); // Hit registration, change hit chance
     };
-    if (FREEAIM_CUSTOM_COLLISIONS) {
+    if (GFA_CUSTOM_COLLISIONS) {
         freeAimInitFeatureCustomCollisions();
     };
 
     // FEATURE: Critical hits
-    if (FREEAIM_CRITICALHITS) {
+    if (GFA_CRITICALHITS) {
         freeAimInitFeatureCriticalHits();
     };
 
     // FEATURE: Reusable projectiles
-    if (FREEAIM_REUSE_PROJECTILES) {
+    if (GFA_REUSE_PROJECTILES) {
         // Because of balancing issues, this is feature is stored as a constant and not a variable. It should not be
         // enabled/disabled during the game. That would cause too many/too few projectiles
         freeAimInitFeatureReuseProjectiles();
@@ -246,13 +246,13 @@ func void freeAimInitAlways() {
     Timer_SetPauseInMenu(1);
 
     // Retrieve trace ray interval: Recalculate trace ray intersection every x ms
-    freeAimRayInterval = STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusUpdateIntervalMS"));
-    if (freeAimRayInterval > 500) {
-        freeAimRayInterval = 500;
+    GFA_AimRayInterval = STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusUpdateIntervalMS"));
+    if (GFA_AimRayInterval > 500) {
+        GFA_AimRayInterval = 500;
     };
 
     // Reset/reinitialize free aiming settings every time to prevent crashes
-    if ((FREEAIM_RANGED) || (FREEAIM_SPELLS)) {
+    if ((GFA_RANGED) || (GFA_SPELLS)) {
         // On level change, Gothic does not maintain the focus instances (see Focus.d), nor does it reinitialize them.
         // The focus instances are, however, critical for enabling/disabling free aiming: Reinitialize them by hand.
         if (!_@(Focus_Ranged)) {
@@ -265,17 +265,17 @@ func void freeAimInitAlways() {
         };
 
         // Reset internal settings. Focus instances would otherwise not be updated on level change
-        FREEAIM_ACTIVE = 0;
+        GFA_ACTIVE = 0;
         freeAimUpdateStatus();
 
         // Remove reticle. Would otherwise be stuck on screen on level change
         freeAimManageReticle();
 
         // Reset aim ray calculation time. Would otherwise result in an invalid vob pointer on loading a game (crash)
-        freeAimRayPrevCalcTime = 0;
+        GFA_AimRayPrevCalcTime = 0;
 
         // Reset debug vob pointer. Would otherwise result in an invalid vob pointer on loading a game (crash)
-        freeAimDebugTRPrevVob = 0;
+        GFA_DebugTRPrevVob = 0;
     };
 };
 
@@ -288,7 +288,7 @@ func void freeAim_Init() {
     // Ikarus and LeGo need to be initialized first
     const int INIT_LEGO_NEEDED = 0; // Set to 1, if LeGo is not initialized by user (in INIT_Global())
     if (!_LeGo_Init) {
-        LeGo_Init(_LeGo_Flags | FREEAIM_LEGO_FLAGS);
+        LeGo_Init(_LeGo_Flags | GFA_LEGO_FLAGS);
         INIT_LEGO_NEEDED = 1;
     } else if (INIT_LEGO_NEEDED) {
         // If user does not initialize LeGo in INIT_Global(), as determined by INIT_LEGO_NEEDED, reinitialize Ikarus and
@@ -302,13 +302,13 @@ func void freeAim_Init() {
         MEM_Timer = _^(MEMINT_zTimer_Address);
     };
 
-    MEM_Info(ConcatStrings(ConcatStrings("Initialize ", FREEAIM_VERSION), "."));
+    MEM_Info(ConcatStrings(ConcatStrings("Initialize ", GFA_VERSION), "."));
 
     // Perform only once per session
     const int INITIALIZED = 0;
     if (!INITIALIZED) {
         if (!freeAimInitOnce()) {
-            MEM_Info(ConcatStrings(FREEAIM_VERSION, " failed to initialize."));
+            MEM_Info(ConcatStrings(GFA_VERSION, " failed to initialize."));
             return;
         };
     };
@@ -317,5 +317,5 @@ func void freeAim_Init() {
     // Perform for every new session and on every load and level change
     freeAimInitAlways();
 
-    MEM_Info(ConcatStrings(FREEAIM_VERSION, " was initialized successfully."));
+    MEM_Info(ConcatStrings(GFA_VERSION, " was initialized successfully."));
 };

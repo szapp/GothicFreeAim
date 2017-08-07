@@ -27,9 +27,9 @@
  * hooks oCAIHuman::BowMode at a position where the player model is carrying out the animation of shooting.
  */
 func void freeAimRangedShooting() {
-    if (FREEAIM_ACTIVE) {
+    if (GFA_ACTIVE) {
         // Shoot aim trace ray to update focus
-        freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, 0);
+        freeAimRay(GFA_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, 0);
     };
 };
 
@@ -40,14 +40,14 @@ func void freeAimRangedShooting() {
  * collection is overwritten.
  */
 func void freeAimAnimation() {
-    if (!FREEAIM_ACTIVE) {
+    if (!GFA_ACTIVE) {
         return;
     };
 
     // Shoot aim trace ray to retrieve the focus NPC and distance to it from the camera(!)
     var int distance; var int target;
-    freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, _@(target), 0, _@(distance), 0);
-    distance = roundf(divf(mulf(distance, FLOAT1C), mkf(FREEAIM_MAX_DIST))); // Distance scaled between [0, 100]
+    freeAimRay(GFA_MAX_DIST, TARGET_TYPE_NPCS, _@(target), 0, _@(distance), 0);
+    distance = roundf(divf(mulf(distance, FLOAT1C), mkf(GFA_MAX_DIST))); // Distance scaled between [0, 100]
 
     // Create reticle
     var int reticlePtr; reticlePtr = MEM_Alloc(sizeof_Reticle);
@@ -62,7 +62,7 @@ func void freeAimAnimation() {
     MEM_Free(reticlePtr);
 
     // Pointing distance: Take the max distance, otherwise it looks strange on close range targets
-    distance = mkf(FREEAIM_MAX_DIST);
+    distance = mkf(GFA_MAX_DIST);
 
     // Get camera vob
     var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);

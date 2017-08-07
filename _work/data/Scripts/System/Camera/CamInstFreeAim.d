@@ -21,7 +21,7 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-INSTANCE CamModFreeAim (CCamSys_Def)
+INSTANCE CamModGFA (CCamSys_Def)
 {
     bestRange           = 1.8; // Decreased from 2.5
     minRange            = 1.4;

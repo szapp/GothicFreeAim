@@ -58,23 +58,23 @@ func void freeAimVisualizeLine(var int pos1Ptr, var int pos2Ptr, var int color) 
  * lines disappear.
  */
 func void freeAimVisualizeTraceRay() {
-    if (!FREEAIM_DEBUG_TRACERAY) || (MEM_Game.pause_screen) {
+    if (!GFA_DEBUG_TRACERAY) || (MEM_Game.pause_screen) {
         return;
     };
 
     // Visualize trace ray intersection as small green bounding box
-    if (freeAimDebugTRBBox[0]) {
-        freeAimVisualizeBBox(_@(freeAimDebugTRBBox), zCOLOR_GREEN);
+    if (GFA_DebugTRBBox[0]) {
+        freeAimVisualizeBBox(_@(GFA_DebugTRBBox), zCOLOR_GREEN);
     };
 
     // Visualize trace ray as green line
-    if (freeAimDebugTRTrj[0]) {
-        freeAimVisualizeLine(_@(freeAimDebugTRTrj), _@(freeAimDebugTRTrj)+sizeof_zVEC3, zCOLOR_GREEN);
+    if (GFA_DebugTRTrj[0]) {
+        freeAimVisualizeLine(_@(GFA_DebugTRTrj), _@(GFA_DebugTRTrj)+sizeof_zVEC3, zCOLOR_GREEN);
     };
 
     // Visualize validated found vob as green bounding box, if present
-    if (freeAimDebugTRPrevVob) {
-        freeAimVisualizeBBox(freeAimDebugTRPrevVob, zCOLOR_GREEN);
+    if (GFA_DebugTRPrevVob) {
+        freeAimVisualizeBBox(GFA_DebugTRPrevVob, zCOLOR_GREEN);
     };
 };
 
@@ -85,17 +85,17 @@ func void freeAimVisualizeTraceRay() {
  * drawn lines disappear.
  */
 func void freeAimVisualizeWeakspot() {
-    if (!FREEAIM_DEBUG_WEAKSPOT) || (MEM_Game.pause_screen) {
+    if (!GFA_DEBUG_WEAKSPOT) || (MEM_Game.pause_screen) {
         return;
     };
 
     // Visualize critical hit node (weak spot) as red bounding box
-    if (freeAimDebugWSBBox[0]) {
-        freeAimVisualizeBBox(_@(freeAimDebugWSBBox), zCOLOR_RED);
+    if (GFA_DebugWSBBox[0]) {
+        freeAimVisualizeBBox(_@(GFA_DebugWSBBox), zCOLOR_RED);
     };
 
     // Approximate projectile trajectory as red line
-    if (freeAimDebugWSTrj[0]) {
-        freeAimVisualizeLine(_@(freeAimDebugWSTrj), _@(freeAimDebugWSTrj)+sizeof_zVEC3, zCOLOR_RED);
+    if (GFA_DebugWSTrj[0]) {
+        freeAimVisualizeLine(_@(GFA_DebugWSTrj), _@(GFA_DebugWSTrj)+sizeof_zVEC3, zCOLOR_RED);
     };
 };

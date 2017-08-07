@@ -199,7 +199,7 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon, var int f
             // Create it (if it does not exist) in the center of the screen
             var zCView screen; screen = _^(MEM_Game._zCSession_viewport);
             hitmarker = View_CreateCenterPxl(screen.psizex/2, screen.psizey/2, // Coordinates
-                FREEAIM_RETICLE_MAX_SIZE, FREEAIM_RETICLE_MAX_SIZE);           // Dimensions
+                GFA_RETICLE_MAX_SIZE, GFA_RETICLE_MAX_SIZE);                   // Dimensions
 
             // Get 7th frame of animated texture as static texture
             View_SetTexture(hitmarker, freeAimAnimateReticleByPercent(RETICLE_TRI_IN, 100, 7));
@@ -211,5 +211,5 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon, var int f
     };
 
     // Sound notification
-    Snd_Play3D(target, "FREEAIM_CRITICALHIT");
+    Snd_Play3D(target, "GFA_CRITICALHIT_SFX");
 };

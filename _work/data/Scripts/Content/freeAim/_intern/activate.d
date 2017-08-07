@@ -24,11 +24,11 @@
 
 /*
  * Update internal settings when turning free aim on/off in the options menu. Settings include focus ranges/angles,
- * camera angles along with resetting some other settings. The constant FREEAIM_ACTIVE will be updated accordingly.
+ * camera angles along with resetting some other settings. The constant GFA_ACTIVE will be updated accordingly.
  * This function is called from freeAimIsActive() nearly every frame.
  */
 func void freeAimUpdateSettings(var int on) {
-    if ((FREEAIM_ACTIVE > 0) == on) {
+    if ((GFA_ACTIVE > 0) == on) {
         return; // No change necessary
     };
 
@@ -37,18 +37,18 @@ func void freeAimUpdateSettings(var int on) {
     if (on) {
         // Turn free aiming on
 
-        if (FREEAIM_RANGED) {
+        if (GFA_RANGED) {
             // Set stricter focus collection
             Focus_Ranged.npc_azi = 15.0;
 
             // New camera mode (does not affect Gothic 1)
-            MEM_WriteString(zString_CamModRanged, STR_Upper(FREEAIM_CAMERA));
+            MEM_WriteString(zString_CamModRanged, STR_Upper(GFA_CAMERA));
 
         };
 
-        if (FREEAIM_SPELLS) {
+        if (GFA_SPELLS) {
             // New camera mode (does not affect Gothic 1)
-            MEM_WriteString(zString_CamModMagic, STR_Upper(FREEAIM_CAMERA));
+            MEM_WriteString(zString_CamModMagic, STR_Upper(GFA_CAMERA));
         };
 
     } else {
@@ -65,7 +65,7 @@ func void freeAimUpdateSettings(var int on) {
         freeAimSetCollisionWithNPC(0);
 
     };
-    FREEAIM_ACTIVE = !FREEAIM_ACTIVE;
+    GFA_ACTIVE = !GFA_ACTIVE;
 };
 
 
@@ -73,7 +73,7 @@ func void freeAimUpdateSettings(var int on) {
  * This function updates the settings when free aiming or the Gothic 2 controls are enabled or disabled. It is called
  * every time when the Gothic settings are updated (after leaving the game menu), as well as during loading and level
  * changes. The function hooks cGameManager::ApplySomeSettings() at the very end (after all other menu settings!).
- * The constant FREEAIM_ACTIVE is modified in the subsequent function freeAimUpdateSettings().
+ * The constant GFA_ACTIVE is modified in the subsequent function freeAimUpdateSettings().
  */
 func void freeAimUpdateStatus() {
     // Check if g2freeAim is enabled and mouse controls are enabled
@@ -97,19 +97,19 @@ func void freeAimUpdateStatus() {
 
 /*
  * This function is called nearly every frame by freeAimManualRotation(), providing the mouse is enabled, to check
- * whether free aiming is active (player in either magic or ranged combat). It sets the constant FREEAIM_ACTIVE
+ * whether free aiming is active (player in either magic or ranged combat). It sets the constant GFA_ACTIVE
  * accordingly:
  *  1 if not active (not currently aiming)
  *  5 if currently aiming in ranged fight mode (FMODE_FAR)
  *  7 if currently aiming in magic fight mode with free aiming supported spell (FMODE_MAGIC)
  *
- * FREEAIM_ACTIVE is prior set to 0 in freeAimUpdateStatus() if free aiming is disabled.
+ * GFA_ACTIVE is prior set to 0 in freeAimUpdateStatus() if free aiming is disabled.
  *
  * Different checks are performed in performance-favoring order (exiting the function as early as possible) to set the
  * constant, which is subsequently used in a lot of functions to determine the state of free aiming.
  */
 func void freeAimIsActive() {
-    if (!FREEAIM_ACTIVE) {
+    if (!GFA_ACTIVE) {
         return;
     };
 
@@ -117,7 +117,7 @@ func void freeAimIsActive() {
     if (MEM_Game.pause_screen) || (!InfoManager_HasFinished()) {
         freeAimSetCameraMode_G1(0);
         freeAimDisableAutoTurn(0);
-        FREEAIM_ACTIVE = 1;
+        GFA_ACTIVE = 1;
         return;
     };
 
@@ -126,7 +126,7 @@ func void freeAimIsActive() {
     if (her.fmode < FMODE_FAR) {
         freeAimSetCameraMode_G1(0);
         freeAimDisableAutoTurn(0);
-        FREEAIM_ACTIVE = 1;
+        GFA_ACTIVE = 1;
         return;
     };
 
@@ -156,10 +156,10 @@ func void freeAimIsActive() {
     // Check fight mode
     if (her.fmode == FMODE_MAGIC) {
         // Check if free aiming for spells is disabled
-        if (!FREEAIM_SPELLS) {
+        if (!GFA_SPELLS) {
             freeAimDisableAutoTurn(0);
             freeAimSetCameraMode_G1(0);
-            FREEAIM_ACTIVE = 1;
+            GFA_ACTIVE = 1;
             return;
         };
 
@@ -170,12 +170,12 @@ func void freeAimIsActive() {
         if (GOTHIC_BASE_VERSION == 2) {
             if (MEM_ReadInt(oCGame__s_bUseOldControls)) && (!keyPressed) {
                 freeAimDisableAutoTurn(0);
-                FREEAIM_ACTIVE = 1;
+                GFA_ACTIVE = 1;
                 return;
             };
         } else if (!keyPressed) {
             freeAimDisableAutoTurn(0);
-            FREEAIM_ACTIVE = 1;
+            GFA_ACTIVE = 1;
             return;
         };
 
@@ -186,22 +186,22 @@ func void freeAimIsActive() {
             Focus_Magic.npc_azi = 45.0;
             Focus_Magic.item_prio = -1;
             freeAimDisableAutoTurn(0);
-            FREEAIM_ACTIVE = 1;
+            GFA_ACTIVE = 1;
             return;
         } else {
             // Spell uses free aiming: Set stricter focus collection
             Focus_Magic.npc_azi = 15.0;
             Focus_Magic.item_prio = 0;
             freeAimDisableAutoTurn(1);
-            FREEAIM_ACTIVE = FMODE_MAGIC;
+            GFA_ACTIVE = FMODE_MAGIC;
         };
 
     } else if (her.fmode >= FMODE_FAR) { // Greater or equal: Crossbow has different fight mode!
         // Check if free aiming for ranged combat is disabled
-        if (!FREEAIM_RANGED) {
+        if (!GFA_RANGED) {
             freeAimDisableAutoTurn(0);
             freeAimSetCameraMode_G1(0);
-            FREEAIM_ACTIVE = 1;
+            GFA_ACTIVE = 1;
             return;
         };
 
@@ -218,16 +218,16 @@ func void freeAimIsActive() {
         // Check if aiming key is not pressed/held
         if (!keyPressed) {
             freeAimDisableAutoTurn(0);
-            FREEAIM_ACTIVE = 1;
+            GFA_ACTIVE = 1;
             return;
         } else {
             freeAimDisableAutoTurn(1);
-            FREEAIM_ACTIVE = FMODE_FAR; // Do not differentiate between bow and crossbow
+            GFA_ACTIVE = FMODE_FAR; // Do not differentiate between bow and crossbow
         };
 
         // Get onset for drawing the bow - right when pressing down the aiming key
         if (keyStateAiming1 == KEY_PRESSED) || (keyStateAiming2 == KEY_PRESSED) || (keyStateAiming3 == KEY_PRESSED) {
-            freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_READY;
+            GFA_BowDrawOnset = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
         };
     };
 };

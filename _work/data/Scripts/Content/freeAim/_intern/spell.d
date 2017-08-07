@@ -35,7 +35,7 @@ func void freeAimSetupSpell() {
 
     // Only if caster is player and if FA is enabled
     var C_Npc caster; caster = _^(casterPtr);
-    if (!FREEAIM_ACTIVE) || (!Npc_IsPlayer(caster)) {
+    if (!GFA_ACTIVE) || (!Npc_IsPlayer(caster)) {
         return;
     };
 
@@ -72,7 +72,7 @@ func void freeAimSetupSpell() {
  */
 func void freeAimSpellReticle() {
     // Only show reticle for spells that support free aiming and during aiming
-    if (FREEAIM_ACTIVE != FMODE_MAGIC) {
+    if (GFA_ACTIVE != FMODE_MAGIC) {
         freeAimRemoveReticle();
         return;
     };

@@ -21,7 +21,7 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-INSTANCE FREEAIM_CRITICALHIT (C_SFX_DEF) {
+INSTANCE GFA_CRITICALHIT_SFX (C_SFX_DEF) {
     file = "BOW_FIRE_02.WAV";
     vol  = 60;
 };

@@ -57,7 +57,7 @@ func MEMINT_HelperClass freeAimGetActiveSpellInst(var C_Npc npc) {
  * spells. For new spells, adjust their properties accordingly.
  */
 func int freeAimSpellEligible(var C_Spell spell) {
-    if (!FREEAIM_SPELLS) || (!_@(spell)) {
+    if (!GFA_SPELLS) || (!_@(spell)) {
         // If free aiming is disabled for spells or if the spell instance is invalid
         return FALSE;
     };

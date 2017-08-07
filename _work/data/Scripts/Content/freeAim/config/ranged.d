@@ -6,7 +6,7 @@
 /*
  * This function is called at the point of shooting a bow or a crossbow. The return value scales the gravity of the
  * projectile in percent, where 0 is fast gravity drop-off and 100 is the straightest shot possible. Regardless of the
- * percentage, however, all shots are impacted by gravity at the latest after FREEAIM_TRAJECTORY_ARC_MAX milliseconds.
+ * percentage, however, all shots are impacted by gravity at the latest after GFA_TRAJECTORY_ARC_MAX milliseconds.
  * Here, bows are scaled with draw time, whereas crossbows always have 100% draw force (they are mechanical).
  * This function is also well-suited to be used by the other functions of this file defined below.
  *
@@ -19,10 +19,10 @@ func int freeAimGetDrawForce(var C_Item weapon, var int talent) {
     };
 
     // Get the current draw time (how long has the shot been drawn)
-    var int drawTime; drawTime = MEM_Timer.totalTime - freeAimBowDrawOnset;
+    var int drawTime; drawTime = MEM_Timer.totalTime - GFA_BowDrawOnset;
 
-    // For now the draw time is scaled by a maximum. Replace FREEAIM_DRAWTIME_MAX by a variable for a quick-draw talent
-    var int drawForce; drawForce = (100 * drawTime) / FREEAIM_DRAWTIME_MAX;
+    // For now the draw time is scaled by a maximum. Replace GFA_DRAWTIME_MAX by a variable for a quick-draw talent
+    var int drawForce; drawForce = (100 * drawTime) / GFA_DRAWTIME_MAX;
 
     // Respect the percentage ranges
     if (drawForce < 0) {
@@ -45,8 +45,8 @@ func int freeAimGetDrawForce(var C_Item weapon, var int talent) {
  * Here, the accuracy is scaled by talent and by draw force (see function above). Note, for Gothic 1, instead of the
  * talent, the dexterity is used.
  *
- * Note: This function is only used, if FREEAIM_TRUE_HITCHANCE is true. Otherwise, Gothic's default hit chance
- * calculation (based on skill and distance from target) is used and the accuracy defined here does not take effect!
+ * Note: This function is only used, if GFA_TRUE_HITCHANCE is true. Otherwise, Gothic's default hit chance  calculation
+ * (based on skill and distance from target) is used and the accuracy defined here does not take effect!
  */
 func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
     // Here, the hit chance is scaled by draw force, where hit chance is talent for Gothic 2 and dexterity for Gothic 1

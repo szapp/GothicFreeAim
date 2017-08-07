@@ -77,19 +77,19 @@ manually.
     `items[XX] = "MENUITEM_GAME_BACK";`.
 
     ```
-        items[XX]       = "MENUITEM_OPT_FREEAIM";
-        items[XX+1]     = "MENUITEM_OPT_FREEAIM_CHOICE";
+        items[XX]       = "MENUITEM_OPT_GFA";
+        items[XX+1]     = "MENUITEM_OPT_GFA_CHOICE";
     ```
 
     Where `XX` is the index. Of course, increase `XX` to `XX+2` for `MENUITEM_GAME_BACK`. With this you can enable and
     disable free aim from the options menu.
  5. In the same file change `posy = MENU_BACK_Y;` in the instance `MENUITEM_GAME_BACK` to `posy = MENU_BACK_Y+300;`.
     This repositions the menu entries such that everything fits.
- 6. Set the constant `MENU_ID_FREEAIM` in `Menu_Opt_Game_FreeAim.d` to the next available slot in the menu, typically
+ 6. Set the constant `MENU_ID_GFA` in `Menu_Opt_Game_FreeAim.d` to the next available slot in the menu, typically
     `(XX-1)/2`. For example:
 
     ```
-    const int  MENU_ID_FREEAIM      = 7; // Next available Y-spot in the menu
+    const int  MENU_ID_GFA      = 7; // Next available Y-spot in the menu
     ```
 
  7. Finally initialize free aim by adding the line `freeAim_Init();` in to the function `INIT_GLOBAL()` in
@@ -137,7 +137,7 @@ function (in form of function arguments). For some examples and ideas see **Exam
 
 While free aiming technically has nothing to do with it, the ability to pick up and reuse projectiles was a side-product
 of this script. When a projectile is shot, it will not be removed from the world. It can be collected from the world and
-from killed targets' inventories. Although a great feature, this can be disabled by setting `FREEAIM_REUSE_PROJECTILES`
+from killed targets' inventories. Although a great feature, this can be disabled by setting `GFA_REUSE_PROJECTILES`
 to zero in `freeAimInitConstants()`. If it is enabled, however, the function `freeAimGetUsedProjectileInstance()` may be
 used to change/replace the instance of the landed projectile. This allows for "used" arrows/bolts that need repairment
 or might be less effective on future usage. Projectiles can be destroyed the same way, by setting their instance to
@@ -157,9 +157,9 @@ trajectory of the projectile, but it may also be called by yourself in any of th
 (e.g. to animate the reticle by draw force/draw time, or manipulate the accuracy). By default, this function returns the
 time since drawing the bow (scaled between 0 and 100), while crossbows always have a draw force of 100% (since they are
 mechanic). This can, of course, be changed. Possible implementations: Quick-draw talent, different draw time for
-different bows. Additional settings are `FREEAIM_DRAWTIME_MAX`, `FREEAIM_TRAJECTORY_ARC_MAX` and
-`FREEAIM_PROJECTILE_GRAVITY` (already well balanced and should not be changed). See `freeAimInitConstants()` for
-details. To monitor the settings see **Debugging** below.
+different bows. Additional settings are `GFA_DRAWTIME_MAX`, `GFA_TRAJECTORY_ARC_MAX` and `GFA_PROJECTILE_GRAVITY`
+(already well balanced and should not be changed). See `freeAimInitConstants()` for details. To monitor the settings see
+**Debugging** below.
 
 #### Initial Damage
 
@@ -174,7 +174,7 @@ Gothics native implementation of hit chance is to only register a percentage of 
 collide. Here, this method is overwritten, with a true shooting accuracy. The accuracy is a percentage (integer between
 0 and 100) that can be adjusted in `freeAimGetAccuracy()`. This function is called once you shoot your weapon to
 determine the deviation of the projectile. By default this function combines weapon talent and draw force. The amount of
-**maximum** scattering (when the returned percentage of accuracy is 0) can be adjusted in `FREEAIM_SCATTER_DEG` in
+**maximum** scattering (when the returned percentage of accuracy is 0) can be adjusted in `GFA_SCATTER_DEG` in
 `freeAimInitConstants()`. However, this value is already well balanced. To monitor the settings see **Debugging** below.
 
 #### Hit Registration
@@ -189,11 +189,11 @@ destroyed, it is accompanied by a sound and subtle visual effect of bursting woo
 implementations: Disabled friendly-fire, ineffective weapons, break-on-impact chance. Additionally, I implemented a hit
 detection that sits on top of the engine's hit detection. Originally, the idea was to make the hit detection more
 precise. However, this method is only experimental and if anything it only yields false negatives (no hits when there
-should be hits). By default it is disabled. If you want to check it out, see `FREEAIM_HITDETECTION_EXP` in
+should be hits). By default it is disabled. If you want to check it out, see `GFA_HITDETECTION_EXP` in
 `freeAimInitConstants()`. In Gothic, there is a bug by which projectiles collide with triggers, causing a loud metallic
 clatter. This is prevented by a fix introduced
 [here](http://forum.worldofplayers.de/forum/threads/1126551/page10?p=20894916). This fix is enabled here by default.
-Should this compromise the functionality of your triggers you can disable it by setting `FREEAIM_TRIGGER_COLL_FIX` to
+Should this compromise the functionality of your triggers you can disable it by setting `GFA_TRIGGER_COLL_FIX` to
 zero in `freeAimInitConstants()`.
 
 #### Critical Hits
@@ -208,7 +208,7 @@ the target npc in question. Thus, it is very well possible to discern those and 
 difficult to guess the dimensions of a defined weakspot, the console command `debug freeaim weakspot` will visualize the
 projectile trajectory and the bounding box of the currently defined weakspot for the target. This will help deciding on
 suitable sizes for weakspots. For thorough testing this debug visualization can be enabled by default with
-`FREEAIM_DEBUG_WEAKSPOT` in `freeAimInitConstants()`.
+`GFA_DEBUG_WEAKSPOT` in `freeAimInitConstants()`.
 
 #### Reticles
 
@@ -223,15 +223,15 @@ possibilities waiting. See the mentioned functions for details.
 There is a variety of miscellaneous configurations. While a large number is omitted here, as they should not be touched,
 a few are enumerated and explained here briefly.
 
- - `FREEAIM_DISABLE_SPELLS` in `freeAimInitConstants()` will disable free aiming for spells. (Free aiming only for
+ - `GFA_DISABLE_SPELLS` in `freeAimInitConstants()` will disable free aiming for spells. (Free aiming only for
    ranged weapons.)
- - `FREEAIM_DEBUG_TRACERAY` in `freeAimInitConstants()` will enable trace ray debug visualization by default (see below
+ - `GFA_DEBUG_TRACERAY` in `freeAimInitConstants()` will enable trace ray debug visualization by default (see below
    for more information).
- - `FREEAIM_ROTATION_SCALE`  in `freeAimInitConstants()` will adjust the rotation speed while aiming. This is **not**
+ - `GFA_ROTATION_SCALE`  in `freeAimInitConstants()` will adjust the rotation speed while aiming. This is **not**
    the mouse sensitivity. This setting should not be changed.
- - `FREEAIM_CAMERA` in `freeAimInitConstants()` will set a different camera setting for aiming. The camera setting
+ - `GFA_CAMERA` in `freeAimInitConstants()` will set a different camera setting for aiming. The camera setting
    should not be changed, as the aiming becomes less accurate (intersection miss-match, parallax effect).
- - `FREEAIM_CAMERA_X_SHIFT` in `freeAimInitConstants()` has to be set to true, if the camera has an X offset. This is
+ - `GFA_CAMERA_X_SHIFT` in `freeAimInitConstants()` has to be set to true, if the camera has an X offset. This is
    not recommended at all (parallax effect), see above.
  - `freeAimShiftAimVob()` will shift the offset along the camera viewing axis. This is only useful for spells that
    visualize the aim vob. For an example (SPL_Blink) visit the forum thread (see link in **Contact and Discussion**
@@ -420,11 +420,3 @@ Future
 
 This script will not be worked on after 2016. Nevertheless, feel free to create **pull requests** if you implement new
 features.
-
-
-Gothic 1 Compatibility
-----------------------
-
-This script is only compatible with Gothic II: The Night of the Raven. It is not meant for Gothic 1. At the moment it is
-difficult to port it to Gothic 1, as there is no working version LeGo for Gothic 1. Also all memory addresses g2freeAim
-is using, would need to be adjusted. A lot of stack offsets are hard-coded at various places in the code.

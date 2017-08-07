@@ -21,7 +21,7 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-INSTANCE freeAim_trail (C_PARTICLEFX)
+INSTANCE GFA_TRAIL (C_PARTICLEFX)
 {
     ppsvalue = 4.000000000;
     ppsislooping = 0;
@@ -58,7 +58,7 @@ INSTANCE freeAim_trail (C_PARTICLEFX)
     trlwidth = 3;
 };
 
-INSTANCE freeAim_impact (C_PARTICLEFX)
+INSTANCE GFA_IMPACT (C_PARTICLEFX)
 {
     ppsvalue = 200.000000000;
     ppsscalekeys_s = "1";

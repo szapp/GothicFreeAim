@@ -35,11 +35,11 @@
 func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int posPtr, var int distPtr,
         var int trueDistPtr) {
 
-    // Only run full trace ray machinery every so often (see freeAimRayInterval) to allow weaker machines to run this
+    // Only run full trace ray machinery every so often (see GFA_AimRayInterval) to allow weaker machines to run this
     var int curTime; curTime = MEM_Timer.totalTime; // Get current time
-    if (curTime-freeAimRayPrevCalcTime >= freeAimRayInterval) { // If the interval has passed, recompute trace ray
+    if (curTime-GFA_AimRayPrevCalcTime >= GFA_AimRayInterval) { // If the interval has passed, recompute trace ray
         // Update time of previous calculation
-        freeAimRayPrevCalcTime = curTime;
+        GFA_AimRayPrevCalcTime = curTime;
 
         // The trace ray is cast along the camera viewing angle from a start point towards a direction/length vector
 
@@ -60,7 +60,7 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
             sqrf(subf(her._zCVob_trafoObjToWorld[11], camPos.v2[zMAT4_position]))));
 
         // Shifting camera (shoulderview) is NOT RECOMMENDED. Because of the parallax effect, aiming becomes inaccurate
-        if (FREEAIM_CAMERA_X_SHIFT) {
+        if (GFA_CAMERA_X_SHIFT) {
             // This makes the distance mentioned above more complex and requires calculation of a point-line distance
             // between the camera and the player without taking any diagonal distance into account.
             // For illustration: http://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
@@ -261,26 +261,26 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
         var int distHitToCam; distHitToCam = addf(distHitToPlayer, distCamToPlayer);
 
         // Debug visualization
-        if (FREEAIM_DEBUG_TRACERAY) {
+        if (GFA_DEBUG_TRACERAY) {
             // Trace ray intersection
-            freeAimDebugTRBBox[0] = subf(intersection[0], mkf(5));
-            freeAimDebugTRBBox[1] = subf(intersection[1], mkf(5));
-            freeAimDebugTRBBox[2] = subf(intersection[2], mkf(5));
-            freeAimDebugTRBBox[3] = addf(freeAimDebugTRBBox[0], mkf(10));
-            freeAimDebugTRBBox[4] = addf(freeAimDebugTRBBox[1], mkf(10));
-            freeAimDebugTRBBox[5] = addf(freeAimDebugTRBBox[2], mkf(10));
+            GFA_DebugTRBBox[0] = subf(intersection[0], mkf(5));
+            GFA_DebugTRBBox[1] = subf(intersection[1], mkf(5));
+            GFA_DebugTRBBox[2] = subf(intersection[2], mkf(5));
+            GFA_DebugTRBBox[3] = addf(GFA_DebugTRBBox[0], mkf(10));
+            GFA_DebugTRBBox[4] = addf(GFA_DebugTRBBox[1], mkf(10));
+            GFA_DebugTRBBox[5] = addf(GFA_DebugTRBBox[2], mkf(10));
 
             // Trace ray trajectory
-            MEM_CopyBytes(_@(traceRayVec), _@(freeAimDebugTRTrj), sizeof_zVEC3);
-            freeAimDebugTRTrj[3] = addf(traceRayVec[0], traceRayVec[3]);
-            freeAimDebugTRTrj[4] = addf(traceRayVec[1], traceRayVec[4]);
-            freeAimDebugTRTrj[5] = addf(traceRayVec[2], traceRayVec[5]);
+            MEM_CopyBytes(_@(traceRayVec), _@(GFA_DebugTRTrj), sizeof_zVEC3);
+            GFA_DebugTRTrj[3] = addf(traceRayVec[0], traceRayVec[3]);
+            GFA_DebugTRTrj[4] = addf(traceRayVec[1], traceRayVec[4]);
+            GFA_DebugTRTrj[5] = addf(traceRayVec[2], traceRayVec[5]);
 
             // Focus vob bounding box
             if (foundVob) {
-                freeAimDebugTRPrevVob = foundVob+zCVob_bbox3D_offset;
+                GFA_DebugTRPrevVob = foundVob+zCVob_bbox3D_offset;
             } else {
-                freeAimDebugTRPrevVob = 0;
+                GFA_DebugTRPrevVob = 0;
             };
         };
     };

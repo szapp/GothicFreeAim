@@ -32,17 +32,17 @@
  * reads the (unaltered) change in mouse movement along the x-axis and performs the rotation manually the same way the
  * engine does it.
  *
- * To adjust the turn rate (translation between mouse movement and model rotation), modify FREEAIM_ROTATION_SCALE.
+ * To adjust the turn rate (translation between mouse movement and model rotation), modify GFA_ROTATION_SCALE.
  * By this implementation of free aiming, the manual turning of the player model is only necessary when using Gothic 1
  * controls.
  *
  * Since this function is called so frequently and regularly, it also serves to call the function to update the free aim
- * active/enabled state to set the constant FREEAIM_ACTIVE.
+ * active/enabled state to set the constant GFA_ACTIVE.
  */
 func void freeAimManualRotation() {
     // Retrieve free aim state and exit if player is not currently aiming
     MEM_Call(freeAimIsActive);
-    if (FREEAIM_ACTIVE < FMODE_FAR) {
+    if (GFA_ACTIVE < FMODE_FAR) {
         return;
     };
 
@@ -50,7 +50,7 @@ func void freeAimManualRotation() {
     var _Cursor mouse; mouse = _^(Cursor_Ptr);
 
     // Add recoil to mouse movement
-    if (freeAimRecoil) {
+    if (GFA_Recoil) {
         // These mouse manipulations work great and are consistent in Gothic 2. Not so much in Gothic 1. This is NOT due
         // to differences in mouse handling (it is pretty much exactly the same, except for some additional mouse
         // smoothing in Gothic 2, which is ignored for free aiming), but because of the camera easing: Once the camera
@@ -59,13 +59,13 @@ func void freeAimManualRotation() {
         // internally. Thus, recoil just works a bit different in Gothic 1. (Varying with mouse/camera movement.)
 
         // Manipulate vertical mouse movement: Add negative (upwards) movement (multiplied by sensitivity)
-        mouse.relY = -roundf(divf(mkf(freeAimRecoil), MEM_ReadInt(Cursor_sY)));
+        mouse.relY = -roundf(divf(mkf(GFA_Recoil), MEM_ReadInt(Cursor_sY)));
 
         // Reset recoil ASAP, since this function is called in fast succession
-        freeAimRecoil = 0;
+        GFA_Recoil = 0;
 
         // Manipulate horziontal mouse movement slightly: Add random positive or negative (sideways) movement
-        var int manipulateX; manipulateX = fracf(r_MinMax(-FREEAIM_HORZ_RECOIL*10, FREEAIM_HORZ_RECOIL*10), 10);
+        var int manipulateX; manipulateX = fracf(r_MinMax(-GFA_HORZ_RECOIL*10, GFA_HORZ_RECOIL*10), 10);
         mouse.relX = roundf(divf(manipulateX, MEM_ReadInt(Cursor_sX)));
     };
 
@@ -87,17 +87,17 @@ func void freeAimManualRotation() {
     };
 
     // Apply turn rate
-    deltaX = mulf(deltaX, castToIntf(FREEAIM_ROTATION_SCALE));
+    deltaX = mulf(deltaX, castToIntf(GFA_ROTATION_SCALE));
 
     // Gothic 1 has a maximum turn rate
     if (GOTHIC_BASE_VERSION == 1) {
         // Also add another mulitplier for Gothic 1
         deltaX = mulf(deltaX, castToIntf(0.5));
 
-        if (gf(deltaX, castToIntf(FREEAIM_MAX_TURN_RATE_G1))) {
-            deltaX = castToIntf(FREEAIM_MAX_TURN_RATE_G1);
-        } else if (lf(deltaX, negf(castToIntf(FREEAIM_MAX_TURN_RATE_G1)))) {
-            deltaX = negf(castToIntf(FREEAIM_MAX_TURN_RATE_G1));
+        if (gf(deltaX, castToIntf(GFA_MAX_TURN_RATE_G1))) {
+            deltaX = castToIntf(GFA_MAX_TURN_RATE_G1);
+        } else if (lf(deltaX, negf(castToIntf(GFA_MAX_TURN_RATE_G1)))) {
+            deltaX = negf(castToIntf(GFA_MAX_TURN_RATE_G1));
         };
     };
 
@@ -170,7 +170,7 @@ func void freeAimDisableAutoTurn(var int on) {
  * This function is called from freeAimIsActive() nearly every frame.
  */
 func void freeAimUpdateSettingsG2Ctrl(var int on) {
-    if (GOTHIC_BASE_VERSION != 2) || (!FREEAIM_RANGED) {
+    if (GOTHIC_BASE_VERSION != 2) || (!GFA_RANGED) {
         return;
     };
 
@@ -231,7 +231,7 @@ func void freeAimSetCameraMode_G1(var int on) {
 
     if (on) {
         // Overwrite all camera modes, Gothic 1 just throws them around. ALL of them need to be replaced
-        var string mode; mode = STR_Upper(FREEAIM_CAMERA);
+        var string mode; mode = STR_Upper(GFA_CAMERA);
         MEM_WriteString(zString_CamModNormal, mode);
         MEM_WriteString(zString_CamModMelee, mode);
         MEM_WriteString(zString_CamModRun, mode);
@@ -257,7 +257,7 @@ func void freeAimSetCameraMode_G1(var int on) {
  */
 func void freeAimDmgAnimation() {
     var C_Npc victim; victim = _^(ECX);
-    if (Npc_IsPlayer(victim)) && (FREEAIM_ACTIVE > 1) {
+    if (Npc_IsPlayer(victim)) && (GFA_ACTIVE > 1) {
         EAX = 0; // Disable animation by removing 'this'
     };
 };

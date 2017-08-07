@@ -22,38 +22,38 @@
  *
  *
  * Add these entries to the Menu_Opt_Game.d and adjust the indices:
- *  items[15] = "MENUITEM_OPT_FREEAIM";
- *  items[16] = "MENUITEM_OPT_FREEAIM_CHOICE";
+ *  items[15] = "MENUITEM_OPT_GFA";
+ *  items[16] = "MENUITEM_OPT_GFA_CHOICE";
  * Also in Menu_Opt_Game.d in MENUITEM_GAME_BACK change this:
  *  posy = MENU_BACK_Y+300;
  *
- * Adjust the item id (MENU_ID_FREEAIM) below to the next available item number and change the labels if needed
+ * Adjust the item id (MENU_ID_GFA) below to the next available item number and change the labels if needed
  */
 
 
-const int    MENU_ID_FREEAIM      = 7;                          // Next available Y-spot in the game menu
-const string MENU_FREEAIM_LABEL   = "Freies Zielen";            // "Free aiming"
-const string MENU_FREEAIM_CHOICES = "aus|an";                   // "off|on"
-const string MENU_FREEAIM_DESCR   = "Erfordert Maus Steuerung"; // "Requires mouse controls"
+const int    MENU_ID_GFA  = 7;                              // Next available Y-spot in the game menu
+const string MENU_GFA_LABEL   = "Freies Zielen";            // "Free aiming"
+const string MENU_GFA_CHOICES = "aus|an";                   // "off|on"
+const string MENU_GFA_DESCR   = "Erfordert Maus Steuerung"; // "Requires mouse controls"
 
 
-INSTANCE MENUITEM_OPT_FREEAIM(C_MENU_ITEM_DEF) {
+INSTANCE MENUITEM_OPT_GFA(C_MENU_ITEM_DEF) {
     backpic         = MENU_ITEM_BACK_PIC;
-    text[0]         = MENU_FREEAIM_LABEL;
-    text[1]         = MENU_FREEAIM_DESCR;
-    posx            = 1000;                  posy = MENU_START_Y + MENU_SOUND_DY*MENU_ID_FREEAIM;
+    text[0]         = MENU_GFA_LABEL;
+    text[1]         = MENU_GFA_DESCR;
+    posx            = 1000;                  posy = MENU_START_Y + MENU_SOUND_DY*MENU_ID_GFA;
     dimx            = 3000;                  dimy = 750;
     onSelAction[0]  = SEL_ACTION_UNDEF;
     flags           = flags | IT_EFFECTS_NEXT;
 };
 
 
-INSTANCE MENUITEM_OPT_FREEAIM_CHOICE(C_MENU_ITEM_DEF) {
+INSTANCE MENUITEM_OPT_GFA_CHOICE(C_MENU_ITEM_DEF) {
     backPic               = MENU_CHOICE_BACK_PIC;
     type                  = MENU_ITEM_CHOICEBOX;
-    text[0]               = MENU_FREEAIM_CHOICES;
+    text[0]               = MENU_GFA_CHOICES;
     fontName              = MENU_FONT_SMALL;
-    posx                  = 5000;            posy = MENU_START_Y + MENU_SOUND_DY*MENU_ID_FREEAIM + MENU_CHOICE_YPLUS;
+    posx                  = 5000;            posy = MENU_START_Y + MENU_SOUND_DY*MENU_ID_GFA + MENU_CHOICE_YPLUS;
     dimx                  = MENU_SLIDER_DX;  dimy = MENU_CHOICE_DY;
     onChgSetOption        = "enabled";
     onChgSetOptionSection = "FREEAIM";

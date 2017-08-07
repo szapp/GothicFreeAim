@@ -53,10 +53,10 @@ func void freeAimKeepProjectileInWorld() {
     if (!(projectile._zCVob_bitfield[0] & zCVob_bitfield0_physicsEnabled)) {
         if (GOTHIC_BASE_VERSION == 1) {
             // Gothic 1 does not offer effects on items
-            Wld_StopEffect_Ext(FREEAIM_TRAIL_FX_SIMPLE, projectile, projectile, 0);
+            Wld_StopEffect_Ext(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0);
         } else {
             // Remove the FX; only if the projectile does not have a different effect (like magic arrows)
-            if (Hlp_StrCmp(MEM_ReadString(projectilePtr+oCItem_effect_offset), FREEAIM_TRAIL_FX)) { // Check trail strip
+            if (Hlp_StrCmp(MEM_ReadString(projectilePtr+oCItem_effect_offset), GFA_TRAIL_FX)) { // Check trail strip
                 const int call = 0;
                 if (CALL_Begin(call)) {
                     CALL__thiscall(_@(projectilePtr), oCItem__RemoveEffect);

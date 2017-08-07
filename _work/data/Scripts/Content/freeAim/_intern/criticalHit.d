@@ -33,7 +33,7 @@ func void freeAimCriticalHitEvent_(var C_Npc target) {
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Start an event from config
-    freeAimCriticalHitEvent(target, weapon, (FREEAIM_ACTIVE && FREEAIM_RANGED));
+    freeAimCriticalHitEvent(target, weapon, (GFA_ACTIVE && GFA_RANGED));
 };
 
 
@@ -114,7 +114,7 @@ func void freeAimDetectCriticalHit() {
         criticalHit = 0;
         debugInfo = "No weak spot defined in config";
 
-    } else if (!FREEAIM_ACTIVE) || (!FREEAIM_RANGED) {
+    } else if (!GFA_ACTIVE) || (!GFA_RANGED) {
 
         // Critical hits cause an advantage when playing with free aiming enabled compared to auto aim. This is, because
         // there are no critical hits for ranged combat in Gothic 2. Here, they are introduced for balancing reasons.
@@ -165,7 +165,7 @@ func void freeAimDetectCriticalHit() {
                 var int nodeBBoxPtr; nodeBBoxPtr = CALL_RetValAsPtr();
 
                 // Copy the positions in order to free the retrieved bounding box immediately
-                MEM_CopyBytes(nodeBBoxPtr, _@(freeAimDebugWSBBox), sizeof_zTBBox3D);
+                MEM_CopyBytes(nodeBBoxPtr, _@(GFA_DebugWSBBox), sizeof_zTBBox3D);
                 MEM_Free(nodeBBoxPtr);
             } else {
 
@@ -203,12 +203,12 @@ func void freeAimDetectCriticalHit() {
             MEM_Free(nodPosPtr);
 
             // Build a bounding box by the passed node dimensions
-            freeAimDebugWSBBox[0] = subf(nodePos[0], dimX);
-            freeAimDebugWSBBox[1] = subf(nodePos[1], dimY);
-            freeAimDebugWSBBox[2] = subf(nodePos[2], dimX);
-            freeAimDebugWSBBox[3] = addf(nodePos[0], dimX);
-            freeAimDebugWSBBox[4] = addf(nodePos[1], dimY);
-            freeAimDebugWSBBox[5] = addf(nodePos[2], dimX);
+            GFA_DebugWSBBox[0] = subf(nodePos[0], dimX);
+            GFA_DebugWSBBox[1] = subf(nodePos[1], dimY);
+            GFA_DebugWSBBox[2] = subf(nodePos[2], dimX);
+            GFA_DebugWSBBox[3] = addf(nodePos[0], dimX);
+            GFA_DebugWSBBox[4] = addf(nodePos[1], dimY);
+            GFA_DebugWSBBox[5] = addf(nodePos[2], dimX);
         };
 
         // The internal engine functions are not accurate enough for detecting a shot through a bounding box. Instead
@@ -222,9 +222,9 @@ func void freeAimDetectCriticalHit() {
         dir[2] = projectile._zCVob_trafoObjToWorld[8];
 
         // Trajectory starts 3 meters (FLOAT3C) behind the projectile position, to detect bounding boxes at close range
-        freeAimDebugWSTrj[0] = addf(projectile._zCVob_trafoObjToWorld[ 3], mulf(dir[0], FLOAT3C));
-        freeAimDebugWSTrj[1] = addf(projectile._zCVob_trafoObjToWorld[ 7], mulf(dir[1], FLOAT3C));
-        freeAimDebugWSTrj[2] = addf(projectile._zCVob_trafoObjToWorld[11], mulf(dir[2], FLOAT3C));
+        GFA_DebugWSTrj[0] = addf(projectile._zCVob_trafoObjToWorld[ 3], mulf(dir[0], FLOAT3C));
+        GFA_DebugWSTrj[1] = addf(projectile._zCVob_trafoObjToWorld[ 7], mulf(dir[1], FLOAT3C));
+        GFA_DebugWSTrj[2] = addf(projectile._zCVob_trafoObjToWorld[11], mulf(dir[2], FLOAT3C));
 
 
         // Loop to walk along the trajectory of the projectile
@@ -233,14 +233,14 @@ func void freeAimDetectCriticalHit() {
         var int iter; iter = 700/5; // 7m: Max distance from model bounding box edge to node bounding box (e.g. troll)
         while(i <= iter); i += 1; // Walk along the line in steps of 5 cm
             // Next point along the collision line
-            freeAimDebugWSTrj[3] = subf(freeAimDebugWSTrj[0], mulf(dir[0], mkf(i*5)));
-            freeAimDebugWSTrj[4] = subf(freeAimDebugWSTrj[1], mulf(dir[1], mkf(i*5)));
-            freeAimDebugWSTrj[5] = subf(freeAimDebugWSTrj[2], mulf(dir[2], mkf(i*5)));
+            GFA_DebugWSTrj[3] = subf(GFA_DebugWSTrj[0], mulf(dir[0], mkf(i*5)));
+            GFA_DebugWSTrj[4] = subf(GFA_DebugWSTrj[1], mulf(dir[1], mkf(i*5)));
+            GFA_DebugWSTrj[5] = subf(GFA_DebugWSTrj[2], mulf(dir[2], mkf(i*5)));
 
             // Check if current point is inside the node bounding box, but stay in loop for complete line (debugging)
-            if (lef(freeAimDebugWSBBox[0], freeAimDebugWSTrj[3])) && (lef(freeAimDebugWSBBox[1], freeAimDebugWSTrj[4]))
-            && (lef(freeAimDebugWSBBox[2], freeAimDebugWSTrj[5])) && (gef(freeAimDebugWSBBox[3], freeAimDebugWSTrj[3]))
-            && (gef(freeAimDebugWSBBox[4], freeAimDebugWSTrj[4])) && (gef(freeAimDebugWSBBox[5], freeAimDebugWSTrj[5])){
+            if (lef(GFA_DebugWSBBox[0], GFA_DebugWSTrj[3])) && (lef(GFA_DebugWSBBox[1], GFA_DebugWSTrj[4]))
+            && (lef(GFA_DebugWSBBox[2], GFA_DebugWSTrj[5])) && (gef(GFA_DebugWSBBox[3], GFA_DebugWSTrj[3]))
+            && (gef(GFA_DebugWSBBox[4], GFA_DebugWSTrj[4])) && (gef(GFA_DebugWSBBox[5], GFA_DebugWSTrj[5])) {
                 criticalHit = 1;
             };
         end;

@@ -21,33 +21,33 @@
  * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-INSTANCE freeAim_TRAIL (CFx_Base_Proto) {
+INSTANCE GFA_TRAIL_VFX (CFx_Base_Proto) {
     emFXLifeSpan            = 2.0;
 };
 
 // NPC is in focus
-INSTANCE freeAim_TRAIL_KEY_INVEST_1 (C_ParticleFxEmitKey) { }; // Never reached. Do not remove!
+INSTANCE GFA_TRAIL_VFX_KEY_INVEST_1 (C_ParticleFxEmitKey) { }; // Never reached. Do not remove!
 
 // Projectile is shot
-INSTANCE freeAim_TRAIL_KEY_INVEST_2 (C_ParticleFxEmitKey) {
-    visname_s               = "FREEAIM_TRAIL";
+INSTANCE GFA_TRAIL_VFX_KEY_INVEST_2 (C_ParticleFxEmitKey) {
+    visname_s               = "GFA_TRAIL";
 };
 
 // Projectile collides
-INSTANCE freeAim_TRAIL_KEY_INVEST_3 (C_ParticleFxEmitKey) {
+INSTANCE GFA_TRAIL_VFX_KEY_INVEST_3 (C_ParticleFxEmitKey) {
     visname_s               = ""; // Remove effect after collision
     pfx_ppsIsLoopingChg     = 1;
 };
 
 // Same but simplified for Wld_PlayEffect (used for Gothic 1)
-INSTANCE freeAim_TRAIL_INST (CFx_Base_Proto) {
-    visname_s               = "FREEAIM_TRAIL";
+INSTANCE GFA_TRAIL_INST_VFX (CFx_Base_Proto) {
+    visname_s               = "GFA_TRAIL";
     emTrjOriginNode         = "BIP01";
     emFXLifeSpan            = 2.0;
 };
 
-INSTANCE freeAim_DESTROY (CFx_Base_Proto) {
-    visname_s               = "FREEAIM_IMPACT";
+INSTANCE GFA_DESTROY_VFX (CFx_Base_Proto) {
+    visname_s               = "GFA_IMPACT";
     emTrjOriginNode         = "BIP01";
     sfxid                   = "PICKLOCK_BROKEN";
     sfxisambient            = 1;

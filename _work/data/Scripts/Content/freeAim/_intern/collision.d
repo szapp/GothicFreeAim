@@ -28,7 +28,7 @@
  * freeAimUpdateSettings().
  */
 func void freeAimSetCollisionWithNPC(var int setting) {
-    if (GOTHIC_BASE_VERSION != 2) || (!FREEAIM_CUSTOM_COLLISIONS) {
+    if (GOTHIC_BASE_VERSION != 2) || (!GFA_CUSTOM_COLLISIONS) {
         return;
     };
 
@@ -116,7 +116,7 @@ func void freeAimProjectileStuck(var int projectilePtr) {
 
     if (GOTHIC_BASE_VERSION == 1) {
         // First of all, remove trail strip FX
-        Wld_StopEffect_Ext(FREEAIM_TRAIL_FX_SIMPLE, projectile, projectile, 0);
+        Wld_StopEffect_Ext(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0);
     };
 
     // Stop movement of projectile
@@ -135,7 +135,7 @@ func void freeAimProjectileDestroy(var int arrowAI) {
     if (GOTHIC_BASE_VERSION == 1) {
         // First of all, remove trail strip FX
         var C_Item projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
-        Wld_StopEffect_Ext(FREEAIM_TRAIL_FX_SIMPLE, projectile, projectile, 0);
+        Wld_StopEffect_Ext(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0);
     };
 
     // Automatically remove projectile
@@ -188,8 +188,8 @@ func int freeAimHitRegWld_(var C_Npc shooter, var int material, var string textu
  * Determine the hit chance when shooting at an NPC to manipulate the hit registration. This function hooks
  * oCAIArrow::ReportCollisionToAI() at the offset where the hit chance of the NPC is checked. With freeAimHitRegNpc(),
  * it is decided whether a projectile causes damage, does nothing or bounces of the NPC. Depending on
- * FREEAIM_TRUE_HITCHANCE, the resulting hit chance is either the accuracy or always 100%, where the hit chance is
- * instead determined by scattering in freeAimSetupProjectile().
+ * GFA_TRUE_HITCHANCE, the resulting hit chance is either the accuracy or always 100%, where the hit chance is instead
+ * determined by scattering in freeAimSetupProjectile().
  * This function is only manipulating anything if the shooter is the player.
  */
 func void freeAimDoNpcHit() {
@@ -212,7 +212,7 @@ func void freeAimDoNpcHit() {
     // Boolean to specify, whether damage will be applied or not
     var int hit;
 
-    if (FREEAIM_CUSTOM_COLLISIONS) {
+    if (GFA_CUSTOM_COLLISIONS) {
         var int collision;
         const int DESTROY = 0; // Projectile doest not cause damage and vanishes
         const int DAMAGE  = 1; // Projectile causes damage and may stay in the inventory of the victim
@@ -220,7 +220,7 @@ func void freeAimDoNpcHit() {
 
         if (MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset)) {
             // Adjust collision behavior for NPCs if the projectile bounced off a surface before (Gothic 2 only)
-            collision = FREEAIM_COLL_PRIOR_NPC;
+            collision = GFA_COLL_PRIOR_NPC;
         } else {
             // Retrieve the collision behavior based on the shooter, target and the material type of their armor
             var C_Npc target; target = _^(MEMINT_SwitchG1G2(EBX, MEM_ReadInt(/*esp+1ACh-190h*/ ESP+28)));
@@ -237,7 +237,7 @@ func void freeAimDoNpcHit() {
             freeAimProjectileDeflect(projectile._zCVob_rigidBody);
             MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, -1); // Mark as deflecting, such that it is ignored
 
-        } else if (collision == DESTROY) && (FREEAIM_REUSE_PROJECTILES) {
+        } else if (collision == DESTROY) && (GFA_REUSE_PROJECTILES) {
             // Delete projectile instance if collectable feature enabled, such that it will not be put into inventory
             projectile.instanz = -1;
         };
@@ -251,15 +251,15 @@ func void freeAimDoNpcHit() {
 
         if (GOTHIC_BASE_VERSION == 1) {
             // Remove trail strip FX
-            Wld_StopEffect_Ext(FREEAIM_TRAIL_FX_SIMPLE, projectile, projectile, 0);
+            Wld_StopEffect_Ext(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0);
         };
     };
 
     // The hit chance percentage is either determined by skill and distance (default Gothic hit chance) or is always
-    // 100%, if free aiming is enabled and the accuracy is defined by the scattering (FREEAIM_TRUE_HITCHANCE == TRUE).
+    // 100%, if free aiming is enabled and the accuracy is defined by the scattering (GFA_TRUE_HITCHANCE == TRUE).
     var int hitChancePtr; hitChancePtr = MEMINT_SwitchG1G2(/*esp+3Ch-28h*/ ESP+20, /*esp+1ACh-194h*/ ESP+24);
     var int hitchance;
-    if (FREEAIM_ACTIVE) && (FREEAIM_RANGED) && (FREEAIM_TRUE_HITCHANCE) {
+    if (GFA_ACTIVE) && (GFA_RANGED) && (GFA_TRUE_HITCHANCE) {
         // Always hits (100% of all times)
         hitchance = MEMINT_SwitchG1G2(FLOAT1C, 100); // Gothic 1 takes the hit chance as float
     } else {
@@ -292,7 +292,7 @@ func void freeAimOnArrowCollide() {
 
     if (GOTHIC_BASE_VERSION == 1) {
         // First of all, remove trail strip FX
-        Wld_StopEffect_Ext(FREEAIM_TRAIL_FX_SIMPLE, projectile, projectile, 0);
+        Wld_StopEffect_Ext(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0);
     };
 
     // Abusing this class variable as collision counter (starting at zero, will be incremented at end of function)
@@ -415,8 +415,8 @@ func void freeAimOnArrowCollide() {
             freeAimProjectileDestroy(arrowAI);
 
             // Speed is high enough to break the projectile: Breaking sound and visual effect
-            Wld_StopEffect(FREEAIM_BREAK_FX); // Sometimes collides several times, so disable first
-            Wld_PlayEffect(FREEAIM_BREAK_FX, projectile, projectile, 0, 0, 0, FALSE);
+            Wld_StopEffect(GFA_BREAK_FX); // Sometimes collides several times, so disable first
+            Wld_PlayEffect(GFA_BREAK_FX, projectile, projectile, 0, 0, 0, FALSE);
         } else {
             // If the projectile is too slow, it bounces off
             collision = DEFLECT;
@@ -477,7 +477,7 @@ func void freeAimOnArrowCollide() {
  * question is an NPC to prevent the collision, if the projectiles has collided before. The hook is done in a separate
  * function to increase performance, if only one of the two settings is enabled.
  *
- * Note: This hook is only initialized if FREEAIM_COLL_PRIOR_NPC == -1.
+ * Note: This hook is only initialized if GFA_COLL_PRIOR_NPC == -1.
  */
 func void freeAimDisableNpcCollisionOnRebound() {
     var int arrowAI; arrowAI = ECX;
@@ -507,7 +507,7 @@ func void freeAimDisableNpcCollisionOnRebound() {
  *
  * Taken from http://forum.worldofplayers.de/forum/threads/1126551/page10?p=20894916
  *
- * Note: This hook is only initialized if FREEAIM_TRIGGER_COLL_FIX is true.
+ * Note: This hook is only initialized if GFA_TRIGGER_COLL_FIX is true.
  */
 func void freeAimTriggerCollisionCheck() {
     var int vobPtr; vobPtr = MEMINT_SwitchG1G2(ESP+4, ESP+8);

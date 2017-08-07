@@ -150,7 +150,7 @@ func int freeAimGetRecoil_() {
 func void freeAimSetupProjectile() {
     // Only if shooter is the player and if FA is enabled
     var C_Npc shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second function argument is the shooter
-    if (!FREEAIM_ACTIVE) || (!Npc_IsPlayer(shooter)) {
+    if (!GFA_ACTIVE) || (!Npc_IsPlayer(shooter)) {
         return;
     };
 
@@ -164,12 +164,12 @@ func void freeAimSetupProjectile() {
     var int pos[3]; // Position of the target shot
     var int distance; // Distance to camera (used for calculating position of target shot in local space)
     var int distPlayer; // Distance to player (used for debugging output in zSpy)
-    freeAimRay(FREEAIM_MAX_DIST, TARGET_TYPE_NPCS, 0, _@(pos), _@(distPlayer), _@(distance));
+    freeAimRay(GFA_MAX_DIST, TARGET_TYPE_NPCS, 0, _@(pos), _@(distPlayer), _@(distance));
 
     // When the target is too close, shots go vertically up, because the reticle is targeted. To solve this problem,
     // restrict the minimum distance
-    if (lf(distPlayer, mkf(FREEAIM_MIN_AIM_DIST))) {
-        distance = addf(distance, mkf(FREEAIM_MIN_AIM_DIST));
+    if (lf(distPlayer, mkf(GFA_MIN_AIM_DIST))) {
+        distance = addf(distance, mkf(GFA_MIN_AIM_DIST));
     };
 
     // 1st: Modify the base damage of the projectile
@@ -182,12 +182,12 @@ func void freeAimSetupProjectile() {
     // 2nd: Manipulate aiming accuracy (scatter)
     // The scattering is optional: If disabled, the default hit chance from Gothic is used, where shots are always
     // accurate, but register damage in a fraction of shots only, depending on skill and distance
-    if (FREEAIM_TRUE_HITCHANCE) {
+    if (GFA_TRUE_HITCHANCE) {
         // The accuracy is first used as a probability to decide whether a projectile should hit or not. Depending on
         // this, the minimum (rmin) and maximum (rmax) scattering angles (half the visual angle) are designed by which
         // the shot is deviated.
-        // Not-a-hit results in rmin=FREEAIM_SCATTER_MISS and rmax=FREEAIM_SCATTER_MAX.
-        // A positive hit results in rmin=0 and rmax=FREEAIM_SCATTER_HIT*(-accuracy+100).
+        // Not-a-hit results in rmin=GFA_SCATTER_MISS and rmax=GFA_SCATTER_MAX.
+        // A positive hit results in rmin=0 and rmax=GFA_SCATTER_HIT*(-accuracy+100).
         var int rmin;
         var int rmax;
 
@@ -201,7 +201,7 @@ func void freeAimSetupProjectile() {
             rmin = FLOATNULL;
 
             // The circle area from the radius scales better with accuracy
-            var int hitRadius; hitRadius = castToIntf(FREEAIM_SCATTER_HIT);
+            var int hitRadius; hitRadius = castToIntf(GFA_SCATTER_HIT);
             var int hitArea; hitArea = mulf(PI, sqrf(hitRadius)); // Area of circle from radius
 
             // Scale the maximum area with minimum acurracy
@@ -220,8 +220,8 @@ func void freeAimSetupProjectile() {
 
         } else {
             // The projectile will land outside of the hit radius
-            rmin = castToIntf(FREEAIM_SCATTER_MISS);
-            rmax = castToIntf(FREEAIM_SCATTER_MAX);
+            rmin = castToIntf(GFA_SCATTER_MISS);
+            rmax = castToIntf(GFA_SCATTER_MAX);
         };
 
         // r_MinMax works with integers: scale up
@@ -306,7 +306,7 @@ func void freeAimSetupProjectile() {
 
     // 3rd: Add recoil
     var int recoil; recoil = freeAimGetRecoil_();
-    freeAimRecoil = (FREEAIM_MAX_RECOIL*recoil)/100;
+    GFA_Recoil = (GFA_MAX_RECOIL*recoil)/100;
 
 
     // 4th: Set projectile drop-off (by draw force)
@@ -331,16 +331,16 @@ func void freeAimSetupProjectile() {
         gravityMod = castToIntf(3.0);
     };
 
-    // Calculate the air time at which to apply the gravity, by the maximum air time FREEAIM_TRAJECTORY_ARC_MAX. Because
-    // drawForce is a percentage, FREEAIM_TRAJECTORY_ARC_MAX is first multiplied by 100 and later divided by 10000
-    var int dropTime; dropTime = (drawForce*(FREEAIM_TRAJECTORY_ARC_MAX*100))/10000;
+    // Calculate the air time at which to apply the gravity, by the maximum air time GFA_TRAJECTORY_ARC_MAX. Because
+    // drawForce is a percentage, GFA_TRAJECTORY_ARC_MAX is first multiplied by 100 and later divided by 10000
+    var int dropTime; dropTime = (drawForce*(GFA_TRAJECTORY_ARC_MAX*100))/10000;
     // Create a timed frame function to apply the gravity to the projectile after the calculated air time
     FF_ApplyOnceExtData(freeAimDropProjectile, dropTime, 1, rBody);
     // Set the gravity to the projectile. Again: The gravity does not take effect until it is activated
-    MEM_WriteInt(rBody+zCRigidBody_gravity_offset, mulf(castToIntf(FREEAIM_PROJECTILE_GRAVITY), gravityMod));
+    MEM_WriteInt(rBody+zCRigidBody_gravity_offset, mulf(castToIntf(GFA_PROJECTILE_GRAVITY), gravityMod));
 
     // Reset draw timer
-    freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_RELOAD;
+    GFA_BowDrawOnset = MEM_Timer.totalTime + GFA_DRAWTIME_RELOAD;
 
 
     // 5th: Add trail strip FX for better visibility
@@ -352,7 +352,7 @@ func void freeAimSetupProjectile() {
     if (GOTHIC_BASE_VERSION == 2) {
         // Gothic 1 does not offer effects on items
         if (Hlp_StrCmp(MEM_ReadString(projectilePtr+oCItem_effect_offset), "")) { // Projectile has no FX
-            MEM_WriteString(projectilePtr+oCItem_effect_offset, FREEAIM_TRAIL_FX);
+            MEM_WriteString(projectilePtr+oCItem_effect_offset, GFA_TRAIL_FX);
             const int call2 = 0;
             if (CALL_Begin(call2)) {
                 CALL__thiscall(_@(projectilePtr), oCItem__InsertEffect);
@@ -361,7 +361,7 @@ func void freeAimSetupProjectile() {
         };
     } else {
         // Simplified mechanics for Gothic 1
-        Wld_PlayEffect(FREEAIM_TRAIL_FX_SIMPLE, projectile, projectile, 0, 0, 0, FALSE);
+        Wld_PlayEffect(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0, 0, 0, FALSE);
     };
 
     // 6th: Reposition the aim vob and overwrite the target vob
@@ -385,7 +385,7 @@ func void freeAimSetupProjectile() {
     MEM_Info(SB_ToString());
     SB_Clear();
 
-    if (FREEAIM_TRUE_HITCHANCE) {
+    if (GFA_TRUE_HITCHANCE) {
         SB("   accuracy:          ");
         SBi(accuracy);
         SB("%");
@@ -466,7 +466,7 @@ func void freeAimDropProjectile(var int rigidBody) {
  * This function resets the gravity back to its default value, after any collision occured. The function hooks
  * oCAIArrow::ReportCollisionToAI at an offset where a valid collision was detected.
  * It is important to reset the gravity, because the projectile may bounce of walls (etc.), after which it would float
- * around with the previously set drop-off gravity (FREEAIM_PROJECTILE_GRAVITY).
+ * around with the previously set drop-off gravity (GFA_PROJECTILE_GRAVITY).
  */
 func void freeAimResetGravity() {
     var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, ECX);
