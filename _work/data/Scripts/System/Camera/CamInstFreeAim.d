@@ -30,10 +30,11 @@ INSTANCE CamModFreeAim (CCamSys_Def)
     minElevation        = 0.0;
     maxElevation        = 89.0;
     bestAzimuth         = 0.0;
-    minAzimuth          = -90.0;
-    maxAzimuth          = 90.0;
+    minAzimuth          = -5.0;
+    maxAzimuth          = 5.0;
     rotOffsetX          = 23.0; // Increased from 20.0
     rotOffsetY          = 0.0;
     targetOffsetY       = 40.0;  // A little up for more visibility
     targetOffsetX       = 15.0;  // A little to the right (make the projectile fly in a straigh line). Most important
+    veloRot             = 10000; // More responsive mouse movement (value from CamModFirstPerson)
 };

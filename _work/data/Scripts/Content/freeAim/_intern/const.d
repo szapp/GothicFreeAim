@@ -54,6 +54,8 @@ const float  FREEAIM_SCATTER_HIT      = 2.6;                  // (Visual angle)/
 const float  FREEAIM_SCATTER_MISS     = 3.3;                  // (Visual angle)/2 outside which everything is a miss
 const float  FREEAIM_SCATTER_MAX      = 5.0;                  // (Visual angle)/2 of maximum scatter (all in degrees)
 
+const float  FREEAIM_MAX_TURN_RATE_G1 = 2.0;                  // Gothic 1 has a maximum turn rate (engine default: 2.0)
+
 var   int    freeAimRecoil;                                   // Amount of vertical mouse movement on recoil
 
 const int    FLOAT1C                  = 1120403456;           // 100 as float

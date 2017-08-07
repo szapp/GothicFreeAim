@@ -105,7 +105,7 @@ const int oCNpc__OnDamage_Anim_getModel              =  7609592; //0x741CF8 // H
 const int oCNpcFocus__SetFocusMode                   =  6508128; //0x634E60 // Hook len 7
 const int oCAIHuman__MagicMode                       =  4641376; //0x46D260 // Hook len 7
 const int oCSpell__Setup_oCVisFXinit                 =  4704143; //0x47C78F // Hook len 6
-const int mouseUpdate                                =  5013392; //0x4C7F90 // Hook len 5
+const int mouseUpdate                                =  5013602; //0x4C8062 // Hook len 5
 
 
 /*
