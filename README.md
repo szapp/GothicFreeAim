@@ -1,7 +1,8 @@
 Gothic Free Aim
 ===============
 
-**Script for the video game Gothic II: Night of the Raven enabling free aiming for ranged weapons and spells.**
+**Script package for the video games Gothic and Gothic II: Night of the Raven enabling free aiming for ranged weapons
+and spells.**
 
 **Note**: This is a script (i.e. source code). If you are interested in a playable version instead, checkout this
 modification [Gothic II - Freies Zielen](http://forum.worldofplayers.de/forum/threads/1482039) (German language).
@@ -56,13 +57,13 @@ Requirements:
  - [Ikarus 1.2](http://forum.worldofplayers.de/forum/threads/1299679)
  - [LeGo 2.4.0](http://lego.worldofplayers.de) or higher with HookEngine, FrameFunctions and ConsoleCommands
 
-A [setup](http://github.com/szapp/g2freeAim/releases/latest) is available to take care of the integration. Just run it,
-and all scripts should be fully working (originals will be backed up). Alternatively, you can do these following steps
-manually.
+A [setup](http://github.com/szapp/GothicFreeAim/releases/latest) is available to take care of the integration. Just run
+it, and all scripts should be fully working (originals will be backed up). Alternatively, you can do these following
+steps manually.
 
  1. Make sure Ikarus and LeGo are installed and initialized with *FrameFunctions* and *ConsoleCommands*.
  2. Copy all files from this repository into your Gothic II installation. Mind the relative paths. Do not forget the
-    binary files (textures) that come with the [release](http://github.com/szapp/g2freeAim/releases/latest).
+    binary files (textures) that come with the [release](http://github.com/szapp/GothicFreeAim/releases/latest).
  3. Have the files parsed:
     1. Add the line `FREEAIM\freeAim.src` to `_work\data\Scripts\Content\Gothic.src` somewhere **after** Ikarus, LeGo
        and `AI\AI_INTERN\FOCUS.D`.
@@ -95,7 +96,7 @@ manually.
  7. Finally initialize free aim by adding the line `GFA_Init();` in to the function `INIT_GLOBAL()` in
     `_work\data\Scripts\Content\Story\Startup.d` somewhere after Ikarus and LeGo.
 
-> Again: The [setup](http://github.com/szapp/g2freeAim/releases/latest) will perform all these steps for you.
+> Again: The [setup](http://github.com/szapp/GothicFreeAim/releases/latest) will perform all these steps for you.
 
 You will have to adjust the labels in `_work\data\Scripts\System\Menu\Menu_Opt_Game_FreeAim.d`. By default they are in
 German. After parsing the scripts GFA should be fully implemented. Read on to find out how to adjust GFA to
@@ -315,7 +316,7 @@ effort. Note that this demo is in German.
 Q: **How do I install GFA into my scripts?**
 
 A:
-You can find the latest release [here](http://github.com/szapp/g2freeAim/releases/latest). Follow the instructions
+You can find the latest release [here](http://github.com/szapp/GothicFreeAim/releases/latest). Follow the instructions
 above.
 
 Q: **I am getting an error while parsing: *"Syntax error : ï»¿ ( line 1 )"*, what now?**
@@ -358,12 +359,13 @@ Q: **Why is the reticle not in the center of my screen?**
 
 A:
 You seem to be using version v0.1.0 of GFA. Update it to the
-[latest version](http://github.com/szapp/g2freeAim/releases/latest).
+[latest version](http://github.com/szapp/GothicFreeAim/releases/latest).
 
 Q: **Why do I have a rock-like texture instead of a reticle on my screen?**
 
 A:
-You seem to have missed the textures. You can download them [here](http://github.com/szapp/g2freeAim/releases/latest).
+You seem to have missed the textures. You can download them
+[here](http://github.com/szapp/GothicFreeAim/releases/latest).
 
 Q: **How can I define critical hit zones for different monsters?**
 

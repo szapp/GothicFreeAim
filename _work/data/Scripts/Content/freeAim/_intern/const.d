@@ -5,7 +5,7 @@
  * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
- * <http://github.com/szapp/g2freeAim>
+ * <http://github.com/szapp/GothicFreeAim>
  *
  * Gothic Free Aim is free software: you can redistribute it and/or
  * modify it under the terms of the MIT License.

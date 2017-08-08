@@ -5,7 +5,7 @@
  * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
- * <http://github.com/szapp/g2freeAim>
+ * <http://github.com/szapp/GothicFreeAim>
  *
  * Gothic Free Aim is free software: you can redistribute it and/or
  * modify it under the terms of the MIT License.
@@ -208,7 +208,7 @@ func int GFA_InitOnce() {
     SB("     "); SB(GFA_VERSION); SB(", Copyright "); SBc(169 /* (C) */); SB(" 2016-2017  mud-freak (@szapp)");
     MEM_Info("");
     MEM_Info(SB_ToString()); SB_Destroy();
-    MEM_Info("     <http://github.com/szapp/g2freeAim>");
+    MEM_Info("     <http://github.com/szapp/GothicFreeAim>");
     MEM_Info("     Released under the MIT License.");
     MEM_Info("     For more details see <http://opensource.org/licenses/MIT>.");
     MEM_Info("");

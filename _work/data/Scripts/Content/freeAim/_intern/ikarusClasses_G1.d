@@ -2,10 +2,10 @@
  * Ikarus classes that are not supplied for Gothic 1
  *
  * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016  mud-freak (@szapp)
+ * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
- * <http://github.com/szapp/g2freeAim>
+ * <http://github.com/szapp/GothicFreeAim>
  *
  * Gothic Free Aim is free software: you can redistribute it and/or
  * modify it under the terms of the MIT License.
