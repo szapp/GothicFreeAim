@@ -1,17 +1,18 @@
 /*
- * This file contains all basic settings. Values deviating too far from the default values should either be avoided or
- * tested thoroughly.
+ * This file contains all basic settings and allows enabling and disabling the features of this script package.
+ * Values deviating too far from the default values should either be avoided or tested thoroughly.
  */
 
 
 /*
- * Features that can be independently enabled and disabled. It is possible, to not use free aiming at all, but still
- * make use of the other features. Any combination of features is possible, while completely disabling the others.
+ * These are the features that can be independently enabled and disabled. It is possible to not use free aiming at all,
+ * but still make use of the other features. Any combination of features is possible, while completely disabling the
+ * others.
  *
  * If GFA_RANGED and GFA_SPELLS are both set to false, the free aiming feature is completely disabled, not affecting
  * the other features, however.
  *
- * A list to the config files that correspond to each feature and offer more indepth customization:
+ * A list to the config files that correspond to each feature and offer more in-depth customization:
  *  ranged.d        GFA_RANGED
  *  spell.d         GFA_SPELLS
  *  reticle.d       GFA_RANGED and GFA_SPELLS
@@ -37,7 +38,7 @@ const float GFA_PROJECTILE_GRAVITY = 0.1;   // Gravity of projectile after GFA_T
 const int   GFA_MAX_RECOIL         = 16;    // Amount of maximum vertical mouse movement on recoil
 const int   GFA_HORZ_RECOIL        = 2;     // Range [-x, x] of horizontal mouse deviation on recoil
 
-// GFA_RANGED and GFA_SPELLS
+// GFA_RANGED and/or GFA_SPELLS
 const float GFA_ROTATION_SCALE     = 0.16;  // Turn rate while aiming (changes Gothic 1 controls only)
 const int   GFA_CAMERA_X_SHIFT     = FALSE; // Set to TRUE if camera is set to shoulderview, s.a. (not recommended)
 const int   GFA_DEBUG_CONSOLE      = TRUE;  // Enable console commands (debugging). Disable in final mod

@@ -2,7 +2,7 @@
  * This file is part of the configuration for critical hits for bows and crossbows (see config\criticalHit.d). The
  * cricital hit zones can be defined for any bone of the character/monster models. To give an example, this file defines
  * head shots. For compatibility reasons between Gothic 1 and Gothic 2 these exemplary definitions are outsourced here
- * and split between Gothic 1 and Gothic 2, since there are different mosters in both games.
+ * and split between Gothic 1 and Gothic 2 in different files, since there are different mosters in both games.
  */
 
 

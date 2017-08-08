@@ -32,7 +32,7 @@
  * the interval in milliseconds in which the trace ray is recomputed. The upper bound is 500ms, which already introduces
  * a slight lag in the focus collection and reticle size (if applicable). A recommended value is below 50ms.
  */
-func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int posPtr, var int distPtr,
+func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int posPtr, var int distPtr,
         var int trueDistPtr) {
 
     // Only run full trace ray machinery every so often (see GFA_AimRayInterval) to allow weaker machines to run this

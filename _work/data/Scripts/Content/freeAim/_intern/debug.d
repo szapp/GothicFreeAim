@@ -25,7 +25,7 @@
 /*
  * Visualize a bounding box in 3D space. Function can generally be used to debug operations in 3D space.
  */
-func void freeAimVisualizeBBox(var int bboxPtr, var int color) {
+func void GFA_VisualizeBBox(var int bboxPtr, var int color) {
     var int cPtr; cPtr = _@(color);
     const int call = 0;
     if (CALL_Begin(call)) {
@@ -39,7 +39,7 @@ func void freeAimVisualizeBBox(var int bboxPtr, var int color) {
 /*
  * Visualize a line in 3D space. Function can generally be used to debug operations in 3D space.
  */
-func void freeAimVisualizeLine(var int pos1Ptr, var int pos2Ptr, var int color) {
+func void GFA_VisualizeLine(var int pos1Ptr, var int pos2Ptr, var int color) {
     const int call = 0; var int zero;
     if (CALL_Begin(call)) {
         CALL_IntParam(_@(zero));
@@ -57,24 +57,24 @@ func void freeAimVisualizeLine(var int pos1Ptr, var int pos2Ptr, var int color) 
  * zCWorld::AdvanceClock, because it has to happen BEFORE where the frame functions are hooked. Otherwise the drawn
  * lines disappear.
  */
-func void freeAimVisualizeTraceRay() {
+func void GFA_VisualizeTraceRay() {
     if (!GFA_DEBUG_TRACERAY) || (MEM_Game.pause_screen) {
         return;
     };
 
     // Visualize trace ray intersection as small green bounding box
     if (GFA_DebugTRBBox[0]) {
-        freeAimVisualizeBBox(_@(GFA_DebugTRBBox), zCOLOR_GREEN);
+        GFA_VisualizeBBox(_@(GFA_DebugTRBBox), zCOLOR_GREEN);
     };
 
     // Visualize trace ray as green line
     if (GFA_DebugTRTrj[0]) {
-        freeAimVisualizeLine(_@(GFA_DebugTRTrj), _@(GFA_DebugTRTrj)+sizeof_zVEC3, zCOLOR_GREEN);
+        GFA_VisualizeLine(_@(GFA_DebugTRTrj), _@(GFA_DebugTRTrj)+sizeof_zVEC3, zCOLOR_GREEN);
     };
 
     // Visualize validated found vob as green bounding box, if present
     if (GFA_DebugTRPrevVob) {
-        freeAimVisualizeBBox(GFA_DebugTRPrevVob, zCOLOR_GREEN);
+        GFA_VisualizeBBox(GFA_DebugTRPrevVob, zCOLOR_GREEN);
     };
 };
 
@@ -84,18 +84,18 @@ func void freeAimVisualizeTraceRay() {
  * hooks zCWorld::AdvanceClock, because it has to happen BEFORE where the frame functions are hooked. Otherwise the
  * drawn lines disappear.
  */
-func void freeAimVisualizeWeakspot() {
+func void GFA_VisualizeWeakspot() {
     if (!GFA_DEBUG_WEAKSPOT) || (MEM_Game.pause_screen) {
         return;
     };
 
     // Visualize critical hit node (weak spot) as red bounding box
     if (GFA_DebugWSBBox[0]) {
-        freeAimVisualizeBBox(_@(GFA_DebugWSBBox), zCOLOR_RED);
+        GFA_VisualizeBBox(_@(GFA_DebugWSBBox), zCOLOR_RED);
     };
 
     // Approximate projectile trajectory as red line
     if (GFA_DebugWSTrj[0]) {
-        freeAimVisualizeLine(_@(GFA_DebugWSTrj), _@(GFA_DebugWSTrj)+sizeof_zVEC3, zCOLOR_RED);
+        GFA_VisualizeLine(_@(GFA_DebugWSTrj), _@(GFA_DebugWSTrj)+sizeof_zVEC3, zCOLOR_RED);
     };
 };

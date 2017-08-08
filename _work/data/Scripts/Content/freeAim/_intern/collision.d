@@ -24,10 +24,10 @@
 
 /*
  * Set/reset the collision behavior of projectiles with NPCs. There are two different behaviors plus one auto (default).
- * This function is specific to Gothic 2 only. This function is called from freeAimDoNpcHit() and from
- * freeAimUpdateSettings().
+ * This function is specific to Gothic 2 only. It is called from GFA_CC_ProjectileCollisionWithNpc() and from
+ * GFA_UpdateSettings().
  */
-func void freeAimSetCollisionWithNPC(var int setting) {
+func void GFA_CC_SetProjectileCollisionWithNpc(var int setting) {
     if (GOTHIC_BASE_VERSION != 2) || (!GFA_CUSTOM_COLLISIONS) {
         return;
     };
@@ -64,10 +64,11 @@ func void freeAimSetCollisionWithNPC(var int setting) {
 
 /*
  * Re-implementation of the deflection behavior of projectiles found in Gothic 2, but missing in Gothic 1. Hence, this
- * function is only of interest for Gothic 1. It is called from freeAimDoNpcHit() and freeAimOnArrowCollide().
+ * function is only of interest for Gothic 1. It is called from GFA_CC_ProjectileCollisionWithNpc() and
+ * GFA_CC_ProjectileCollisionWithWorld().
  * This code inspired by 0x6A0ACF (oCAIArrowBase::ReportCollisionToAI() of Gothic 2)
  */
-func void freeAimProjectileDeflect(var int rigidBody) {
+func void GFA_CC_ProjectileDeflect(var int rigidBody) {
     if (!rigidBody) {
         return;
     };
@@ -98,13 +99,13 @@ func void freeAimProjectileDeflect(var int rigidBody) {
 
 /*
  * Gothic 1 does not implement that projectiles stop and get stuck in the surface (as found in Gothic 2). Hence, this
- * function is only of interest for Gothic 1. It is called from freeAimOnArrowCollide().
+ * function is only of interest for Gothic 1. It is called from GFA_CC_ProjectileCollisionWithWorld().
  * The code is inspired by 0x6A0A54 (oCAIArrowBase::ReportCollisionToAI() of Gothic 2).
  *
  * Note: As of now, this implementation does not satisfy: For some reason, the projectiles are stuck at different depths
  * causing some of the to not be focusable (collectable) and other floating in the air. This still needs some adjustment
  */
-func void freeAimProjectileStuck(var int projectilePtr) {
+func void GFA_CC_ProjectileStuck(var int projectilePtr) {
     if (!projectilePtr) {
         return;
     };
@@ -131,7 +132,7 @@ func void freeAimProjectileStuck(var int projectilePtr) {
  * called also from outside this function (from outside this file), especially from the collectable projectile feature.
  * It is called for both Gothic 1 and Gothic 2
  */
-func void freeAimProjectileDestroy(var int arrowAI) {
+func void GFA_CC_ProjectileDestroy(var int arrowAI) {
     if (GOTHIC_BASE_VERSION == 1) {
         // First of all, remove trail strip FX
         var C_Item projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
@@ -145,13 +146,14 @@ func void freeAimProjectileDestroy(var int arrowAI) {
 
 
 /*
- * Wrapper function for the config function freeAimHitRegNpc(). It is called from freeAimDoNpcHit().
+ * Wrapper function for the config function GFA_GetCollisionWithNpc(). It is called from
+ * GFA_CC_ProjectileCollisionWithNpc().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
-func int freeAimHitRegNpc_(var C_Npc target) {
+func int GFA_CC_GetCollisionWithNpc_(var C_Npc target) {
     // Get readied/equipped ranged weapon
     var int weaponPtr;
-    freeAimGetWeaponTalent(_@(weaponPtr), 0);
+    GFA_GetWeaponAndTalent(_@(weaponPtr), 0);
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Get material of equipped armor
@@ -165,41 +167,42 @@ func int freeAimHitRegNpc_(var C_Npc target) {
     };
 
     // Retrieve collision definition from config
-    return freeAimHitRegNpc(target, weapon, material);
+    return GFA_GetCollisionWithNpc(target, weapon, material);
 };
 
 
 /*
- * Wrapper function for the config function freeAimHitRegWld(). It is called from freeAimOnArrowCollide().
+ * Wrapper function for the config function GFA_GetCollisionWithWorld(). It is called from
+ * GFA_CC_ProjectileCollisionWithWorld().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
-func int freeAimHitRegWld_(var C_Npc shooter, var int material, var string texture) {
+func int GFA_CC_GetCollisionWithWorld_(var C_Npc shooter, var int materials, var string textures) {
     // Get readied/equipped ranged weapon
     var int weaponPtr;
-    freeAimGetWeaponTalent(_@(weaponPtr), 0);
+    GFA_GetWeaponAndTalent(_@(weaponPtr), 0);
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Retrieve collision definition from config
-    return freeAimHitRegWld(shooter, weapon, material, texture);
+    return GFA_GetCollisionWithWorld(shooter, weapon, materials, textures);
 };
 
 
 /*
  * Determine the hit chance when shooting at an NPC to manipulate the hit registration. This function hooks
- * oCAIArrow::ReportCollisionToAI() at the offset where the hit chance of the NPC is checked. With freeAimHitRegNpc(),
- * it is decided whether a projectile causes damage, does nothing or bounces of the NPC. Depending on
- * GFA_TRUE_HITCHANCE, the resulting hit chance is either the accuracy or always 100%, where the hit chance is instead
- * determined by scattering in freeAimSetupProjectile().
+ * oCAIArrow::ReportCollisionToAI() at the offset where the hit chance of the NPC is checked. With
+ * GFA_GetCollisionWithNpc(), it is decided whether a projectile causes damage, does nothing or bounces of the NPC.
+ * Depending on GFA_TRUE_HITCHANCE, the resulting hit chance is either the accuracy or always 100%, where the hit chance
+* is instead determined by scattering in GFA_SetupProjectile().
  * This function is only manipulating anything if the shooter is the player.
  */
-func void freeAimDoNpcHit() {
+func void GFA_CC_ProjectileCollisionWithNpc() {
     var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EBP);
     var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
 
     // This function does not affect NPCs and also only affects the player if FA is enabled
     if (!Npc_IsPlayer(shooter)) {
         // Reset to Gothic's default hit registration and leave the function
-        freeAimSetCollisionWithNPC(0); // Gothic 2
+        GFA_CC_SetProjectileCollisionWithNpc(0); // Gothic 2
         MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1); // Gothic 1
         return;
     };
@@ -224,17 +227,17 @@ func void freeAimDoNpcHit() {
         } else {
             // Retrieve the collision behavior based on the shooter, target and the material type of their armor
             var C_Npc target; target = _^(MEMINT_SwitchG1G2(EBX, MEM_ReadInt(/*esp+1ACh-190h*/ ESP+28)));
-            collision = freeAimHitRegNpc_(target);
+            collision = GFA_CC_GetCollisionWithNpc_(target);
         };
 
         // Set collision behavior
-        freeAimSetCollisionWithNPC((collision == DEFLECT)+1); // 1 == DAMAGE or DESTROY, 2 == DEFLECT // G2
+        GFA_CC_SetProjectileCollisionWithNpc((collision == DEFLECT)+1); // 1 == DAMAGE or DESTROY, 2 == DEFLECT // G2
         MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, (collision != DEFLECT)); // Remove projectile // G1
         hit = (collision == DAMAGE); // FALSE == DESTROY or DEFLECT, TRUE == DAMAGE
 
         if (collision == DEFLECT) && (GOTHIC_BASE_VERSION == 1) {
             // Gothic 1: Adjust the projectile to deflect
-            freeAimProjectileDeflect(projectile._zCVob_rigidBody);
+            GFA_CC_ProjectileDeflect(projectile._zCVob_rigidBody);
             MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, -1); // Mark as deflecting, such that it is ignored
 
         } else if (collision == DESTROY) && (GFA_REUSE_PROJECTILES) {
@@ -281,7 +284,7 @@ func void freeAimDoNpcHit() {
  * Because the surface may belong to several material groups and have several textures, they are iterated over and
  * collected in a bit field (materials) and in a concatenated string (textures).
  */
-func void freeAimOnArrowCollide() {
+func void GFA_CC_ProjectileCollisionWithWorld() {
     // Retrieve the projectile or leave if does not exist
     var int arrowAI; arrowAI = ESI;
     var int projectilePtr; projectilePtr = MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset);
@@ -383,7 +386,7 @@ func void freeAimOnArrowCollide() {
     var int speed; speed = sqrtf(addf(addf(sqrf(vel[0]), sqrf(vel[1])), sqrf(vel[2]))); // Norm of vel
 
     // Retrieve the collision behavior based on the shooter, the material type and the texture of the collision object
-    var int collision; collision = freeAimHitRegWld_(shooter, materials, textures);
+    var int collision; collision = GFA_CC_GetCollisionWithWorld_(shooter, materials, textures);
     const int DESTROY = 0; // Projectile breaks and vanishes
     const int STUCK   = 1; // Projectile stays and is stuck in the surface of the collision object
     const int DEFLECT = 2; // Projectile deflects of the surfaces and bounces off
@@ -395,7 +398,7 @@ func void freeAimOnArrowCollide() {
 
             if (GOTHIC_BASE_VERSION == 1) {
                 // Gothic 1: Adjust the projectile to get stuck
-                freeAimProjectileStuck(projectilePtr);
+                GFA_CC_ProjectileStuck(projectilePtr);
             } else {
                 // Gothic 2: Has this already implemented
                 EDI = firstMat; // Sets the condition at 0x6A0A45 and 0x6A0C1A to true: Projectile stays
@@ -412,7 +415,7 @@ func void freeAimOnArrowCollide() {
         // Destroy the projectile only if it is still fast enough and check number of prior collisions
         if (gf(speed, FLOAT3C)) && (collisionCounter < 2) {
             // For both Gothic 1 and Gothic 2
-            freeAimProjectileDestroy(arrowAI);
+            GFA_CC_ProjectileDestroy(arrowAI);
 
             // Speed is high enough to break the projectile: Breaking sound and visual effect
             Wld_StopEffect(GFA_BREAK_FX); // Sometimes collides several times, so disable first
@@ -426,7 +429,7 @@ func void freeAimOnArrowCollide() {
     if (collision == DEFLECT) {
         if (GOTHIC_BASE_VERSION == 1) {
             // Gothic 1: Adjust the projectile to deflect
-            freeAimProjectileDeflect(rigidBody);
+            GFA_CC_ProjectileDeflect(rigidBody);
         } else {
             // Gothic 2: Has this already implemented
             EDI = -1; // Sets the condition at 0x6A0A45 and 0x6A0C1A to false: Projectile deflects
@@ -466,20 +469,20 @@ func void freeAimOnArrowCollide() {
         EAX = numMaterials;
     };
 
-    // Play PFX on impact and increment this property as counter (needed for freeAimDisableNpcCollisionOnRebound())
+    // Play PFX on impact and increment property as counter (needed for GFA_CC_DisableProjectileCollisionOnRebound())
     MEM_WriteInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset, collisionCounter+1);
 };
 
 
 /*
  * This function disables collision of projectiles with NPCs once the projectiles have bounced of another surface. Like
- * freeAimTriggerCollisionCheck(), this function hooks oCAIArrow::CanThisCollideWith() and checks whether the object in
- * question is an NPC to prevent the collision, if the projectiles has collided before. The hook is done in a separate
- * function to increase performance, if only one of the two settings is enabled.
+ * GFA_CC_DisableProjectileCollisionWithTrigger(), this function hooks oCAIArrow::CanThisCollideWith() and checks
+ * whether the object in question is an NPC to prevent the collision, if the projectiles has collided before. The hook
+ * is done in a separate function to increase performance, if only one of the two settings is enabled.
  *
  * Note: This hook is only initialized if GFA_COLL_PRIOR_NPC == -1.
  */
-func void freeAimDisableNpcCollisionOnRebound() {
+func void GFA_CC_DisableProjectileCollisionOnRebound() {
     var int arrowAI; arrowAI = ECX;
 
     // Check if the projectile bounced off a surface before
@@ -500,7 +503,7 @@ func void freeAimDisableNpcCollisionOnRebound() {
 
 /*
  * Fix trigger collision bug. When shooting a projectile inside a trigger of certain properties, the projectile collides
- * continuously causing a nerve recking sound. Like freeAimDisableNpcCollisionOnRebound(), this function hooks
+ * continuously causing a nerve recking sound. Like GFA_CC_DisableProjectileCollisionOnRebound(), this function hooks
  * oCAIArrow::CanThisCollideWith() and checks whether the object in question is a trigger with certain properties to
  * prevent the collision. The hook is done in a separate function to increase performance, if only one of the two
  * settings is enabled. This fix is only necessary for Gothic 2.
@@ -509,7 +512,7 @@ func void freeAimDisableNpcCollisionOnRebound() {
  *
  * Note: This hook is only initialized if GFA_TRIGGER_COLL_FIX is true.
  */
-func void freeAimTriggerCollisionCheck() {
+func void GFA_CC_DisableProjectileCollisionWithTrigger() {
     var int vobPtr; vobPtr = MEMINT_SwitchG1G2(ESP+4, ESP+8);
     var zCVob vob; vob = _^(MEM_ReadInt(vobPtr));
 

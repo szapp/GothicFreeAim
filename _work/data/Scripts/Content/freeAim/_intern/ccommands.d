@@ -27,7 +27,7 @@
  * When enabled, the trajectory of the projectile and the defined weak spot of the last shot NPC is visualized with
  * bounding boxes and lines.
  */
-func string freeAimDebugWeakspot(var string command) {
+func string GFA_DebugWeakspot(var string command) {
     GFA_DEBUG_WEAKSPOT = !GFA_DEBUG_WEAKSPOT;
     if (GFA_DEBUG_WEAKSPOT) {
         return "Debug weak spot on.";
@@ -41,7 +41,7 @@ func string freeAimDebugWeakspot(var string command) {
  * Console function to enable/disable trace ray debug output. This function is registered as console command.
  * When enabled, the trace ray is continuously drawn, as well as the intersection of it.
  */
-func string freeAimDebugTraceRay(var string command) {
+func string GFA_DebugTraceRay(var string command) {
     GFA_DEBUG_TRACERAY = !GFA_DEBUG_TRACERAY;
     if (GFA_DEBUG_TRACERAY) {
         return "Debug trace ray on.";
@@ -55,7 +55,7 @@ func string freeAimDebugTraceRay(var string command) {
  * Console function to show freeAim version. This function is registered as console command.
  * When entered in the console, the current g2freeAim version is displayed as the console output.
  */
-func string freeAimVersion(var string command) {
+func string GFA_GetVersion(var string command) {
     return GFA_VERSION;
 };
 
@@ -64,7 +64,7 @@ func string freeAimVersion(var string command) {
  * Console function to show freeAim license. This function is registered as console command.
  * When entered in the console, the g2freeAim license information is displayed as the console output.
  */
-func string freeAimLicense(var string command) {
+func string GFA_GetLicense(var string command) {
     var int s; s = SB_New();
     SB(GFA_VERSION);
     SB(", Copyright ");
@@ -92,7 +92,7 @@ func string freeAimLicense(var string command) {
  * Console function to show freeAim info. This function is registered as console command.
  * When entered in the console, the g2freeAim config is displayed as the console output.
  */
-func string freeAimInfo(var string command) {
+func string GFA_GetInfo(var string command) {
     const string onOff[2] = {"OFF", "ON"};
 
     var int s; s = SB_New();

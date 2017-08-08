@@ -23,20 +23,20 @@
 
 
 /*
- * Wrapper function for the config function freeAimGetDrawForce(). It is called from freeAimSetupProjectile().
+ * Wrapper function for the config function GFA_GetDrawForce(). It is called from GFA_SetupProjectile().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
-func int freeAimGetDrawForce_() {
+func int GFA_GetDrawForce_() {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
-    if (!freeAimGetWeaponTalent(_@(weaponPtr), _@(talent))) {
+    if (!GFA_GetWeaponAndTalent(_@(weaponPtr), _@(talent))) {
         // On error return 50% draw force
         return 50;
     };
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Retrieve draw force value from config
-    var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent);
+    var int drawForce; drawForce = GFA_GetDrawForce(weapon, talent);
 
     // Must be a percentage in range of [0, 100]
     if (drawForce > 100) {
@@ -49,20 +49,20 @@ func int freeAimGetDrawForce_() {
 
 
 /*
- * Wrapper function for the config function freeAimGetAccuracy(). It is called from freeAimSetupProjectile().
+ * Wrapper function for the config function GFA_GetAccuracy(). It is called from GFA_SetupProjectile().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
-func int freeAimGetAccuracy_() {
+func int GFA_GetAccuracy_() {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
-    if (!freeAimGetWeaponTalent(_@(weaponPtr), _@(talent))) {
+    if (!GFA_GetWeaponAndTalent(_@(weaponPtr), _@(talent))) {
         // On error return 50% accuracy
         return 50;
     };
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Retrieve accuracy value from config
-    var int accuracy; accuracy = freeAimGetAccuracy(weapon, talent);
+    var int accuracy; accuracy = GFA_GetAccuracy(weapon, talent);
 
     // Must be a percentage in range of [1, 100], division by 0!
     if (accuracy > 100) {
@@ -76,13 +76,13 @@ func int freeAimGetAccuracy_() {
 
 
 /*
- * Wrapper function for the config function freeAimScaleInitialDamage(). It is called from freeAimSetupProjectile().
+ * Wrapper function for the config function GFA_GetInitialBaseDamage(). It is called from GFA_SetupProjectile().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
-func int freeAimScaleInitialDamage_(var int basePointDamage, var int aimingDistance) {
+func int GFA_GetInitialBaseDamage_(var int basePointDamage, var int aimingDistance) {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
-    if (!freeAimGetWeaponTalent(_@(weaponPtr), _@(talent))) {
+    if (!GFA_GetWeaponAndTalent(_@(weaponPtr), _@(talent))) {
         // On error return the base damage unaltered
         return basePointDamage;
     };
@@ -100,7 +100,7 @@ func int freeAimScaleInitialDamage_(var int basePointDamage, var int aimingDista
     };
 
     // Retrieve adjusted damage value from config
-    basePointDamage = freeAimScaleInitialDamage(basePointDamage, weapon, talent, aimingDistance);
+    basePointDamage = GFA_GetInitialBaseDamage(basePointDamage, weapon, talent, aimingDistance);
 
     // No negative damage
     if (basePointDamage < 0) {
@@ -111,20 +111,20 @@ func int freeAimScaleInitialDamage_(var int basePointDamage, var int aimingDista
 
 
 /*
- * Wrapper function for the config function freeAimGetRecoil(). It is called from freeAimSetupProjectile().
+ * Wrapper function for the config function GFA_GetRecoil(). It is called from GFA_SetupProjectile().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
-func int freeAimGetRecoil_() {
+func int GFA_GetRecoil_() {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
-    if (!freeAimGetWeaponTalent(_@(weaponPtr), _@(talent))) {
+    if (!GFA_GetWeaponAndTalent(_@(weaponPtr), _@(talent))) {
         // On error return 0% recoil
         return 0;
     };
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Retrieve recoil value from config
-    var int recoil; recoil = freeAimGetRecoil(weapon, talent);
+    var int recoil; recoil = GFA_GetRecoil(weapon, talent);
 
     // Must be a percentage in range of [0, 100]
     if (recoil > 100) {
@@ -140,14 +140,14 @@ func int freeAimGetRecoil_() {
  * Set the projectile direction. This function hooks oCAIArrow::SetupAIVob to overwrite the target vob with the aim vob
  * that is placed in front of the camera at the nearest intersection with the world or an object.
  * Setting up the projectile involves several parts:
- *  1st: Set base damage of projectile:             freeAimScaleInitialDamage()
- *  2nd: Manipulate aiming accuracy (scatter):      freeAimGetAccuracy()
- *  3rd: Add recoil to mouse movement:              freeAimGetRecoil()
- *  4th: Set projectile drop-off (by draw force):   freeAimGetDrawForce()
+ *  1st: Set base damage of projectile:             GFA_GetInitialBaseDamage()
+ *  2nd: Manipulate aiming accuracy (scatter):      GFA_GetAccuracy()
+ *  3rd: Add recoil to mouse movement:              GFA_GetRecoil()
+ *  4th: Set projectile drop-off (by draw force):   GFA_GetDrawForce()
  *  5th: Add trial strip FX for better visibility
  *  6th: Setup the aim vob and overwrite the target
  */
-func void freeAimSetupProjectile() {
+func void GFA_SetupProjectile() {
     // Only if shooter is the player and if FA is enabled
     var C_Npc shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second function argument is the shooter
     if (!GFA_ACTIVE) || (!Npc_IsPlayer(shooter)) {
@@ -164,7 +164,7 @@ func void freeAimSetupProjectile() {
     var int pos[3]; // Position of the target shot
     var int distance; // Distance to camera (used for calculating position of target shot in local space)
     var int distPlayer; // Distance to player (used for debugging output in zSpy)
-    freeAimRay(GFA_MAX_DIST, TARGET_TYPE_NPCS, 0, _@(pos), _@(distPlayer), _@(distance));
+    GFA_AimRay(GFA_MAX_DIST, TARGET_TYPE_NPCS, 0, _@(pos), _@(distPlayer), _@(distance));
 
     // When the target is too close, shots go vertically up, because the reticle is targeted. To solve this problem,
     // restrict the minimum distance
@@ -175,7 +175,7 @@ func void freeAimSetupProjectile() {
     // 1st: Modify the base damage of the projectile
     // This allows for dynamical adjustment of damage (e.g. based on draw force).
     var int baseDamage; baseDamage = projectile.damage[DAM_INDEX_POINT]; // Only point damage is considered
-    var int newBaseDamage; newBaseDamage = freeAimScaleInitialDamage_(baseDamage, distPlayer);
+    var int newBaseDamage; newBaseDamage = GFA_GetInitialBaseDamage_(baseDamage, distPlayer);
     projectile.damage[DAM_INDEX_POINT] = newBaseDamage;
 
 
@@ -192,7 +192,7 @@ func void freeAimSetupProjectile() {
         var int rmax;
 
         // Retrieve accuracy percentage
-        var int accuracy; accuracy = freeAimGetAccuracy_(); // Change the accuracy in that function, not here!
+        var int accuracy; accuracy = GFA_GetAccuracy_(); // Change the accuracy in that function, not here!
 
         // Determine whether it is considered accurate enough for a positive hit
         if (r_MinMax(0, 99) < accuracy) {
@@ -305,13 +305,13 @@ func void freeAimSetupProjectile() {
 
 
     // 3rd: Add recoil
-    var int recoil; recoil = freeAimGetRecoil_();
+    var int recoil; recoil = GFA_GetRecoil_();
     GFA_Recoil = (GFA_MAX_RECOIL*recoil)/100;
 
 
     // 4th: Set projectile drop-off (by draw force)
     // The curved trajectory of the projectile is achieved by setting a fixed gravity, but applying it only after a
-    // certain air time. This air time is adjustable and depends on draw force: freeAimGetDrawForce().
+    // certain air time. This air time is adjustable and depends on draw force: GFA_GetDrawForce().
     // First get rigidBody of the projectile which is responsible for gravity. The rigidBody object does not exist yet
     // at this point, so have it retrieved/created by calling this function:
     const int call = 0;
@@ -322,7 +322,7 @@ func void freeAimSetupProjectile() {
     var int rBody; rBody = CALL_RetValAsInt(); // zCRigidBody*
 
     // Retrieve draw force percentage from which to calculate the drop time (time at which the gravity is applied)
-    var int drawForce; drawForce = freeAimGetDrawForce_(); // Modify the draw force in that function, not here!
+    var int drawForce; drawForce = GFA_GetDrawForce_(); // Modify the draw force in that function, not here!
 
     // The gravity is a fixed value. An exception are very short draw times. There, the gravity is higher
     var int gravityMod; gravityMod = FLOATONE;
@@ -335,7 +335,7 @@ func void freeAimSetupProjectile() {
     // drawForce is a percentage, GFA_TRAJECTORY_ARC_MAX is first multiplied by 100 and later divided by 10000
     var int dropTime; dropTime = (drawForce*(GFA_TRAJECTORY_ARC_MAX*100))/10000;
     // Create a timed frame function to apply the gravity to the projectile after the calculated air time
-    FF_ApplyOnceExtData(freeAimDropProjectile, dropTime, 1, rBody);
+    FF_ApplyOnceExtData(GFA_EnableProjectileGravity, dropTime, 1, rBody);
     // Set the gravity to the projectile. Again: The gravity does not take effect until it is activated
     MEM_WriteInt(rBody+zCRigidBody_gravity_offset, mulf(castToIntf(GFA_PROJECTILE_GRAVITY), gravityMod));
 
@@ -365,12 +365,12 @@ func void freeAimSetupProjectile() {
     };
 
     // 6th: Reposition the aim vob and overwrite the target vob
-    var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos));
+    var int vobPtr; vobPtr = GFA_SetupAimVob(_@(pos));
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
 
 
     // Print info to zSpy
-    MEM_Info("freeAimSetupProjectile:");
+    MEM_Info("GFA_SetupProjectile:");
     var int s; s = SB_New();
 
     SB("   aiming distance:   ");
@@ -408,7 +408,7 @@ func void freeAimSetupProjectile() {
             hitchance = hero.attribute[ATR_DEXTERITY];
         } else {
             // In Gothic 2, the hit chance is the learned skill value (talent)
-            freeAimGetWeaponTalent(0, _@(hitchance));
+            GFA_GetWeaponAndTalent(0, _@(hitchance));
         };
         SB("   hit chance:        ");
         SBi(hitchance);
@@ -435,10 +435,10 @@ func void freeAimSetupProjectile() {
 
 /*
  * This is a frame function timed by draw force and is responsible for applying gravity to a projectile after a certain
- * air time as determined in freeAimSetupProjectile(). The gravity is merely turned on, the gravity value itself is set
- * in freeAimSetupProjectile().
+ * air time as determined in GFA_SetupProjectile(). The gravity is merely turned on, the gravity value itself is set in
+ * GFA_SetupProjectile().
  */
-func void freeAimDropProjectile(var int rigidBody) {
+func void GFA_EnableProjectileGravity(var int rigidBody) {
     if (!rigidBody) {
         return;
     };
@@ -468,7 +468,7 @@ func void freeAimDropProjectile(var int rigidBody) {
  * It is important to reset the gravity, because the projectile may bounce of walls (etc.), after which it would float
  * around with the previously set drop-off gravity (GFA_PROJECTILE_GRAVITY).
  */
-func void freeAimResetGravity() {
+func void GFA_ResetProjectileGravity() {
     var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, ECX);
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
     if (!projectile._zCVob_rigidBody) {
@@ -477,8 +477,8 @@ func void freeAimResetGravity() {
     var int rigidBody; rigidBody = projectile._zCVob_rigidBody;
 
     // Better safe than writing to an invalid address
-    if (FF_ActiveData(freeAimDropProjectile, rigidBody)) {
-        FF_RemoveData(freeAimDropProjectile, rigidBody);
+    if (FF_ActiveData(GFA_EnableProjectileGravity, rigidBody)) {
+        FF_RemoveData(GFA_EnableProjectileGravity, rigidBody);
     };
 
     // Reset projectile gravity (zCRigidBody.gravity) after collision (oCAIArrow.collision) to default

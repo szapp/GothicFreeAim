@@ -1,6 +1,6 @@
 /*
- * This file supplements the configurations for reticles (see, config\reticle.d). It contains exemplary reticles for
- * spells. It is outsourced to maintain compatibility across Gothic 1 and Gothic 2 that have different spells. For a
+ * This file is supplementary to the configurations for reticles (see config\reticle.d). It contains exemplary reticles
+ * for spells. It is outsourced to maintain compatibility across Gothic 1 and Gothic 2 that have different spells. For a
  * list of reticle textures, see config\reticleTextures.d.
  */
 
@@ -18,7 +18,7 @@ func string reticleBySpellID(var int spellID) {
     }
     else if (spellID == SPL_Windfist) {
         // Wind spells
-        return freeAimAnimateReticleByTime(RETICLE_WHIRL, 30, 10); // Animate reticle with 30 FPS (10 Frames)
+        return GFA_AnimateReticleByTime(RETICLE_WHIRL, 30, 10); // Animate reticle with 30 FPS (10 Frames)
     }
     else if (spellID == SPL_Firebolt)
     || (spellID == SPL_Fireball)

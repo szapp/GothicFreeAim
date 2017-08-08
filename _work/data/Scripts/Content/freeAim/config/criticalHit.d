@@ -1,5 +1,7 @@
 /*
  * This file contains all configurations for critical hits for bows and crossbows.
+ *
+ * Requires the feature GFA_CRITICALHITS (see config\settings.d).
  */
 
 
@@ -14,9 +16,10 @@
  * Examples are written below and commented out and serve as inspiration of what is possible.
  * Here, preliminary weak spots for almost all Gothic 2 monsters are defined (all head shots).
  */
-func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int talent, var int damage, var int rtrnPtr) {
+func void GFA_GetCriticalHitDefinitions(var C_Npc target, var C_Item weapon, var int talent, var int damage,
+        var int returnPtr) {
     // Get weak spot instance from call-by-reference argument
-    var Weakspot weakspot; weakspot = _^(rtrnPtr);
+    var Weakspot weakspot; weakspot = _^(returnPtr);
 
     // Only allow critical hits, if a non-critical shot would cause damage. Gothic 2 only, Gothic 1 allows critical hits
     // always. This is part of the fighting mechanics
@@ -79,7 +82,7 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int tal
     };
 
     // For examples for critical hit definitions, see this function in config\headshots_G1.d or config\headshots_G2.d
-    headshots(target, rtrnPtr);
+    headshots(target, returnPtr);
 };
 
 
@@ -99,7 +102,7 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int tal
  *
  * Some examples are written below (section of Gothic 2) and commented out and serve as inspiration of what is possible.
  */
-func int freeAimCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int talent) {
+func int GFA_GetCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int talent) {
     if (GOTHIC_BASE_VERSION == 1) {
         // Gothic 1 already has a critical hit chance by default
         return talent;
@@ -165,12 +168,12 @@ func int freeAimCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int 
  * This function is called when a critical hit occurred and can be used to print something to the screen, play a sound
  * jingle or, as done here by default, show a hit marker. Leave this function blank for no event.
  * This function is also called when free aiming is disabled, depending on the configuration in
- * freeAimCriticalHitAutoAim(), see below.
+ * GFA_GetCriticalHitAutoAim(), see below.
  *
  * Idea: The critical hits could be counted here to give an XP reward after 25 head shots
  * Examples are written below and commented out and serve as inspiration of what is possible.
  */
-func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon, var int freeAimingIsEnabled) {
+func void GFA_StartCriticalHitEvent(var C_Npc target, var C_Item weapon, var int freeAimingIsEnabled) {
 
     /*
     if (target.guild < GIL_SEPERATOR_HUM) {
@@ -202,7 +205,7 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon, var int f
                 GFA_RETICLE_MAX_SIZE, GFA_RETICLE_MAX_SIZE);                   // Dimensions
 
             // Get 7th frame of animated texture as static texture
-            View_SetTexture(hitmarker, freeAimAnimateReticleByPercent(RETICLE_TRI_IN, 100, 7));
+            View_SetTexture(hitmarker, GFA_AnimateReticleByPercent(RETICLE_TRI_IN, 100, 7));
         };
         View_Open(hitmarker);
 

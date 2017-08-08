@@ -25,9 +25,9 @@
 /*
  * Update internal settings when turning free aim on/off in the options menu. Settings include focus ranges/angles,
  * camera angles along with resetting some other settings. The constant GFA_ACTIVE will be updated accordingly.
- * This function is called from freeAimIsActive() nearly every frame.
+ * This function is called from GFA_IsActive() nearly every frame.
  */
-func void freeAimUpdateSettings(var int on) {
+func void GFA_UpdateSettings(var int on) {
     if ((GFA_ACTIVE > 0) == on) {
         return; // No change necessary
     };
@@ -62,7 +62,7 @@ func void freeAimUpdateSettings(var int on) {
         MEM_WriteString(zString_CamModMagic, "CAMMODMAGIC");
 
         // Reset to collision behavior of projectiles on NPCs to default (does not affect Gothic 1)
-        freeAimSetCollisionWithNPC(0);
+        GFA_CC_SetProjectileCollisionWithNpc(0);
 
     };
     GFA_ACTIVE = !GFA_ACTIVE;
@@ -73,50 +73,50 @@ func void freeAimUpdateSettings(var int on) {
  * This function updates the settings when free aiming or the Gothic 2 controls are enabled or disabled. It is called
  * every time when the Gothic settings are updated (after leaving the game menu), as well as during loading and level
  * changes. The function hooks cGameManager::ApplySomeSettings() at the very end (after all other menu settings!).
- * The constant GFA_ACTIVE is modified in the subsequent function freeAimUpdateSettings().
+ * The constant GFA_ACTIVE is modified in the subsequent function GFA_UpdateSettings().
  */
-func void freeAimUpdateStatus() {
+func void GFA_UpdateStatus() {
     // Check if g2freeAim is enabled and mouse controls are enabled
     if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled"))) || (!MEM_ReadInt(zCInput_Win32__s_mouseEnabled)) {
         // Disable if previously enabled
-        freeAimUpdateSettings(0);
-        freeAimDisableAutoTurn(0);
-        freeAimSetCameraMode_G1(0);
-        freeAimUpdateSettingsG2Ctrl(0);
+        GFA_UpdateSettings(0);
+        GFA_DisableAutoTurning(0);
+        GFA_SetCameraModes(0);
+        GFA_UpdateSettingsG2Ctrl(0);
 
     } else {
         // Enable if previously disabled
-        freeAimUpdateSettings(1);
+        GFA_UpdateSettings(1);
 
         if (GOTHIC_BASE_VERSION == 2) {
-            freeAimUpdateSettingsG2Ctrl(!MEM_ReadInt(oCGame__s_bUseOldControls)); // G1 controls = 0, G2 controls = 1
+            GFA_UpdateSettingsG2Ctrl(!MEM_ReadInt(oCGame__s_bUseOldControls)); // G1 controls = 0, G2 controls = 1
         };
     };
 };
 
 
 /*
- * This function is called nearly every frame by freeAimManualRotation(), providing the mouse is enabled, to check
+ * This function is called nearly every frame by GFA_TurnPlayerModel(), providing the mouse is enabled, to check
  * whether free aiming is active (player in either magic or ranged combat). It sets the constant GFA_ACTIVE
  * accordingly:
  *  1 if not active (not currently aiming)
  *  5 if currently aiming in ranged fight mode (FMODE_FAR)
  *  7 if currently aiming in magic fight mode with free aiming supported spell (FMODE_MAGIC)
  *
- * GFA_ACTIVE is prior set to 0 in freeAimUpdateStatus() if free aiming is disabled.
+ * GFA_ACTIVE is prior set to 0 in GFA_UpdateStatus() if free aiming is disabled.
  *
  * Different checks are performed in performance-favoring order (exiting the function as early as possible) to set the
  * constant, which is subsequently used in a lot of functions to determine the state of free aiming.
  */
-func void freeAimIsActive() {
+func void GFA_IsActive() {
     if (!GFA_ACTIVE) {
         return;
     };
 
     // Check if currently in a menu or in a dialog
     if (MEM_Game.pause_screen) || (!InfoManager_HasFinished()) {
-        freeAimSetCameraMode_G1(0);
-        freeAimDisableAutoTurn(0);
+        GFA_SetCameraModes(0);
+        GFA_DisableAutoTurning(0);
         GFA_ACTIVE = 1;
         return;
     };
@@ -124,8 +124,8 @@ func void freeAimIsActive() {
     // Before anything else, check if player is in magic or ranged fight mode
     var oCNpc her; her = Hlp_GetNpc(hero);
     if (her.fmode < FMODE_FAR) {
-        freeAimSetCameraMode_G1(0);
-        freeAimDisableAutoTurn(0);
+        GFA_SetCameraModes(0);
+        GFA_DisableAutoTurning(0);
         GFA_ACTIVE = 1;
         return;
     };
@@ -157,56 +157,56 @@ func void freeAimIsActive() {
     if (her.fmode == FMODE_MAGIC) {
         // Check if free aiming for spells is disabled
         if (!GFA_SPELLS) {
-            freeAimDisableAutoTurn(0);
-            freeAimSetCameraMode_G1(0);
+            GFA_DisableAutoTurning(0);
+            GFA_SetCameraModes(0);
             GFA_ACTIVE = 1;
             return;
         };
 
         // Gothic 1 does not differentiate between camera modes. Force/overwrite all to free aiming mode
-        freeAimSetCameraMode_G1(1);
+        GFA_SetCameraModes(1);
 
         // Gothic 1 controls require action key to be pressed/held
         if (GOTHIC_BASE_VERSION == 2) {
             if (MEM_ReadInt(oCGame__s_bUseOldControls)) && (!keyPressed) {
-                freeAimDisableAutoTurn(0);
+                GFA_DisableAutoTurning(0);
                 GFA_ACTIVE = 1;
                 return;
             };
         } else if (!keyPressed) {
-            freeAimDisableAutoTurn(0);
+            GFA_DisableAutoTurning(0);
             GFA_ACTIVE = 1;
             return;
         };
 
         // Check if active spell supports free aiming
-        var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
-        if (!freeAimSpellEligible(spell)) {
+        var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
+        if (!GFA_IsSpellEligible(spell)) {
             // Reset ranged focus collection
             Focus_Magic.npc_azi = 45.0;
             Focus_Magic.item_prio = -1;
-            freeAimDisableAutoTurn(0);
+            GFA_DisableAutoTurning(0);
             GFA_ACTIVE = 1;
             return;
         } else {
             // Spell uses free aiming: Set stricter focus collection
             Focus_Magic.npc_azi = 15.0;
             Focus_Magic.item_prio = 0;
-            freeAimDisableAutoTurn(1);
+            GFA_DisableAutoTurning(1);
             GFA_ACTIVE = FMODE_MAGIC;
         };
 
     } else if (her.fmode >= FMODE_FAR) { // Greater or equal: Crossbow has different fight mode!
         // Check if free aiming for ranged combat is disabled
         if (!GFA_RANGED) {
-            freeAimDisableAutoTurn(0);
-            freeAimSetCameraMode_G1(0);
+            GFA_DisableAutoTurning(0);
+            GFA_SetCameraModes(0);
             GFA_ACTIVE = 1;
             return;
         };
 
         // Gothic 1 does not differentiate between camera modes. Force/overwrite all to free aiming mode
-        freeAimSetCameraMode_G1(1);
+        GFA_SetCameraModes(1);
 
         if (GOTHIC_BASE_VERSION == 2) {
             // Set internally whether the aiming key is held or not (only if using Gothic 2 controls)
@@ -217,11 +217,11 @@ func void freeAimIsActive() {
 
         // Check if aiming key is not pressed/held
         if (!keyPressed) {
-            freeAimDisableAutoTurn(0);
+            GFA_DisableAutoTurning(0);
             GFA_ACTIVE = 1;
             return;
         } else {
-            freeAimDisableAutoTurn(1);
+            GFA_DisableAutoTurning(1);
             GFA_ACTIVE = FMODE_FAR; // Do not differentiate between bow and crossbow
         };
 

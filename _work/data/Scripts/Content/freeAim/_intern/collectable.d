@@ -28,8 +28,8 @@
  * item-AI (oCAIVobMove). The default behavior of removing the projectile from the world is circumvented by clamping the
  * AI life time to maximum.
  */
-func void freeAimKeepProjectileInWorld() {
-    // Check if AI was already removed. Happens if NPC is hit, see freeAimOnArrowHitNpc()
+func void GFA_RP_KeepProjectileInWorld() {
+    // Check if AI was already removed. Happens if NPC is hit, see GFA_RP_PutProjectileIntoInventory()
     var int destroyed; destroyed = MEM_ReadInt(EDI); // Determines the removal of the projectile (1=remove, 0=keep)
     if (destroyed) {
         return;
@@ -67,7 +67,7 @@ func void freeAimKeepProjectileInWorld() {
 
         // Replace the projectile if desired, retrieve new projectile instance from config
         var C_Npc emptyNpc; emptyNpc = MEM_NullToInst(); // No NPC was hit, so pass an empty instance as argument
-        var int projInst; projInst = freeAimGetUsedProjectileInstance(projectile.instanz, emptyNpc);
+        var int projInst; projInst = GFA_GetUsedProjectileInstance(projectile.instanz, emptyNpc);
 
         // Check if the new projectile instance is valid, -1 for invalid instance, 0 for empty
         if (projInst > 0) {
@@ -95,7 +95,7 @@ func void freeAimKeepProjectileInWorld() {
             };
 
         } else { // Else: New projectile instance is empty or invalid. Let oCAIArrow::DoAI remove the projectile
-            freeAimProjectileDestroy(arrowAI);
+            GFA_CC_ProjectileDestroy(arrowAI);
         };
     };
 };
@@ -105,12 +105,12 @@ func void freeAimKeepProjectileInWorld() {
  * This function is called when a projectile hits an NPC. It is hooked by the collision detection function of
  * projectiles. It puts the projectile instance into inventory (if desired) and lets the AI die.
  */
-func void freeAimOnArrowHitNpc() {
+func void GFA_RP_PutProjectileIntoInventory() {
     var int arrowAI; arrowAI = ESI;
 
     // Since deflection of projectiles (collision feature) does not exist in Gothic 1 by default, it is not inherently
     // clear at this point, whether the projectile is deflecting off of this NPC, like it is clear here for Gothic 2.
-    // To help out, the projectile AI is prior marked as deflecting (-1) by freeAimDoNpcHit().
+    // To help out, the projectile AI is prior marked as deflecting (-1) by GFA_CC_ProjectileCollisionWithNpc().
     if (MEM_ReadInt(arrowAI+oCAIArrow_destroyProjectile_offset) == -1) {
         MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 0);
         return;
@@ -129,13 +129,13 @@ func void freeAimOnArrowHitNpc() {
         var C_Npc victim; victim = _^(MEMINT_SwitchG1G2(EBX, EDI));
 
         // Replace the projectile if desired, retrieve new projectile instance from config
-        var int projInst; projInst = freeAimGetUsedProjectileInstance(projectile.instanz, victim);
+        var int projInst; projInst = GFA_GetUsedProjectileInstance(projectile.instanz, victim);
         if (projInst > 0) {
             CreateInvItem(victim, projInst); // Put respective instance in inventory
         };
     };
 
-    freeAimProjectileDestroy(arrowAI);
+    GFA_CC_ProjectileDestroy(arrowAI);
 };
 
 
@@ -144,7 +144,7 @@ func void freeAimOnArrowHitNpc() {
  * detection function of projectiles. Here, the projectile is properly positioned to be collectable. This function is
  * only necessary for Gothic 2.
  */
-func void freeAimOnArrowGetStuck() {
+func void GFA_RP_RepositionProjectileInSurface() {
     var int arrowAI; arrowAI = ESI;
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
 

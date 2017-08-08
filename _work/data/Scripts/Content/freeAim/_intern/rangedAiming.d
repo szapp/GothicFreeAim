@@ -26,10 +26,10 @@
  * Collect focus during shooting. Otherwise the focus collection changes during the shooting animation. This function
  * hooks oCAIHuman::BowMode at a position where the player model is carrying out the animation of shooting.
  */
-func void freeAimRangedShooting() {
+func void GFA_RangedShooting() {
     if (GFA_ACTIVE) {
         // Shoot aim trace ray to update focus
-        freeAimRay(GFA_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, 0);
+        GFA_AimRay(GFA_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, 0);
     };
 };
 
@@ -39,14 +39,14 @@ func void freeAimRangedShooting() {
  * oCAniCtrl_Human::InterpolateCombineAni to adjust the direction the ranged weapon is pointed in. Also the focus
  * collection is overwritten.
  */
-func void freeAimAnimation() {
+func void GFA_RangedAiming() {
     if (!GFA_ACTIVE) {
         return;
     };
 
     // Shoot aim trace ray to retrieve the focus NPC and distance to it from the camera(!)
     var int distance; var int target;
-    freeAimRay(GFA_MAX_DIST, TARGET_TYPE_NPCS, _@(target), 0, _@(distance), 0);
+    GFA_AimRay(GFA_MAX_DIST, TARGET_TYPE_NPCS, _@(target), 0, _@(distance), 0);
     distance = roundf(divf(mulf(distance, FLOAT1C), mkf(GFA_MAX_DIST))); // Distance scaled between [0, 100]
 
     // Create reticle
@@ -57,8 +57,8 @@ func void freeAimAnimation() {
     reticle.size = 75; // Medium size by default
 
     // Retrieve reticle specs and draw/update it on screen
-    freeAimGetReticleRanged_(target, distance, reticlePtr); // Retrieve reticle specs
-    freeAimInsertReticle(reticlePtr);
+    GFA_GetRangedReticle_(target, distance, reticlePtr); // Retrieve reticle specs
+    GFA_InsertReticle(reticlePtr);
     MEM_Free(reticlePtr);
 
     // Pointing distance: Take the max distance, otherwise it looks strange on close range targets
@@ -130,7 +130,7 @@ func void freeAimAnimation() {
  * is while aiming) while strafing and figuring out a way to prevent redrawing the bow after strafing. The latter is not
  * guaranteed to work.
  */
-func void freeAimRangedStrafing() {
+func void GFA_RangedStrafing() {
     var oCNpc her; her = Hlp_GetNpc(hero);
 
     // Call strafing function. It handles button presses and directions

@@ -25,7 +25,7 @@
 /*
  * Hide reticle. This function is called from various functions to ensure that the reticle disappears.
  */
-func void freeAimRemoveReticle() {
+func void GFA_RemoveReticle() {
     if (Hlp_IsValidHandle(GFA_ReticleHndl)) {
         View_Close(GFA_ReticleHndl);
     };
@@ -37,7 +37,7 @@ func void freeAimRemoveReticle() {
  * function is in fact called every frame to update the reticle color, texture and size smoothly. The function
  * parameter is a pointer to the reticle instance.
  */
-func void freeAimInsertReticle(var int reticlePtr) {
+func void GFA_InsertReticle(var int reticlePtr) {
     // Get reticle instance from call-by-reference argument
     var Reticle reticle; reticle = _^(reticlePtr);
     var int size;
@@ -90,7 +90,7 @@ func void freeAimInsertReticle(var int reticlePtr) {
         };
     } else {
         // Remove the reticle if no texture is specified
-        freeAimRemoveReticle();
+        GFA_RemoveReticle();
     };
 };
 
@@ -99,40 +99,40 @@ func void freeAimInsertReticle(var int reticlePtr) {
  * Decide when to draw reticle or when to hide it. This function is called from various functions to ensure that the
  * reticle disappears if changing the weapon or stopping to aim.
  */
-func void freeAimManageReticle() {
+func void GFA_CleanUpAiming() {
     if (GFA_ACTIVE < FMODE_FAR) {
-        // Remove the visual FX from the aim vob (if present)
-        freeAimDetachFX();
+        // Remove the visual FX of the aim vob (if present)
+        GFA_AimVobDetachFX();
         // Hide reticle
-        freeAimRemoveReticle();
+        GFA_RemoveReticle();
     };
 };
 
 
 /*
  * Switching between weapon modes (sometimes called several times in a row). This function hooks
- * oCNpcFocus::SetFocusMode to call freeAimManageReticle() and to reset the draw force of ranged weapons. This function
+ * oCNpcFocus::SetFocusMode to call GFA_CleanUpAiming() and to reset the draw force of ranged weapons. This function
  * is called during loading of a level change before Ikarus, LeGo or g2freeAim are initialized.
  */
-func void freeAimSwitchMode() {
+func void GFA_CleanUpOnWeaponSwitch() {
     if (!_@(MEM_Timer)) {
-        // This function is called multiple times during level change prior to any initialization
+        // This function is called during level change prior to any initialization
         return;
     };
 
-    GFA_BowDrawOnset = MEM_Timer.totalTime + GFA_DRAWTIME_READY; // Reset draw force onset
-    freeAimManageReticle();
+    GFA_BowDrawOnset = MEM_Timer.totalTime + GFA_DRAWTIME_READY; // Reset draw force, because aiming button may be held
+    GFA_CleanUpAiming();
 };
 
 
 /*
- * Wrapper function for the config function freeAimGetReticleRanged(). It is called from freeAimAnimation().
+ * Wrapper function for the config function GFA_GetRangedReticle(). It is called from GFA_RangedAiming().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
-func void freeAimGetReticleRanged_(var int target, var int distance, var int returnPtr) {
+func void GFA_GetRangedReticle_(var int target, var int distance, var int returnPtr) {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
-    if (!freeAimGetWeaponTalent(_@(weaponPtr), _@(talent))) {
+    if (!GFA_GetWeaponAndTalent(_@(weaponPtr), _@(talent))) {
         return;
     };
     var C_Item weapon; weapon = _^(weaponPtr);
@@ -145,15 +145,15 @@ func void freeAimGetReticleRanged_(var int target, var int distance, var int ret
     };
 
     // Retrieve reticle specifications from config
-    freeAimGetReticleRanged(targetNpc, weapon, talent, distance, returnPtr);
+    GFA_GetRangedReticle(targetNpc, weapon, talent, distance, returnPtr);
 };
 
 
 /*
- * Wrapper function for the config function freeAimGetReticleSpell(). It is called from freeAimSpellReticle().
+ * Wrapper function for the config function GFA_GetSpellReticle(). It is called from GFA_SpellAiming().
  * This function supplies a lot of spell properties.
  */
-func void freeAimGetReticleSpell_(var int target, var C_Spell spellInst, var int distance, var int returnPtr) {
+func void GFA_GetSpellReticle_(var int target, var C_Spell spellInst, var int distance, var int returnPtr) {
     // Define spell properties
     var int spellID; spellID = Npc_GetActiveSpell(hero);
     var int spellLvl; spellLvl = Npc_GetActiveSpellLevel(hero);
@@ -171,5 +171,5 @@ func void freeAimGetReticleSpell_(var int target, var C_Spell spellInst, var int
     };
 
     // Retrieve reticle specifications from config
-    freeAimGetReticleSpell(targetNpc, spellID, spellInst, spellLvl, isScroll, manaInvested, distance, returnPtr);
+    GFA_GetSpellReticle(targetNpc, spellID, spellInst, spellLvl, isScroll, manaInvested, distance, returnPtr);
 };

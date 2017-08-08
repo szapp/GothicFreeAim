@@ -23,32 +23,33 @@
 
 
 /*
- * Wrapper function for the config function freeAimCriticalHitEvent(). It is called from freeAimDetectCriticalHit().
+ * Wrapper function for the config function GFA_StartCriticalHitEvent(). It is called from GFA_CH_DetectCriticalHit().
  * This function supplies the readied weapon.
  */
-func void freeAimCriticalHitEvent_(var C_Npc target) {
+func void GFA_CH_StartCriticalHitEvent_(var C_Npc target) {
     // Get readied/equipped ranged weapon
     var int weaponPtr;
-    freeAimGetWeaponTalent(_@(weaponPtr), 0);
+    GFA_GetWeaponAndTalent(_@(weaponPtr), 0);
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Start an event from config
-    freeAimCriticalHitEvent(target, weapon, (GFA_ACTIVE && GFA_RANGED));
+    GFA_StartCriticalHitEvent(target, weapon, (GFA_ACTIVE && GFA_RANGED));
 };
 
 
 /*
- * Wrapper function for the config function freeAimCriticalHitDef(). It is called from freeAimDetectCriticalHit().
+ * Wrapper function for the config function GFA_GetCriticalHitDefinitions(). It is called from
+ * GFA_CH_DetectCriticalHit().
  * This function is necessary for error handling and to supply the readied weapon.
  */
-func void freeAimCriticalHitDef_(var C_Npc target, var int damage, var int returnPtr) {
+func void GFA_CH_GetCriticalHitDefinitions_(var C_Npc target, var int damage, var int returnPtr) {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
-    freeAimGetWeaponTalent(_@(weaponPtr), _@(talent));
+    GFA_GetWeaponAndTalent(_@(weaponPtr), _@(talent));
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Define a critical hit/weak spot in config
-    freeAimCriticalHitDef(target, weapon, talent, damage, returnPtr);
+    GFA_GetCriticalHitDefinitions(target, weapon, talent, damage, returnPtr);
 
     // Correct the node string to be always upper case
     var Weakspot weakspot; weakspot = _^(returnPtr);
@@ -62,17 +63,17 @@ func void freeAimCriticalHitDef_(var C_Npc target, var int damage, var int retur
 
 
 /*
- * Wrapper function for the config function freeAimCriticalHitAutoAim(). It is called from freeAimDetectCriticalHit().
+ * Wrapper function for the config function GFA_GetCriticalHitAutoAim(). It is called from GFA_CH_DetectCriticalHit().
  * This function is necessary to supply the readied weapon and respective talent value.
  */
-func int freeAimCriticalHitAutoAim_(var C_Npc target) {
+func int GFA_CH_GetCriticalHitAutoAim_(var C_Npc target) {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
-    freeAimGetWeaponTalent(_@(weaponPtr), _@(talent));
+    GFA_GetWeaponAndTalent(_@(weaponPtr), _@(talent));
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Retrieve auto aim critical hit chance from config
-    var int criticalHitChance; criticalHitChance = freeAimCriticalHitAutoAim(target, weapon, talent);
+    var int criticalHitChance; criticalHitChance = GFA_GetCriticalHitAutoAim(target, weapon, talent);
 
     // Must be a percentage in range of [0, 100]
     if (criticalHitChance > 100) {
@@ -83,13 +84,14 @@ func int freeAimCriticalHitAutoAim_(var C_Npc target) {
     return criticalHitChance;
 };
 
+
 /*
  * Detect critical hits and adjust base damage. This function hooks the engine function responsible for hit registration
  * and dealing of damage. By walking along the trajectory line of the projectile in space, it is checked whether it hit
- * a defined critical node/bone or weak spot, as defined in freeAimCriticalHitDef(). If a critical hit is detected
- * the damage is adjusted and an event is called: freeAimCriticalHitEvent().
+ * a defined critical node/bone or weak spot, as defined in GFA_GetCriticalHitDefinitions(). If a critical hit is
+ * detected the damage is adjusted and an event is called: GFA_StartCriticalHitEvent().
  */
-func void freeAimDetectCriticalHit() {
+func void GFA_CH_DetectCriticalHit() {
     // First check if shooter is player and if FA is enabled
     var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EBP);
     var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
@@ -104,7 +106,7 @@ func void freeAimDetectCriticalHit() {
     // Get weak spot node from target model
     var int weakspotPtr; weakspotPtr = MEM_Alloc(sizeof_Weakspot);
     var Weakspot weakspot; weakspot = _^(weakspotPtr);
-    freeAimCriticalHitDef_(targetNpc, MEM_ReadInt(damagePtr), weakspotPtr); // Retrieve weak spot specs
+    GFA_CH_GetCriticalHitDefinitions_(targetNpc, MEM_ReadInt(damagePtr), weakspotPtr); // Retrieve weak spot specs
 
     var int criticalHit; // Variable that holds whether a critical hit was detected
     var string debugInfo; debugInfo = ""; // Internal debugging info string to be displayed in zSpy
@@ -119,7 +121,7 @@ func void freeAimDetectCriticalHit() {
         // Critical hits cause an advantage when playing with free aiming enabled compared to auto aim. This is, because
         // there are no critical hits for ranged combat in Gothic 2. Here, they are introduced for balancing reasons.
         // Note: Gothic 1 already has critical hits for auto aiming. This is replaced here.
-        var int critChance; critChance = freeAimCriticalHitAutoAim_(targetNpc);
+        var int critChance; critChance = GFA_CH_GetCriticalHitAutoAim_(targetNpc);
         criticalHit = (r_MinMax(1, 100) <= critChance); // Allow critChance=0 to disable this feature
 
         debugInfo = "Auto aiming: critical hit by probability (critical hit chance)";
@@ -145,7 +147,7 @@ func void freeAimDetectCriticalHit() {
         };
         var int node; node = CALL_RetValAsPtr(); // zCModelNodeInst*
         if (!node) {
-            MEM_Warn("freeAimDetectCriticalHit: Node not found!");
+            MEM_Warn("GFA_CH_DetectCriticalHit: Node not found!");
             MEM_Free(weakspotPtr);
             return;
         };
@@ -173,14 +175,14 @@ func void freeAimDetectCriticalHit() {
                 // with dimensions -1 for a model that does not have a designated node visual (this only works with the
                 // head node of humanoids). This error should thus only appear during development. If it does in the
                 // released mod, get some better beta testers
-                MEM_Error("freeAimDetectCriticalHit: Node has no bounding box!");
+                MEM_Error("GFA_CH_DetectCriticalHit: Node has no bounding box!");
                 MEM_Free(weakspotPtr);
                 return;
             };
 
         } else if (weakspot.dimX < 0) || (weakspot.dimY < 0) {
             // Bounding box dimensions must be positive
-            MEM_Error("freeAimDetectCriticalHit: Bounding box dimensions invalid!");
+            MEM_Error("GFA_CH_DetectCriticalHit: Bounding box dimensions invalid!");
             MEM_Free(weakspotPtr);
             return;
 
@@ -247,7 +249,7 @@ func void freeAimDetectCriticalHit() {
     };
 
     // Print info to zSpy
-    MEM_Info("freeAimDetectCriticalHit:");
+    MEM_Info("GFA_CH_DetectCriticalHit:");
     var int s; s = SB_New();
 
     SB("   critical hit:      ");
@@ -326,7 +328,7 @@ func void freeAimDetectCriticalHit() {
 
     // Create an event, if a critical hit was detected
     if (criticalHit) {
-        freeAimCriticalHitEvent_(targetNpc); // Use this function to add an event, e.g. a print or a sound
+        GFA_CH_StartCriticalHitEvent_(targetNpc); // Use this function to add an event, e.g. a print or a sound
         MEM_WriteInt(damagePtr, weakspot.bDmg); // Base damage not final damage
     };
     MEM_Free(weakspotPtr);
@@ -334,12 +336,12 @@ func void freeAimDetectCriticalHit() {
 
 
 /*
- * Disable ranged critical hits in Gothic 1. This mechanic is replaced by freeAimCriticalHitAutoAim(). This function
+ * Disable ranged critical hits in Gothic 1. This mechanic is replaced by GFA_GetCriticalHitAutoAim(). This function
  * hooks oCNpc::OnDamage_Hit() at an offset where the critical hit chance is retrieved. This value is replaced with
  * zero to disable internal critical hits for ranged combat.
  * This function is only called for Gothic 1, as there are no internal critical hits in Gothic 2 for ranged weapons.
  */
-func void freeAimDisableDefaultCriticalHits() {
+func void GFA_CH_DisableDefaultCriticalHits() {
     // Check if shooter is player or if not in ranged combat
     var int dmgDescriptor; dmgDescriptor = MEM_ReadInt(ESP+548); // esp+220h+4h // oCNpc::oSDamageDescriptor*
     var C_Npc shooter; shooter = _^(MEM_ReadInt(dmgDescriptor+oSDamageDescriptor_origin_offset)); // oCNpc*

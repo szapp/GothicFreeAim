@@ -24,10 +24,10 @@
 
 /*
  * Retrieve the active spell instance of an NPC. Returns an empty instance if no spell is drawn. This function is
- * usually called in conjunction with freeAimSpellEligible(), see below. It might prove to be useful outside of
+ * usually called in conjunction with GFA_IsSpellEligible(), see below. It might prove to also be useful outside of
  * g2freeAim.
  */
-func MEMINT_HelperClass freeAimGetActiveSpellInst(var C_Npc npc) {
+func MEMINT_HelperClass GFA_GetActiveSpellInst(var C_Npc npc) {
     if (Npc_GetActiveSpell(npc) == -1) {
         // NPC does not have a spell drawn
         var C_Spell ret; ret = MEM_NullToInst();
@@ -56,7 +56,7 @@ func MEMINT_HelperClass freeAimGetActiveSpellInst(var C_Npc npc) {
  * Do not change the properties that make a spell eligible! This is very well thought through and works for ALL Gothic 2
  * spells. For new spells, adjust their properties accordingly.
  */
-func int freeAimSpellEligible(var C_Spell spell) {
+func int GFA_IsSpellEligible(var C_Spell spell) {
     if (!GFA_SPELLS) || (!_@(spell)) {
         // If free aiming is disabled for spells or if the spell instance is invalid
         return FALSE;
@@ -84,7 +84,7 @@ func int freeAimSpellEligible(var C_Spell spell) {
  *
  * Returns 1 on success, 0 otherwise.
  */
-func int freeAimGetWeaponTalent(var int weaponPtr, var int talentPtr) {
+func int GFA_GetWeaponAndTalent(var int weaponPtr, var int talentPtr) {
     var C_Npc slf; slf = Hlp_GetNpc(hero);
     var int error; error = 0;
 
@@ -95,7 +95,7 @@ func int freeAimGetWeaponTalent(var int weaponPtr, var int talentPtr) {
     } else if (Npc_HasEquippedRangedWeapon(slf)) {
         weapon = Npc_GetEquippedRangedWeapon(slf);
     } else {
-        MEM_Warn("freeAimGetWeaponTalent: No valid weapon equipped/readied!");
+        MEM_Warn("GFA_GetWeaponAndTalent: No valid weapon equipped/readied!");
         weapon = MEM_NullToInst();
         error = 1;
     };
@@ -112,7 +112,7 @@ func int freeAimGetWeaponTalent(var int weaponPtr, var int talentPtr) {
             } else if (weapon.flags & ITEM_CROSSBOW) {
                 talent = NPC_TALENT_CROSSBOW;
             } else {
-                MEM_Warn("freeAimGetWeaponTalent: No valid weapon equipped/readied!");
+                MEM_Warn("GFA_GetWeaponAndTalent: No valid weapon equipped/readied!");
                 error = 1;
             };
 
@@ -141,7 +141,7 @@ func int freeAimGetWeaponTalent(var int weaponPtr, var int talentPtr) {
  * for the config functions of g2freeAim. It allows for animated reticles dependent on time.
  * 'numFrames' files must exist with the postfix '_[frameNo].tga', e.g. 'TEXTURE_00.TGA', 'TEXTURE_01.TGA',...
  */
-func string freeAimAnimateReticleByTime(var string fileName, var int fps, var int numFrames) {
+func string GFA_AnimateReticleByTime(var string fileName, var int fps, var int numFrames) {
     // Time of one frame
     var int frameTime; frameTime = 1000/fps;
 
@@ -169,7 +169,7 @@ func string freeAimAnimateReticleByTime(var string fileName, var int fps, var in
  * useful to indicate progress of draw force or distance to target or any gradual spell property.
  * 'numFrames' files must exist with the postfix '_[frameNo].tga', e.g. 'TEXTURE_00.TGA', 'TEXTURE_01.TGA',...
  */
-func string freeAimAnimateReticleByPercent(var string fileName, var int percent, var int numFrames) {
+func string GFA_AnimateReticleByPercent(var string fileName, var int percent, var int numFrames) {
     // Cycle through [0, numFrames-1] by percentage
     var int cycle; cycle = roundf(mulf(mkf(percent), divf(mkf(numFrames-1), FLOAT1C)));
 

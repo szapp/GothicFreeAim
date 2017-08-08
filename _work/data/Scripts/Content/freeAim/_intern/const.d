@@ -39,6 +39,7 @@ var   int    GFA_BowDrawOnset;                              // Time onset of dra
 const int    GFA_RETICLE_MIN_SIZE   = 32;                   // Smallest reticle size in pixels
 const int    GFA_RETICLE_MAX_SIZE   = 64;                   // Biggest reticle size in pixels
 var   int    GFA_ReticleHndl;                               // Handle of the reticle
+var   int    GFA_AimVobHasFX;                               // Performance: check whether FX needs to be removed
 
 const string GFA_TRAIL_FX           = "GFA_TRAIL_VFX";      // Trailstrip FX. Should not be changed
 const string GFA_TRAIL_FX_SIMPLE    = "GFA_TRAIL_INST_VFX"; // Simplified trailstrip FX for use in Gothic 1
@@ -49,6 +50,7 @@ const int    GFA_MIN_AIM_DIST       = 140;                  // Minimum targeting
 const int    GFA_MAX_DIST           = 5000;                 // Distance for shooting/reticle. Do not change
 var   int    GFA_AimRayInterval;                            // Perform trace ray every x ms (change in ini-file)
 var   int    GFA_AimRayPrevCalcTime;                        // Time of last trace ray calculation
+
 
 const float  GFA_SCATTER_HIT        = 2.6;                  // (Visual angle)/2 within which everything is a hit
 const float  GFA_SCATTER_MISS       = 3.3;                  // (Visual angle)/2 outside which everything is a miss
@@ -63,6 +65,7 @@ const int    FLOAT3C                = 1133903872;           // 300 as float
 const int    FLOAT1K                = 1148846080;           // 1000 as float
 
 const int    GFA_ACTIVE             = 0;                    // Status indicator of free aiming
+const int    GFA_INIT_HITREG        = 0;                    // Check if hit registration hook was initialized
 
 var   int    GFA_DebugWSBBox[6];                            // Weakspot bounding box for debug visualization
 var   int    GFA_DebugWSTrj[6];                             // Projectile trajectory for debug visualization

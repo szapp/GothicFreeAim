@@ -39,9 +39,9 @@
  * Since this function is called so frequently and regularly, it also serves to call the function to update the free aim
  * active/enabled state to set the constant GFA_ACTIVE.
  */
-func void freeAimManualRotation() {
+func void GFA_TurnPlayerModel() {
     // Retrieve free aim state and exit if player is not currently aiming
-    MEM_Call(freeAimIsActive);
+    MEM_Call(GFA_IsActive);
     if (GFA_ACTIVE < FMODE_FAR) {
         return;
     };
@@ -119,9 +119,9 @@ func void freeAimManualRotation() {
  * Disable/re-enable auto turning of player model towards enemy while aiming. The auto turning prevents free aiming, as
  * it moves the player model to always face the focus. Of course, this should only by prevented during aiming such that
  * the melee combat is not affected. Consequently, it needs to be disabled and enabled continuously.
- * This function is called from freeAimIsActive() nearly every frame.
+ * This function is called from GFA_IsActive() nearly every frame.
  */
-func void freeAimDisableAutoTurn(var int on) {
+func void GFA_DisableAutoTurning(var int on) {
     const int SET = 0;
     if (on == SET) {
         return; // No change necessary
@@ -167,9 +167,9 @@ func void freeAimDisableAutoTurn(var int on) {
  * The support for the Gothic 2 controls is accomplished by emulating the Gothic 1 controls with different sets of
  * aiming and shooting keys. To do this, the condition to differentiate between the control schemes is skipped and the
  * keys are overwritten (all on the level of opcode).
- * This function is called from freeAimIsActive() nearly every frame.
+ * This function is called from GFA_IsActive() nearly every frame.
  */
-func void freeAimUpdateSettingsG2Ctrl(var int on) {
+func void GFA_UpdateSettingsG2Ctrl(var int on) {
     if (GOTHIC_BASE_VERSION != 2) || (!GFA_RANGED) {
         return;
     };
@@ -217,9 +217,9 @@ func void freeAimUpdateSettingsG2Ctrl(var int on) {
  * Overwrite/reset camera modes for Gothic 1. Gothic 1 does not use the different camera modes (CCamSys_Def) defined.
  * Instead of CamModRanged and CamModMagic, mostly CamModNormal and CamModMelee are used. A free aiming specific camera
  * is thus not possible. To solve this issue, the camera modes are overwritten and reset whenever needed.
- * This function is called from freeAimIsActive() nearly every frame.
+ * This function is often called from GFA_IsActive().
  */
-func void freeAimSetCameraMode_G1(var int on) {
+func void GFA_SetCameraModes(var int on) {
     if (GOTHIC_BASE_VERSION != 1) {
         return;
     };
@@ -255,7 +255,7 @@ func void freeAimSetCameraMode_G1(var int on) {
  * model is crooked.
  * Taken from http://forum.worldofplayers.de/forum/threads/1474431?p=25057480#post25057480
  */
-func void freeAimDmgAnimation() {
+func void GFA_DisableDamageAnimation() {
     var C_Npc victim; victim = _^(ECX);
     if (Npc_IsPlayer(victim)) && (GFA_ACTIVE > 1) {
         EAX = 0; // Disable animation by removing 'this'

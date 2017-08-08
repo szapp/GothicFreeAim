@@ -1,5 +1,7 @@
 /*
  * This file contains all configurations for reticles. For a list of reticle textures, see config\reticleTextures.d.
+ *
+ * Requires the feature GFA_RANGED and/or GFA_SPELLS (see config\settings.d).
  */
 
 
@@ -9,11 +11,11 @@
  * represented as a percentage (100 is biggest size, 0 is smallest).
  *
  * Here, the size is scaled by aiming distance. As indicated by the in-line comments basing the size (or color) on the
- * functions freeAimGetDrawForce() and freeAimGetAccuracy() is also possible.
+ * functions GFA_GetDrawForce() and GFA_GetAccuracy() is also possible.
  */
-func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int talent, var int dist, var int rtrnPtr) {
+func void GFA_GetRangedReticle(var C_Npc target, var C_Item weapon, var int talent, var int dist, var int returnPtr) {
     // Get reticle instance from call-by-reference argument
-    var Reticle reticle; reticle = _^(rtrnPtr);
+    var Reticle reticle; reticle = _^(returnPtr);
 
     // Color (do not set the color to preserve the original texture color)
     if (Hlp_IsValidNpc(target)) {
@@ -36,18 +38,18 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
 
     // Size (scale between [0, 100]: 0 is smallest, 100 is biggest)
     reticle.size = -dist + 100; // Inverse aim distance: bigger for closer range: 100 for closest, 0 for most distance
-    //  reticle.size = -freeAimGetDrawForce(weapon, talent) + 100; // Or inverse draw force: bigger for less draw force
-    //  reticle.size = -freeAimGetAccuracy(weapon, talent) + 100; // Or inverse accuracy: bigger with lower accuracy
+    //  reticle.size = -GFA_GetDrawForce(weapon, talent) + 100; // Or inverse draw force: bigger for less draw force
+    //  reticle.size = -GFA_GetAccuracy(weapon, talent) + 100; // Or inverse accuracy: bigger with lower accuracy
 
     // More sophisticated customization is also possible: change the texture by draw force, the size by accuracy, ...
     if (weapon.flags & ITEM_BOW) {
         // Change reticle texture by drawforce (irrespective of the reticle size set above)
 
         // Get draw force from the function above. Already scaled to [0, 100]
-        var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent);
+        var int drawForce; drawForce = GFA_GetDrawForce(weapon, talent);
 
         // Animate reticle by draw force
-        reticle.texture = freeAimAnimateReticleByPercent(RETICLE_NOTCH, drawForce, 17);
+        reticle.texture = GFA_AnimateReticleByPercent(RETICLE_NOTCH, drawForce, 17);
 
     } else if (weapon.flags & ITEM_CROSSBOW) {
         // Reticle is fixed, but resized with distance
@@ -56,7 +58,7 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
         /*
         // Alternatively, change the reticle texture with distance
         reticle.size = 75; // Keep the size fixed here
-        reticle.texture = freeAimAnimateReticleByPercent(RETICLE_DROP, dist, 8); // Animate reticle with distance */
+        reticle.texture = GFA_AnimateReticleByPercent(RETICLE_DROP, dist, 8); // Animate reticle with distance */
     };
 };
 
@@ -72,10 +74,10 @@ func void freeAimGetReticleRanged(var C_Npc target, var C_Item weapon, var int t
  *
  * Examples are written below and commented out and serve as inspiration of what is possible.
  */
-func void freeAimGetReticleSpell(var C_Npc target, var int spellID, var C_Spell spellInst, var int spellLevel,
-        var int isScroll, var int manaInvested, var int dist, var int rtrnPtr) {
+func void GFA_GetSpellReticle(var C_Npc target, var int spellID, var C_Spell spellInst, var int spellLevel,
+        var int isScroll, var int manaInvested, var int dist, var int returnPtr) {
     // Get reticle instance from call-by-reference argument
-    var Reticle reticle; reticle = _^(rtrnPtr);
+    var Reticle reticle; reticle = _^(returnPtr);
 
     /*
     // Different reticles by spell type

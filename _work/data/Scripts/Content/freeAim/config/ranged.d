@@ -1,5 +1,7 @@
 /*
- * This file contains all configurations for ranged combat (bows and crossbows).
+ * This file contains all configurations for free aiming in ranged combat (bows and crossbows).
+ *
+ * Requires the feature GFA_RANGED (see config\settings.d).
  */
 
 
@@ -12,7 +14,7 @@
  *
  * Ideas: Incorporate more factors like e.g. a quick-draw talent, weapon-specific stats, ...
  */
-func int freeAimGetDrawForce(var C_Item weapon, var int talent) {
+func int GFA_GetDrawForce(var C_Item weapon, var int talent) {
     if (weapon.flags & ITEM_CROSSBOW) {
         // Always full draw force on crossbows
         return 100;
@@ -48,13 +50,13 @@ func int freeAimGetDrawForce(var C_Item weapon, var int talent) {
  * Note: This function is only used, if GFA_TRUE_HITCHANCE is true. Otherwise, Gothic's default hit chance  calculation
  * (based on skill and distance from target) is used and the accuracy defined here does not take effect!
  */
-func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
+func int GFA_GetAccuracy(var C_Item weapon, var int talent) {
     // Here, the hit chance is scaled by draw force, where hit chance is talent for Gothic 2 and dexterity for Gothic 1
     //  Draw force = 100% -> accuracy = hit chance
     //  Draw force =   0% -> accuracy = hit chance/2
 
     // Get draw force from the function above. Already scaled to [0, 100]
-    var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent);
+    var int drawForce; drawForce = GFA_GetDrawForce(weapon, talent);
 
     // In Gothic 1, the hit chance is actually the dexterity (for both bows and crossbows), NOT the talent!
     if (GOTHIC_BASE_VERSION == 1) {
@@ -84,7 +86,7 @@ func int freeAimGetAccuracy(var C_Item weapon, var int talent) {
  *
  * Here, the recoil is scaled with strength and only active for crossbows, to counterbalance the lack of draw force.
  */
-func int freeAimGetRecoil(var C_Item weapon, var int talent) {
+func int GFA_GetRecoil(var C_Item weapon, var int talent) {
     if (weapon.flags & ITEM_BOW) {
         // No recoil for bows
         return 0;
@@ -97,8 +99,8 @@ func int freeAimGetRecoil(var C_Item weapon, var int talent) {
 
     /*
     // Alternatively, inversely scale with draw force. Keep in mind, that by default, draw force is always 100% for
-    // crossbows, see freeAimGetDrawForce() above.
-    var int recoil; recoil = -freeAimGetDrawForce(weapon, talent)+100; */
+    // crossbows, see GFA_GetDrawForce() above.
+    var int recoil; recoil = -GFA_GetDrawForce(weapon, talent)+100; */
 
     // Respect the percentage ranges
     if (recoil < 20) {
@@ -122,13 +124,13 @@ func int freeAimGetRecoil(var C_Item weapon, var int talent) {
  *
  * Here, the damage is scaled by draw force to yield less damage when the bow is only briefly drawn.
  */
-func int freeAimScaleInitialDamage(var int basePointDamage, var C_Item weapon, var int talent, var int aimingDistance) {
+func int GFA_GetInitialBaseDamage(var int basePointDamage, var C_Item weapon, var int talent, var int aimingDistance) {
     // Here the damage is scaled by draw force:
     //  Draw force = 100% -> baseDamage
     //  Draw force =   0% -> baseDamage/2
 
     // Get draw force from the function above. Already scaled to [0, 100]
-    var int drawForce; drawForce = freeAimGetDrawForce(weapon, talent);
+    var int drawForce; drawForce = GFA_GetDrawForce(weapon, talent);
 
     // Re-scale the drawforce to [50, 100]
     drawForce = 50 * drawForce / 100 + 50;

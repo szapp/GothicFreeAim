@@ -92,7 +92,7 @@ manually.
     const int  MENU_ID_GFA      = 7; // Next available Y-spot in the menu
     ```
 
- 7. Finally initialize free aim by adding the line `freeAim_Init();` in to the function `INIT_GLOBAL()` in
+ 7. Finally initialize free aim by adding the line `GFA_Init();` in to the function `INIT_GLOBAL()` in
     `_work\data\Scripts\Content\Story\Startup.d` somewhere after Ikarus and LeGo.
 
 > Again: The [setup](http://github.com/szapp/g2freeAim/releases/latest) will perform all these steps for you.

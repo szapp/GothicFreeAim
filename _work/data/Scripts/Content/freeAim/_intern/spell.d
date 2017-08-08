@@ -26,7 +26,7 @@
  * Set the spell FX shooting direction. This function hooks oCSpell::Setup to overwrite the target vob with the aim vob
  * that is placed in front of the camera at the nearest intersection with the world or an object.
  */
-func void freeAimSetupSpell() {
+func void GFA_SetupSpell() {
     var int spellOC; spellOC = MEMINT_SwitchG1G2(ESI, EBP);
     var int casterPtr; casterPtr = MEM_ReadInt(spellOC+oCSpell_spellCasterNpc_offset);
     if (!casterPtr) {
@@ -41,7 +41,7 @@ func void freeAimSetupSpell() {
 
     // Check if spell supports free aiming (is eligible)
     var C_Spell spell; spell = _^(spellOC+oCSpell_C_Spell_offset);
-    if (!freeAimSpellEligible(spell)) {
+    if (!GFA_IsSpellEligible(spell)) {
         return;
     };
 
@@ -56,10 +56,10 @@ func void freeAimSetupSpell() {
 
     // Shoot a trace ray to find the position of the nearest intersection
     var int pos[3];
-    freeAimRay(spell.targetCollectRange, focusType, 0, _@(pos), 0, 0);
+    GFA_AimRay(spell.targetCollectRange, focusType, 0, _@(pos), 0, 0);
 
     // Setup the aim vob
-    var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos));
+    var int vobPtr; vobPtr = GFA_SetupAimVob(_@(pos));
 
     // Overwrite target vob
     MEM_WriteInt(ESP+4, vobPtr);
@@ -70,15 +70,23 @@ func void freeAimSetupSpell() {
  * Manage reticle style and focus collection for magic combat during aiming. This function hooks oCAIHuman::MagicMode,
  * but exists right away if the active spell does not support free aiming or if the player is not currently aiming.
  */
-func void freeAimSpellReticle() {
+func void GFA_SpellAiming() {
+    var int removedFX; // Prevent trying to remove the effect too often
+
     // Only show reticle for spells that support free aiming and during aiming
     if (GFA_ACTIVE != FMODE_MAGIC) {
-        freeAimRemoveReticle();
+        GFA_RemoveReticle();
+        // Remove the visual FX of the aim vob (if present)
+        if (!removedFX) {
+            GFA_AimVobDetachFX();
+            removedFX = 1; // Would be called each frame, that is no problem for Gothic 2, but for Gothic 1
+        };
         return;
     };
+    removedFX = 0; // Reset (next time when not aiming, check ONCE for FX and remove it if present)
 
     // Retrieve target NPC and the distance to it from the camera(!)
-    var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
+    var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
     var int distance;
     var int target;
 
@@ -94,7 +102,7 @@ func void freeAimSpellReticle() {
         };
 
         // Shoot aim trace ray, to retrieve the distance to an intersection and a possible target
-        freeAimRay(spell.targetCollectRange, focusType, _@(target), 0, _@(distance), 0);
+        GFA_AimRay(spell.targetCollectRange, focusType, _@(target), 0, _@(distance), 0);
         distance = roundf(divf(mulf(distance, FLOAT1C), mkf(spell.targetCollectRange))); // Distance scaled to [0, 100]
 
     } else {
@@ -136,7 +144,7 @@ func void freeAimSpellReticle() {
     reticle.size = 75; // Medium size by default
 
     // Retrieve reticle specs and draw/update it on screen
-    freeAimGetReticleSpell_(target, spell, distance, reticlePtr);
-    freeAimInsertReticle(reticlePtr);
+    GFA_GetSpellReticle_(target, spell, distance, reticlePtr);
+    GFA_InsertReticle(reticlePtr);
     MEM_Free(reticlePtr);
 };

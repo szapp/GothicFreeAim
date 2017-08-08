@@ -1,13 +1,13 @@
 /*
- * This file is part of the configurations for reticles.
+ * This file is part of the configurations for reticles (see config\reticle.d).
  */
 
 
 /*
  * This is a list of available reticle textures by default. Feel free to extend this list with your own textures. Some
  * of them are animated as indicated. Animated textures can be passed to the following functions:
- *  reticle.texture = freeAimAnimateReticleByTime(textureFileName, framesPerSecond, numberOfFrames)
- *  reticle.texture = freeAimAnimateReticleByPercent(textureFileName, 100, numberOfFrames) // Where 100 is a percentage
+ *  reticle.texture = GFA_AnimateReticleByTime(textureFileName, framesPerSecond, numberOfFrames)
+ *  reticle.texture = GFA_AnimateReticleByPercent(textureFileName, 100, numberOfFrames) // Where 100 is a percentage
  */
 const string RETICLE_DOT           = "RETICLEDOT.TGA";
 const string RETICLE_CROSSTWO      = "RETICLECROSSTWO.TGA";

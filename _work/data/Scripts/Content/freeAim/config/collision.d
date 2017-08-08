@@ -1,5 +1,7 @@
 /*
- * This file contains all configurations for collision and hit registration of projectiles.
+ * This file contains all configurations for collision behaviors and hit registration of projectiles.
+ *
+ * Requires the feature GFA_CUSTOM_COLLISIONS (see config\settings.d).
  */
 
 
@@ -10,12 +12,12 @@
  * the materials are defined as in Constants.d (MAT_METAL, MAT_WOOD, ...).
  *
  * Ideas: 'ineffective' ranged weapons, armor materials immune to arrows, disable friendly-fire, maximum range. Examples
- * are written below and commented out and serve as inspiration of what is possible
+ * are written below and commented out and serve as inspiration of what is possible.
  */
-func int freeAimHitRegNpc(var C_Npc target, var C_Item weapon, var int material) {
+func int GFA_GetCollisionWithNpc(var C_Npc target, var C_Item weapon, var int material) {
     // Valid return values are:
     const int DESTROY = 0; // No hit registration (no damage), projectile is destroyed
-    const int COLLIDE = 1; // Hit registration (damage), projectile is put into inventory
+    const int DAMAGE  = 1; // Positive hit registration, projectile is put into inventory if GFA_REUSE_PROJECTILES == 1
     const int DEFLECT = 2; // No hit registration (no damage), projectile is repelled
 
     if (target.aivar[AIV_PARTYMEMBER]) && (target.aivar[AIV_LASTTARGET] != Hlp_GetInstanceID(hero)) {
@@ -46,25 +48,27 @@ func int freeAimHitRegNpc(var C_Npc target, var C_Item weapon, var int material)
         };
     }; */
 
-    // Usually all shots on NPCs should be registered. For defining the hit chances see freeAimGetAccuracy()
-    return COLLIDE;
+    // Usually all shots on NPCs should be registered. For defining the hit chances see GFA_GetAccuracy()
+    return DAMAGE;
 };
 
 
 /*
  * This function is called every time the world (static or vobs) is hit by a projectile (arrows and bolts). It can be
  * used to define the collision behavior for different materials or surface textures.
- * Note: Unlike freeAimHitRegNpc() and all other config functions, this function is also called for NPC shooters!
+ * Note: Unlike GFA_GetCollisionWithNpc() and all other config functions, this function is also called for NPC
+ * shooters!
  *
  * The parameter 'materials' is a bit field for all materials attached to the hit object.
  * The parameter 'textures' is a string containing all texture names, delimiter: |
  *
  * CAUTION: Unfortunately, all vobs in Gothic 1 belong to the UNDEF material group. With descriptive texture names,
- * however, the material can be retrieved, e.g. (STR_IndexOf(textures, "WOOD") != 1).
+ * however, the material can be retrieved, e.g. (STR_IndexOf(textures, "WOOD") != 1). At the end of the function there
+ * is an elaborate check for all wooding textures in Gothic 1 to compensate for the lack of material groups.
  *
  * Examples are written below and commented out and serve as inspiration of what is possible.
  */
-func int freeAimHitRegWld(var C_Npc shooter, var C_Item weapon, var int materials, var string textures) {
+func int GFA_GetCollisionWithWorld(var C_Npc shooter, var C_Item weapon, var int materials, var string textures) {
     // Valid return values are:
     const int DESTROY = 0; // Projectile is destroyed on impact
     const int STUCK   = 1; // Projectile gets stuck in the surface
@@ -102,8 +106,8 @@ func int freeAimHitRegWld(var C_Npc shooter, var C_Item weapon, var int material
         return DESTROY;
     };
 
-    // Since Gothic 1 is a bit weak on the material properties, here is a list of textures name key words, that fix that
-    // deficit. This part can safely be deleted when using Gothic 2
+    // Since Gothic 1 is a bit weak on supplying the material properties of vobs, here is a check on texture name key
+    // words, that fixes that deficit. This part can safely be deleted when using Gothic 2
     if (STR_IndexOf(textures, "BAUM") != -1)
     || (STR_IndexOf(textures, "TREE") != -1)
     || (STR_IndexOf(textures, "RANKEN") != -1)
