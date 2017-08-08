@@ -192,6 +192,23 @@ func void GFA_InitFeatureReuseProjectiles() {
 
 
 /*
+ * Initialize hook for the dropped projectile AI bug fix. This function is called from GFA_InitOnce().
+ */
+func void GFA_InitFixDroppedProjectileAI() {
+    MEM_Info("Initializing dropped projectiles AI bug fix.");
+    MemoryProtectionOverride(oCAIVobMove__DoAI_stopMovement, 7); // First erase a call, to make room for hook
+    MEM_WriteByte(oCAIVobMove__DoAI_stopMovement, ASMINT_OP_nop);
+    MEM_WriteByte(oCAIVobMove__DoAI_stopMovement+1, ASMINT_OP_nop);
+    MEM_WriteByte(oCAIVobMove__DoAI_stopMovement+2, ASMINT_OP_nop);
+    MEM_WriteByte(oCAIVobMove__DoAI_stopMovement+3, ASMINT_OP_nop);
+    MEM_WriteByte(oCAIVobMove__DoAI_stopMovement+4, ASMINT_OP_nop);
+    MEM_WriteByte(oCAIVobMove__DoAI_stopMovement+5, ASMINT_OP_nop);
+    MEM_WriteByte(oCAIVobMove__DoAI_stopMovement+6, ASMINT_OP_nop);
+    HookEngineF(oCAIVobMove__DoAI_stopMovement, 7, GFA_FixDroppedProjectileAI); // Re-write what has been overwritten
+};
+
+
+/*
  * Initializations to perform only once every session. This function overwrites memory protection at certain addresses,
  * and registers hooks and console commands, all depending on the selected features (see config\settings.d). The
  * function is call from GFA_Init().
@@ -234,6 +251,9 @@ func int GFA_InitOnce() {
         // enabled/disabled during the game. That would cause too many/too few projectiles
         GFA_InitFeatureReuseProjectiles();
     };
+
+    // Fix dropped projectile AI bug
+    GFA_InitFixDroppedProjectileAI();
 
     // Register console commands
     MEM_Info("Initializing console commands.");

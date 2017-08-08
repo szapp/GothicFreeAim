@@ -30,6 +30,7 @@ const int zCVob__SetPositionWorld                    =  6404976; //0x61BB70
 const int zCVob__GetRigidBody                        =  6285664; //0x5FE960
 const int zCVob__TraceRay                            =  6291008; //0x5FFE40
 const int zCVob__SetAI                               =  6285552; //0x5FE8F0
+const int zCVob__SetSleeping                         =  6302000; //0x602930
 const int zCArray_zCVob__IsInList                    =  7159168; //0x6D3D80
 const int zCRigidBody__StopTransRot                  =  5989776; //0x5B6590                // Not used for Gothic 2
 const int zCRigidBody__SetVelocity                   =  5990096; //0x5B66D0                // Not used for Gothic 2
@@ -83,6 +84,7 @@ const int zCCollObjectLevelPolys__s_oCollObjClass    =  9274192; //0x8D8350
 
 const int zCWorld__AdvanceClock                      =  6447328; //0x6260E0 // Hook len 10
 const int cGameManager__ApplySomeSettings_rtn        =  4362866; //0x429272 // Hook len 6
+const int oCAIVobMove__DoAI_stopMovement             =  6945300; //0x69FA14 // Hook len 7
 const int oCAIHuman__BowMode                         =  6905600; //0x695F00 // Hook len 6
 const int oCAIHuman__BowMode_interpolateAim          =  6906518; //0x696296 // Hook len 5
 const int oCAIHuman__BowMode_postInterpolate         =  6906532; //0x6962A4 // Hook len 6

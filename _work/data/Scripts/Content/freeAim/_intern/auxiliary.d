@@ -325,3 +325,41 @@ func int Wld_StopEffect_Ext(var string effectName, var int originInst, var int t
 
     return stopped;
 };
+
+
+/*
+ * When dropping dead or unconscious while having a ranged weapon readied, the dropped projectile will not dereference
+ * its AI properly, causing an annoying error message box on any consecutive loading (only with GothicStarter_mod.exe)
+ * in Gothic 2. Mind, that this bug has nothing to do with GFA, it is already present in the original Gothic 2!
+ * Here, the AI will be released (how it should be done), fixing the problem.
+ * The problem is not known to affect Gothic 1 (no error message), but the fix does not hurt.
+ */
+func void GFA_FixDroppedProjectileAI() {
+    // Old: Re-write what has been overwritten with nop (for means of a working hook in constrained address space)
+    // .text:0069FA14  028   6A 01             push    1
+    // .text:0069FA16  02C   E8 15 2F F6 FF    call    zCVob::SetSleeping(int)
+    var int vobPtr; vobPtr = MEM_ReadInt(ESP+40); // esp+28h
+    const int call = 0; const int one = 1;
+    if (CALL_Begin(call)) {
+        CALL_IntParam(_@(one));
+        CALL__thiscall(_@(vobPtr), zCVob__SetSleeping);
+        call = CALL_End();
+    };
+
+
+    // New: Fix dropped projectile AI bug
+    if (!Hlp_Is_oCItem(vobPtr)) {
+        return;
+    };
+    var C_Item itm; itm = _^(vobPtr);
+
+    if (itm.mainflag & ITEM_KAT_MUN) {
+        // Release AI of dropped projectiles to fix illegal reference on loading
+        const int call3 = 0; var int zero;
+        if (CALL_Begin(call3)) {
+            CALL_IntParam(_@(zero));
+            CALL__thiscall(_@(vobPtr), zCVob__SetAI);
+            call3 = CALL_End();
+        };
+    };
+};
