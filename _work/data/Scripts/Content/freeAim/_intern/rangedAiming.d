@@ -23,20 +23,30 @@
 
 
 /*
- * Collect focus during shooting. Otherwise the focus collection changes during the shooting animation. This function
- * hooks oCAIHuman::BowMode at a position where the player model is carrying out the animation of shooting.
+ * Correct focus when not aiming. This includes preventing changes in focus collection during the shooting animation,
+ * removing the reticle when not aiming and disabling focus collection all together when not aiming. This function
+ * hooks oCAIHuman::BowMode() at an offset where the player model is explicitly not in the aiming animation.
  */
-func void GFA_RangedShooting() {
-    if (GFA_ACTIVE) {
-        // Shoot aim trace ray to update focus
+func void GFA_RangedIdle() {
+    if (GFA_ACTIVE > 1) {
+        // Shoot trace ray to update focus
         GFA_AimRay(GFA_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, 0);
+
+    } else if (GFA_ACTIVE) {
+        // Hide reticle
+        GFA_RemoveReticle();
+
+        if (GFA_NO_AIM_NO_FOCUS) {
+            // Remove focus and target
+            GFA_SetFocusAndTarget(0);
+        };
     };
 };
 
 
 /*
- * Interpolate the ranged aiming animation. This function hooks oCAIHuman::BowMode just before
- * oCAniCtrl_Human::InterpolateCombineAni to adjust the direction the ranged weapon is pointed in. Also the focus
+ * Interpolate the ranged aiming animation. This function hooks oCAIHuman::BowMode() just before
+ * oCAniCtrl_Human::InterpolateCombineAni() to adjust the direction the ranged weapon is pointed in. Also the focus
  * collection is overwritten.
  */
 func void GFA_RangedAiming() {

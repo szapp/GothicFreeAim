@@ -25,7 +25,7 @@
 /*
  * Detach the visual FX from the aim vob. This function should go hand in hand with attaching a visual FX: If you attach
  * an FX, you should make sure to remove the FX, when it is no longer needed. Some precautions are already taken from
- * the side of GFA and this function is called on every weapon change, specifically in GFA_CleanUpAiming().
+ * the side of GFA and this function is called on every weapon change, specifically in GFA_ResetOnWeaponSwitch().
  */
 func void GFA_AimVobDetachFX() {
     if (!GFA_AimVobHasFX) {

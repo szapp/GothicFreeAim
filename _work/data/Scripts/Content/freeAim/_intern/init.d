@@ -42,7 +42,7 @@ func void GFA_InitFeatureFreeAiming() {
     // Free aiming for ranged combat aiming and shooting
     if (GFA_RANGED) {
         MEM_Info("Initializing free aiming for ranged combat.");
-        HookEngineF(oCAIHuman__BowMode_shoot, 6, GFA_RangedShooting); // Fix focus collection while shooting
+        HookEngineF(oCAIHuman__BowMode_notAiming, 6, GFA_RangedIdle); // Fix focus collection while not aiming
         HookEngineF(oCAIHuman__BowMode_interpolateAim, 5, GFA_RangedAiming); // Interpolate aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, GFA_SetupProjectile); // Setup projectile trajectory (shooting)
         HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_ResetProjectileGravity); // Reset gravity on coll
@@ -72,10 +72,7 @@ func void GFA_InitFeatureFreeAiming() {
 
     // Reticle
     MEM_Info("Initializing reticle.");
-    if (GFA_RANGED) {
-        HookEngineF(oCAIHuman__BowMode, 6, GFA_CleanUpAiming); // Hide reticle when not pressing aiming key
-    };
-    HookEngineF(oCNpcFocus__SetFocusMode, 7, GFA_CleanUpOnWeaponSwitch); // Hide reticle and reset draw force
+    HookEngineF(oCNpcFocus__SetFocusMode, 7, GFA_ResetOnWeaponSwitch); // Hide reticle, hide aim FX and reset draw force
 
     // Debugging
     if (GFA_DEBUG_CONSOLE) || (GFA_DEBUG_WEAKSPOT) || (GFA_DEBUG_TRACERAY) {
@@ -98,8 +95,8 @@ func void GFA_InitFeatureFreeAiming() {
     };
 
     if (!MEM_GothOptExists("GFA", "focusUpdateIntervalMS")) {
-        // Add INI-entry, if not set (set to 10ms by default)
-        MEM_SetGothOpt("GFA", "focusUpdateIntervalMS", "10");
+        // Add INI-entry, if not set (set to instantaneous=0ms by default)
+        MEM_SetGothOpt("GFA", "focusUpdateIntervalMS", "0");
     };
 };
 
@@ -298,7 +295,7 @@ func void GFA_InitAlways() {
         GFA_UpdateStatus();
 
         // Remove reticle. Would otherwise be stuck on screen on level change
-        GFA_CleanUpAiming();
+        GFA_RemoveReticle();
 
         // Reset aim ray calculation time. Would otherwise result in an invalid vob pointer on loading a game (crash)
         GFA_AimRayPrevCalcTime = 0;

@@ -71,19 +71,17 @@ func void GFA_SetupSpell() {
  * but exists right away if the active spell does not support free aiming or if the player is not currently aiming.
  */
 func void GFA_SpellAiming() {
-    var int removedFX; // Prevent trying to remove the effect too often
-
     // Only show reticle for spells that support free aiming and during aiming
     if (GFA_ACTIVE != FMODE_MAGIC) {
         GFA_RemoveReticle();
         // Remove the visual FX of the aim vob (if present)
-        if (!removedFX) {
-            GFA_AimVobDetachFX();
-            removedFX = 1; // Would be called each frame, that is no problem for Gothic 2, but for Gothic 1
+        GFA_AimVobDetachFX();
+        if (GFA_NO_AIM_NO_FOCUS) {
+            // Remove focus and target when not aming
+            GFA_SetFocusAndTarget(0);
         };
         return;
     };
-    removedFX = 0; // Reset (next time when not aiming, check ONCE for FX and remove it if present)
 
     // Retrieve target NPC and the distance to it from the camera(!)
     var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);

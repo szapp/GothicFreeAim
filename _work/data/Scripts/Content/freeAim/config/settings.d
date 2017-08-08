@@ -39,6 +39,7 @@ const int   GFA_MAX_RECOIL         = 16;    // Amount of maximum vertical mouse 
 const int   GFA_HORZ_RECOIL        = 2;     // Range [-x, x] of horizontal mouse deviation on recoil
 
 // GFA_RANGED and/or GFA_SPELLS
+const int   GFA_NO_AIM_NO_FOCUS    = TRUE;  // Remove focus when not aiming: Prevent using bow/spell as enemy detector
 const float GFA_ROTATION_SCALE     = 0.16;  // Turn rate while aiming (changes Gothic 1 controls only)
 const int   GFA_CAMERA_X_SHIFT     = FALSE; // Set to TRUE if camera is set to shoulderview, s.a. (not recommended)
 const int   GFA_DEBUG_CONSOLE      = TRUE;  // Enable console commands (debugging). Disable in final mod

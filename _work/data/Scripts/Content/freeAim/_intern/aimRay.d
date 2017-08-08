@@ -220,26 +220,8 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
             };
         };
 
-
-        // If focus vob changed by the validation above, update the focus vob (properly, mind the reference counter)
-        if (foundFocus != her.focus_vob) {
-            const int call4 = 0;
-            if (CALL_Begin(call4)) {
-                CALL_PtrParam(_@(foundFocus)); // If no valid focus found, this will remove the focus (foundFocus == 0)
-                CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
-                call4 = CALL_End();
-            };
-        };
-
-        // If focus vob changed by the validation above, update the enemy NPC (also properly with an engine call)
-        if (foundFocus != her.enemy) {
-            const int call5 = 0;
-            if (CALL_Begin(call5)) {
-                CALL_PtrParam(_@(foundFocus));
-                CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
-                call5 = CALL_End();
-            };
-        };
+        // Update focus and enemy
+        GFA_SetFocusAndTarget(foundFocus);
 
         // Calculate the distance to the player
         var int distHitToPlayer;

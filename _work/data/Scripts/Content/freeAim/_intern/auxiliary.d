@@ -75,6 +75,37 @@ func int GFA_IsSpellEligible(var C_Spell spell) {
 
 
 /*
+ * This function updates the focus (oCNpc.focus_vob) and the target (oCNpc.enemy) of the player with a new focus. The
+ * focus and target can be set to empty, by passing zero as argument.
+ */
+func void GFA_SetFocusAndTarget(var int focusPtr) {
+    var oCNpc her; her = Hlp_GetNpc(hero);
+    var int herPtr; herPtr = _@(her);
+
+    // Update the focus vob (properly, mind the reference counter)
+    if (focusPtr != her.focus_vob) {
+        const int call = 0;
+        if (CALL_Begin(call)) {
+            CALL_PtrParam(_@(focusPtr)); // If no focus is supplied, this will remove the focus (focusPtr == 0)
+            CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
+            call = CALL_End();
+        };
+    };
+
+    // Update the enemy NPC (also properly with an engine call)
+    if (focusPtr != her.enemy) {
+        const int call2 = 0;
+        if (CALL_Begin(call2)) {
+            CALL_PtrParam(_@(focusPtr));
+            CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
+            call2 = CALL_End();
+        };
+    };
+
+};
+
+
+/*
  * Wrapper function to retrieve the readied weapon and the respective talent value. This function is called by several
  * other wrapper functions.
  *

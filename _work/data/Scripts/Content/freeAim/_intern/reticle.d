@@ -96,32 +96,22 @@ func void GFA_InsertReticle(var int reticlePtr) {
 
 
 /*
- * Decide when to draw reticle or when to hide it. This function is called from various functions to ensure that the
- * reticle disappears if changing the weapon or stopping to aim.
- */
-func void GFA_CleanUpAiming() {
-    if (GFA_ACTIVE < FMODE_FAR) {
-        // Remove the visual FX of the aim vob (if present)
-        GFA_AimVobDetachFX();
-        // Hide reticle
-        GFA_RemoveReticle();
-    };
-};
-
-
-/*
  * Switching between weapon modes (sometimes called several times in a row). This function hooks
- * oCNpcFocus::SetFocusMode to call GFA_CleanUpAiming() and to reset the draw force of ranged weapons. This function
- * is called during loading of a level change before Ikarus, LeGo or GFA are initialized.
+ * oCNpcFocus::SetFocusMode() to remove the reticle, remove the aim vob FX and reset the draw force of ranged weapons.
+ * Additionally, this function is called during a level change before Ikarus, LeGo or GFA are initialized.
  */
-func void GFA_CleanUpOnWeaponSwitch() {
-    if (!_@(MEM_Timer)) {
-        // This function is called during level change prior to any initialization
-        return;
-    };
+func void GFA_ResetOnWeaponSwitch() {
+    // Remove the visual FX of the aim vob (if present)
+    GFA_AimVobDetachFX();
 
-    GFA_BowDrawOnset = MEM_Timer.totalTime + GFA_DRAWTIME_READY; // Reset draw force, because aiming button may be held
-    GFA_CleanUpAiming();
+    // Hide reticle
+    GFA_RemoveReticle();
+
+    // Reset draw force, because aiming button may be held
+    if (_@(MEM_Timer)) {
+        // This function is called during level change prior to any initialization
+        GFA_BowDrawOnset = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
+    };
 };
 
 
