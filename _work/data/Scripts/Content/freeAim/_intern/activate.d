@@ -1,24 +1,24 @@
 /*
  * Activate free aiming and set internal settings
  *
- * G2 Free Aim v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
- * This file is part of G2 Free Aim.
+ * This file is part of Gothic Free Aim.
  * <http://github.com/szapp/g2freeAim>
  *
- * G2 Free Aim is free software: you can redistribute it and/or modify
- * it under the terms of the MIT License.
+ * Gothic Free Aim is free software: you can redistribute it and/or
+ * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
  *
- * G2 Free Aim is distributed in the hope that it will be useful,
+ * Gothic Free Aim is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * MIT License for more details.
  *
- * You should have received a copy of the MIT License
- * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
+ * You should have received a copy of the MIT License along with
+ * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -32,7 +32,7 @@ func void GFA_UpdateSettings(var int on) {
         return; // No change necessary
     };
 
-    MEM_Info(ConcatStrings("  OPT: Free-Aim: Enabled=", IntToString(on))); // Print to zSpy in same style as options
+    MEM_Info(ConcatStrings("  OPT: GFA: freeAimingEnabled=", IntToString(on))); // Print to zSpy, same style as options
 
     if (on) {
         // Turn free aiming on
@@ -76,8 +76,8 @@ func void GFA_UpdateSettings(var int on) {
  * The constant GFA_ACTIVE is modified in the subsequent function GFA_UpdateSettings().
  */
 func void GFA_UpdateStatus() {
-    // Check if g2freeAim is enabled and mouse controls are enabled
-    if (!STR_ToInt(MEM_GetGothOpt("FREEAIM", "enabled"))) || (!MEM_ReadInt(zCInput_Win32__s_mouseEnabled)) {
+    // Check if GFA and mouse controls are enabled
+    if (!STR_ToInt(MEM_GetGothOpt("GFA", "freeAimingEnabled"))) || (!MEM_ReadInt(zCInput_Win32__s_mouseEnabled)) {
         // Disable if previously enabled
         GFA_UpdateSettings(0);
         GFA_DisableAutoTurning(0);

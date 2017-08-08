@@ -1,24 +1,24 @@
 /*
  * Reticle handling
  *
- * G2 Free Aim v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
- * This file is part of G2 Free Aim.
+ * This file is part of Gothic Free Aim.
  * <http://github.com/szapp/g2freeAim>
  *
- * G2 Free Aim is free software: you can redistribute it and/or modify
- * it under the terms of the MIT License.
+ * Gothic Free Aim is free software: you can redistribute it and/or
+ * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
  *
- * G2 Free Aim is distributed in the hope that it will be useful,
+ * Gothic Free Aim is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * MIT License for more details.
  *
- * You should have received a copy of the MIT License
- * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
+ * You should have received a copy of the MIT License along with
+ * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -112,7 +112,7 @@ func void GFA_CleanUpAiming() {
 /*
  * Switching between weapon modes (sometimes called several times in a row). This function hooks
  * oCNpcFocus::SetFocusMode to call GFA_CleanUpAiming() and to reset the draw force of ranged weapons. This function
- * is called during loading of a level change before Ikarus, LeGo or g2freeAim are initialized.
+ * is called during loading of a level change before Ikarus, LeGo or GFA are initialized.
  */
 func void GFA_CleanUpOnWeaponSwitch() {
     if (!_@(MEM_Timer)) {

@@ -1,24 +1,24 @@
 /*
  * Initialization
  *
- * G2 Free Aim v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
- * This file is part of G2 Free Aim.
+ * This file is part of Gothic Free Aim.
  * <http://github.com/szapp/g2freeAim>
  *
- * G2 Free Aim is free software: you can redistribute it and/or modify
- * it under the terms of the MIT License.
+ * Gothic Free Aim is free software: you can redistribute it and/or
+ * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
  *
- * G2 Free Aim is distributed in the hope that it will be useful,
+ * Gothic Free Aim is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * MIT License for more details.
  *
- * You should have received a copy of the MIT License
- * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
+ * You should have received a copy of the MIT License along with
+ * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -32,10 +32,10 @@ func void GFA_InitFeatureFreeAiming() {
     // Controls
     MEM_Info("Initializing free aiming mouse controls.");
     HookEngineF(mouseUpdate, 5, GFA_TurnPlayerModel); // Rotate the player model by mouse input
-    if (GOTHIC_BASE_VERSION == 2) {
-        MemoryProtectionOverride(oCNpc__TurnToEnemy_camCheck, 6); // G2: Prevent auto turning (target lock)
-    } else {
+    if (GOTHIC_BASE_VERSION == 1) {
         MemoryProtectionOverride(oCAIHuman__MagicMode_turnToTarget, 5); // G1: Prevent auto turning in magic combat
+    } else {
+        MemoryProtectionOverride(oCNpc__TurnToEnemy_camCheck, 6); // G2: Prevent auto turning (target lock)
     };
     HookEngineF(oCNpc__OnDamage_Anim_getModel, 9, GFA_DisableDamageAnimation); // Disable damage animation while aiming
 
@@ -84,22 +84,22 @@ func void GFA_InitFeatureFreeAiming() {
         HookEngineF(zCWorld__AdvanceClock, 10, GFA_VisualizeTraceRay);
         if (GFA_DEBUG_CONSOLE) {
             // Enable console commands for debugging
-            CC_Register(GFA_DebugWeakspot, "debug freeaim weakspot", "turn debug visualization on/off");
-            CC_Register(GFA_DebugTraceRay, "debug freeaim traceray", "turn debug visualization on/off");
+            CC_Register(GFA_DebugWeakspot, "debug GFA weakspot", "turn debug visualization on/off");
+            CC_Register(GFA_DebugTraceRay, "debug GFA traceray", "turn debug visualization on/off");
         };
     };
 
     // Read INI Settings
     MEM_Info("Initializing entries in Gothic.ini.");
 
-    if (!MEM_GothOptExists("FREEAIM", "enabled")) {
+    if (!MEM_GothOptExists("GFA", "freeAimingEnabled")) {
         // Add INI-entry, if not set
-        MEM_SetGothOpt("FREEAIM", "enabled", "1");
+        MEM_SetGothOpt("GFA", "freeAimingEnabled", "1");
     };
 
-    if (!MEM_GothOptExists("FREEAIM", "focusUpdateIntervalMS")) {
+    if (!MEM_GothOptExists("GFA", "focusUpdateIntervalMS")) {
         // Add INI-entry, if not set (set to 10ms by default)
-        MEM_SetGothOpt("FREEAIM", "focusUpdateIntervalMS", "10");
+        MEM_SetGothOpt("GFA", "focusUpdateIntervalMS", "10");
     };
 };
 
@@ -199,7 +199,7 @@ func void GFA_InitFeatureReuseProjectiles() {
 func int GFA_InitOnce() {
     // Make sure LeGo is initialized with the required flags
     if ((_LeGo_Flags & GFA_LEGO_FLAGS) != GFA_LEGO_FLAGS) {
-        MEM_Error("Insufficient LeGo flags for G2 Free Aim.");
+        MEM_Error("Insufficient LeGo flags for Gothic Free Aim.");
         return FALSE;
     };
 
@@ -237,9 +237,9 @@ func int GFA_InitOnce() {
 
     // Register console commands
     MEM_Info("Initializing console commands.");
-    CC_Register(GFA_GetVersion, "freeaim version", "print freeaim version info");
-    CC_Register(GFA_GetLicense, "freeaim license", "print freeaim license info");
-    CC_Register(GFA_GetInfo, "freeaim info", "print freeaim info");
+    CC_Register(GFA_GetVersion, "GFA version", "print GFA version info");
+    CC_Register(GFA_GetLicense, "GFA license", "print GFA license info");
+    CC_Register(GFA_GetInfo, "GFA info", "print GFA config info");
 
     // Successfully initialized
     return TRUE;
@@ -255,7 +255,7 @@ func void GFA_InitAlways() {
     Timer_SetPauseInMenu(1);
 
     // Retrieve trace ray interval: Recalculate trace ray intersection every x ms
-    GFA_AimRayInterval = STR_ToInt(MEM_GetGothOpt("FREEAIM", "focusUpdateIntervalMS"));
+    GFA_AimRayInterval = STR_ToInt(MEM_GetGothOpt("GFA", "focusUpdateIntervalMS"));
     if (GFA_AimRayInterval > 500) {
         GFA_AimRayInterval = 500;
     };

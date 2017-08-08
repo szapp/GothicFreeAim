@@ -1,24 +1,24 @@
 /*
  * Definition of all console commands
  *
- * G2 Free Aim v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
- * This file is part of G2 Free Aim.
+ * This file is part of Gothic Free Aim.
  * <http://github.com/szapp/g2freeAim>
  *
- * G2 Free Aim is free software: you can redistribute it and/or modify
- * it under the terms of the MIT License.
+ * Gothic Free Aim is free software: you can redistribute it and/or
+ * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
  *
- * G2 Free Aim is distributed in the hope that it will be useful,
+ * Gothic Free Aim is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * MIT License for more details.
  *
- * You should have received a copy of the MIT License
- * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
+ * You should have received a copy of the MIT License along with
+ * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -52,8 +52,8 @@ func string GFA_DebugTraceRay(var string command) {
 
 
 /*
- * Console function to show freeAim version. This function is registered as console command.
- * When entered in the console, the current g2freeAim version is displayed as the console output.
+ * Console function to show GFA version. This function is registered as console command.
+ * When entered in the console, the current GFA version is displayed as the console output.
  */
 func string GFA_GetVersion(var string command) {
     return GFA_VERSION;
@@ -61,8 +61,8 @@ func string GFA_GetVersion(var string command) {
 
 
 /*
- * Console function to show freeAim license. This function is registered as console command.
- * When entered in the console, the g2freeAim license information is displayed as the console output.
+ * Console function to show GFA license. This function is registered as console command.
+ * When entered in the console, the GFA license information is displayed as the console output.
  */
 func string GFA_GetLicense(var string command) {
     var int s; s = SB_New();
@@ -89,8 +89,8 @@ func string GFA_GetLicense(var string command) {
 
 
 /*
- * Console function to show freeAim info. This function is registered as console command.
- * When entered in the console, the g2freeAim config is displayed as the console output.
+ * Console function to show GFA info. This function is registered as console command.
+ * When entered in the console, the GFA config is displayed as the console output.
  */
 func string GFA_GetInfo(var string command) {
     const string onOff[2] = {"OFF", "ON"};

@@ -1,31 +1,31 @@
 /*
  * Definition and manipulation of aim vob (targeting system)
  *
- * G2 Free Aim v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
- * This file is part of G2 Free Aim.
+ * This file is part of Gothic Free Aim.
  * <http://github.com/szapp/g2freeAim>
  *
- * G2 Free Aim is free software: you can redistribute it and/or modify
- * it under the terms of the MIT License.
+ * Gothic Free Aim is free software: you can redistribute it and/or
+ * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
  *
- * G2 Free Aim is distributed in the hope that it will be useful,
+ * Gothic Free Aim is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * MIT License for more details.
  *
- * You should have received a copy of the MIT License
- * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
+ * You should have received a copy of the MIT License along with
+ * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
 /*
  * Detach the visual FX from the aim vob. This function should go hand in hand with attaching a visual FX: If you attach
  * an FX, you should make sure to remove the FX, when it is no longer needed. Some precautions are already taken from
- * the side of g2freeAim and this function is called on every weapon change, specifically in GFA_CleanUpAiming().
+ * the side of GFA and this function is called on every weapon change, specifically in GFA_CleanUpAiming().
  */
 func void GFA_AimVobDetachFX() {
     if (!GFA_AimVobHasFX) {

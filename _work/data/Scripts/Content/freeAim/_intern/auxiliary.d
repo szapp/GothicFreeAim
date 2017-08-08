@@ -1,31 +1,30 @@
 /*
  * Auxiliary functions for finding active spell instances, weapons and offering animated reticles
  *
- * G2 Free Aim v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
- * This file is part of G2 Free Aim.
+ * This file is part of Gothic Free Aim.
  * <http://github.com/szapp/g2freeAim>
  *
- * G2 Free Aim is free software: you can redistribute it and/or modify
- * it under the terms of the MIT License.
+ * Gothic Free Aim is free software: you can redistribute it and/or
+ * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
  *
- * G2 Free Aim is distributed in the hope that it will be useful,
+ * Gothic Free Aim is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * MIT License for more details.
  *
- * You should have received a copy of the MIT License
- * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
+ * You should have received a copy of the MIT License along with
+ * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
 /*
  * Retrieve the active spell instance of an NPC. Returns an empty instance if no spell is drawn. This function is
- * usually called in conjunction with GFA_IsSpellEligible(), see below. It might prove to also be useful outside of
- * g2freeAim.
+ * usually called in conjunction with GFA_IsSpellEligible(), see below. It might prove to also be useful outside of GFA.
  */
 func MEMINT_HelperClass GFA_GetActiveSpellInst(var C_Npc npc) {
     if (Npc_GetActiveSpell(npc) == -1) {
@@ -138,7 +137,7 @@ func int GFA_GetWeaponAndTalent(var int weaponPtr, var int talentPtr) {
 
 /*
  * Return texture file name for an animated texture. This function is not used internally, but is offered as a feature
- * for the config functions of g2freeAim. It allows for animated reticles dependent on time.
+ * for the config functions of GFA. It allows for animated reticles dependent on time.
  * 'numFrames' files must exist with the postfix '_[frameNo].tga', e.g. 'TEXTURE_00.TGA', 'TEXTURE_01.TGA',...
  */
 func string GFA_AnimateReticleByTime(var string fileName, var int fps, var int numFrames) {
@@ -165,7 +164,7 @@ func string GFA_AnimateReticleByTime(var string fileName, var int fps, var int n
 
 /*
  * Return texture file name for an animated texture. This function is not used internally, but is offered as a feature
- * for the config functions of g2freeAim. It allows for animated reticles dependent on a given percentage. This is
+ * for the config functions of GFA. It allows for animated reticles dependent on a given percentage. This is
  * useful to indicate progress of draw force or distance to target or any gradual spell property.
  * 'numFrames' files must exist with the postfix '_[frameNo].tga', e.g. 'TEXTURE_00.TGA', 'TEXTURE_01.TGA',...
  */
