@@ -29,12 +29,10 @@ INSTANCE GFA_TRAIL (C_PARTICLEFX)
     ppsFPS = 10; // Ten keys = second, that makes 2 seconds total
     ppsissmooth = 0; // Do not interpolate keys
     shptype_s = "POINT";
-    shpfor_s = "object";
-    shpoffsetvec_s = "0 0 0";
+    shpfor_s = "OBJECT";
+    shpoffsetvec_s = "-75 0 0";
     dirmode_s = "DIR";
-    dirfor_s = "object";
-    dirmodetargetfor_s = "OBJECT";
-    dirmodetargetpos_s = "20 0 0";
+    dirfor_s = "OBJECT";
     diranglehead = 270.0;
     dirangleheadvar = 0.000000000;
     dirangleelevvar = 0.000000000;
