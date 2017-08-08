@@ -257,7 +257,21 @@ func void GFA_SetCameraModes(var int on) {
  */
 func void GFA_DisableDamageAnimation() {
     var C_Npc victim; victim = _^(ECX);
-    if (Npc_IsPlayer(victim)) && (GFA_ACTIVE > 1) {
-        EAX = 0; // Disable animation by removing 'this'
+    if (!Npc_IsPlayer(victim)) || (GFA_ACTIVE < FMODE_FAR) {
+        return;
     };
+
+    // Get damage type
+    var int dmgDescriptor; dmgDescriptor = MEMINT_SwitchG1G2(MEM_ReadInt(/*esp+200h+4h*/ ESP+516),
+                                                             MEM_ReadInt(/*esp+1FCh+4h*/ ESP+512));
+    var int dmgType; dmgType = MEM_ReadInt(dmgDescriptor+oSDamageDescriptor_damageType_offset);
+
+    // Preserve animation for fly damage and for fire damage (Gothic 1 only, because of fire animation, removed in G2)
+    if (dmgType & DAM_BARRIER) || (dmgType & DAM_FLY)
+    || ((GOTHIC_BASE_VERSION == 1) && (dmgType & DAM_FIRE)) {
+        return;
+    };
+
+    // Disable animation for all other damage types by removing 'this' (the zCModel of victim)
+    EAX = 0;
 };

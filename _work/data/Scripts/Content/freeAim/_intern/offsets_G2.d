@@ -117,6 +117,7 @@ const int zCVob_trafoObjToWorld_offset               = 60;  //0x003C
 const int oCNpc_hitChance_offset                     = 472; //0x01D8
 
 const int oSDamageDescriptor_origin_offset           = 8;   //0x0008                       // Not used for Gothic 2
+const int oSDamageDescriptor_damageType_offset       = 36;  //0x0x24
 
 const int oCItem_effect_offset                       = 564; //0x0234
 

@@ -120,6 +120,7 @@ const int zCVob_trafoObjToWorld_offset               = 60;  //0x003C
 const int oCNpc_hitChance_offset                     = 0;                                  // Does not exist in Gothic 1
 
 const int oSDamageDescriptor_origin_offset           = 8;   //0x0008
+const int oSDamageDescriptor_damageType_offset       = 32;  //0x0x20
 
 const int oCItem_effect_offset                       = 0;                                  // Does not exist in Gothic 1
 
