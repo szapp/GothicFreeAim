@@ -1,18 +1,21 @@
 _intern\const.d
-_intern\offsets_G2.d
+_intern\offsets_G1.d
 _intern\classes.d
+_intern\ikarusClasses_G1.d
 _intern\auxiliary.d
+_intern\externals_G1.d
 
 config\settings.d
 config\ranged.d
 config\spell.d
+config\reticleTextures.d
+config\reticleBySpellID_G1.d
 config\reticle.d
 config\collision.d
 config\collectable.d
+config\headshots_G1.d
 config\criticalHit.d
 
-_intern\activate.d
-_intern\controls.d
 _intern\ccommands.d
 _intern\debug.d
 _intern\aimVob.d
@@ -24,4 +27,6 @@ _intern\spell.d
 _intern\collision.d
 _intern\collectable.d
 _intern\criticalHit.d
+_intern\controls.d
+_intern\activate.d
 _intern\init.d

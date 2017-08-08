@@ -1,24 +1,24 @@
 /*
  * Magic combat mechanics
  *
- * G2 Free Aim v1.0.0-alpha - Free aiming for the video game Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
- * This file is part of G2 Free Aim.
+ * This file is part of Gothic Free Aim.
  * <http://github.com/szapp/g2freeAim>
  *
- * G2 Free Aim is free software: you can redistribute it and/or modify
- * it under the terms of the MIT License.
+ * Gothic Free Aim is free software: you can redistribute it and/or
+ * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
  *
- * G2 Free Aim is distributed in the hope that it will be useful,
+ * Gothic Free Aim is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * MIT License for more details.
  *
- * You should have received a copy of the MIT License
- * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
+ * You should have received a copy of the MIT License along with
+ * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -26,8 +26,8 @@
  * Set the spell FX shooting direction. This function hooks oCSpell::Setup to overwrite the target vob with the aim vob
  * that is placed in front of the camera at the nearest intersection with the world or an object.
  */
-func void freeAimSetupSpell() {
-    var int spellOC; spellOC = EBP;
+func void GFA_SetupSpell() {
+    var int spellOC; spellOC = MEMINT_SwitchG1G2(ESI, EBP);
     var int casterPtr; casterPtr = MEM_ReadInt(spellOC+oCSpell_spellCasterNpc_offset);
     if (!casterPtr) {
         return;
@@ -35,13 +35,13 @@ func void freeAimSetupSpell() {
 
     // Only if caster is player and if FA is enabled
     var C_Npc caster; caster = _^(casterPtr);
-    if (!FREEAIM_ACTIVE) || (!Npc_IsPlayer(caster)) {
+    if (!GFA_ACTIVE) || (!Npc_IsPlayer(caster)) {
         return;
     };
 
     // Check if spell supports free aiming (is eligible)
     var C_Spell spell; spell = _^(spellOC+oCSpell_C_Spell_offset);
-    if (!freeAimSpellEligible(spell)) {
+    if (!GFA_IsSpellEligible(spell)) {
         return;
     };
 
@@ -56,10 +56,10 @@ func void freeAimSetupSpell() {
 
     // Shoot a trace ray to find the position of the nearest intersection
     var int pos[3];
-    freeAimRay(spell.targetCollectRange, focusType, 0, _@(pos), 0, 0);
+    GFA_AimRay(spell.targetCollectRange, focusType, 0, _@(pos), 0, 0);
 
     // Setup the aim vob
-    var int vobPtr; vobPtr = freeAimSetupAimVob(_@(pos));
+    var int vobPtr; vobPtr = GFA_SetupAimVob(_@(pos));
 
     // Overwrite target vob
     MEM_WriteInt(ESP+4, vobPtr);
@@ -70,15 +70,23 @@ func void freeAimSetupSpell() {
  * Manage reticle style and focus collection for magic combat during aiming. This function hooks oCAIHuman::MagicMode,
  * but exists right away if the active spell does not support free aiming or if the player is not currently aiming.
  */
-func void freeAimSpellReticle() {
+func void GFA_SpellAiming() {
+    var int removedFX; // Prevent trying to remove the effect too often
+
     // Only show reticle for spells that support free aiming and during aiming
-    if (FREEAIM_ACTIVE != FMODE_MAGIC) {
-        freeAimRemoveReticle();
+    if (GFA_ACTIVE != FMODE_MAGIC) {
+        GFA_RemoveReticle();
+        // Remove the visual FX of the aim vob (if present)
+        if (!removedFX) {
+            GFA_AimVobDetachFX();
+            removedFX = 1; // Would be called each frame, that is no problem for Gothic 2, but for Gothic 1
+        };
         return;
     };
+    removedFX = 0; // Reset (next time when not aiming, check ONCE for FX and remove it if present)
 
     // Retrieve target NPC and the distance to it from the camera(!)
-    var C_Spell spell; spell = freeAimGetActiveSpellInst(hero);
+    var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
     var int distance;
     var int target;
 
@@ -94,7 +102,7 @@ func void freeAimSpellReticle() {
         };
 
         // Shoot aim trace ray, to retrieve the distance to an intersection and a possible target
-        freeAimRay(spell.targetCollectRange, focusType, _@(target), 0, _@(distance), 0);
+        GFA_AimRay(spell.targetCollectRange, focusType, _@(target), 0, _@(distance), 0);
         distance = roundf(divf(mulf(distance, FLOAT1C), mkf(spell.targetCollectRange))); // Distance scaled to [0, 100]
 
     } else {
@@ -136,7 +144,7 @@ func void freeAimSpellReticle() {
     reticle.size = 75; // Medium size by default
 
     // Retrieve reticle specs and draw/update it on screen
-    freeAimGetReticleSpell_(target, spell, distance, reticlePtr);
-    freeAimInsertReticle(reticlePtr);
+    GFA_GetSpellReticle_(target, spell, distance, reticlePtr);
+    GFA_InsertReticle(reticlePtr);
     MEM_Free(reticlePtr);
 };

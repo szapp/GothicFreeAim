@@ -1,24 +1,24 @@
 /*
  * Aim-specific trace ray and focus collection
  *
- * G2 Free Aim v1.0.0-alpha - Free aiming for the video game Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
- * This file is part of G2 Free Aim.
+ * This file is part of Gothic Free Aim.
  * <http://github.com/szapp/g2freeAim>
  *
- * G2 Free Aim is free software: you can redistribute it and/or modify
- * it under the terms of the MIT License.
+ * Gothic Free Aim is free software: you can redistribute it and/or
+ * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
  *
- * G2 Free Aim is distributed in the hope that it will be useful,
+ * Gothic Free Aim is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * MIT License for more details.
  *
- * You should have received a copy of the MIT License
- * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
+ * You should have received a copy of the MIT License along with
+ * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -28,18 +28,18 @@
  * recommended to use for any other matter.
  * This function is very complex, but well tested.
  *
- * To increase performance, increase the value of FREEAIM.focusUpdateIntervalMS in the Gothic INI-file. It determines
- * the interval in milliseconds in which the trace ray is recomputed. The upper bound is 500ms, which already introduces
+ * To increase performance, increase the value of GFA.focusUpdateIntervalMS in the Gothic INI-file. It determines the
+ * interval in milliseconds in which the trace ray is recomputed. The upper bound is 500ms, which already introduces
  * a slight lag in the focus collection and reticle size (if applicable). A recommended value is below 50ms.
  */
-func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int posPtr, var int distPtr,
+func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int posPtr, var int distPtr,
         var int trueDistPtr) {
 
-    // Only run full trace ray machinery every so often (see freeAimRayInterval) to allow weaker machines to run this
+    // Only run full trace ray machinery every so often (see GFA_AimRayInterval) to allow weaker machines to run this
     var int curTime; curTime = MEM_Timer.totalTime; // Get current time
-    if (curTime-freeAimRayPrevCalcTime >= freeAimRayInterval) { // If the interval has passed, recompute trace ray
+    if (curTime-GFA_AimRayPrevCalcTime >= GFA_AimRayInterval) { // If the interval has passed, recompute trace ray
         // Update time of previous calculation
-        freeAimRayPrevCalcTime = curTime;
+        GFA_AimRayPrevCalcTime = curTime;
 
         // The trace ray is cast along the camera viewing angle from a start point towards a direction/length vector
 
@@ -47,8 +47,8 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
         var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
         var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
 
-        var int herPtr; herPtr = _@(hero);
-        var oCNpc her; her = _^(herPtr);
+        var oCNpc her; her = Hlp_GetNpc(hero);
+        var int herPtr; herPtr = _@(her);
 
         // Shift the start point for the trace ray beyond the player model. This is necessary, because if zooming out
         //  (a) there might be something between camera and hero (unlikely) and
@@ -60,7 +60,7 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
             sqrf(subf(her._zCVob_trafoObjToWorld[11], camPos.v2[zMAT4_position]))));
 
         // Shifting camera (shoulderview) is NOT RECOMMENDED. Because of the parallax effect, aiming becomes inaccurate
-        if (FREEAIM_CAMERA_X_SHIFT) {
+        if (GFA_CAMERA_X_SHIFT) {
             // This makes the distance mentioned above more complex and requires calculation of a point-line distance
             // between the camera and the player without taking any diagonal distance into account.
             // For illustration: http://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
@@ -261,26 +261,26 @@ func int freeAimRay(var int distance, var int focusType, var int vobPtr, var int
         var int distHitToCam; distHitToCam = addf(distHitToPlayer, distCamToPlayer);
 
         // Debug visualization
-        if (FREEAIM_DEBUG_TRACERAY) {
+        if (GFA_DEBUG_TRACERAY) {
             // Trace ray intersection
-            freeAimDebugTRBBox[0] = subf(intersection[0], mkf(5));
-            freeAimDebugTRBBox[1] = subf(intersection[1], mkf(5));
-            freeAimDebugTRBBox[2] = subf(intersection[2], mkf(5));
-            freeAimDebugTRBBox[3] = addf(freeAimDebugTRBBox[0], mkf(10));
-            freeAimDebugTRBBox[4] = addf(freeAimDebugTRBBox[1], mkf(10));
-            freeAimDebugTRBBox[5] = addf(freeAimDebugTRBBox[2], mkf(10));
+            GFA_DebugTRBBox[0] = subf(intersection[0], mkf(5));
+            GFA_DebugTRBBox[1] = subf(intersection[1], mkf(5));
+            GFA_DebugTRBBox[2] = subf(intersection[2], mkf(5));
+            GFA_DebugTRBBox[3] = addf(GFA_DebugTRBBox[0], mkf(10));
+            GFA_DebugTRBBox[4] = addf(GFA_DebugTRBBox[1], mkf(10));
+            GFA_DebugTRBBox[5] = addf(GFA_DebugTRBBox[2], mkf(10));
 
             // Trace ray trajectory
-            MEM_CopyBytes(_@(traceRayVec), _@(freeAimDebugTRTrj), sizeof_zVEC3);
-            freeAimDebugTRTrj[3] = addf(traceRayVec[0], traceRayVec[3]);
-            freeAimDebugTRTrj[4] = addf(traceRayVec[1], traceRayVec[4]);
-            freeAimDebugTRTrj[5] = addf(traceRayVec[2], traceRayVec[5]);
+            MEM_CopyBytes(_@(traceRayVec), _@(GFA_DebugTRTrj), sizeof_zVEC3);
+            GFA_DebugTRTrj[3] = addf(traceRayVec[0], traceRayVec[3]);
+            GFA_DebugTRTrj[4] = addf(traceRayVec[1], traceRayVec[4]);
+            GFA_DebugTRTrj[5] = addf(traceRayVec[2], traceRayVec[5]);
 
             // Focus vob bounding box
             if (foundVob) {
-                freeAimDebugTRPrevVob = foundVob+zCVob_bbox3D_offset;
+                GFA_DebugTRPrevVob = foundVob+zCVob_bbox3D_offset;
             } else {
-                freeAimDebugTRPrevVob = 0;
+                GFA_DebugTRPrevVob = 0;
             };
         };
     };

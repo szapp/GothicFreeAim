@@ -1,5 +1,7 @@
 /*
  * This file contains all configurations for critical hits for bows and crossbows.
+ *
+ * Requires the feature GFA_CRITICALHITS (see config\settings.d).
  */
 
 
@@ -10,17 +12,48 @@
  * This function is dynamic: It is called on every hit and the weak spot and damage can be calculated individually.
  * The damage is a float and represents the new base damage (damage of weapon), not the final damage!
  *
- * Ideas: Incorporate weapon-specific stats, headshot talent, dependency on target, ...
+ * Ideas: Incorporate weapon-specific stats, head shot talent, dependency on target, ...
  * Examples are written below and commented out and serve as inspiration of what is possible.
- * Here, preliminary weak spots for almost all Gothic 2 monsters are defined (all headshots).
+ * Here, preliminary weak spots for almost all Gothic 2 monsters are defined (all head shots).
  */
-func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int talent, var int damage, var int rtrnPtr) {
+func void GFA_GetCriticalHitDefinitions(var C_Npc target, var C_Item weapon, var int talent, var int damage,
+        var int returnPtr) {
     // Get weak spot instance from call-by-reference argument
-    var Weakspot weakspot; weakspot = _^(rtrnPtr);
+    var Weakspot weakspot; weakspot = _^(returnPtr);
 
-    // Only allow critical hits, if a non-critical shot would cause damage (damage + dexterity > protection of target)
-    if (roundf(damage)+hero.attribute[ATR_DEXTERITY] < target.protection[PROT_POINT]) {
-        return;
+    // Only allow critical hits, if a non-critical shot would cause damage. Gothic 2 only, Gothic 1 allows critical hits
+    // always. This is part of the fighting mechanics
+    if (GOTHIC_BASE_VERSION == 2) {
+        // Gothic 2: (damage + dexterity > protection of target)
+        if (roundf(damage)+hero.attribute[ATR_DEXTERITY] < target.protection[PROT_POINT]) {
+            weakspot.debugInfo = "Damage does not exceed protection"; // Some debugging info to be displayed in zSpy
+            return;
+        };
+    } else {
+        // Gothic 1: Do not signal a critical hit, if the total damage would still not cause damage:
+        // (damage * 2 < protection of target)
+        if (roundf(damage)*2 < target.protection[PROT_POINT]) {
+            weakspot.debugInfo = "Critical hit would not exceed protection";
+            return;
+        };
+    };
+
+    // Incorporate the critical hit chance (talent value) for Gothic 1. By aiming and targeting, the talent value in
+    // Gothic 1 (which is responsible for the critical hit chance) becomes obsolete. To still have an incentive to
+    // learn the higher stages of ranged weapons, an additional probability for critical hits can be imposed here. Keep
+    // in mind that critical hits are still determined by aiming, but hits are not 100% of the time considered critical
+    if (GOTHIC_BASE_VERSION == 1) {
+        if (!talent) {
+            // With no learned skill level, there are no critical hits (just like in the original Gothic 1)
+            weakspot.debugInfo = "Critical hits not yet learned, critical hit chance = 0% (see character menu)";
+            return;
+        } else if (talent < 25) {
+            // Stage 1: Only 50% of the positive hits are in fact critical
+            weakspot.debugInfo = "First level critical hit chance (see character menu), adjusted to 50-50 chance";
+            if (r_Max(1)) { // 0 or 1, approx. 50-50 chance
+                return;
+            };
+        }; // Else stage 2: All positive hits are critical hits (no change)
     };
 
     /*
@@ -38,138 +71,18 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int tal
         };
     }; */
 
-    // Here, set the head to the default weak spot
-    weakspot.node = "Bip01 Head"; // Upper/lower case is not important, but spelling and spaces are
-
-    // Here, simply increase the base damage for all creatures
-    weakspot.bDmg = mulf(damage, castToIntf(1.5)); // This is a float
-
-    // Here, there are preliminary definitions for nearly all Gothic 2 creatures for headshots
-    if (target.guild < GIL_SEPERATOR_HUM)
-    || ((target.guild > GIL_SEPERATOR_ORC) && (target.guild < GIL_DRACONIAN))
-    || (target.guild == GIL_ZOMBIE)
-    || (target.guild == GIL_SUMMONEDZOMBIE) {
-        // Here is also room for story-dependent exceptions (e.g. a specific NPC may have a different weak spot)
-
-        weakspot.dimX = -1; // Retrieve the dimensions automatically from model. This works only on humanoids AND only
-        weakspot.dimY = -1; // for head node! All other creatures need actual hard coded bounding box dimensions
-
-    } else if (target.guild == GIL_BLOODFLY) // Bloodflys and meatbugs don't have a head node
-    || (target.guild == GIL_MEATBUG)
-    || (target.guild == GIL_STONEGUARDIAN) // Stoneguardians have too large heads (head node is not centered)
-    || (target.guild == GIL_SUMMONEDGUARDIAN)
-    || (target.guild == GIL_STONEGOLEM) // Same for golems
-    || (target.guild == GIL_FIREGOLEM)
-    || (target.guild == GIL_ICEGOLEM)
-    || (target.guild == GIL_SUMMONED_GOLEM)
-    || (target.guild == GIL_SWAMPGOLEM)
-    || (target.guild == GIL_SKELETON) // Skeletons are only bones, there is no critical hit
-    || (target.guild == GIL_SUMMONED_SKELETON)
-    || (target.guild == GIL_SKELETON_MAGE)
-    || (target.guild == GIL_GOBBO_SKELETON)
-    || (target.guild == GIL_SUMMONED_GOBBO_SKELETON)
-    || (target.guild == GIL_SHADOWBEAST_SKELETON) {
-        // Disable critical hits this way
-        weakspot.node = "";
-
-    } else if (target.aivar[AIV_MM_REAL_ID] == ID_BLATTCRAWLER) {
-        // Blattcrawler has a tiny head that is not centered. ZM_Fuehler_01 is, though
-        weakspot.node = "ZM_Fuehler_01";
-        weakspot.dimX = 45;
-        weakspot.dimY = 35;
-    } else if (target.aivar[AIV_MM_REAL_ID] == ID_BLOODHOUND) {
-        weakspot.dimX = 55;
-        weakspot.dimY = 50;
-    } else if (target.aivar[AIV_MM_REAL_ID] == ID_ORCBITER) {
-        weakspot.dimX = 45;
-        weakspot.dimY = 40;
-    } else if (target.aivar[AIV_MM_REAL_ID] == ID_RAZOR)
-           || (target.aivar[AIV_MM_REAL_ID] == ID_DRAGONSNAPPER) {
-        weakspot.dimX = 40;
-        weakspot.dimY = 40;
-    } else if (target.aivar[AIV_MM_REAL_ID] == ID_GARGOYLE) {
-        // Both panther and fire beast
-        weakspot.dimX = 65;
-        weakspot.dimY = 60;
-    } else if (target.aivar[AIV_MM_REAL_ID] == ID_SNAPPER) {
-        weakspot.dimX = 40;
-        weakspot.dimY = 35;
-    } else if (target.aivar[AIV_MM_REAL_ID] == ID_TROLL) {
-        weakspot.dimX = 90;
-        weakspot.dimY = 100;
-    } else if (target.aivar[AIV_MM_REAL_ID] == ID_TROLL_BLACK) {
-        weakspot.dimX = 70;
-        weakspot.dimY = 80;
-    } else if (target.aivar[AIV_MM_REAL_ID] == ID_KEILER) {
-        weakspot.dimX = 60;
-        weakspot.dimY = 65;
-    } else if (target.aivar[AIV_MM_REAL_ID] == ID_WARG)
-           || (target.aivar[AIV_MM_REAL_ID] == ID_ICEWOLF) {
-        weakspot.dimX = 40;
-        weakspot.dimY = 45;
-    } else if (target.guild == GIL_SWAMPSHARK) {
-        // Harder to hit
-        weakspot.node = "ZS_MOUTH";
-        weakspot.dimX = 30;
-        weakspot.dimY = 30;
-    } else if (target.guild == GIL_ALLIGATOR) {
-        weakspot.dimX = 80;
-        weakspot.dimY = 60;
-    } else if (target.guild == GIL_GIANT_RAT) {
-        // All rats (desert, swamp, normal)
-        weakspot.dimX = 40;
-        weakspot.dimY = 35;
-    } else if (target.guild == GIL_GOBBO) {
-        weakspot.dimX = 25;
-        weakspot.dimY = 25;
-    } else if (target.guild == GIL_DEMON)
-           || (target.guild == GIL_SUMMONED_DEMON) {
-        // Both demon and demon lord
-        weakspot.dimX = 35;
-        weakspot.dimY = 40;
-    } else if (target.guild == GIL_DRACONIAN) {
-        weakspot.dimX = 40;
-        weakspot.dimY = 40;
-    } else if (target.guild == GIL_DRAGON) {
-        weakspot.dimX = 60;
-        weakspot.dimY = 70;
-    } else if (target.guild == GIL_WARAN) {
-        weakspot.dimX = 50;
-        weakspot.dimY = 50;
-    } else if (target.guild == GIL_GIANT_BUG) {
-        weakspot.dimX = 30;
-        weakspot.dimY = 40;
-    } else if (target.guild == GIL_HARPY) {
-        weakspot.dimX = 25;
-        weakspot.dimY = 25;
-    } else if (target.guild == GIL_LURKER) {
-        weakspot.dimX = 30;
-        weakspot.dimY = 30;
-    } else if (target.guild == GIL_MINECRAWLER) {
-        weakspot.dimX = 50;
-        weakspot.dimY = 50;
-    } else if (target.guild == GIL_MOLERAT) {
-        weakspot.dimX = 35;
-        weakspot.dimY = 30;
-    } else if (target.guild == GIL_SCAVENGER) {
-        weakspot.dimX = 35;
-        weakspot.dimY = 40;
-    } else if (target.guild == GIL_SHADOWBEAST) {
-        weakspot.dimX = 60;
-        weakspot.dimY = 60;
-    } else if (target.guild == GIL_SHEEP) {
-        weakspot.dimX = 20;
-        weakspot.dimY = 25;
-    } else if (target.guild == GIL_WOLF)
-           || (target.guild == GIL_SUMMONED_WOLF) {
-        weakspot.dimX = 25;
-        weakspot.dimY = 40;
-
+    // Here, simply increase the base damage for all critical hits (for all creatures)
+    if (GOTHIC_BASE_VERSION == 1) {
+        // In Gothic 1 critical hits receive weapon damage x2 (this is the default)
+        weakspot.bDmg = mulf(damage, castToIntf(2.0)); // This is a float
     } else {
-        // Default size for any non-listed monster
-        weakspot.dimX = 50; // 50x50cm size
-        weakspot.dimY = 50;
+        // In Gothic 2 there are no critical hits for ranged combat. Here, x1.5 seems more reasonable, because in
+        // Gothic 2, the dexterity is added to weapon damage.
+        weakspot.bDmg = mulf(damage, castToIntf(1.5)); // This is a float
     };
+
+    // For examples for critical hit definitions, see this function in config\headshots_G1.d or config\headshots_G2.d
+    headshots(target, returnPtr);
 };
 
 
@@ -177,64 +90,77 @@ func void freeAimCriticalHitDef(var C_Npc target, var C_Item weapon, var int tal
  * This function is called when a critical hit occurred; but only if free aiming is disabled. It allows to define a
  * critical hit chance even for the standard auto aiming.
  * Although not existing in the original Gothic 2, this is important here to balance the damage output between free aim
- * and auto aim.
+ * and auto aim, as free aim can be disabled in the options during a running game.
+ *
+ * Note, that this is not necessary for Gothic 1, as it already has critical hits for auto aiming. Nevertheless, the
+ * original critical hit calculation of Gothic 1 is disabled and replaced by this function. This way, the critical hit
+ * chance can be manipulated if desired. The lines for Gothic 1 are the same as default by Gothic.
+ *
  * The return value is a percentage (chance level or hit chance), where 0 is no critical hit ever and and 100 always
  * causes a critical hit. Everything in between is dependent on a respective probability.
  * To disable this feature, simply have the function always return 0.
  *
- * Examples are written below and commented out and serve as inspiration of what is possible.
+ * Some examples are written below (section of Gothic 2) and commented out and serve as inspiration of what is possible.
  */
-func int freeAimCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int talent) {
-    // Here, scale the critical hit chance between MIN (0% skill) and MAX (100% skill)
-    var int min; // With   0% skill, min% of the hits are critical hits
-    var int max; // With 100% skill, max% of the hits are critical hits
+func int GFA_GetCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int talent) {
+    if (GOTHIC_BASE_VERSION == 1) {
+        // Gothic 1 already has a critical hit chance by default
+        return talent;
 
-    // Also take the distance into account
-    var int distance; distance = Npc_GetDistToPlayer(target);
-    if (distance <= FloatToInt(RANGED_CHANCE_MINDIST)/2) {
-        // Close range
-        min = 3;
-        max = 30;
-    } else if (distance <= FloatToInt(RANGED_CHANCE_MINDIST)) {
-        // Medium range
-        min = 2;
-        max = 20;
-    } else if (distance < FloatToInt(RANGED_CHANCE_MAXDIST)) {
-        // Far range
-        min = 1;
-        max = 10;
     } else {
-        // To far away for critical hits
-        min = 0;
-        max = 0;
-    };
+        // For Gothic 2 the critical hit chance for auto aim can be introduced here
 
-    // Scale the critical hit chance between min and max
-    var int critChance; critChance = (max-min)*talent/100+min;
+        // Here, scale the critical hit chance between MIN (0% skill) and MAX (100% skill)
+        var int min; // With   0% skill, min% of the hits are critical hits
+        var int max; // With 100% skill, max% of the hits are critical hits
 
-    /*
-    if (target.guild < GIL_SEPERATOR_HUM) {
-        // The critical hit chance may depend on the target NPC. Make use of 'target' argument
-        // ...
-    };*/
-
-    /*
-    if (Hlp_IsValidItem(weapon)) {
-        // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
-        // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
-        if (weapon.certainProperty > 10) {
-            // E.g. special case for weapon property
+        // Also take the distance into account
+        var int distance; distance = Npc_GetDistToPlayer(target);
+        if (distance <= FloatToInt(RANGED_CHANCE_MINDIST)/2) {
+            // Close range
+            min = 3;
+            max = 30;
+        } else if (distance <= FloatToInt(RANGED_CHANCE_MINDIST)) {
+            // Medium range
+            min = 2;
+            max = 20;
+        } else if (distance < FloatToInt(RANGED_CHANCE_MAXDIST)) {
+            // Far range
+            min = 1;
+            max = 10;
+        } else {
+            // To far away for critical hits
+            min = 0;
+            max = 0;
         };
-    }; */
 
-    // Respect the percentage ranges
-    if (critChance < 0) {
-        critChance = 0;
-    } else if (critChance > 100) {
-        critChance = 100;
+        // Scale the critical hit chance between min and max
+        var int critChance; critChance = (max-min)*talent/100+min;
+
+        /*
+        if (target.guild < GIL_SEPERATOR_HUM) {
+            // The critical hit chance may depend on the target NPC. Make use of 'target' argument
+            // ...
+        }; */
+
+        /*
+        if (Hlp_IsValidItem(weapon)) {
+            // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
+            // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
+            if (weapon.certainProperty > 10) {
+                // E.g. special case for weapon property
+            };
+        }; */
+
+        // Respect the percentage ranges
+        if (critChance < 0) {
+            critChance = 0;
+        } else if (critChance > 100) {
+            critChance = 100;
+        };
+
+        return critChance;
     };
-
-    return critChance;
 };
 
 
@@ -242,18 +168,18 @@ func int freeAimCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int 
  * This function is called when a critical hit occurred and can be used to print something to the screen, play a sound
  * jingle or, as done here by default, show a hit marker. Leave this function blank for no event.
  * This function is also called when free aiming is disabled, depending on the configuration in
- * freeAimCriticalHitAutoAim(), see below.
+ * GFA_GetCriticalHitAutoAim(), see below.
  *
  * Idea: The critical hits could be counted here to give an XP reward after 25 head shots
  * Examples are written below and commented out and serve as inspiration of what is possible.
  */
-func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon, var int freeAimingIsEnabled) {
+func void GFA_StartCriticalHitEvent(var C_Npc target, var C_Item weapon, var int freeAimingIsEnabled) {
 
     /*
     if (target.guild < GIL_SEPERATOR_HUM) {
         // The event may depend on the target NPC (e.g. different sound for monsters). Make use of 'target' argument
         // ...
-    };*/
+    }; */
 
     /*
     if (Hlp_IsValidItem(weapon)) {
@@ -266,7 +192,7 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon, var int f
 
     /*
     // Simple screen notification
-    PrintS("Critical hit");*/
+    PrintS("Critical hit"); */
 
     // Shooter-like hit marker
     if (freeAimingIsEnabled) {
@@ -276,10 +202,10 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon, var int f
             // Create it (if it does not exist) in the center of the screen
             var zCView screen; screen = _^(MEM_Game._zCSession_viewport);
             hitmarker = View_CreateCenterPxl(screen.psizex/2, screen.psizey/2, // Coordinates
-                FREEAIM_RETICLE_MAX_SIZE, FREEAIM_RETICLE_MAX_SIZE);           // Dimensions
+                GFA_RETICLE_MAX_SIZE, GFA_RETICLE_MAX_SIZE);                   // Dimensions
 
             // Get 7th frame of animated texture as static texture
-            View_SetTexture(hitmarker, freeAimAnimateReticleByPercent(RETICLE_TRI_IN, 100, 7));
+            View_SetTexture(hitmarker, GFA_AnimateReticleByPercent(RETICLE_TRI_IN, 100, 7));
         };
         View_Open(hitmarker);
 
@@ -288,5 +214,5 @@ func void freeAimCriticalHitEvent(var C_Npc target, var C_Item weapon, var int f
     };
 
     // Sound notification
-    Snd_Play3D(target, "FREEAIM_CRITICALHIT");
+    Snd_Play3D(target, "GFA_CRITICALHIT_SFX");
 };

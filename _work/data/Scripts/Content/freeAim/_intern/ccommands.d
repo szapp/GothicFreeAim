@@ -1,24 +1,24 @@
 /*
  * Definition of all console commands
  *
- * G2 Free Aim v1.0.0-alpha - Free aiming for the video game Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
- * This file is part of G2 Free Aim.
+ * This file is part of Gothic Free Aim.
  * <http://github.com/szapp/g2freeAim>
  *
- * G2 Free Aim is free software: you can redistribute it and/or modify
- * it under the terms of the MIT License.
+ * Gothic Free Aim is free software: you can redistribute it and/or
+ * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
  *
- * G2 Free Aim is distributed in the hope that it will be useful,
+ * Gothic Free Aim is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * MIT License for more details.
  *
- * You should have received a copy of the MIT License
- * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
+ * You should have received a copy of the MIT License along with
+ * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -27,9 +27,9 @@
  * When enabled, the trajectory of the projectile and the defined weak spot of the last shot NPC is visualized with
  * bounding boxes and lines.
  */
-func string freeAimDebugWeakspot(var string command) {
-    FREEAIM_DEBUG_WEAKSPOT = !FREEAIM_DEBUG_WEAKSPOT;
-    if (FREEAIM_DEBUG_WEAKSPOT) {
+func string GFA_DebugWeakspot(var string command) {
+    GFA_DEBUG_WEAKSPOT = !GFA_DEBUG_WEAKSPOT;
+    if (GFA_DEBUG_WEAKSPOT) {
         return "Debug weak spot on.";
     } else {
         return "Debug weak spot off.";
@@ -41,9 +41,9 @@ func string freeAimDebugWeakspot(var string command) {
  * Console function to enable/disable trace ray debug output. This function is registered as console command.
  * When enabled, the trace ray is continuously drawn, as well as the intersection of it.
  */
-func string freeAimDebugTraceRay(var string command) {
-    FREEAIM_DEBUG_TRACERAY = !FREEAIM_DEBUG_TRACERAY;
-    if (FREEAIM_DEBUG_TRACERAY) {
+func string GFA_DebugTraceRay(var string command) {
+    GFA_DEBUG_TRACERAY = !GFA_DEBUG_TRACERAY;
+    if (GFA_DEBUG_TRACERAY) {
         return "Debug trace ray on.";
     } else {
         return "Debug trace ray off.";
@@ -52,21 +52,21 @@ func string freeAimDebugTraceRay(var string command) {
 
 
 /*
- * Console function to show freeAim version. This function is registered as console command.
- * When entered in the console, the current g2freeAim version is displayed as the console output.
+ * Console function to show GFA version. This function is registered as console command.
+ * When entered in the console, the current GFA version is displayed as the console output.
  */
-func string freeAimVersion(var string command) {
-    return FREEAIM_VERSION;
+func string GFA_GetVersion(var string command) {
+    return GFA_VERSION;
 };
 
 
 /*
- * Console function to show freeAim license. This function is registered as console command.
- * When entered in the console, the g2freeAim license information is displayed as the console output.
+ * Console function to show GFA license. This function is registered as console command.
+ * When entered in the console, the GFA license information is displayed as the console output.
  */
-func string freeAimLicense(var string command) {
+func string GFA_GetLicense(var string command) {
     var int s; s = SB_New();
-    SB(FREEAIM_VERSION);
+    SB(GFA_VERSION);
     SB(", Copyright ");
     SBc(169 /* (C) */);
     SB(" 2016-2017  mud-freak (@szapp)");
@@ -89,43 +89,43 @@ func string freeAimLicense(var string command) {
 
 
 /*
- * Console function to show freeAim info. This function is registered as console command.
- * When entered in the console, the g2freeAim config is displayed as the console output.
+ * Console function to show GFA info. This function is registered as console command.
+ * When entered in the console, the GFA config is displayed as the console output.
  */
-func string freeAimInfo(var string command) {
+func string GFA_GetInfo(var string command) {
     const string onOff[2] = {"OFF", "ON"};
 
     var int s; s = SB_New();
-    SB(FREEAIM_VERSION);
+    SB(GFA_VERSION);
     SBc(13); SBc(10);
 
     SB("Free aiming: ");
-    SB(MEM_ReadStatStringArr(onOff, FREEAIM_ACTIVE));
-    if (FREEAIM_ACTIVE) {
+    SB(MEM_ReadStatStringArr(onOff, GFA_ACTIVE));
+    if (GFA_ACTIVE) {
         SB(" for");
-        if (FREEAIM_RANGED) {
+        if (GFA_RANGED) {
             SB(" (ranged)");
         };
-        if (FREEAIM_SPELLS) {
+        if (GFA_SPELLS) {
             SB(" (spells)");
         };
 
         SB(". Focus update every ");
-        SBi(freeAimRayInterval);
+        SBi(GFA_AimRayInterval);
         SB(" ms");
     };
     SBc(13); SBc(10);
 
     SB("Reusable projectiles: ");
-    SB(MEM_ReadStatStringArr(onOff, FREEAIM_REUSE_PROJECTILES));
+    SB(MEM_ReadStatStringArr(onOff, GFA_REUSE_PROJECTILES));
     SBc(13); SBc(10);
 
     SB("Custom collision behaviors: ");
-    SB(MEM_ReadStatStringArr(onOff, FREEAIM_CUSTOM_COLLISIONS));
+    SB(MEM_ReadStatStringArr(onOff, GFA_CUSTOM_COLLISIONS));
     SBc(13); SBc(10);
 
     SB("Criticial hit detection: ");
-    SB(MEM_ReadStatStringArr(onOff, FREEAIM_CRITICALHITS));
+    SB(MEM_ReadStatStringArr(onOff, GFA_CRITICALHITS));
     SBc(13); SBc(10);
 
     var string ret; ret = SB_ToString();

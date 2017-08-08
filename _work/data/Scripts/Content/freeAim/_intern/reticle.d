@@ -1,33 +1,33 @@
 /*
  * Reticle handling
  *
- * G2 Free Aim v1.0.0-alpha - Free aiming for the video game Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
- * This file is part of G2 Free Aim.
+ * This file is part of Gothic Free Aim.
  * <http://github.com/szapp/g2freeAim>
  *
- * G2 Free Aim is free software: you can redistribute it and/or modify
- * it under the terms of the MIT License.
+ * Gothic Free Aim is free software: you can redistribute it and/or
+ * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
  *
- * G2 Free Aim is distributed in the hope that it will be useful,
+ * Gothic Free Aim is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * MIT License for more details.
  *
- * You should have received a copy of the MIT License
- * along with G2 Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
+ * You should have received a copy of the MIT License along with
+ * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
 /*
  * Hide reticle. This function is called from various functions to ensure that the reticle disappears.
  */
-func void freeAimRemoveReticle() {
-    if (Hlp_IsValidHandle(freeAimReticleHndl)) {
-        View_Close(freeAimReticleHndl);
+func void GFA_RemoveReticle() {
+    if (Hlp_IsValidHandle(GFA_ReticleHndl)) {
+        View_Close(GFA_ReticleHndl);
     };
 };
 
@@ -37,7 +37,7 @@ func void freeAimRemoveReticle() {
  * function is in fact called every frame to update the reticle color, texture and size smoothly. The function
  * parameter is a pointer to the reticle instance.
  */
-func void freeAimInsertReticle(var int reticlePtr) {
+func void GFA_InsertReticle(var int reticlePtr) {
     // Get reticle instance from call-by-reference argument
     var Reticle reticle; reticle = _^(reticlePtr);
     var int size;
@@ -45,52 +45,52 @@ func void freeAimInsertReticle(var int reticlePtr) {
     // Only draw the reticle if the texture is specified. An empty texture removes the reticle
     if (!Hlp_StrCmp(reticle.texture, "")) {
         // Scale the reticle size percentage is scaled with the minimum and maximum pixel sizes
-        size = (((FREEAIM_RETICLE_MAX_SIZE-FREEAIM_RETICLE_MIN_SIZE)*(reticle.size))/100)+FREEAIM_RETICLE_MIN_SIZE;
+        size = (((GFA_RETICLE_MAX_SIZE-GFA_RETICLE_MIN_SIZE)*(reticle.size))/100)+GFA_RETICLE_MIN_SIZE;
 
         // The ranges are corrected should the percentage lie out of [0, 100]
-        if (size > FREEAIM_RETICLE_MAX_SIZE) {
-            size = FREEAIM_RETICLE_MAX_SIZE;
-        } else if (size < FREEAIM_RETICLE_MIN_SIZE) {
-            size = FREEAIM_RETICLE_MIN_SIZE;
+        if (size > GFA_RETICLE_MAX_SIZE) {
+            size = GFA_RETICLE_MAX_SIZE;
+        } else if (size < GFA_RETICLE_MIN_SIZE) {
+            size = GFA_RETICLE_MIN_SIZE;
         };
 
         // Get the screen to retrieve the center
         var zCView screen; screen = _^(MEM_Game._zCSession_viewport);
 
-        if (!Hlp_IsValidHandle(freeAimReticleHndl)) {
+        if (!Hlp_IsValidHandle(GFA_ReticleHndl)) {
             // Create reticle if it does not exist
-            freeAimReticleHndl = View_CreateCenterPxl(screen.psizex/2, screen.psizey/2, size, size);
-            View_SetTexture(freeAimReticleHndl, reticle.texture);
-            View_SetColor(freeAimReticleHndl, reticle.color);
-            View_Open(freeAimReticleHndl);
+            GFA_ReticleHndl = View_CreateCenterPxl(screen.psizex/2, screen.psizey/2, size, size);
+            View_SetTexture(GFA_ReticleHndl, reticle.texture);
+            View_SetColor(GFA_ReticleHndl, reticle.color);
+            View_Open(GFA_ReticleHndl);
         } else {
             // If the reticle already exist adjust it to the new texture, size and color
-            if (!Hlp_StrCmp(View_GetTexture(freeAimReticleHndl), reticle.texture)) {
+            if (!Hlp_StrCmp(View_GetTexture(GFA_ReticleHndl), reticle.texture)) {
                 // Update its texture
-                View_SetTexture(freeAimReticleHndl, reticle.texture);
+                View_SetTexture(GFA_ReticleHndl, reticle.texture);
             };
 
-            if (View_GetColor(freeAimReticleHndl) != reticle.color) {
+            if (View_GetColor(GFA_ReticleHndl) != reticle.color) {
                 // Update its color
-                View_SetColor(freeAimReticleHndl, reticle.color);
+                View_SetColor(GFA_ReticleHndl, reticle.color);
             };
 
-            var zCView crsHr; crsHr = _^(getPtr(freeAimReticleHndl));
+            var zCView crsHr; crsHr = _^(getPtr(GFA_ReticleHndl));
             if (crsHr.psizex != size) || (screen.psizex/2 != centerX) {
                 // Update its size and re-position it to center
                 var int centerX; centerX = screen.psizex/2;
-                View_ResizePxl(freeAimReticleHndl, size, size);
-                View_MoveToPxl(freeAimReticleHndl, screen.psizex/2-(size/2), screen.psizey/2-(size/2));
+                View_ResizePxl(GFA_ReticleHndl, size, size);
+                View_MoveToPxl(GFA_ReticleHndl, screen.psizex/2-(size/2), screen.psizey/2-(size/2));
             };
 
             if (!crsHr.isOpen) {
                 // Show the reticle if it is not visible
-                View_Open(freeAimReticleHndl);
+                View_Open(GFA_ReticleHndl);
             };
         };
     } else {
         // Remove the reticle if no texture is specified
-        freeAimRemoveReticle();
+        GFA_RemoveReticle();
     };
 };
 
@@ -99,40 +99,40 @@ func void freeAimInsertReticle(var int reticlePtr) {
  * Decide when to draw reticle or when to hide it. This function is called from various functions to ensure that the
  * reticle disappears if changing the weapon or stopping to aim.
  */
-func void freeAimManageReticle() {
-    if (FREEAIM_ACTIVE < FMODE_FAR) {
-        // Remove the visual FX from the aim vob (if present)
-        freeAimDetachFX();
+func void GFA_CleanUpAiming() {
+    if (GFA_ACTIVE < FMODE_FAR) {
+        // Remove the visual FX of the aim vob (if present)
+        GFA_AimVobDetachFX();
         // Hide reticle
-        freeAimRemoveReticle();
+        GFA_RemoveReticle();
     };
 };
 
 
 /*
  * Switching between weapon modes (sometimes called several times in a row). This function hooks
- * oCNpcFocus::SetFocusMode to call freeAimManageReticle() and to reset the draw force of ranged weapons. This function
- * is called during loading of a level change before Ikarus, LeGo or g2freeAim are initialized.
+ * oCNpcFocus::SetFocusMode to call GFA_CleanUpAiming() and to reset the draw force of ranged weapons. This function
+ * is called during loading of a level change before Ikarus, LeGo or GFA are initialized.
  */
-func void freeAimSwitchMode() {
+func void GFA_CleanUpOnWeaponSwitch() {
     if (!_@(MEM_Timer)) {
-        // This function is called multiple times during level change prior to any initialization
+        // This function is called during level change prior to any initialization
         return;
     };
 
-    freeAimBowDrawOnset = MEM_Timer.totalTime + FREEAIM_DRAWTIME_READY; // Reset draw force onset
-    freeAimManageReticle();
+    GFA_BowDrawOnset = MEM_Timer.totalTime + GFA_DRAWTIME_READY; // Reset draw force, because aiming button may be held
+    GFA_CleanUpAiming();
 };
 
 
 /*
- * Wrapper function for the config function freeAimGetReticleRanged(). It is called from freeAimAnimation().
+ * Wrapper function for the config function GFA_GetRangedReticle(). It is called from GFA_RangedAiming().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
-func void freeAimGetReticleRanged_(var int target, var int distance, var int returnPtr) {
+func void GFA_GetRangedReticle_(var int target, var int distance, var int returnPtr) {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
-    if (!freeAimGetWeaponTalent(_@(weaponPtr), _@(talent))) {
+    if (!GFA_GetWeaponAndTalent(_@(weaponPtr), _@(talent))) {
         return;
     };
     var C_Item weapon; weapon = _^(weaponPtr);
@@ -145,15 +145,15 @@ func void freeAimGetReticleRanged_(var int target, var int distance, var int ret
     };
 
     // Retrieve reticle specifications from config
-    freeAimGetReticleRanged(targetNpc, weapon, talent, distance, returnPtr);
+    GFA_GetRangedReticle(targetNpc, weapon, talent, distance, returnPtr);
 };
 
 
 /*
- * Wrapper function for the config function freeAimGetReticleSpell(). It is called from freeAimSpellReticle().
+ * Wrapper function for the config function GFA_GetSpellReticle(). It is called from GFA_SpellAiming().
  * This function supplies a lot of spell properties.
  */
-func void freeAimGetReticleSpell_(var int target, var C_Spell spellInst, var int distance, var int returnPtr) {
+func void GFA_GetSpellReticle_(var int target, var C_Spell spellInst, var int distance, var int returnPtr) {
     // Define spell properties
     var int spellID; spellID = Npc_GetActiveSpell(hero);
     var int spellLvl; spellLvl = Npc_GetActiveSpellLevel(hero);
@@ -171,5 +171,5 @@ func void freeAimGetReticleSpell_(var int target, var C_Spell spellInst, var int
     };
 
     // Retrieve reticle specifications from config
-    freeAimGetReticleSpell(targetNpc, spellID, spellInst, spellLvl, isScroll, manaInvested, distance, returnPtr);
+    GFA_GetSpellReticle(targetNpc, spellID, spellInst, spellLvl, isScroll, manaInvested, distance, returnPtr);
 };
