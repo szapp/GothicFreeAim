@@ -103,6 +103,13 @@ func void GFA_CH_DetectCriticalHit() {
     var int targetPtr; targetPtr = MEMINT_SwitchG1G2(EBX, MEM_ReadInt(/*esp+1ACh-190h*/ ESP+28)); // oCNpc*
     var C_Npc targetNpc; targetNpc = _^(targetPtr);
 
+    // Check if NPC is down, function is not yet defined at time of parsing
+    MEM_PushInstParam(targetNpc);
+    MEM_Call(C_NpcIsDown); // C_NpcIsDown(targetNpc);
+    if (MEM_PopIntResult()) {
+        return;
+    };
+
     // Get weak spot node from target model
     var int weakspotPtr; weakspotPtr = MEM_Alloc(sizeof_Weakspot);
     var Weakspot weakspot; weakspot = _^(weakspotPtr);
@@ -330,6 +337,7 @@ func void GFA_CH_DetectCriticalHit() {
     if (criticalHit) {
         GFA_CH_StartCriticalHitEvent_(targetNpc); // Use this function to add an event, e.g. a print or a sound
         MEM_WriteInt(damagePtr, weakspot.bDmg); // Base damage not final damage
+        GFA_LastHitCritical = TRUE; // Used for GFA_CC_SetDamageBehavior(), will be reset to FALSE immediately
     };
     MEM_Free(weakspotPtr);
 };

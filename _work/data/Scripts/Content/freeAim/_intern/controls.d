@@ -104,11 +104,11 @@ func void GFA_TurnPlayerModel() {
     // Turn player model
     var oCNpc her; her = Hlp_GetNpc(hero);
     var int hAniCtrl; hAniCtrl = her.anictrl;
-    const int call = 0; var int zero; var int ret;
+    const int call = 0; var int zero;
     if (CALL_Begin(call)) {
         CALL_IntParam(_@(zero)); // 0 = disable turn animation (there is none while aiming anyways)
         CALL_FloatParam(_@(deltaX));
-        CALL_PutRetValTo(_@(ret)); // Get return value from stack
+        CALL_PutRetValTo(0);
         CALL__thiscall(_@(hAniCtrl), oCAniCtrl_Human__Turn);
         call = CALL_End();
     };

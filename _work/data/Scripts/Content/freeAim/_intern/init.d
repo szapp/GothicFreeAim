@@ -189,6 +189,15 @@ func void GFA_InitFeatureReuseProjectiles() {
 
 
 /*
+ * Initialize hook for the knockout by ranged weapon bug fix. This function is called from GFA_InitOnce().
+ */
+func void GFA_InitDamageBehavior() {
+    MEM_Info("Initializing fixed damage behavior for ranged weapons.");
+    HookEngineF(oCAIArrow__ReportCollisionToAI_damage, 5, GFA_CC_SetDamageBehavior);
+};
+
+
+/*
  * Initialize hook for the dropped projectile AI bug fix. This function is called from GFA_InitOnce().
  */
 func void GFA_InitFixDroppedProjectileAI() {
@@ -248,6 +257,9 @@ func int GFA_InitOnce() {
         // enabled/disabled during the game. That would cause too many/too few projectiles
         GFA_InitFeatureReuseProjectiles();
     };
+
+    // Fix knockout by ranged weapon bug (also allow customization if GFA_CUSTOM_COLLISIONS == TRUE)
+    GFA_InitDamageBehavior();
 
     // Fix dropped projectile AI bug
     GFA_InitFixDroppedProjectileAI();

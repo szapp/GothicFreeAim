@@ -23,7 +23,7 @@
 
 
 /*
- * Free aim internal constants. Do not modify! Change the settings in config\settings.d
+ * Gothic Free Aim internal constants. Do not modify! Change the settings in config\settings.d
  */
 const string GFA_VERSION            = "Gothic Free Aim v1.0.0-alpha";
 const int    GFA_LEGO_FLAGS         = LeGo_HookEngine       // For initializing all hooks
@@ -66,6 +66,8 @@ const int    FLOAT1K                = 1148846080;           // 1000 as float
 
 const int    GFA_ACTIVE             = 0;                    // Status indicator of free aiming
 const int    GFA_INIT_HITREG        = 0;                    // Check if hit registration hook was initialized
+
+var   int    GFA_LastHitCritical;                           // Was the last hit critical (will be reset immediately)
 
 var   int    GFA_DebugWSBBox[6];                            // Weakspot bounding box for debug visualization
 var   int    GFA_DebugWSTrj[6];                             // Projectile trajectory for debug visualization

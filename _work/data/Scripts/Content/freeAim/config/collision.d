@@ -54,6 +54,51 @@ func int GFA_GetCollisionWithNpc(var C_Npc target, var C_Item weapon, var int ma
 
 
 /*
+ * This function is called every time an NPC is hit by a projectile (arrows and bolts). It can be used to define the
+ * damage behavior on NPCs based on different criteria. Damage behavior defines how much damage is finally applied to
+ * the victim. This allows, e.g. preventing a victim to die, and instead knock it out with one shot (see examples).
+ *
+ * The argument 'isCriticalHit' states whether the active shot was a critical hit.
+ *
+ * Ideas: special knockout munition, NPCs that cannot be killed by ranged weapons, instant kill on critical hit.
+ * Examples are written below and commented out and serve as inspiration of what is possible.
+ */
+func int GFA_GetDamageBehavior(var C_Npc target, var C_Item weapon, var int talent, var int isCritialHit) {
+    // Available Behaviors
+    const int DO_NOT_KNOCKOUT  = 0; // Gothic default: Normal damage, projectiles kill and never knock out (HP != 1)
+    const int DO_NOT_KILL      = 1; // Normal damage, projectiles knock out and never kill (HP > 0)
+    const int INSTANT_KNOCKOUT = 2; // One shot knock out (1 HP)
+    const int INSTANT_KILL     = 3; // One shot kill (0 HP)
+
+    /*
+    // Create knock out arrows
+    if (Hlp_IsValidItem(weapon)) {
+        // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
+
+        if (weapon.munition == Hlp_GetInstanceID(ItRw_KnockOutArrow)) // Special arrow
+        && (isCritialHit) {                                           // Only if it was a critical hit
+            return INSTANT_KNOCKOUT;
+        };
+    }; */
+
+    /*
+    // Enemies that cannot be killed (at most knocked out) with ranged weapons
+    if (target.guild == SOME_MONSTER_GUILD) {
+        return DO_NOT_KILL;
+    }; */
+
+    /*
+    // Instant kill on critical hit (by itself complete nonsense)
+    if (isCriticalHit) {
+        return INSTANT_KILL;
+    }; */
+
+    // Gothic default
+    return DO_NOT_KNOCKOUT;
+};
+
+
+/*
  * This function is called every time the world (static or vobs) is hit by a projectile (arrows and bolts). It can be
  * used to define the collision behavior for different materials or surface textures.
  * Note: Unlike GFA_GetCollisionWithNpc() and all other config functions, this function is also called for NPC

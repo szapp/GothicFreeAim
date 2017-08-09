@@ -161,12 +161,12 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
 
                 var C_Npc target; target = _^(her.focus_vob);
 
-                // Check if NPC is undead, function is not defined yet at time of parsing
+                // Check if NPC is undead, function is not yet defined at time of parsing
                 MEM_PushInstParam(target);
                 MEM_Call(C_NpcIsUndead); // C_NpcIsUndead(target);
                 var int npcIsUndead; npcIsUndead = MEM_PopIntResult();
 
-                // Check if NPC is down, function is not defined yet at time of parsing
+                // Check if NPC is down, function is not yet defined at time of parsing
                 MEM_PushInstParam(target);
                 MEM_Call(C_NpcIsDown); // C_NpcIsDown(target);
                 var int npcIsDown; npcIsDown = MEM_PopIntResult();

@@ -192,7 +192,7 @@ func int GFA_CC_GetCollisionWithWorld_(var C_Npc shooter, var int materials, var
  * oCAIArrow::ReportCollisionToAI() at the offset where the hit chance of the NPC is checked. With
  * GFA_GetCollisionWithNpc(), it is decided whether a projectile causes damage, does nothing or bounces of the NPC.
  * Depending on GFA_TRUE_HITCHANCE, the resulting hit chance is either the accuracy or always 100%, where the hit chance
-* is instead determined by scattering in GFA_SetupProjectile().
+ * is instead determined by scattering in GFA_SetupProjectile().
  * This function is only manipulating anything if the shooter is the player.
  */
 func void GFA_CC_ProjectileCollisionWithNpc() {
@@ -471,6 +471,155 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
 
     // Play PFX on impact and increment property as counter (needed for GFA_CC_DisableProjectileCollisionOnRebound())
     MEM_WriteInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset, collisionCounter+1);
+};
+
+
+/*
+ * Wrapper function for the config function GFA_GetDamageBehavior(). It is called from GFA_CC_SetDamageBehavior().
+ * This function is necessary for error handling and to supply the readied weapon, respective talent value and whether
+ * the shot was a critical hit.
+ */
+func int GFA_CC_GetDamageBehavior_(var C_Npc target) {
+    // Get readied/equipped ranged weapon
+    var int talent; var int weaponPtr;
+    GFA_GetWeaponAndTalent(_@(weaponPtr), _@(talent));
+    var C_Item weapon; weapon = _^(weaponPtr);
+
+    // Retrieve damage behavior from config
+    var int dmgBehavior; dmgBehavior = GFA_GetDamageBehavior(target, weapon, talent, GFA_LastHitCritical);
+
+    // Reset ciritcal hit
+    GFA_LastHitCritical = FALSE;
+
+    // Behaviors
+    const int DO_NOT_KNOCKOUT  = 0; // Gothic default: Normal damage, projectiles kill and never knock out (HP != 1)
+    const int DO_NOT_KILL      = 1; // Normal damage, projectiles knock out and never kill (HP > 0)
+    const int INSTANT_KNOCKOUT = 2; // One shot knock out (1 HP)
+    const int INSTANT_KILL     = 3; // One shot kill (0 HP)
+    const int MAX_BEHAVIOR     = 4;
+
+    // Must be a valid behavior
+    if (dmgBehavior < 0) || (dmgBehavior >= MAX_BEHAVIOR) {
+        MEM_Warn("GFA_CC_GetDamageBehavior_: Invalid damage behavior!");
+        dmgBehavior = DO_NOT_KNOCKOUT; // Gothic default
+    };
+    return dmgBehavior;
+};
+
+
+/*
+ * Define how the damage of a projectile will be applied: Normal damage (kill or knockout), instant kill or instant
+ * knockout. This function hooks oCAIArrow::ReportCollisionToAI() at an offset where the base damage is determined,
+ * which this function overwrites.
+ * The behavior can be defined with the config function GFA_GetDamageBehavior() of the custom collisions feature.
+ *
+ * This function will be called irrespective of all enabled or disabled features, because it fixes the "bug",
+ * that under certain circumstances NPCs can get knocked out by projectiles (instead of dying) in the original Gothic.
+ * In this case always the  behavior DO_NOT_KNOCKOUT is the default setting of this function.
+ */
+func void GFA_CC_SetDamageBehavior() {
+    // First check if shooter is player and if FA is enabled
+    var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EBP);
+    var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
+    if (!Npc_IsPlayer(shooter)) {
+        return;
+    };
+
+    var int damagePtr; damagePtr = MEMINT_SwitchG1G2(/*esp+48h-48h*/ ESP, /*esp+1ACh-C8h*/ ESP+228); // zREAL*
+    var int baseDamage; baseDamage = roundf(MEM_ReadInt(damagePtr));
+    var int targetPtr; targetPtr = MEMINT_SwitchG1G2(EBX, MEM_ReadInt(/*esp+1ACh-190h*/ ESP+28)); // oCNpc*
+    var C_Npc targetNpc; targetNpc = _^(targetPtr);
+
+    // Calculate final damage (to be applied to target) from base damage
+    var int finalDamage;
+    if (GOTHIC_BASE_VERSION == 1) {
+        finalDamage = baseDamage-targetNpc.protection[PROT_POINT];
+        if (finalDamage < 0) {
+            finalDamage = 0;
+        };
+    } else {
+        finalDamage = (baseDamage+hero.attribute[ATR_DEXTERITY])-targetNpc.protection[PROT_POINT];
+        if (finalDamage < NPC_MINIMAL_DAMAGE) {
+            finalDamage = NPC_MINIMAL_DAMAGE;
+        };
+    };
+
+    const int DO_NOT_KNOCKOUT  = 0; // Gothic default: Normal damage, projectiles kill and never knock out (HP != 1)
+    const int DO_NOT_KILL      = 1; // Normal damage, projectiles knock out and never kill (HP > 0)
+    const int INSTANT_KNOCKOUT = 2; // One shot knock out (HP = 1)
+    const int INSTANT_KILL     = 3; // One shot kill (HP = 0)
+    var int dmgBehavior;
+    if (GFA_CUSTOM_COLLISIONS) {
+        dmgBehavior = GFA_CC_GetDamageBehavior_(targetNpc);
+    } else {
+        dmgBehavior = DO_NOT_KNOCKOUT;
+    };
+
+    // Store behavior for debug output on zSpy
+    var string damageBehaviorStr;
+
+    // Manipulate final damage
+    var int newFinalDamage; newFinalDamage = finalDamage;
+    if (dmgBehavior == DO_NOT_KNOCKOUT) {
+        damageBehaviorStr = "Normal damage, prevent knockout (HP != 1) [Gothic default]";
+        if (finalDamage == targetNpc.attribute[ATR_HITPOINTS]-1) {
+            newFinalDamage = targetNpc.attribute[ATR_HITPOINTS]; // Never 1 HP
+        };
+    } else if (dmgBehavior == DO_NOT_KILL) {
+        damageBehaviorStr = "Normal damage, prevent kill (HP > 0)";
+        if (finalDamage >= targetNpc.attribute[ATR_HITPOINTS]) {
+            newFinalDamage = targetNpc.attribute[ATR_HITPOINTS]-1; // Never 0 HP
+        };
+    } else if (dmgBehavior == INSTANT_KNOCKOUT) {
+        damageBehaviorStr = "Instant knock out (1 HP)";
+        newFinalDamage = targetNpc.attribute[ATR_HITPOINTS]-1; // 1 HP
+    } else if (dmgBehavior == INSTANT_KILL) {
+        damageBehaviorStr = "Instant kill (0 HP)";
+        newFinalDamage = targetNpc.attribute[ATR_HITPOINTS]; // 0 HP
+    };
+
+    // Adjustment for minimal damage in Gothic 2
+    if (GOTHIC_BASE_VERSION == 2) && (newFinalDamage < NPC_MINIMAL_DAMAGE) {
+        targetNpc.attribute[ATR_HITPOINTS] += NPC_MINIMAL_DAMAGE;
+        newFinalDamage = NPC_MINIMAL_DAMAGE;
+    };
+
+    // Calculate new base damage from adjusted newFinalDamage
+    var int newBaseDamage;
+    if (GOTHIC_BASE_VERSION == 1) {
+        newBaseDamage = newFinalDamage+targetNpc.protection[PROT_POINT];
+    } else {
+        newBaseDamage = (newFinalDamage+targetNpc.protection[PROT_POINT])-hero.attribute[ATR_DEXTERITY];
+    };
+    if (newBaseDamage < 0) {
+        newBaseDamage = 0;
+    };
+
+    // Overwrite base damage
+    MEM_WriteInt(damagePtr, mkf(newBaseDamage));
+
+    // Print info to zSpy
+    MEM_Info("GFA_CC_SetDamageBehavior:");
+    var int s; s = SB_New();
+
+    SB("   damage bahavior:   ");
+    SB(damageBehaviorStr);
+    MEM_Info(SB_ToString());
+    SB_Clear();
+
+    SB("   base damage (n/o): ");
+    SBi(newBaseDamage);
+    SB("/");
+    SBi(baseDamage);
+    MEM_Info(SB_ToString());
+    SB_Clear();
+
+    SB("   damage on target:  ");
+    SBi(newFinalDamage);
+    SB("/");
+    SBi(finalDamage);
+    MEM_Info(SB_ToString());
+    SB_Destroy();
 };
 
 
