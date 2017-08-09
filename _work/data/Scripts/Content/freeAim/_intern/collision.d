@@ -258,6 +258,11 @@ func void GFA_CC_ProjectileCollisionWithNpc() {
         };
     };
 
+    // Update shooting statistics
+    if (GFA_RANGED) {
+        GFA_StatsHits += hit;
+    };
+
     // The hit chance percentage is either determined by skill and distance (default Gothic hit chance) or is always
     // 100%, if free aiming is enabled and the accuracy is defined by the scattering (GFA_TRUE_HITCHANCE == TRUE).
     var int hitChancePtr; hitChancePtr = MEMINT_SwitchG1G2(/*esp+3Ch-28h*/ ESP+20, /*esp+1ACh-194h*/ ESP+24);

@@ -51,23 +51,26 @@ const int    GFA_MAX_DIST           = 5000;                 // Distance for shoo
 var   int    GFA_AimRayInterval;                            // Perform trace ray every x ms (change in ini-file)
 var   int    GFA_AimRayPrevCalcTime;                        // Time of last trace ray calculation
 
-
 const float  GFA_SCATTER_HIT        = 2.6;                  // (Visual angle)/2 within which everything is a hit
 const float  GFA_SCATTER_MISS       = 3.3;                  // (Visual angle)/2 outside which everything is a miss
 const float  GFA_SCATTER_MAX        = 5.0;                  // (Visual angle)/2 of maximum scatter (all in degrees)
 
-const float  GFA_MAX_TURN_RATE_G1   = 2.0;                  // Gothic 1 has a maximum turn rate (engine default: 2.0)
-
 var   int    GFA_Recoil;                                    // Amount of vertical mouse movement on recoil
 
-const int    FLOAT1C                = 1120403456;           // 100 as float
-const int    FLOAT3C                = 1133903872;           // 300 as float
-const int    FLOAT1K                = 1148846080;           // 1000 as float
+var   int    GFA_LastHitCritical;                           // Was the last hit critical (will be reset immediately)
+
+var   int    GFA_StatsShots;                                // Shooting statistics: Count total number of shots taken
+var   int    GFA_StatsHits;                                 // Shooting statistics: Count positive hits on target
+var   int    GFA_StatsCriticalHits;                         // Shooting statistics: Count number of critical hits
+
+const float  GFA_MAX_TURN_RATE_G1   = 2.0;                  // Gothic 1 has a maximum turn rate (engine default: 2.0)
 
 const int    GFA_ACTIVE             = 0;                    // Status indicator of free aiming
 const int    GFA_INIT_HITREG        = 0;                    // Check if hit registration hook was initialized
 
-var   int    GFA_LastHitCritical;                           // Was the last hit critical (will be reset immediately)
+const int    FLOAT1C                = 1120403456;           // 100 as float
+const int    FLOAT3C                = 1133903872;           // 300 as float
+const int    FLOAT1K                = 1148846080;           // 1000 as float
 
 var   int    GFA_DebugWSBBox[6];                            // Weakspot bounding box for debug visualization
 var   int    GFA_DebugWSTrj[6];                             // Projectile trajectory for debug visualization

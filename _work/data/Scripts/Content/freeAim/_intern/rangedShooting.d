@@ -368,6 +368,9 @@ func void GFA_SetupProjectile() {
     var int vobPtr; vobPtr = GFA_SetupAimVob(_@(pos));
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
 
+    // Update the shooting statistics
+    GFA_StatsShots += 1;
+
 
     if (GFA_DEBUG_PRINT) {
         MEM_Info("GFA_SetupProjectile:");

@@ -65,6 +65,48 @@ func string GFA_DebugTraceRay(var string command) {
 
 
 /*
+ * Console function to show GFA shooting statistics. This function is registered as console command.
+ * When entered in the console, the current shooting statistics are displayed as the console output.
+ */
+func string GFA_GetShootingStats(var string command) {
+    if (!GFA_RANGED) {
+        return "Shooting statistics not available. (Requires free aiming for ranged weapons)";
+    };
+
+    var int s; s = SB_New();
+    SB("Total shots taken: ");
+    SBi(GFA_StatsShots);
+    SBc(13); SBc(10);
+
+    SB("Shots on target: ");
+    SBi(GFA_StatsHits);
+    SBc(13); SBc(10);
+
+    SB("Personal accuracy: ");
+    var int pAccuracy;
+    if (!GFA_StatsShots) {
+        // Division by zero
+        pAccuracy = FLOATNULL;
+    } else {
+        pAccuracy = mulf(fracf(GFA_StatsHits, GFA_StatsShots), FLOAT1C);
+    };
+    SB(STR_Prefix(toStringf(pAccuracy), 4));
+    SB("%");
+
+    if (GFA_CRITICALHITS) {
+        SBc(13); SBc(10);
+        SB("Critical hits: ");
+        SBi(GFA_StatsCriticalHits);
+    };
+
+    var string ret; ret = SB_ToString();
+    SB_Destroy();
+
+    return ret;
+};
+
+
+/*
  * Console function to show GFA version. This function is registered as console command.
  * When entered in the console, the current GFA version is displayed as the console output.
  */
@@ -92,7 +134,6 @@ func string GFA_GetLicense(var string command) {
     SBc(13); SBc(10);
 
     SB("For more details see <http://opensource.org/licenses/MIT>.");
-    SBc(13); SBc(10);
 
     var string ret; ret = SB_ToString();
     SB_Destroy();
@@ -139,7 +180,6 @@ func string GFA_GetInfo(var string command) {
 
     SB("Criticial hit detection: ");
     SB(MEM_ReadStatStringArr(onOff, GFA_CRITICALHITS));
-    SBc(13); SBc(10);
 
     var string ret; ret = SB_ToString();
     SB_Destroy();
