@@ -369,67 +369,68 @@ func void GFA_SetupProjectile() {
     MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
 
 
-    // Print info to zSpy
-    MEM_Info("GFA_SetupProjectile:");
-    var int s; s = SB_New();
+    if (GFA_DEBUG_PRINT) {
+        MEM_Info("GFA_SetupProjectile:");
+        var int s; s = SB_New();
 
-    SB("   aiming distance:   ");
-    SB(STR_Prefix(toStringf(divf(distPlayer, FLOAT1C)), 4));
-    SB("m");
-    MEM_Info(SB_ToString());
-    SB_Clear();
+        SB("   aiming distance:   ");
+        SB(STR_Prefix(toStringf(divf(distPlayer, FLOAT1C)), 4));
+        SB("m");
+        MEM_Info(SB_ToString());
+        SB_Clear();
 
-    SB("   draw force:        ");
-    SBi(drawForce);
-    SB("%");
-    MEM_Info(SB_ToString());
-    SB_Clear();
-
-    if (GFA_TRUE_HITCHANCE) {
-        SB("   accuracy:          ");
-        SBi(accuracy);
+        SB("   draw force:        ");
+        SBi(drawForce);
         SB("%");
         MEM_Info(SB_ToString());
         SB_Clear();
 
-        SB("   scatter:           (");
-        SB(STR_Prefix(toStringf(angleX), 5));
-        SBc(176 /* deg */);
-        SB(", ");
-        SB(STR_Prefix(toStringf(angleY), 5));
-        SBc(176 /* deg */);
-        SB(") visual angles");
-        MEM_Info(SB_ToString());
-        SB_Clear();
-    } else {
-        var int hitchance;
-        if (GOTHIC_BASE_VERSION == 1) {
-            // In Gothic 1, the hit chance is determined by dexterity (for both bows and crossbows)
-            hitchance = hero.attribute[ATR_DEXTERITY];
+        if (GFA_TRUE_HITCHANCE) {
+            SB("   accuracy:          ");
+            SBi(accuracy);
+            SB("%");
+            MEM_Info(SB_ToString());
+            SB_Clear();
+
+            SB("   scatter:           (");
+            SB(STR_Prefix(toStringf(angleX), 5));
+            SBc(176 /* deg */);
+            SB(", ");
+            SB(STR_Prefix(toStringf(angleY), 5));
+            SBc(176 /* deg */);
+            SB(") visual angles");
+            MEM_Info(SB_ToString());
+            SB_Clear();
         } else {
-            // In Gothic 2, the hit chance is the learned skill value (talent)
-            GFA_GetWeaponAndTalent(0, _@(hitchance));
+            var int hitchance;
+            if (GOTHIC_BASE_VERSION == 1) {
+                // In Gothic 1, the hit chance is determined by dexterity (for both bows and crossbows)
+                hitchance = hero.attribute[ATR_DEXTERITY];
+            } else {
+                // In Gothic 2, the hit chance is the learned skill value (talent)
+                GFA_GetWeaponAndTalent(0, _@(hitchance));
+            };
+            SB("   hit chance:        ");
+            SBi(hitchance);
+            SB("% (standard hit chance, scattering disabled)");
+            MEM_Info(SB_ToString());
+            SB_Clear();
         };
-        SB("   hit chance:        ");
-        SBi(hitchance);
-        SB("% (standard hit chance, scattering disabled)");
+
+        SB("   recoil:            ");
+        SBi(recoil);
+        SB("%");
         MEM_Info(SB_ToString());
         SB_Clear();
+
+        SB("   base damage:       ");
+        SBi(newBaseDamage);
+        SB(" (of ");
+        SBi(baseDamage);
+        SB(" normal base damage)");
+        MEM_Info(SB_ToString());
+        SB_Destroy();
     };
-
-    SB("   recoil:            ");
-    SBi(recoil);
-    SB("%");
-    MEM_Info(SB_ToString());
-    SB_Clear();
-
-    SB("   base damage:       ");
-    SBi(newBaseDamage);
-    SB(" (of ");
-    SBi(baseDamage);
-    SB(" normal base damage)");
-    MEM_Info(SB_ToString());
-    SB_Destroy();
 };
 
 

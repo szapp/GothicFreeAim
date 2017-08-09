@@ -598,28 +598,29 @@ func void GFA_CC_SetDamageBehavior() {
     // Overwrite base damage
     MEM_WriteInt(damagePtr, mkf(newBaseDamage));
 
-    // Print info to zSpy
-    MEM_Info("GFA_CC_SetDamageBehavior:");
-    var int s; s = SB_New();
+    if (GFA_DEBUG_PRINT) {
+        MEM_Info("GFA_CC_SetDamageBehavior:");
+        var int s; s = SB_New();
 
-    SB("   damage bahavior:   ");
-    SB(damageBehaviorStr);
-    MEM_Info(SB_ToString());
-    SB_Clear();
+        SB("   damage bahavior:   ");
+        SB(damageBehaviorStr);
+        MEM_Info(SB_ToString());
+        SB_Clear();
 
-    SB("   base damage (n/o): ");
-    SBi(newBaseDamage);
-    SB("/");
-    SBi(baseDamage);
-    MEM_Info(SB_ToString());
-    SB_Clear();
+        SB("   base damage (n/o): ");
+        SBi(newBaseDamage);
+        SB("/");
+        SBi(baseDamage);
+        MEM_Info(SB_ToString());
+        SB_Clear();
 
-    SB("   damage on target:  ");
-    SBi(newFinalDamage);
-    SB("/");
-    SBi(finalDamage);
-    MEM_Info(SB_ToString());
-    SB_Destroy();
+        SB("   damage on target:  ");
+        SBi(newFinalDamage);
+        SB("/");
+        SBi(finalDamage);
+        MEM_Info(SB_ToString());
+        SB_Destroy();
+    };
 };
 
 

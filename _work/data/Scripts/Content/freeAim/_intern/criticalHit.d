@@ -116,7 +116,7 @@ func void GFA_CH_DetectCriticalHit() {
     GFA_CH_GetCriticalHitDefinitions_(targetNpc, MEM_ReadInt(damagePtr), weakspotPtr); // Retrieve weak spot specs
 
     var int criticalHit; // Variable that holds whether a critical hit was detected
-    var string debugInfo; debugInfo = ""; // Internal debugging info string to be displayed in zSpy
+    var string debugInfo; debugInfo = ""; // Internal debugging info string to display in zSpy (see GFA_DEBUG_PRINT)
 
     if (Hlp_StrCmp(weakspot.node, "")) {
         // No critical node defined
@@ -255,82 +255,83 @@ func void GFA_CH_DetectCriticalHit() {
         end;
     };
 
-    // Print info to zSpy
-    MEM_Info("GFA_CH_DetectCriticalHit:");
-    var int s; s = SB_New();
+    if (GFA_DEBUG_PRINT) {
+        MEM_Info("GFA_CH_DetectCriticalHit:");
+        var int s; s = SB_New();
 
-    SB("   critical hit:      ");
-    var int shotDamage;
-    if (criticalhit) {
-        SB("yes");
-        shotDamage = roundf(weakspot.bDmg);
-    } else {
-        SB("no");
-        shotDamage = roundf(MEM_ReadInt(damagePtr));
-    };
-    MEM_Info(SB_ToString());
-    SB_Clear();
-
-    SB("   base damage:       ");
-    SBi(roundf(MEM_ReadInt(damagePtr)));
-    MEM_Info(SB_ToString());
-    SB_Clear();
-
-    SB("   critical damage:   ");
-    SBi(roundf(weakspot.bDmg));
-    MEM_Info(SB_ToString());
-    SB_Clear();
-
-    SB("   damage on target:  ");
-    // Calculate damage by formular (incl. protection of target, etc.)
-    if (GOTHIC_BASE_VERSION == 1) {
-        SB("(");
-        SBi(shotDamage);
-        SB(" - ");
-        SBi(targetNpc.protection[PROT_POINT]);
-        SB(") = ");
-        shotDamage = shotDamage-targetNpc.protection[PROT_POINT];
-        if (shotDamage < 0) {
-            shotDamage = 0;
+        SB("   critical hit:      ");
+        var int shotDamage;
+        if (criticalhit) {
+            SB("yes");
+            shotDamage = roundf(weakspot.bDmg);
+        } else {
+            SB("no");
+            shotDamage = roundf(MEM_ReadInt(damagePtr));
         };
-        SBi(shotDamage);
-    } else {
-        SB("max[ (");
-        SBi(shotDamage);
-        SB(" + ");
-        SBi(hero.attribute[ATR_DEXTERITY]);
-        SB(" - ");
-        SBi(targetNpc.protection[PROT_POINT]);
-        SB("), ");
-        SBi(NPC_MINIMAL_DAMAGE);
-        SB(" ] = ");
-        shotDamage = (shotDamage+hero.attribute[ATR_DEXTERITY])-targetNpc.protection[PROT_POINT];
-        if (shotDamage < NPC_MINIMAL_DAMAGE) {
-            shotDamage = NPC_MINIMAL_DAMAGE; // Minimum damage in Gothic 2 as defined in AI_Constants.d
+        MEM_Info(SB_ToString());
+        SB_Clear();
+
+        SB("   base damage:       ");
+        SBi(roundf(MEM_ReadInt(damagePtr)));
+        MEM_Info(SB_ToString());
+        SB_Clear();
+
+        SB("   critical damage:   ");
+        SBi(roundf(weakspot.bDmg));
+        MEM_Info(SB_ToString());
+        SB_Clear();
+
+        SB("   damage on target:  ");
+        // Calculate damage by formular (incl. protection of target, etc.)
+        if (GOTHIC_BASE_VERSION == 1) {
+            SB("(");
+            SBi(shotDamage);
+            SB(" - ");
+            SBi(targetNpc.protection[PROT_POINT]);
+            SB(") = ");
+            shotDamage = shotDamage-targetNpc.protection[PROT_POINT];
+            if (shotDamage < 0) {
+                shotDamage = 0;
+            };
+            SBi(shotDamage);
+        } else {
+            SB("max[ (");
+            SBi(shotDamage);
+            SB(" + ");
+            SBi(hero.attribute[ATR_DEXTERITY]);
+            SB(" - ");
+            SBi(targetNpc.protection[PROT_POINT]);
+            SB("), ");
+            SBi(NPC_MINIMAL_DAMAGE);
+            SB(" ] = ");
+            shotDamage = (shotDamage+hero.attribute[ATR_DEXTERITY])-targetNpc.protection[PROT_POINT];
+            if (shotDamage < NPC_MINIMAL_DAMAGE) {
+                shotDamage = NPC_MINIMAL_DAMAGE; // Minimum damage in Gothic 2 as defined in AI_Constants.d
+            };
+            SBi(shotDamage);
         };
-        SBi(shotDamage);
-    };
-    MEM_Info(SB_ToString());
-    SB_Clear();
+        MEM_Info(SB_ToString());
+        SB_Clear();
 
-    SB("   weak spot:         '");
-    SB(weakspot.node);
-    SB("' (");
-    SBi(weakspot.dimX);
-    SB("x");
-    SBi(weakspot.dimY);
-    SB(")");
-    MEM_Info(SB_ToString());
-    SB_Destroy();
+        SB("   weak spot:         '");
+        SB(weakspot.node);
+        SB("' (");
+        SBi(weakspot.dimX);
+        SB("x");
+        SBi(weakspot.dimY);
+        SB(")");
+        MEM_Info(SB_ToString());
+        SB_Destroy();
 
-    // Internal debug info
-    if (!Hlp_StrCmp(debugInfo, "")) {
-        MEM_Info(ConcatStrings("   ", debugInfo));
-    };
+        // Internal debug info
+        if (!Hlp_StrCmp(debugInfo, "")) {
+            MEM_Info(ConcatStrings("   ", debugInfo));
+        };
 
-    // Config debug info
-    if (!Hlp_StrCmp(weakspot.debugInfo, "")) {
-        MEM_Info(ConcatStrings("   ", weakspot.debugInfo));
+        // Config debug info
+        if (!Hlp_StrCmp(weakspot.debugInfo, "")) {
+            MEM_Info(ConcatStrings("   ", weakspot.debugInfo));
+        };
     };
 
     // Create an event, if a critical hit was detected

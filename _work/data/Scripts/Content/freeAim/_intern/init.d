@@ -269,6 +269,9 @@ func int GFA_InitOnce() {
     CC_Register(GFA_GetVersion, "GFA version", "print GFA version info");
     CC_Register(GFA_GetLicense, "GFA license", "print GFA license info");
     CC_Register(GFA_GetInfo, "GFA info", "print GFA config info");
+    if (GFA_DEBUG_CONSOLE) {
+        CC_Register(GFA_DebugPrint, "debug GFA zSpy", "turn on GFA debug information in zSpy");
+    };
 
     // Successfully initialized
     return TRUE;

@@ -23,6 +23,19 @@
 
 
 /*
+ * Console function to enable/disable debug output to zSpy. This function is registered as console command.
+ */
+func string GFA_DebugPrint(var string command) {
+    GFA_DEBUG_PRINT = !GFA_DEBUG_PRINT;
+    if (GFA_DEBUG_PRINT) {
+        return "Debug outputs on.";
+    } else {
+        return "Debug outputs off.";
+    };
+};
+
+
+/*
  * Console function to enable/disable weak spot debug output. This function is registered as console command.
  * When enabled, the trajectory of the projectile and the defined weak spot of the last shot NPC is visualized with
  * bounding boxes and lines.

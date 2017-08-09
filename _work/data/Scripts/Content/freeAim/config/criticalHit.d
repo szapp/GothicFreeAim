@@ -26,7 +26,7 @@ func void GFA_GetCriticalHitDefinitions(var C_Npc target, var C_Item weapon, var
     if (GOTHIC_BASE_VERSION == 2) {
         // Gothic 2: (damage + dexterity > protection of target)
         if (roundf(damage)+hero.attribute[ATR_DEXTERITY] < target.protection[PROT_POINT]) {
-            weakspot.debugInfo = "Damage does not exceed protection"; // Some debugging info to be displayed in zSpy
+            weakspot.debugInfo = "Damage does not exceed protection"; // Debugging info for zSpy (see GFA_DEBUG_PRINT)
             return;
         };
     } else {

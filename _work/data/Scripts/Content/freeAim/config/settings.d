@@ -43,6 +43,7 @@ const int   GFA_NO_AIM_NO_FOCUS    = TRUE;  // Remove focus when not aiming: Pre
 const float GFA_ROTATION_SCALE     = 0.16;  // Turn rate while aiming (changes Gothic 1 controls only)
 const int   GFA_CAMERA_X_SHIFT     = FALSE; // Set to TRUE if camera is set to shoulderview, s.a. (not recommended)
 const int   GFA_DEBUG_CONSOLE      = TRUE;  // Enable console commands (debugging). Disable in final mod
+const int   GFA_DEBUG_PRINT        = FALSE; // Output information to zSpy by default (can be enabled via console)
 const int   GFA_DEBUG_WEAKSPOT     = FALSE; // Show weakspot (critical hits) debugging visualization by default
 const int   GFA_DEBUG_TRACERAY     = FALSE; // Show trace ray debugging visualization by default
 
