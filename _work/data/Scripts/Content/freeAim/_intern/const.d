@@ -66,7 +66,6 @@ var   int    GFA_StatsCriticalHits;                         // Shooting statisti
 const float  GFA_MAX_TURN_RATE_G1   = 2.0;                  // Gothic 1 has a maximum turn rate (engine default: 2.0)
 
 const int    GFA_ACTIVE             = 0;                    // Status indicator of free aiming
-const int    GFA_INIT_HITREG        = 0;                    // Check if hit registration hook was initialized
 
 const int    FLOAT1C                = 1120403456;           // 100 as float
 const int    FLOAT3C                = 1133903872;           // 300 as float

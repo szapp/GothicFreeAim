@@ -46,13 +46,8 @@ func void GFA_InitFeatureFreeAiming() {
         HookEngineF(oCAIHuman__BowMode_interpolateAim, 5, GFA_RangedAiming); // Interpolate aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, GFA_SetupProjectile); // Setup projectile trajectory (shooting)
         HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_ResetProjectileGravity); // Reset gravity on coll
+        HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_OverwriteHitChance); // Manipulate hit chance
         // HookEngineF(oCAIHuman__BowMode_postInterpolate, 6, GFA_RangedStrafing); // Strafe when aiming. NOT WORKING
-
-        // Hit registration/collision behavior on NPCs
-        if (GFA_TRUE_HITCHANCE) && (!GFA_INIT_HITREG) {
-            HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 5, GFA_CC_ProjectileCollisionWithNpc); // Hit reg/chance
-            GFA_INIT_HITREG = 1;
-        };
 
         // Gothic 2 controls
         if (GOTHIC_BASE_VERSION == 2) {
@@ -106,6 +101,7 @@ func void GFA_InitFeatureFreeAiming() {
  */
 func void GFA_InitFeatureCustomCollisions() {
     MEM_Info("Initializing custom collision behaviors.");
+    HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_CC_ProjectileCollisionWithNpc); // Hit reg/coll on NPCs
     if (GOTHIC_BASE_VERSION == 1) {
         MemoryProtectionOverride(oCAIArrow__ReportCollisionToAI_destroyPrj, 7); // Disable destroying of projectiles
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj, ASMINT_OP_nop); // Remove fixed destruction
@@ -116,7 +112,7 @@ func void GFA_InitFeatureCustomCollisions() {
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+5, ASMINT_OP_nop);
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+6, ASMINT_OP_nop);
         HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_CC_ProjectileCollisionWithWorld); // Collision world
-        MemoryProtectionOverride(oCAIArrow__ReportCollisionToAI_keepPlyStrp, 2); // Keep projectile strip after coll
+        MemoryProtectionOverride(oCAIArrow__ReportCollisionToAI_keepPlyStrp, 2); // Keep poly strip after coll
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_keepPlyStrp, /*EB*/ 235); // jmp
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_keepPlyStrp+1, /*3D*/ 61); // to 0x619648
     } else {
@@ -139,13 +135,7 @@ func void GFA_InitFeatureCustomCollisions() {
         MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon2+6, ASMINT_OP_nop);
         HookEngineF(oCAIArrowBase__ReportCollisionToAI_collVob, 5, GFA_CC_ProjectileCollisionWithWorld); // Vobs
         HookEngineF(oCAIArrowBase__ReportCollisionToAI_collWld, 5, GFA_CC_ProjectileCollisionWithWorld); // Static world
-        MemoryProtectionOverride(oCAIArrowBase__ReportCollisionToAI_collNpc, 2); // Collision behavior on NPCs
-    };
-
-    // Hit registration/collision behavior on NPCs
-    if (!GFA_INIT_HITREG) {
-        HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 5, GFA_CC_ProjectileCollisionWithNpc); // Hit reg/hit chance
-        GFA_INIT_HITREG = 1;
+        MemoryProtectionOverride(oCAIArrowBase__ReportCollisionToAI_collNpc, 2); // Set collision behavior on NPCs
     };
 
     if (GFA_COLL_PRIOR_NPC == -1) {

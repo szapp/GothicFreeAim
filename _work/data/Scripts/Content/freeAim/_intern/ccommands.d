@@ -69,7 +69,7 @@ func string GFA_DebugTraceRay(var string command) {
  * When entered in the console, the current shooting statistics are displayed as the console output.
  */
 func string GFA_GetShootingStats(var string command) {
-    if (!GFA_RANGED) {
+    if (!GFA_ACTIVE) || (!GFA_RANGED) {
         return "Shooting statistics not available. (Requires free aiming for ranged weapons)";
     };
 

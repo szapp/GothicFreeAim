@@ -150,7 +150,7 @@ func void GFA_CC_ProjectileDestroy(var int arrowAI) {
  * GFA_CC_ProjectileCollisionWithNpc().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
-func int GFA_CC_GetCollisionWithNpc_(var C_Npc target) {
+func int GFA_CC_GetCollisionWithNpc_(var C_Npc shooter, var C_Npc target) {
     // Get readied/equipped ranged weapon
     var int weaponPtr;
     GFA_GetWeaponAndTalent(_@(weaponPtr), 0);
@@ -167,7 +167,7 @@ func int GFA_CC_GetCollisionWithNpc_(var C_Npc target) {
     };
 
     // Retrieve collision definition from config
-    return GFA_GetCollisionWithNpc(target, weapon, material);
+    return GFA_GetCollisionWithNpc(shooter, target, weapon, material);
 };
 
 
@@ -188,97 +188,73 @@ func int GFA_CC_GetCollisionWithWorld_(var C_Npc shooter, var int materials, var
 
 
 /*
- * Determine the hit chance when shooting at an NPC to manipulate the hit registration. This function hooks
- * oCAIArrow::ReportCollisionToAI() at the offset where the hit chance of the NPC is checked. With
- * GFA_GetCollisionWithNpc(), it is decided whether a projectile causes damage, does nothing or bounces of the NPC.
- * Depending on GFA_TRUE_HITCHANCE, the resulting hit chance is either the accuracy or always 100%, where the hit chance
- * is instead determined by scattering in GFA_SetupProjectile().
- * This function is only manipulating anything if the shooter is the player.
+ * Manipulate the hit registration on NPCs. This function hooks oCAIArrow::ReportCollisionToAI() at the offset where the
+ * hit chance of the NPC is checked. With GFA_GetCollisionWithNpc(), it is decided whether a projectile causes damage,
+ * does nothing or bounces off of the NPC. This function is also called for NPCs.
  */
 func void GFA_CC_ProjectileCollisionWithNpc() {
     var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EBP);
     var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
 
-    // This function does not affect NPCs and also only affects the player if FA is enabled
-    if (!Npc_IsPlayer(shooter)) {
-        // Reset to Gothic's default hit registration and leave the function
-        GFA_CC_SetProjectileCollisionWithNpc(0); // Gothic 2
-        MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1); // Gothic 1
+    // Collision behaviors
+    const int DESTROY = 0; // Projectile doest not cause damage and vanishes
+    const int DAMAGE  = 1; // Projectile causes damage and may stay in the inventory of the victim
+    const int DEFLECT = 2; // Projectile deflects of the surfaces and bounces off
+
+    // Retrieve collision behavior
+    var int collision;
+    if (MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset)) {
+        // Adjust collision behavior for NPCs, if the projectile bounced off a surface before
+        collision = GFA_COLL_PRIOR_NPC;
+    } else {
+        // Retrieve the collision behavior based on the shooter, target and the material type of their armor
+        var C_Npc target; target = _^(MEMINT_SwitchG1G2(EBX, MEM_ReadInt(/*esp+1ACh-190h*/ ESP+28)));
+        collision = GFA_CC_GetCollisionWithNpc_(shooter, target);
+    };
+
+    // Apply collision behavior
+    if (GOTHIC_BASE_VERSION == 1) {
+        if (collision == DEFLECT) {
+            var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
+            GFA_CC_ProjectileDeflect(projectile._zCVob_rigidBody);
+            MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, -1); // Mark as deflecting, such that it is ignored
+        } else {
+            MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1); // Destroy projectile on impact
+        };
+    } else {
+        GFA_CC_SetProjectileCollisionWithNpc((collision == DEFLECT)+1); // 2 == DEFLECT, 1 otherwise
+    };
+
+    // This class variable is abused as collision counter
+    var int collisionCounter; collisionCounter = MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset);
+    MEM_WriteInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset, collisionCounter+1);
+
+    // Overwrite hit registration accordingly
+    if (collision == DAMAGE) {
+        // Nothing the change
         return;
     };
 
-    var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
-
-    // Abusing this class variable as collision counter (starting at zero, will be incremented at end of function)
-    var int collisionCounter; collisionCounter = MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset);
-
-    // Boolean to specify, whether damage will be applied or not
-    var int hit;
-
-    if (GFA_CUSTOM_COLLISIONS) {
-        var int collision;
-        const int DESTROY = 0; // Projectile doest not cause damage and vanishes
-        const int DAMAGE  = 1; // Projectile causes damage and may stay in the inventory of the victim
-        const int DEFLECT = 2; // Projectile deflects of the surfaces and bounces off
-
-        if (MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset)) {
-            // Adjust collision behavior for NPCs if the projectile bounced off a surface before (Gothic 2 only)
-            collision = GFA_COLL_PRIOR_NPC;
-        } else {
-            // Retrieve the collision behavior based on the shooter, target and the material type of their armor
-            var C_Npc target; target = _^(MEMINT_SwitchG1G2(EBX, MEM_ReadInt(/*esp+1ACh-190h*/ ESP+28)));
-            collision = GFA_CC_GetCollisionWithNpc_(target);
-        };
-
-        // Set collision behavior
-        GFA_CC_SetProjectileCollisionWithNpc((collision == DEFLECT)+1); // 1 == DAMAGE or DESTROY, 2 == DEFLECT // G2
-        MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, (collision != DEFLECT)); // Remove projectile // G1
-        hit = (collision == DAMAGE); // FALSE == DESTROY or DEFLECT, TRUE == DAMAGE
-
-        if (collision == DEFLECT) && (GOTHIC_BASE_VERSION == 1) {
-            // Gothic 1: Adjust the projectile to deflect
-            GFA_CC_ProjectileDeflect(projectile._zCVob_rigidBody);
-            MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, -1); // Mark as deflecting, such that it is ignored
-
-        } else if (collision == DESTROY) && (GFA_REUSE_PROJECTILES) {
-            // Delete projectile instance if collectable feature enabled, such that it will not be put into inventory
-            projectile.instanz = -1;
-        };
-
-        // This property is abused as collision counter
-        MEM_WriteInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset, collisionCounter+1);
-
-    } else {
-        // Default behavior (no custom collision behavior)
-        hit = TRUE;
-
-        if (GOTHIC_BASE_VERSION == 1) {
-            // Remove trail strip FX
-            Wld_StopEffect_Ext(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0);
-        };
-    };
-
-    // Update shooting statistics
-    if (GFA_RANGED) {
-        GFA_StatsHits += hit;
-    };
-
-    // The hit chance percentage is either determined by skill and distance (default Gothic hit chance) or is always
-    // 100%, if free aiming is enabled and the accuracy is defined by the scattering (GFA_TRUE_HITCHANCE == TRUE).
+    // Hit chance, calculated from skill (or dexterity in Gothic 1) and distance. G1: float, G2: integer
     var int hitChancePtr; hitChancePtr = MEMINT_SwitchG1G2(/*esp+3Ch-28h*/ ESP+20, /*esp+1ACh-194h*/ ESP+24);
-    var int hitchance;
-    if (GFA_ACTIVE) && (GFA_RANGED) && (GFA_TRUE_HITCHANCE) {
-        // Always hits (100% of all times)
-        hitchance = MEMINT_SwitchG1G2(FLOAT1C, 100); // Gothic 1 takes the hit chance as float
-    } else {
-        // Take the default distance-skill-hit chance provided by Gothic's engine
-        hitchance = MEM_ReadInt(hitChancePtr);
-    };
 
-    // It is a positive hit depending on the collision (see above) and the hit chance percentage
-    hitchance = MEMINT_SwitchG1G2(mulf(mkf(hit), hitchance), // Gothic 1 takes the hit chance as float
-                                  hit*hitchance);            // Gothic 2 has it as integer
-    MEM_WriteInt(hitChancePtr, hitchance);
+    // Overwrite hit chance to disable the hit registration
+    MEM_WriteInt(hitChancePtr, MEMINT_SwitchG1G2(FLOATNULL, 0));
+
+    // Update shooting statistics (decrement, if shot was supposed to hit, see GFA_OverwriteHitChance())
+    if (Npc_IsPlayer(shooter)) && (GFA_ACTIVE) && (GFA_RANGED) {
+        // G1: float, G2: integer
+        var int hitChance; hitChance = MEMINT_SwitchG1G2(MEM_ReadInt(hitChancePtr), mkf(MEM_ReadInt(hitChancePtr)));
+
+        // The random number by which a hit is determined (integer)
+        var int rand; rand = EAX % 100;
+
+        // Determine if it would have been a positive hit
+        if (lf(mkf(rand), hitChance)) {
+            // Correct hit statistics
+            GFA_StatsHits -= 1;
+        };
+    };
 };
 
 

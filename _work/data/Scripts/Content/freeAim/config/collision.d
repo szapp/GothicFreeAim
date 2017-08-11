@@ -10,36 +10,40 @@
  * collision behavior (or disabling hit registration) on NPCs based on different criteria.
  * The argument 'material' holds the material of the armor (of the target), -1 for no armor equipped. For armors of NPCs
  * the materials are defined as in Constants.d (MAT_METAL, MAT_WOOD, ...).
+ * Note: Unlike most other config functions, this function is also called for NPC shooters!
  *
- * Ideas: 'ineffective' ranged weapons, armor materials immune to arrows, disable friendly-fire, maximum range. Examples
- * are written below and commented out and serve as inspiration of what is possible.
+ * Ideas: 'ineffective' ranged weapons, armor materials immune to arrows, disable friendly-fire, maximum range, ...
+ * Examples  are written below and commented out and serve as inspiration of what is possible.
  */
-func int GFA_GetCollisionWithNpc(var C_Npc target, var C_Item weapon, var int material) {
+func int GFA_GetCollisionWithNpc(var C_Npc shooter, var C_Npc target, var C_Item weapon, var int material) {
     // Valid return values are:
-    const int DESTROY = 0; // No hit registration (no damage), projectile is destroyed
+    const int DESTROY = 0; // No hit registration (no damage), projectile vanishes
     const int DAMAGE  = 1; // Positive hit registration, projectile is put into inventory if GFA_REUSE_PROJECTILES == 1
-    const int DEFLECT = 2; // No hit registration (no damage), projectile is repelled
+    const int DEFLECT = 2; // No hit registration (no damage), projectile bounces off
 
-    if (target.aivar[AIV_PARTYMEMBER]) && (target.aivar[AIV_LASTTARGET] != Hlp_GetInstanceID(hero)) {
-        // Disable friendly-fire
+    // Disable friendly-fire for the player
+    if (Npc_IsPlayer(shooter))
+    && (target.aivar[AIV_PARTYMEMBER])
+    && (target.aivar[AIV_LASTTARGET] != Hlp_GetInstanceID(hero)) {
         return DESTROY;
     };
 
     /*
+    // Metal armors may be more durable
     if (material == MAT_METAL) && (Hlp_Random(100) < 20) {
-        // Metal armors may be more durable
         return DEFLECT;
     }; */
 
-    if (Npc_GetDistToPlayer(target) > FIGHT_DIST_CANCEL) {
+    // Fix AI reaction
+    if (Npc_IsPlayer(shooter)) && (Npc_GetDistToPlayer(target) > FIGHT_DIST_CANCEL) {
         // If player is too far away, do nothing. This is important, because of a limitation in the AI. NPCs do not
         // react to damage if they are shot from outside of the ranged combat distance. This check fixes the problem
         return DESTROY;
     };
 
     /*
+    // Ineffective weapons
     if (Hlp_IsValidItem(weapon)) {
-        // The weapon can also be considered (e.g. ineffective weapons). Make use of 'weapon' for that
         // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
 
         if (weapon.ineffective) {
@@ -60,18 +64,18 @@ func int GFA_GetCollisionWithNpc(var C_Npc target, var C_Item weapon, var int ma
  *
  * The argument 'isCriticalHit' states whether the active shot was a critical hit.
  *
- * Ideas: special knockout munition, NPCs that cannot be killed by ranged weapons, instant kill on critical hit.
+ * Ideas: special knockout munition, NPCs that cannot be killed by ranged weapons, instant kill on critical hit, ...
  * Examples are written below and commented out and serve as inspiration of what is possible.
  */
 func int GFA_GetDamageBehavior(var C_Npc target, var C_Item weapon, var int talent, var int isCritialHit) {
-    // Available Behaviors
-    const int DO_NOT_KNOCKOUT  = 0; // Gothic default: Normal damage, projectiles kill and never knock out (HP != 1)
-    const int DO_NOT_KILL      = 1; // Normal damage, projectiles knock out and never kill (HP > 0)
-    const int INSTANT_KNOCKOUT = 2; // One shot knock out (1 HP)
+    // Valid return values are:
+    const int DO_NOT_KNOCKOUT  = 0; // Gothic default: Normal damage, projectiles kill and never knockout (HP != 1)
+    const int DO_NOT_KILL      = 1; // Normal damage, projectiles knockout and never kill (HP > 0)
+    const int INSTANT_KNOCKOUT = 2; // One shot knockout (1 HP)
     const int INSTANT_KILL     = 3; // One shot kill (0 HP)
 
     /*
-    // Create knock out arrows
+    // Create knockout arrows
     if (Hlp_IsValidItem(weapon)) {
         // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
 
@@ -101,8 +105,7 @@ func int GFA_GetDamageBehavior(var C_Npc target, var C_Item weapon, var int tale
 /*
  * This function is called every time the world (static or vobs) is hit by a projectile (arrows and bolts). It can be
  * used to define the collision behavior for different materials or surface textures.
- * Note: Unlike GFA_GetCollisionWithNpc() and all other config functions, this function is also called for NPC
- * shooters!
+ * Note: Unlike most other config functions, this function is also called for NPC shooters!
  *
  * The parameter 'materials' is a bit field for all materials attached to the hit object.
  * The parameter 'textures' is a string containing all texture names, delimiter: |
@@ -128,8 +131,8 @@ func int GFA_GetCollisionWithWorld(var C_Npc shooter, var C_Item weapon, var int
     const int WATER = 1<<5;
     const int SNOW  = 1<<6;
 
+    // Projectiles stay stuck in wood (default in Gothic 2)
     if (materials & WOOD) || (STR_IndexOf(textures, "WOOD") != -1) {
-        // Projectiles stay stuck in wood (default in Gothic 2)
         return STUCK;
     };
 
@@ -140,14 +143,14 @@ func int GFA_GetCollisionWithWorld(var C_Npc shooter, var C_Item weapon, var int
     };
 
     /*
+    // Keep in mind that this function is also called for NPC shooters
     if (Npc_IsPlayer(shooter)) {
-        // Keep in mind that this function is also called for NPC shooters
         // ...
     }; */
 
+    // The projectile might break on impact with stone (20% of the shots)
     if ((materials & STONE) || (STR_IndexOf(textures, "STONE") != -1))
     && (Hlp_Random(100) < 20) {
-        // The projectile might break on impact with stone (20% of the shots)
         return DESTROY;
     };
 

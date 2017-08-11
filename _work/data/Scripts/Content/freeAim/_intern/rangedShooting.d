@@ -488,3 +488,54 @@ func void GFA_ResetProjectileGravity() {
     // Reset projectile gravity (zCRigidBody.gravity) after collision (oCAIArrow.collision) to default
     MEM_WriteInt(rigidBody+zCRigidBody_gravity_offset, FLOATONE);
 };
+
+
+/*
+ * Manipulate the hit chance when shooting NPCs. This function hooks oCAIArrow::ReportCollisionToAI() at the offset
+ * where the hit chance of the NPC is checked.
+ * Depending on GFA_TRUE_HITCHANCE, the resulting hit chance is either the Gothic default hit chance or always 100%.
+ * For the latter (GFA_TRUE_HITCHANCE == true) the hit chance is instead determined earlier by scattering in
+ * GFA_SetupProjectile().
+ * Additionally, the trial strip is removed (Gothic 1) and the shooting statistics are updated.
+ * This function is only making changes if the shooter is the player.
+ */
+func void GFA_OverwriteHitChance() {
+    var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EBP);
+    var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
+
+    // Only if shooter is the player and if FA is enabled for ranged combat
+    if (!GFA_ACTIVE) || (!Npc_IsPlayer(shooter)) {
+        return;
+    };
+
+    var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
+
+    // Remove trail strip FX
+    if (GOTHIC_BASE_VERSION == 1) {
+        Wld_StopEffect_Ext(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0);
+    };
+
+    // Hit chance, calculated from skill (or dexterity in Gothic 1) and distance
+    var int hitChancePtr; hitChancePtr = MEMINT_SwitchG1G2(/*esp+3Ch-28h*/ ESP+20, /*esp+1ACh-194h*/ ESP+24);
+    var int hit;
+
+    if (!GFA_TRUE_HITCHANCE) {
+        // If accuracy/scattering is disabled, stick to the hit chance calculation from Gothic
+
+        // G1: float, G2: integer
+        var int hitChance; hitChance = MEMINT_SwitchG1G2(MEM_ReadInt(hitChancePtr), mkf(MEM_ReadInt(hitChancePtr)));
+
+        // The random number by which a hit is determined (integer)
+        var int rand; rand = EAX % 100;
+
+        // Determine if positive hit
+        hit = lf(mkf(rand), hitChance); // rand < hitChance
+    } else {
+        // If accuracy/scattering is enabled, all shots that hit the target are a positive hit
+        hit = TRUE;
+        MEM_WriteInt(hitChancePtr, MEMINT_SwitchG1G2(FLOAT1C, 100)); // Overwrite to hit always
+    };
+
+    // Update the shooting statistics
+    GFA_StatsHits += hit;
+};

@@ -120,7 +120,7 @@ func void GFA_RP_PutProjectileIntoInventory() {
 
     // Differentiate between positive hit and collision without damage
     var int positiveHit; positiveHit = MEMINT_SwitchG1G2(
-        (ECX != 100),                                      // Gothic 1: EAX is 100 if the hit did not register
+        (ECX != 100),                                      // Gothic 1: ECX is 100 if the hit did not register
         MEM_ReadInt(arrowAI+oCAIArrowBase_hasHit_offset)); // Gothic 2: dedicated property (does not exist in Gothic 1)
 
     if (positiveHit) {
