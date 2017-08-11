@@ -250,6 +250,35 @@ func void GFA_SetCameraModes(var int on) {
 
 
 /*
+ * Prevent focus collection while jumping and falling during free aiming fight modes. This function hooks
+ * oCAIHuman__PC_ActionMove at an offset at which the fight modes are not reached. This happens during certain body
+ * states. At that offset, the focus collection remains normal, which will counteract the idea of GFA_NO_AIM_NO_FOCUS.
+ * This only happens for Gothic 2.
+ */
+func void GFA_PreventFocusCollectionBodystates() {
+    // Just to be sure not to impact performance too much otherwise, all if-conditions are separate
+    if (!GFA_ACTIVE) {
+        return;
+    };
+
+    if (!GFA_NO_AIM_NO_FOCUS) {
+        return;
+    };
+
+    var oCNpc her; her = Hlp_GetNpc(hero);
+    if (her.fmode < FMODE_FAR) {
+        return;
+    };
+
+    if ((her.fmode == FMODE_FAR) || (her.fmode == FMODE_FAR+1)) && (GFA_RANGED) // Bow or crossbow
+    || ((her.fmode == FMODE_MAGIC) && (GFA_SPELLS)) { // Spell
+        // Remove focus and target
+        GFA_SetFocusAndTarget(0);
+    };
+};
+
+
+/*
  * Disable damage animation while aiming. This function hooks the function that deals damage to NPCs and prevents the
  * damage animation for the player while aiming, as it looks questionable if the reticle stays centered but the player
  * model is crooked.

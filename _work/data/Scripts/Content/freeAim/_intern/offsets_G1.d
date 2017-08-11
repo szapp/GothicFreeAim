@@ -88,6 +88,7 @@ const int zCCollObjectLevelPolys__s_oCollObjClass    =  8861152; //0x8735E0
 const int zCWorld__AdvanceClock                      =  6257280; //0x5F7A80 // Hook len 10
 const int cGameManager__ApplySomeSettings_rtn        =  4356499; //0x427993 // Hook len 6
 const int oCAIVobMove__DoAI_stopMovement             =  6389348; //0x617E64 // Hook len 7
+const int oCAIHuman__PC_ActionMove_bodyState         =  0;                                 // Does not exist in Gothic 1
 const int oCAIHuman__BowMode_interpolateAim          =  6359260; //0x6108DC // Hook len 5
 const int oCAIHuman__BowMode_postInterpolate         =  6359274; //0x6108EA // Hook len 6
 const int oCAIHuman__BowMode_notAiming               =  6359422; //0x61097E // Hook len 6

@@ -65,6 +65,11 @@ func void GFA_InitFeatureFreeAiming() {
         HookEngineF(oCSpell__Setup_oCVisFXinit, 6, GFA_SetupSpell); // Set spell FX trajectory (shooting)
     };
 
+    // Prevent focus collection (necessary for Gothic 2 only)
+    if (GOTHIC_BASE_VERSION == 2) && (GFA_NO_AIM_NO_FOCUS) {
+        HookEngineF(oCAIHuman__PC_ActionMove_bodyState, 6, GFA_PreventFocusCollectionBodystates);
+    };
+
     // Reticle
     MEM_Info("Initializing reticle.");
     HookEngineF(oCNpcFocus__SetFocusMode, 7, GFA_ResetOnWeaponSwitch); // Hide reticle, hide aim FX and reset draw force

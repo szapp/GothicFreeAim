@@ -88,6 +88,7 @@ const int zCCollObjectLevelPolys__s_oCollObjClass    =  9274192; //0x8D8350
 const int zCWorld__AdvanceClock                      =  6447328; //0x6260E0 // Hook len 10
 const int cGameManager__ApplySomeSettings_rtn        =  4362866; //0x429272 // Hook len 6
 const int oCAIVobMove__DoAI_stopMovement             =  6945300; //0x69FA14 // Hook len 7
+const int oCAIHuman__PC_ActionMove_bodyState         =  6922115; //0x699F83 // Hook len 6
 const int oCAIHuman__BowMode_interpolateAim          =  6906518; //0x696296 // Hook len 5
 const int oCAIHuman__BowMode_postInterpolate         =  6906532; //0x6962A4 // Hook len 6
 const int oCAIHuman__BowMode_notAiming               =  6906078; //0x6960DE // Hook len 6
