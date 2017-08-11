@@ -15,7 +15,7 @@ func void headshots(var C_Npc target, var int rtrnPtr) {
 
     // In case this helps with differentiating:
     var zCPar_Symbol sym; sym = _^(MEM_GetSymbolByIndex(Hlp_GetInstanceID(target)));
-    var string instName; instName = sym.name; // Exact instance name, e.g. "ORCWARRIOR_LOBART1"
+    var string instName; instName = sym.name; // Exact instance name, e.g. "SKELETONMAGE_FOGTOWER"
 
     // Here, set the head to the default weak spot
     weakspot.node = "Bip01 Head"; // Upper/lower case is not important, but spelling and spaces are

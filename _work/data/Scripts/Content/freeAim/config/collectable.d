@@ -30,32 +30,32 @@ func int GFA_GetUsedProjectileInstance(var int projectileInst, var C_Npc invento
     if (Hlp_IsValidNpc(inventoryNpc)) {
         // Projectile hit an NPC and will be put into their inventory
 
+        // Do not put projectiles in the player's inventory
         if (Npc_IsPlayer(inventoryNpc)) {
-            // Do not put projectiles in the player's inventory
             return 0;
         };
 
         /*
+        // Remove projectile when it hits humans
         if (inventoryNpc.guild < GIL_SEPERATOR_HUM) {
-            // Remove projectile when it hits humans
             return 0;
         }; */
 
         /*
+        // Player needs to learn a talent to remove the projectile
         if (PLAYER_TALENT_TAKEANIMALTROPHY[REUSE_Arrow] == FALSE) {
-            // Player needs to learn a talent to remove the projectile
             return 0;
         }; */
 
         /*
+        // Player needs tool to retrieve the projectile
         if (!Npc_HasItems(hero, ItMi_ArrowTool)) {
-            // Player needs tool to remove the projectile
             return 0;
         }; */
 
         /*
+        // 50% chance of retrieval
         if (Hlp_Random(100) < 50) {
-            // 50% chance of retrieval
             return 0;
         }; */
 
@@ -66,8 +66,8 @@ func int GFA_GetUsedProjectileInstance(var int projectileInst, var C_Npc invento
         // Projectile did not hit npc and landed in world
 
         /*
+        // Player needs to learn a talent to collect the projectile
         if (PLAYER_TALENT_REUSE_ARROW == FALSE) {
-            // Player needs to learn a talent to remove the projectile
             return 0;
         }; */
 

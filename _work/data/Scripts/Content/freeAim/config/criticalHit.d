@@ -57,15 +57,15 @@ func void GFA_GetCriticalHitDefinitions(var C_Npc target, var C_Item weapon, var
     };
 
     /*
+    // The damage may depend on the target NPC (e.g. different damage for monsters). Make use of 'target' for that
     if (target.guild < GIL_SEPERATOR_HUM) {
-        // The damage may depend on the target NPC (e.g. different damage for monsters). Make use of 'target' argument
         // ...
     }; */
 
     /*
+    // The weapon can also be considered (e.g. weapon specific damage). Make use of 'weapon' for that
+    // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
     if (Hlp_IsValidItem(weapon)) {
-        // The weapon can also be considered (e.g. weapon specific damage). Make use of 'weapon' for that
-        // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
         if (weapon.certainProperty > 10) {
             // E.g. special case for weapon property
         };
@@ -138,15 +138,15 @@ func int GFA_GetCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int 
         var int critChance; critChance = (max-min)*talent/100+min;
 
         /*
+        // The critical hit chance may depend on the target NPC. Make use of 'target' for that
         if (target.guild < GIL_SEPERATOR_HUM) {
-            // The critical hit chance may depend on the target NPC. Make use of 'target' argument
             // ...
         }; */
 
         /*
+        // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
+        // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
         if (Hlp_IsValidItem(weapon)) {
-            // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
-            // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
             if (weapon.certainProperty > 10) {
                 // E.g. special case for weapon property
             };
@@ -176,15 +176,15 @@ func int GFA_GetCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int 
 func void GFA_StartCriticalHitEvent(var C_Npc target, var C_Item weapon, var int freeAimingIsEnabled) {
 
     /*
+    // The event may depend on the target NPC (e.g. different sound for monsters). Make use of 'target' for that
     if (target.guild < GIL_SEPERATOR_HUM) {
-        // The event may depend on the target NPC (e.g. different sound for monsters). Make use of 'target' argument
         // ...
     }; */
 
     /*
+    // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
+    // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
     if (Hlp_IsValidItem(weapon)) {
-        // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
-        // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
         if (weapon.certainProperty > 10) {
             // E.g. special case for weapon property
         };
@@ -197,20 +197,20 @@ func void GFA_StartCriticalHitEvent(var C_Npc target, var C_Item weapon, var int
     // Shooter-like hit marker
     if (freeAimingIsEnabled) {
         // Only show the hit marker if free aiming is enabled (this function is also called for auto aim critical hits)
-        var int hitmarker;
-        if (!Hlp_IsValidHandle(hitmarker)) {
+        var int hitMarker;
+        if (!Hlp_IsValidHandle(hitMarker)) {
             // Create it (if it does not exist) in the center of the screen
             var zCView screen; screen = _^(MEM_Game._zCSession_viewport);
-            hitmarker = View_CreateCenterPxl(screen.psizex/2, screen.psizey/2, // Coordinates
+            hitMarker = View_CreateCenterPxl(screen.psizex/2, screen.psizey/2, // Coordinates
                 GFA_RETICLE_MAX_SIZE, GFA_RETICLE_MAX_SIZE);                   // Dimensions
 
             // Get 7th frame of animated texture as static texture
-            View_SetTexture(hitmarker, GFA_AnimateReticleByPercent(RETICLE_TRI_IN, 100, 7));
+            View_SetTexture(hitMarker, GFA_AnimateReticleByPercent(RETICLE_TRI_IN, 100, 7));
         };
-        View_Open(hitmarker);
+        View_Open(hitMarker);
 
         // Hide the hit marker after 300 ms
-        FF_ApplyExtData(View_Close, 300, 1, hitmarker);
+        FF_ApplyExtData(View_Close, 300, 1, hitMarker);
     };
 
     // Sound notification

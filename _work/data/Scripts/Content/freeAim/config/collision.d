@@ -42,10 +42,9 @@ func int GFA_GetCollisionWithNpc(var C_Npc shooter, var C_Npc target, var C_Item
     };
 
     /*
-    // Ineffective weapons
+    // Ineffective weapons: Make use of 'weapon' for that
+    // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
     if (Hlp_IsValidItem(weapon)) {
-        // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
-
         if (weapon.ineffective) {
             // Special case for weapon property
             return DEFLECT;
@@ -75,10 +74,9 @@ func int GFA_GetDamageBehavior(var C_Npc target, var C_Item weapon, var int tale
     const int INSTANT_KILL     = 3; // One shot kill (0 HP)
 
     /*
-    // Create knockout arrows
+    // Create knockout arrows: Retrieve munition item from weapon. Make use of 'weapon' for that
+    // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
     if (Hlp_IsValidItem(weapon)) {
-        // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
-
         if (weapon.munition == Hlp_GetInstanceID(ItRw_KnockOutArrow)) // Special arrow
         && (isCritialHit) {                                           // Only if it was a critical hit
             return INSTANT_KNOCKOUT;
