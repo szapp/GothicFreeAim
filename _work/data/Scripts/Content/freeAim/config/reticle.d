@@ -22,7 +22,7 @@ func void GFA_GetRangedReticle(var C_Npc target, var C_Item weapon, var int tale
         // The argument 'target' might be empty!
 
         var int att; att = Npc_GetAttitude(target, hero);
-        if (att == ATT_HOSTILE) {
+        if (att == ATT_HOSTILE) || (att == ATT_ANGRY) {
             reticle.color = Focusnames_Color_Hostile();
         };
         /*
@@ -94,7 +94,7 @@ func void GFA_GetSpellReticle(var C_Npc target, var int spellID, var C_Spell spe
         // The argument 'target' might be empty!
 
         var int att; att = Npc_GetAttitude(target, hero);
-        if (att == ATT_HOSTILE) {
+        if (att == ATT_HOSTILE) || (att == ATT_ANGRY) {
             reticle.color = Focusnames_Color_Hostile();
         };
         /*
@@ -123,8 +123,8 @@ func void GFA_GetSpellReticle(var C_Npc target, var int spellID, var C_Spell spe
     }; */
 
     /*
+    // Different reticle for scrolls
     if (isScroll) {
-        // Different reticle for scrolls
         reticle.color = RGBA(125, 200, 250, 255); // Light blue
     }; */
 
