@@ -60,10 +60,6 @@ func void GFA_UpdateSettings(var int on) {
         // Restore camera modes (does not affect Gothic 1)
         MEM_WriteString(zString_CamModRanged, "CAMMODRANGED");
         MEM_WriteString(zString_CamModMagic, "CAMMODMAGIC");
-
-        // Reset to collision behavior of projectiles on NPCs to default (does not affect Gothic 1)
-        GFA_CC_SetProjectileCollisionWithNpc(0);
-
     };
     GFA_ACTIVE = !GFA_ACTIVE;
 };

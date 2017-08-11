@@ -51,10 +51,7 @@ func void GFA_RP_KeepProjectileInWorld() {
 
     // Check if the projectile stopped moving
     if (!(projectile._zCVob_bitfield[0] & zCVob_bitfield0_physicsEnabled)) {
-        if (GOTHIC_BASE_VERSION == 1) {
-            // Gothic 1 does not offer effects on items
-            Wld_StopEffect_Ext(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0);
-        } else {
+        if (GOTHIC_BASE_VERSION == 2) {
             // Remove the FX; only if the projectile does not have a different effect (like magic arrows)
             if (Hlp_StrCmp(MEM_ReadString(projectilePtr+oCItem_effect_offset), GFA_TRAIL_FX)) { // Check trail strip
                 const int call = 0;
@@ -62,6 +59,7 @@ func void GFA_RP_KeepProjectileInWorld() {
                     CALL__thiscall(_@(projectilePtr), oCItem__RemoveEffect);
                     call = CALL_End();
                 };
+                MEM_WriteString(projectilePtr+oCItem_effect_offset, "");
             };
         };
 
@@ -76,7 +74,7 @@ func void GFA_RP_KeepProjectileInWorld() {
             if (projInst != projectile.instanz) {
                 const int call2 = 0; const int one = 1;
                 if (CALL_Begin(call2)) {
-                    CALL_IntParam(_@(one)); // Amount
+                    CALL_IntParam(_@(one));      // Amount
                     CALL_PtrParam(_@(projInst)); // Instance ID
                     CALL__thiscall(_@(projectilePtr), oCItem__InitByScript);
                     call2 = CALL_End();

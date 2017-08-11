@@ -9,9 +9,9 @@
 /*
  * This function defines the dimensions of head shots for all Gothic 2 specific monsters.
  */
-func void headshots(var C_Npc target, var int rtrnPtr) {
+func void headshots(var C_Npc target, var int returnPtr) {
     // Get weak spot instance from call-by-reference argument
-    var Weakspot weakspot; weakspot = _^(rtrnPtr);
+    var Weakspot weakspot; weakspot = _^(returnPtr);
 
     // In case this helps with differentiating:
     var zCPar_Symbol sym; sym = _^(MEM_GetSymbolByIndex(Hlp_GetInstanceID(target)));

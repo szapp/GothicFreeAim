@@ -47,7 +47,7 @@ func void GFA_RangedIdle() {
 /*
  * Interpolate the ranged aiming animation. This function hooks oCAIHuman::BowMode() just before
  * oCAniCtrl_Human::InterpolateCombineAni() to adjust the direction the ranged weapon is pointed in. Also the focus
- * collection is overwritten.
+ * collection is overwritten and the reticle is displayed.
  */
 func void GFA_RangedAiming() {
     if (!GFA_ACTIVE) {

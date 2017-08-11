@@ -487,6 +487,11 @@ func void GFA_ResetProjectileGravity() {
 
     // Reset projectile gravity (zCRigidBody.gravity) after collision (oCAIArrow.collision) to default
     MEM_WriteInt(rigidBody+zCRigidBody_gravity_offset, FLOATONE);
+
+    // Remove trail strip FX
+    if (GOTHIC_BASE_VERSION == 1) {
+        Wld_StopEffect_Ext(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0);
+    };
 };
 
 
@@ -509,11 +514,6 @@ func void GFA_OverwriteHitChance() {
     };
 
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
-
-    // Remove trail strip FX
-    if (GOTHIC_BASE_VERSION == 1) {
-        Wld_StopEffect_Ext(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0);
-    };
 
     // Hit chance, calculated from skill (or dexterity in Gothic 1) and distance
     var int hitChancePtr; hitChancePtr = MEMINT_SwitchG1G2(/*esp+3Ch-28h*/ ESP+20, /*esp+1ACh-194h*/ ESP+24);

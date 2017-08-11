@@ -66,10 +66,10 @@ func void GFA_CC_SetProjectileCollisionWithNpc(var int setting) {
  * Re-implementation of the deflection behavior of projectiles found in Gothic 2, but missing in Gothic 1. Hence, this
  * function is only of interest for Gothic 1. It is called from GFA_CC_ProjectileCollisionWithNpc() and
  * GFA_CC_ProjectileCollisionWithWorld().
- * This code inspired by 0x6A0ACF (oCAIArrowBase::ReportCollisionToAI() of Gothic 2)
+ * This code inspired by 0x6A0ACF (oCAIArrowBase::ReportCollisionToAI() of Gothic 2).
  */
 func void GFA_CC_ProjectileDeflect(var int rigidBody) {
-    if (!rigidBody) {
+    if (!rigidBody) || (GOTHIC_BASE_VERSION != 1) {
         return;
     };
 
@@ -101,12 +101,9 @@ func void GFA_CC_ProjectileDeflect(var int rigidBody) {
  * Gothic 1 does not implement that projectiles stop and get stuck in the surface (as found in Gothic 2). Hence, this
  * function is only of interest for Gothic 1. It is called from GFA_CC_ProjectileCollisionWithWorld().
  * The code is inspired by 0x6A0A54 (oCAIArrowBase::ReportCollisionToAI() of Gothic 2).
- *
- * Note: As of now, this implementation does not satisfy: For some reason, the projectiles are stuck at different depths
- * causing some of the to not be focusable (collectable) and other floating in the air. This still needs some adjustment
  */
 func void GFA_CC_ProjectileStuck(var int projectilePtr) {
-    if (!projectilePtr) {
+    if (!projectilePtr) || (GOTHIC_BASE_VERSION != 1) {
         return;
     };
     var oCItem projectile; projectile = _^(projectilePtr);
@@ -114,11 +111,6 @@ func void GFA_CC_ProjectileStuck(var int projectilePtr) {
         return;
     };
     var int rigidBody; rigidBody = projectile._zCVob_rigidBody;
-
-    if (GOTHIC_BASE_VERSION == 1) {
-        // First of all, remove trail strip FX
-        Wld_StopEffect_Ext(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0);
-    };
 
     // Stop movement of projectile
     projectile._zCVob_bitfield[0] = projectile._zCVob_bitfield[0] & ~(zCVob_bitfield0_collDetectionStatic
@@ -130,18 +122,15 @@ func void GFA_CC_ProjectileStuck(var int projectilePtr) {
 /*
  * Flag a projectile for removal (will be done by the engine with oCAIArrow::DoAI). This function is
  * called also from outside this function (from outside this file), especially from the collectable projectile feature.
- * It is called for both Gothic 1 and Gothic 2
+ * It is called for both Gothic 1 and Gothic 2.
  */
 func void GFA_CC_ProjectileDestroy(var int arrowAI) {
-    if (GOTHIC_BASE_VERSION == 1) {
-        // First of all, remove trail strip FX
-        var C_Item projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
-        Wld_StopEffect_Ext(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0);
-    };
-
     // Automatically remove projectile
-    MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1); // Gothic 1
-    MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATNULL); // Gothic 2
+    if (GOTHIC_BASE_VERSION == 1) {
+        MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1); // Gothic 1
+    } else {
+        MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATNULL); // Gothic 2
+    };
 };
 
 
@@ -273,11 +262,6 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
         return;
     };
     var oCItem projectile; projectile = _^(projectilePtr);
-
-    if (GOTHIC_BASE_VERSION == 1) {
-        // First of all, remove trail strip FX
-        Wld_StopEffect_Ext(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0);
-    };
 
     // Abusing this class variable as collision counter (starting at zero, will be incremented at end of function)
     var int collisionCounter; collisionCounter = MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset);
