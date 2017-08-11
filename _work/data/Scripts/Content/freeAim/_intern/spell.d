@@ -67,11 +67,11 @@ func void GFA_SetupSpell() {
 
 
 /*
- * Manage reticle style and focus collection for magic combat during aiming. This function hooks oCAIHuman::MagicMode,
+ * Manage reticle style and focus collection for magic combat during aiming. This function hooks oCAIHuman::MagicMode(),
  * but exists right away if the active spell does not support free aiming or if the player is not currently aiming.
  */
 func void GFA_SpellAiming() {
-    // Only show reticle for spells that support free aiming and during aiming
+    // Only show reticle for spells that support free aiming and during aiming (Gothic 1 controls)
     if (GFA_ACTIVE != FMODE_MAGIC) {
         GFA_RemoveReticle();
         // Remove the visual FX of the aim vob (if present)
@@ -105,29 +105,7 @@ func void GFA_SpellAiming() {
 
     } else {
         // No focus collection (this condition is necessary for light and teleport spells)
-
-        var oCNpc her; her = Hlp_GetNpc(hero);
-        var int herPtr; herPtr = _@(her);
-
-        // Remove focus completely
-        if (her.focus_vob) {
-            const int call = 0; var int zero; // Set the focus vob properly: reference counter
-            if (CALL_Begin(call)) {
-                CALL_PtrParam(_@(zero)); // This will remove the focus
-                CALL__thiscall(_@(herPtr), oCNpc__SetFocusVob);
-                call = CALL_End();
-            };
-        };
-
-        // Remove oCNpc.enemy. No focus = no target NPC. Caution: This invalidates the use of Npc_GetTarget()
-        if (her.enemy) {
-            const int call2 = 0; // Remove the enemy properly: reference counter
-            if (CALL_Begin(call2)) {
-                CALL_PtrParam(_@(zero));
-                CALL__thiscall(_@(herPtr), oCNpc__SetEnemy);
-                call2 = CALL_End();
-            };
-        };
+        GFA_SetFocusAndTarget(0);
 
         // No distance check ever. Set it to medium distance
         distance = 25;
