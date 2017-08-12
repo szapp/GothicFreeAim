@@ -261,10 +261,6 @@ func void GFA_PreventFocusCollectionBodystates() {
         return;
     };
 
-    if (!GFA_NO_AIM_NO_FOCUS) {
-        return;
-    };
-
     var oCNpc her; her = Hlp_GetNpc(hero);
     if (her.fmode < FMODE_FAR) {
         return;

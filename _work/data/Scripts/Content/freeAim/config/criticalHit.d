@@ -2,19 +2,34 @@
  * This file contains all configurations for critical hits for bows and crossbows.
  *
  * Requires the feature GFA_CRITICALHITS (see config\settings.d).
+ *
+ * List of included functions:
+ *  func void GFA_GetCriticalHitDefinitions(C_Npc target, C_Item weapon, int talent, int damage, int returnPtr)
+ *  func int GFA_GetCriticalHitAutoAim(C_Npc target, C_Item weapon, int talent)
+ *  func void GFA_StartCriticalHitEvent(C_Npc target, C_Item weapon, int freeAimingIsEnabled)
  */
 
 
 /*
  * This function is called every time (any kind of) NPC is hit by a projectile (arrows and bolts) to determine, whether
- * a critical hit occurred. This function returns a definition of the critical hit area (weak spot) based on the NPC
- * that it hit or the weapon used. A weak spot is defined by its bone, size and modified damage.
+ * a critical hit occurred; but only if free aiming is enabled and GFA_TRUE_HITCHANCE == true. For critical hits without
+ * free aiming (or scattering) see GFA_GetCriticalHitAutoAim() below.
+ *
+ * This function here returns a definition of the critical hit zone (weak spot) based on the NPC that it hit or the
+ * weapon used. A weak spot is defined by the name of a bone of the model, dimensions and modified damage.
  * This function is dynamic: It is called on every hit and the weak spot and damage can be calculated individually.
  * The damage is a float and represents the new base damage (damage of weapon), not the final damage!
  *
- * Ideas: Incorporate weapon-specific stats, head shot talent, dependency on target, ...
+ * Note: This function is specific to free aiming. For critical hits without free aiming see GFA_GetCriticalHitAutoAim()
+ *       below.
+ *
+ * Note: This function only DEFINES the critical hits. It is called every time an NPC is hit. To start an event when a
+ *       critical hit actually occurs, see GFA_StartCriticalHitEvent() below.
+ *
+ * Ideas: incorporate weapon-specific stats, head shot talent, dependency on target, ...
  * Examples are written below and commented out and serve as inspiration of what is possible.
- * Here, preliminary weak spots for almost all Gothic 2 monsters are defined (all head shots).
+ *
+ * Here, preliminary weak spots for almost all Gothic 1 and Gothic 2 monsters are defined (all head shots).
  */
 func void GFA_GetCriticalHitDefinitions(var C_Npc target, var C_Item weapon, var int talent, var int damage,
         var int returnPtr) {
@@ -41,7 +56,7 @@ func void GFA_GetCriticalHitDefinitions(var C_Npc target, var C_Item weapon, var
     // Incorporate the critical hit chance (talent value) for Gothic 1. By aiming and targeting, the talent value in
     // Gothic 1 (which is responsible for the critical hit chance) becomes obsolete. To still have an incentive to
     // learn the higher stages of ranged weapons, an additional probability for critical hits can be imposed here. Keep
-    // in mind that critical hits are still determined by aiming, but hits are not 100% of the time considered critical
+    // in mind that critical hits are still determined by aiming, but hits are not considered critical 100% of the time
     if (GOTHIC_BASE_VERSION == 1) {
         if (!talent) {
             // With no learned skill level, there are no critical hits (just like in the original Gothic 1)
@@ -50,10 +65,10 @@ func void GFA_GetCriticalHitDefinitions(var C_Npc target, var C_Item weapon, var
         } else if (talent < 25) {
             // Stage 1: Only 50% of the positive hits are in fact critical
             weakspot.debugInfo = "First level critical hit chance (see character menu), adjusted to 50-50 chance";
-            if (r_Max(1)) { // 0 or 1, approx. 50-50 chance
+            if (Hlp_Random(100) < 50) { // Approx. 50-50 chance
                 return;
             };
-        }; // Else stage 2: All positive hits are critical hits (no change)
+        }; // Else stage 2: All positive hits on the weak spot are critical hits (no change)
     };
 
     /*
@@ -66,45 +81,55 @@ func void GFA_GetCriticalHitDefinitions(var C_Npc target, var C_Item weapon, var
     // The weapon can also be considered (e.g. weapon specific damage). Make use of 'weapon' for that
     // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
     if (Hlp_IsValidItem(weapon)) {
-        if (weapon.certainProperty > 10) {
-            // E.g. special case for weapon property
+        if (weapon.certainProperty > 10) { // E.g. special case for weapon property
+            // ...
         };
     }; */
 
-    // Here, simply increase the base damage for all critical hits (for all creatures)
+    // Here, simply increase the base damage for ALL creatures. Keep in mind: This could be individual, however.
     if (GOTHIC_BASE_VERSION == 1) {
-        // In Gothic 1 critical hits receive weapon damage x2 (this is the default)
+        // In Gothic 1, critical hits receive weapon damage x2 (this is the default)
         weakspot.bDmg = mulf(damage, castToIntf(2.0)); // This is a float
     } else {
-        // In Gothic 2 there are no critical hits for ranged combat. Here, x1.5 seems more reasonable, because in
-        // Gothic 2, the dexterity is added to weapon damage.
+        // In Gothic 2, there are no critical hits for ranged combat by default. Here, x1.5 seems more reasonable,
+        // because in Gothic 2, the dexterity is added to weapon damage.
         weakspot.bDmg = mulf(damage, castToIntf(1.5)); // This is a float
     };
 
-    // For examples for critical hit definitions, see this function in config\headshots_G1.d or config\headshots_G2.d
+    // For examples of critical hit definitions, see this function in config\headshots_G1.d or config\headshots_G2.d
+    // Keep in mind: This is just a suggestion. In fact, critical hits can be of any bone of the model and completely
+    // different for all creatures. So can the damage. Feel free to create more interesting weak spots.
     headshots(target, returnPtr);
 };
 
 
 /*
- * This function is called when a critical hit occurred; but only if free aiming is disabled. It allows to define a
- * critical hit chance even for the standard auto aiming.
- * Although not existing in the original Gothic 2, this is important here to balance the damage output between free aim
- * and auto aim, as free aim can be disabled in the options during a running game.
+ * This function is called every time (any kind of) NPC is hit by a projectile (arrows and bolts) to determine, whether
+ * a critical hit occurred; but only if free aiming is disabled, not active (game settings) or
+ * GFA_TRUE_HITCHANCE == false. For critical hits with free aiming see GFA_GetCriticalHitDefinitions() above.
  *
- * Note, that this is not necessary for Gothic 1, as it already has critical hits for auto aiming. Nevertheless, the
- * original critical hit calculation of Gothic 1 is disabled and replaced by this function. This way, the critical hit
- * chance can be manipulated if desired. The lines for Gothic 1 are the same as default by Gothic.
+ * This function here allows to define a critical hit chance even for the standard auto aiming. Although not existing in
+ * the original Gothic 2, this is important here to balance the damage output between free aim and auto aim, as free aim
+ * can be disabled in the game options during a running game.
+ *
+ * Note: This is not necessary for Gothic 1, as it already has critical hits for auto aiming by default. Nevertheless,
+ *       the original critical hit calculation of Gothic 1 is disabled and replaced by this function. This way, the
+ *       critical hit chance can be manipulated if desired. The lines of code below for Gothic 1 are the same as default
+ *       by Gothic.
  *
  * The return value is a percentage (chance level or hit chance), where 0 is no critical hit ever and and 100 always
  * causes a critical hit. Everything in between is dependent on a respective probability.
  * To disable this feature, simply have the function always return 0.
  *
+ * Note: This function is only called if free aiming is disabled, not active (game settings) or
+ *       GFA_TRUE_HITCHANCE == false. For critical hits with free aiming see GFA_GetCriticalHitDefinitions() above.
+ *
+ * Ideas: scale critical hit chance with player skill and distance, ...
  * Some examples are written below (section of Gothic 2) and commented out and serve as inspiration of what is possible.
  */
 func int GFA_GetCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int talent) {
     if (GOTHIC_BASE_VERSION == 1) {
-        // Gothic 1 already has a critical hit chance by default
+        // Gothic 1 already has a critical hit chance by default. Here, it is just preserved
         return talent;
 
     } else {
@@ -147,8 +172,8 @@ func int GFA_GetCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int 
         // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
         // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
         if (Hlp_IsValidItem(weapon)) {
-            if (weapon.certainProperty > 10) {
-                // E.g. special case for weapon property
+            if (weapon.certainProperty > 10) { // E.g. special case for weapon property
+                // ...
             };
         }; */
 
@@ -168,13 +193,12 @@ func int GFA_GetCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int 
  * This function is called when a critical hit occurred and can be used to print something to the screen, play a sound
  * jingle or, as done here by default, show a hit marker. Leave this function blank for no event.
  * This function is also called when free aiming is disabled, depending on the configuration in
- * GFA_GetCriticalHitAutoAim(), see below.
+ * GFA_GetCriticalHitAutoAim(), see above. It can be checked, whether free aiming is enabled with 'freeAimingIsEnabled'.
  *
- * Idea: The critical hits could be counted here to give an XP reward after 25 head shots
+ * Idea: The critical hits could be counted here to give an XP reward after 25 head shots, print to screen, ...
  * Examples are written below and commented out and serve as inspiration of what is possible.
  */
 func void GFA_StartCriticalHitEvent(var C_Npc target, var C_Item weapon, var int freeAimingIsEnabled) {
-
     /*
     // The event may depend on the target NPC (e.g. different sound for monsters). Make use of 'target' for that
     if (target.guild < GIL_SEPERATOR_HUM) {
@@ -185,8 +209,8 @@ func void GFA_StartCriticalHitEvent(var C_Npc target, var C_Item weapon, var int
     // The weapon can also be considered (e.g. weapon specific print). Make use of 'weapon' for that
     // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
     if (Hlp_IsValidItem(weapon)) {
-        if (weapon.certainProperty > 10) {
-            // E.g. special case for weapon property
+        if (weapon.certainProperty > 10) { // E.g. special case for weapon property
+            // ...
         };
     }; */
 

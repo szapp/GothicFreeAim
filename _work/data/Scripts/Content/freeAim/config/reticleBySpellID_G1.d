@@ -1,16 +1,17 @@
 /*
- * This file is supplementary to the configurations for reticles (see config\reticle.d). It contains exemplary reticles
- * for spells. It is outsourced to maintain compatibility across Gothic 1 and Gothic 2 that have different spells. For a
- * list of reticle textures, see config\reticleTextures.d.
+ * This file is optional and supplementary to the configurations for reticles (see config\reticle.d). It contains
+ * exemplary reticles for spells. It is outsourced to maintain compatibility across Gothic 1 and Gothic 2 that have
+ * different spells. For a list of reticle textures, see config\reticleTextures.d.
  */
 
 
 /*
- * This function defines reticles based on spellID for all Gothic 1 specific spells.
+ * This function defines reticles based on spellID for all Gothic 1 specific spells. This is just an example of how to
+ * display different reticles.
+ *
+ * Note: Only spells are listed that are eligible for free aiminig. All other spells will not have a reticle anyways.
  */
 func string reticleBySpellID(var int spellID) {
-    // This is just an example of how to display different reticles
-
     if (spellID == SPL_Thunderbolt)
     || (spellID == SPL_Icecube) {
         // Ice spells
@@ -39,7 +40,7 @@ func string reticleBySpellID(var int spellID) {
         // Evil spells
         return RETICLE_BOWL;
     } else {
-        // Set this as "default" texture here (if none of the conditions above is met)
+        // Set this as 'default' texture here (if none of the conditions above is met)
         return RETICLE_EDGES;
     };
 };

@@ -1,8 +1,9 @@
 /*
- * This file is part of the configuration for critical hits for bows and crossbows (see config\criticalHit.d). The
- * cricital hit zones can be defined for any bone of the character/monster models. To give an example, this file defines
- * head shots. For compatibility reasons between Gothic 1 and Gothic 2 these exemplary definitions are outsourced here
- * and split between Gothic 1 and Gothic 2 in different files, since there are different mosters in both games.
+ * This file is optional and supplementary to the configuration of critical hits for bows and crossbows (see
+ * config\criticalHit.d). The critical hit zones can be defined for any bone of the character/monster models. To give
+ * an example, this file defines head shots. For compatibility reasons between Gothic 1 and Gothic 2 these exemplary
+ * definitions are outsourced here and split between Gothic 1 and Gothic 2 in different files, since there are different
+ * monsters in both games.
  */
 
 
@@ -20,7 +21,7 @@ func void headshots(var C_Npc target, var int returnPtr) {
     // Here, set the head to the default weak spot
     weakspot.node = "Bip01 Head"; // Upper/lower case is not important, but spelling and spaces are
 
-    // Here, there are preliminary definitions for nearly all Gothic 2 creatures for headshots
+    // Here, there are preliminary definitions for nearly all Gothic 2 creatures for head shots
     if (target.guild < GIL_SEPERATOR_HUM)
     || ((target.guild > GIL_SEPERATOR_ORC) && (target.guild < GIL_UNDEADORC))
     || ((target.guild == GIL_UNDEADORC) && (target.aivar[AIV_MM_REAL_ID] != ID_UNDEADORCWARRIOR)) // Has no head visual!
@@ -32,20 +33,20 @@ func void headshots(var C_Npc target, var int returnPtr) {
         weakspot.dimY = -1; // for head node! All other creatures need actual hard coded bounding box dimensions
 
     } else if (target.guild == GIL_BLOODFLY) // Bloodflys and meatbugs don't have a head node
-    || (target.guild == GIL_MEATBUG)
-    || (target.guild == GIL_STONEGUARDIAN) // Stoneguardians have too large heads (head node is not centered)
-    || (target.guild == GIL_SUMMONEDGUARDIAN)
-    || (target.guild == GIL_STONEGOLEM) // Same for golems
-    || (target.guild == GIL_FIREGOLEM)
-    || (target.guild == GIL_ICEGOLEM)
-    || (target.guild == GIL_SUMMONED_GOLEM)
-    || (target.guild == GIL_SWAMPGOLEM)
-    || (target.guild == GIL_SKELETON) // Skeletons are only bones, there is no critical hit
-    || (target.guild == GIL_SUMMONED_SKELETON)
-    || (target.guild == GIL_SKELETON_MAGE)
-    || (target.guild == GIL_GOBBO_SKELETON)
-    || (target.guild == GIL_SUMMONED_GOBBO_SKELETON)
-    || (target.guild == GIL_SHADOWBEAST_SKELETON) {
+           || (target.guild == GIL_MEATBUG)
+           || (target.guild == GIL_STONEGUARDIAN) // Stoneguardians have too large heads (head node is not centered)
+           || (target.guild == GIL_SUMMONEDGUARDIAN)
+           || (target.guild == GIL_STONEGOLEM) // Same for golems
+           || (target.guild == GIL_FIREGOLEM)
+           || (target.guild == GIL_ICEGOLEM)
+           || (target.guild == GIL_SUMMONED_GOLEM)
+           || (target.guild == GIL_SWAMPGOLEM)
+           || (target.guild == GIL_SKELETON) // Skeletons are only bones, there is no critical hit (design choice)
+           || (target.guild == GIL_SUMMONED_SKELETON)
+           || (target.guild == GIL_SKELETON_MAGE)
+           || (target.guild == GIL_GOBBO_SKELETON)
+           || (target.guild == GIL_SUMMONED_GOBBO_SKELETON)
+           || (target.guild == GIL_SHADOWBEAST_SKELETON) {
         // Disable critical hits this way
         weakspot.node = "";
         weakspot.debugInfo = ConcatStrings(instName, " does not have a weak spot by design");
@@ -90,8 +91,7 @@ func void headshots(var C_Npc target, var int returnPtr) {
         weakspot.dimX = 40;
         weakspot.dimY = 45;
     } else if (target.guild == GIL_SWAMPSHARK) {
-        // Harder to hit
-        weakspot.node = "ZS_MOUTH";
+        weakspot.node = "ZS_MOUTH"; // Harder to hit
         weakspot.dimX = 30;
         weakspot.dimY = 30;
     } else if (target.guild == GIL_ALLIGATOR) {
