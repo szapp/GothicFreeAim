@@ -284,6 +284,18 @@ above).
         - Whether free aiming is enabled for spells
 
 
+Project Architecture
+--------------------
+
+This diagram shows how all the functions of GFA are connected. When not otherwise specified, arrows denote one function
+calling another. The left column represents the engine, the middle shows the internal functions of GFA and on the right
+are the configuration functions. To understand the architecture, it is recommended to read from right to left (config ->
+wrapper functions -> unterlying mechanics -> engine hooks). Different features are color coded (see legend). This is a
+vector graphic: Open in your web browser and zoom in to read everything.
+
+![Project architecture](https://rawgit.com/szapp/GothicFreeAim/master/architecture.svg)
+
+
 Unfinished Features
 -------------------
 
