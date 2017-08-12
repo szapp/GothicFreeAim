@@ -26,7 +26,7 @@
  * Mouse handling for manually turning the player model by mouse input. This function hooks an engine function that
  * records physical(!) mouse movement and is called every frame.
  *
- * Usually when holding the action button down, rotating the player model is prevented. To allow free aiming the has to
+ * Usually when holding the action button down, rotating the player model is prevented. To allow free aiming that has to
  * be disabled. This can be (and was at some point) done by just skipping the condition by which turning is prevented.
  * However, it turned out to be very inaccurate and the movement was too jaggy for aiming. Instead, this function here
  * reads the (unaltered) change in mouse movement along the x-axis and performs the rotation manually the same way the
@@ -46,7 +46,7 @@ func void GFA_TurnPlayerModel() {
         return;
     };
 
-    // The _Cursor class from LeGo is used here. It is not necessarily a cursor: it holds mouse movement
+    // The _Cursor class from LeGo is used here. It is not necessarily a cursor: it holds mouse properties
     var _Cursor mouse; mouse = _^(Cursor_Ptr);
 
     // Add recoil to mouse movement
@@ -60,11 +60,9 @@ func void GFA_TurnPlayerModel() {
 
         // Manipulate vertical mouse movement: Add negative (upwards) movement (multiplied by sensitivity)
         mouse.relY = -roundf(divf(mkf(GFA_Recoil), MEM_ReadInt(Cursor_sY)));
-
-        // Reset recoil ASAP, since this function is called in fast succession
         GFA_Recoil = 0;
 
-        // Manipulate horziontal mouse movement slightly: Add random positive or negative (sideways) movement
+        // Manipulate horizontal mouse movement slightly: Add random positive or negative (sideways) movement
         var int manipulateX; manipulateX = fracf(r_MinMax(-GFA_HORZ_RECOIL*10, GFA_HORZ_RECOIL*10), 10);
         mouse.relX = roundf(divf(manipulateX, MEM_ReadInt(Cursor_sX)));
     };
@@ -79,7 +77,7 @@ func void GFA_TurnPlayerModel() {
         };
     };
 
-    // Retrieve vertical mouse movement (along x-axis) and apply mouse sensitivity
+    // Retrieve horizontal mouse movement (along x-axis) and apply mouse sensitivity
     var int deltaX; deltaX = mulf(mkf(mouse.relX), MEM_ReadInt(Cursor_sX));
     if (deltaX == FLOATNULL) || (Cursor_NoEngine) {
         // Only rotate if there was movement along x position and if mouse movement is not disabled
@@ -91,7 +89,7 @@ func void GFA_TurnPlayerModel() {
 
     // Gothic 1 has a maximum turn rate
     if (GOTHIC_BASE_VERSION == 1) {
-        // Also add another mulitplier for Gothic 1
+        // Also add another multiplier for Gothic 1 (mouse is faster)
         deltaX = mulf(deltaX, castToIntf(0.5));
 
         if (gf(deltaX, castToIntf(GFA_MAX_TURN_RATE_G1))) {
@@ -127,7 +125,6 @@ func void GFA_DisableAutoTurning(var int on) {
         return; // No change necessary
     };
 
-    // MEM_Info("Updating internal free aim settings for auto turning"); // Happens too often
     if (GOTHIC_BASE_VERSION == 2) {
         if (on) {
             // Jump from 0x737D75 to 0x737E32: 7568946-7568757 = 189-5 = 184 // Length of instruction: 5
@@ -142,7 +139,7 @@ func void GFA_DisableAutoTurning(var int on) {
             MEM_WriteByte(oCNpc__TurnToEnemy_camCheck+5, /*00*/ 0);
         };
     } else {
-        // In Gothic 1 there is only auto turning during magic combat. But it is not done by oCNpc::TurnToEnemy
+        // In Gothic 1 there is only auto turning during spell combat. But it is not done by oCNpc::TurnToEnemy()
         if (on) {
             // Skip focus vob check to always jump beyond auto turning
             MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget, /*33*/ 51); // Clear register: xor eax, eax
@@ -151,7 +148,7 @@ func void GFA_DisableAutoTurning(var int on) {
             MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+3, ASMINT_OP_nop);
             MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+4, ASMINT_OP_nop);
         } else {
-            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget, /*E8*/ 232); // Revert to default: call oCNpc::GetFocusVob
+            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget, /*E8*/ 232); // Reset to default: call oCNpc::GetFocusVob()
             MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+1, /*8B*/ 139);
             MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+2, /*2C*/ 44);
             MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+3, /*22*/ 34);
@@ -167,7 +164,7 @@ func void GFA_DisableAutoTurning(var int on) {
  * The support for the Gothic 2 controls is accomplished by emulating the Gothic 1 controls with different sets of
  * aiming and shooting keys. To do this, the condition to differentiate between the control schemes is skipped and the
  * keys are overwritten (all on the level of opcode).
- * This function is called from GFA_IsActive() nearly every frame.
+ * This function is called from GFA_UpdateStatus() if the menu settings change.
  */
 func void GFA_UpdateSettingsG2Ctrl(var int on) {
     if (GOTHIC_BASE_VERSION != 2) || (!GFA_RANGED) {
@@ -217,7 +214,7 @@ func void GFA_UpdateSettingsG2Ctrl(var int on) {
  * Overwrite/reset camera modes for Gothic 1. Gothic 1 does not use the different camera modes (CCamSys_Def) defined.
  * Instead of CamModRanged and CamModMagic, mostly CamModNormal and CamModMelee are used. A free aiming specific camera
  * is thus not possible. To solve this issue, the camera modes are overwritten and reset whenever needed.
- * This function is often called from GFA_IsActive().
+ * This function is called from GFA_IsActive() and GFA_UpdateStatus().
  */
 func void GFA_SetCameraModes(var int on) {
     if (GOTHIC_BASE_VERSION != 1) {
@@ -251,21 +248,16 @@ func void GFA_SetCameraModes(var int on) {
 
 /*
  * Prevent focus collection while jumping and falling during free aiming fight modes. This function hooks
- * oCAIHuman__PC_ActionMove at an offset at which the fight modes are not reached. This happens during certain body
+ * oCAIHuman::PC_ActionMove() at an offset at which the fight modes are not reached. This happens during certain body
  * states. At that offset, the focus collection remains normal, which will counteract the idea of GFA_NO_AIM_NO_FOCUS.
  * This only happens for Gothic 2.
  */
 func void GFA_PreventFocusCollectionBodystates() {
-    // Just to be sure not to impact performance too much otherwise, all if-conditions are separate
     if (!GFA_ACTIVE) {
         return;
     };
 
     var oCNpc her; her = Hlp_GetNpc(hero);
-    if (her.fmode < FMODE_FAR) {
-        return;
-    };
-
     if ((her.fmode == FMODE_FAR) || (her.fmode == FMODE_FAR+1)) && (GFA_RANGED) // Bow or crossbow
     || ((her.fmode == FMODE_MAGIC) && (GFA_SPELLS)) { // Spell
         // Remove focus and target
@@ -278,7 +270,7 @@ func void GFA_PreventFocusCollectionBodystates() {
  * Disable damage animation while aiming. This function hooks the function that deals damage to NPCs and prevents the
  * damage animation for the player while aiming, as it looks questionable if the reticle stays centered but the player
  * model is crooked.
- * Taken from http://forum.worldofplayers.de/forum/threads/1474431?p=25057480#post25057480
+ * Modified (to allow fly damage) from http://forum.worldofplayers.de/forum/threads/1474431?p=25057480
  */
 func void GFA_DisableDamageAnimation() {
     var C_Npc victim; victim = _^(ECX);
@@ -291,7 +283,7 @@ func void GFA_DisableDamageAnimation() {
                                                              MEM_ReadInt(/*esp+1FCh+4h*/ ESP+512));
     var int dmgType; dmgType = MEM_ReadInt(dmgDescriptor+oSDamageDescriptor_damageType_offset);
 
-    // Preserve animation for fly damage and for fire damage (Gothic 1 only, because of fire animation, removed in G2)
+    // Preserve animation for fly damage (and for fire damage. Gothic 1 only, because of fire animation, removed in G2)
     if (dmgType & DAM_BARRIER) || (dmgType & DAM_FLY)
     || ((GOTHIC_BASE_VERSION == 1) && (dmgType & DAM_FIRE)) {
         return;

@@ -23,7 +23,7 @@
 
 
 /*
- * Hide reticle. This function is called from various functions to ensure that the reticle disappears.
+ * Hide the reticle. This function is called from various functions to ensure that the reticle disappears.
  */
 func void GFA_RemoveReticle() {
     if (Hlp_IsValidHandle(GFA_ReticleHndl)) {
@@ -33,7 +33,7 @@ func void GFA_RemoveReticle() {
 
 
 /*
- * Draw reticle. This function is called from various functions to draw or update the reticle. During aiming this
+ * Draw the reticle. This function is called from various functions to draw or update the reticle. During aiming this
  * function is in fact called every frame to update the reticle color, texture and size smoothly. The function
  * parameter is a pointer to the reticle instance.
  */
@@ -44,10 +44,10 @@ func void GFA_InsertReticle(var int reticlePtr) {
 
     // Only draw the reticle if the texture is specified. An empty texture removes the reticle
     if (!Hlp_StrCmp(reticle.texture, "")) {
-        // Scale the reticle size percentage is scaled with the minimum and maximum pixel sizes
+        // The reticle size percentage is scaled with the minimum and maximum pixel dimensions
         size = (((GFA_RETICLE_MAX_SIZE-GFA_RETICLE_MIN_SIZE)*(reticle.size))/100)+GFA_RETICLE_MIN_SIZE;
 
-        // The ranges are corrected should the percentage lie out of [0, 100]
+        // Corrected the ranges in stay within [0, 100]
         if (size > GFA_RETICLE_MAX_SIZE) {
             size = GFA_RETICLE_MAX_SIZE;
         } else if (size < GFA_RETICLE_MIN_SIZE) {
@@ -64,7 +64,7 @@ func void GFA_InsertReticle(var int reticlePtr) {
             View_SetColor(GFA_ReticleHndl, reticle.color);
             View_Open(GFA_ReticleHndl);
         } else {
-            // If the reticle already exist adjust it to the new texture, size and color
+            // If the reticle already exists adjust it to the new texture, size and color
             if (!Hlp_StrCmp(View_GetTexture(GFA_ReticleHndl), reticle.texture)) {
                 // Update its texture
                 View_SetTexture(GFA_ReticleHndl, reticle.texture);

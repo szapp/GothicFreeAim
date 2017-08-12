@@ -52,7 +52,7 @@ func string GFA_DebugWeakspot(var string command) {
 
 /*
  * Console function to enable/disable trace ray debug output. This function is registered as console command.
- * When enabled, the trace ray is continuously drawn, as well as the intersection of it.
+ * When enabled, the trace ray is continuously drawn, as well as the nearest intersection with it.
  */
 func string GFA_DebugTraceRay(var string command) {
     GFA_DEBUG_TRACERAY = !GFA_DEBUG_TRACERAY;
@@ -65,7 +65,7 @@ func string GFA_DebugTraceRay(var string command) {
 
 
 /*
- * Console function to show GFA shooting statistics. This function is registered as console command.
+ * Console function to show free aiming shooting statistics. This function is registered as console command.
  * When entered in the console, the current shooting statistics are displayed as the console output.
  */
 func string GFA_GetShootingStats(var string command) {

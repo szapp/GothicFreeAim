@@ -23,9 +23,9 @@
 
 
 /*
- * Update internal settings when turning free aim on/off in the options menu. Settings include focus ranges/angles,
- * camera angles along with resetting some other settings. The constant GFA_ACTIVE will be updated accordingly.
- * This function is called from GFA_IsActive() nearly every frame.
+ * Update internal settings when turning free aim on/off in the options menu. Settings include focus ranges/angles and
+ * camera angles. The constant GFA_ACTIVE will be updated accordingly. This function is called from GFA_UpdateStatus()
+ * if the menu is closed.
  */
 func void GFA_UpdateSettings(var int on) {
     if ((GFA_ACTIVE > 0) == on) {
@@ -36,7 +36,6 @@ func void GFA_UpdateSettings(var int on) {
 
     if (on) {
         // Turn free aiming on
-
         if (GFA_RANGED) {
             // Set stricter focus collection
             Focus_Ranged.npc_azi = 15.0;
@@ -72,14 +71,13 @@ func void GFA_UpdateSettings(var int on) {
  * The constant GFA_ACTIVE is modified in the subsequent function GFA_UpdateSettings().
  */
 func void GFA_UpdateStatus() {
-    // Check if GFA and mouse controls are enabled
+    // Check if free aiming and mouse controls are enabled
     if (!STR_ToInt(MEM_GetGothOpt("GFA", "freeAimingEnabled"))) || (!MEM_ReadInt(zCInput_Win32__s_mouseEnabled)) {
         // Disable if previously enabled
         GFA_UpdateSettings(0);
         GFA_DisableAutoTurning(0);
         GFA_SetCameraModes(0);
         GFA_UpdateSettingsG2Ctrl(0);
-
     } else {
         // Enable if previously disabled
         GFA_UpdateSettings(1);
@@ -99,7 +97,7 @@ func void GFA_UpdateStatus() {
  *  5 if currently aiming in ranged fight mode (FMODE_FAR)
  *  7 if currently aiming in magic fight mode with free aiming supported spell (FMODE_MAGIC)
  *
- * GFA_ACTIVE is prior set to 0 in GFA_UpdateStatus() if free aiming is disabled.
+ * GFA_ACTIVE is prior set to 0 in GFA_UpdateStatus() if free aiming is disabled in the menu.
  *
  * Different checks are performed in performance-favoring order (exiting the function as early as possible) to set the
  * constant, which is subsequently used in a lot of functions to determine the state of free aiming.
@@ -130,16 +128,15 @@ func void GFA_IsActive() {
     var String keyAiming; keyAiming = "keyAction"; // Gothic 1 controls
     if (GOTHIC_BASE_VERSION == 2) {
         if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
-            // Gothic 2 controls
-            keyAiming = "keyParade";
+            keyAiming = "keyParade"; // Gothic 2 controls
         };
     };
     var int keyStateAiming1; keyStateAiming1 = MEM_KeyState(MEM_GetKey(keyAiming));
     var int keyStateAiming2; keyStateAiming2 = MEM_KeyState(MEM_GetSecondaryKey(keyAiming));
-    var int keyStateAiming3; // Gothic 1 has fixed bindings for the mouse buttons: LMB is always aiming
+    var int keyStateAiming3; // Gothic 1 has additional fixed bindings for the mouse buttons: LMB is always aiming
 
     if (GOTHIC_BASE_VERSION == 1) {
-        // The _Cursor class from LeGo is used here. It is not necessarily a cursor: it holds mouse movement
+        // The _Cursor class from LeGo is used here. It is not necessarily a cursor: it holds mouse properties
         var _Cursor mouse; mouse = _^(Cursor_Ptr);
         Cursor_KeyState(_@(keyStateAiming3), mouse.keyLeft);
     };

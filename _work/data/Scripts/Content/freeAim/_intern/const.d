@@ -1,5 +1,5 @@
 /*
- * Constants
+ * Internal constants of GFA
  *
  * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
@@ -39,10 +39,10 @@ var   int    GFA_BowDrawOnset;                              // Time onset of dra
 const int    GFA_RETICLE_MIN_SIZE   = 32;                   // Smallest reticle size in pixels
 const int    GFA_RETICLE_MAX_SIZE   = 64;                   // Biggest reticle size in pixels
 var   int    GFA_ReticleHndl;                               // Handle of the reticle
-var   int    GFA_AimVobHasFX;                               // Performance: check whether FX needs to be removed
+var   int    GFA_AimVobHasFX;                               // For performance: check whether FX needs to be removed
 
-const string GFA_TRAIL_FX           = "GFA_TRAIL_VFX";      // Trailstrip FX. Should not be changed
-const string GFA_TRAIL_FX_SIMPLE    = "GFA_TRAIL_INST_VFX"; // Simplified trailstrip FX for use in Gothic 1
+const string GFA_TRAIL_FX           = "GFA_TRAIL_VFX";      // Trail strip FX. Should not be changed
+const string GFA_TRAIL_FX_SIMPLE    = "GFA_TRAIL_INST_VFX"; // Simplified trail strip FX for use in Gothic 1
 const string GFA_BREAK_FX           = "GFA_DESTROY_VFX";    // FX of projectile breaking on impact with world
 const string GFA_CAMERA             = "CamModGFA";          // CCamSys_Def script instance
 
@@ -71,8 +71,8 @@ const int    FLOAT1C                = 1120403456;           // 100 as float
 const int    FLOAT3C                = 1133903872;           // 300 as float
 const int    FLOAT1K                = 1148846080;           // 1000 as float
 
-var   int    GFA_DebugWSBBox[6];                            // Weakspot bounding box for debug visualization
+var   int    GFA_DebugWSBBox[6];                            // Weak spot bounding box for debug visualization
 var   int    GFA_DebugWSTrj[6];                             // Projectile trajectory for debug visualization
 var   int    GFA_DebugTRBBox[6];                            // Trace ray intersection for debug visualization
 var   int    GFA_DebugTRTrj[6];                             // Trace ray trajectory for debug visualization
-var   int    GFA_DebugTRPrevVob;                            // Trace ray detected vob bbox pointer for debugging
+var   int    GFA_DebugTRPrevVob;                            // Trace ray detected vob bounding box pointer for debugging

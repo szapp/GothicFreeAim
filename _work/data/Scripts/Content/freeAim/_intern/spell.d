@@ -1,5 +1,5 @@
 /*
- * Magic combat mechanics
+ * Free aiming mechanics for spell combat
  *
  * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
@@ -23,8 +23,8 @@
 
 
 /*
- * Set the spell FX shooting direction. This function hooks oCSpell::Setup to overwrite the target vob with the aim vob
- * that is placed in front of the camera at the nearest intersection with the world or an object.
+ * Set the spell FX shooting direction. This function hooks oCSpell::Setup() to overwrite the target vob with the aim
+ * vob that is placed in front of the camera at the nearest intersection with the world or an object.
  */
 func void GFA_SetupSpell() {
     var int spellOC; spellOC = MEMINT_SwitchG1G2(ESI, EBP);
@@ -33,7 +33,7 @@ func void GFA_SetupSpell() {
         return;
     };
 
-    // Only if caster is player and if FA is enabled
+    // Only if caster is player and if free aiming is enabled
     var C_Npc caster; caster = _^(casterPtr);
     if (!GFA_ACTIVE) || (!Npc_IsPlayer(caster)) {
         return;
@@ -45,8 +45,7 @@ func void GFA_SetupSpell() {
         return;
     };
 
-    // Determine the focus type. If focusType is 0, then no focus will be collect, but only an intersection with the
-    // world
+    // Determine focus type. If focusType == 0, then no focus will be collect, but only an intersection with the world
     var int focusType;
     if (!spell.targetCollectAlgo) {
         focusType = 0;
@@ -67,8 +66,8 @@ func void GFA_SetupSpell() {
 
 
 /*
- * Manage reticle style and focus collection for magic combat during aiming. This function hooks oCAIHuman::MagicMode(),
- * but exists right away if the active spell does not support free aiming or if the player is not currently aiming.
+ * Manage reticle style and focus collection for spell combat during aiming. This function hooks oCAIHuman::MagicMode(),
+ * but exits right away if the active spell does not support free aiming or if the player is not currently aiming.
  */
 func void GFA_SpellAiming() {
     // Only show reticle for spells that support free aiming and during aiming (Gothic 1 controls)
@@ -77,19 +76,18 @@ func void GFA_SpellAiming() {
         // Remove the visual FX of the aim vob (if present)
         GFA_AimVobDetachFX();
         if (GFA_NO_AIM_NO_FOCUS) {
-            // Remove focus and target when not aming
+            // Remove focus and target when not aiming
             GFA_SetFocusAndTarget(0);
         };
         return;
     };
 
-    // Retrieve target NPC and the distance to it from the camera(!)
     var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
     var int distance;
     var int target;
 
     if (spell.targetCollectRange > 0) {
-        // Determine the focus type. If focusType is 0, then no focus will be collected, but only an intersection with
+        // Determine the focus type. If focusType == 0, then no focus will be collected, but only an intersection with
         // the world; same for TARGET_COLLECT_NONE. The latter is good for spells like Blink, that are not concerned
         // with targeting but only with aiming distance
         var int focusType;
@@ -99,7 +97,7 @@ func void GFA_SpellAiming() {
             focusType = spell.targetCollectType;
         };
 
-        // Shoot aim trace ray, to retrieve the distance to an intersection and a possible target
+        // Shoot aim ray, to retrieve the distance to an intersection and a possible target
         GFA_AimRay(spell.targetCollectRange, focusType, _@(target), 0, _@(distance), 0);
         distance = roundf(divf(mulf(distance, FLOAT1C), mkf(spell.targetCollectRange))); // Distance scaled to [0, 100]
 

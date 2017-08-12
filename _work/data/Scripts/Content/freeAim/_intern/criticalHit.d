@@ -1,5 +1,5 @@
 /*
- * Critical hits for projectiles
+ * Critical hit detection for ranged combat
  *
  * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
@@ -24,7 +24,7 @@
 
 /*
  * Wrapper function for the config function GFA_StartCriticalHitEvent(). It is called from GFA_CH_DetectCriticalHit().
- * This function supplies the readied weapon.
+ * This function supplies the readied weapon and checks whether free aiming is active.
  */
 func void GFA_CH_StartCriticalHitEvent_(var C_Npc target) {
     // Get readied/equipped ranged weapon
@@ -40,7 +40,7 @@ func void GFA_CH_StartCriticalHitEvent_(var C_Npc target) {
 /*
  * Wrapper function for the config function GFA_GetCriticalHitDefinitions(). It is called from
  * GFA_CH_DetectCriticalHit().
- * This function is necessary for error handling and to supply the readied weapon.
+ * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
 func void GFA_CH_GetCriticalHitDefinitions_(var C_Npc target, var int damage, var int returnPtr) {
     // Get readied/equipped ranged weapon
@@ -92,7 +92,7 @@ func int GFA_CH_GetCriticalHitAutoAim_(var C_Npc target) {
  * detected the damage is adjusted and an event is called: GFA_StartCriticalHitEvent().
  */
 func void GFA_CH_DetectCriticalHit() {
-    // First check if shooter is player and if FA is enabled
+    // First check if shooter is player
     var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EBP);
     var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
     if (!Npc_IsPlayer(shooter)) {
@@ -119,12 +119,9 @@ func void GFA_CH_DetectCriticalHit() {
     var string debugInfo; debugInfo = ""; // Internal debugging info string to display in zSpy (see GFA_DEBUG_PRINT)
 
     if (Hlp_StrCmp(weakspot.node, "")) {
-        // No critical node defined
         criticalHit = 0;
         debugInfo = "No weak spot defined in config";
-
     } else if (!GFA_ACTIVE) || (!GFA_RANGED) {
-
         // Critical hits cause an advantage when playing with free aiming enabled compared to auto aim. This is, because
         // there are no critical hits for ranged combat in Gothic 2. Here, they are introduced for balancing reasons.
         // Note: Gothic 1 already has critical hits for auto aiming. This is replaced here.
@@ -132,9 +129,8 @@ func void GFA_CH_DetectCriticalHit() {
         criticalHit = (r_MinMax(1, 100) <= critChance); // Allow critChance=0 to disable this feature
 
         debugInfo = "Auto aiming: critical hit by probability (critical hit chance)";
-
     } else {
-        // When free aiming is enabled the critical hit is determined by the actual node/bone, the projectile hits
+        // When free aiming is enabled the critical hit is determined by the actual node/bone that the projectile hits
 
         // Get model from target NPC
         const int call = 0;
@@ -164,7 +160,6 @@ func void GFA_CH_DetectCriticalHit() {
             // If the model node has a dedicated visual and hence its own bounding box, the dimensions may be retrieved
             // automatically, by specifying dimensions of -1. (Only works for heads of humanoids.)
             if (MEM_ReadInt(node+zCModelNodeInst_visual_offset)) {
-
                 // Although zCModelNodeInst has a zTBBox3D class variable, it is empty the first time and needs to be
                 // retrieved by calling this engine function:
                 // No recyclable call possible, because the return value is a structure (needs to be freed manually).
@@ -177,7 +172,6 @@ func void GFA_CH_DetectCriticalHit() {
                 MEM_CopyBytes(nodeBBoxPtr, _@(GFA_DebugWSBBox), sizeof_zTBBox3D);
                 MEM_Free(nodeBBoxPtr);
             } else {
-
                 // This is an error (instead of a warning), because it is a reckless design flaw if defining a weak spot
                 // with dimensions -1 for a model that does not have a designated node visual (this only works with the
                 // head node of humanoids). This error should thus only appear during development. If it does in the
@@ -188,14 +182,13 @@ func void GFA_CH_DetectCriticalHit() {
             };
 
         } else if (weakspot.dimX < 0) || (weakspot.dimY < 0) {
-            // Bounding box dimensions must be positive
             MEM_Error("GFA_CH_DetectCriticalHit: Bounding box dimensions invalid!");
             MEM_Free(weakspotPtr);
             return;
 
         } else {
             // Create bounding box by dimensions
-            var int dimX; dimX = mkf(weakspot.dimX/2); // Do not overwrite weakspot properties, needed for zSpy output
+            var int dimX; dimX = mkf(weakspot.dimX/2); // Do not overwrite weak spot properties, needed for zSpy output
             var int dimY; dimY = mkf(weakspot.dimY/2);
 
             // Although zCModelNodeInst has a position class variable, it is empty the first time and needs to be
@@ -221,7 +214,7 @@ func void GFA_CH_DetectCriticalHit() {
         };
 
         // The internal engine functions are not accurate enough for detecting a shot through a bounding box. Instead
-        // check here if "any" point along the line of projectile direction lies inside the bounding box of the node
+        // check here if 'any' point along the line of the projectile direction lies inside the bounding box of the node
         var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
 
         // Direction of collision line along the right-vector of the projectile (projectile flies sideways)
@@ -235,10 +228,9 @@ func void GFA_CH_DetectCriticalHit() {
         GFA_DebugWSTrj[1] = addf(projectile._zCVob_trafoObjToWorld[ 7], mulf(dir[1], FLOAT3C));
         GFA_DebugWSTrj[2] = addf(projectile._zCVob_trafoObjToWorld[11], mulf(dir[2], FLOAT3C));
 
-
         // Loop to walk along the trajectory of the projectile
         criticalHit = 0;
-        var int i; i=0; // Loop increment
+        var int i; i=0; // Loop index
         var int iter; iter = 700/5; // 7m: Max distance from model bounding box edge to node bounding box (e.g. troll)
         while(i <= iter); i += 1; // Walk along the line in steps of 5 cm
             // Next point along the collision line
@@ -282,7 +274,7 @@ func void GFA_CH_DetectCriticalHit() {
         SB_Clear();
 
         SB("   damage on target:  ");
-        // Calculate damage by formular (incl. protection of target, etc.)
+        // Calculate damage by formula (incl. protection of target, etc.)
         if (GOTHIC_BASE_VERSION == 1) {
             SB("(");
             SBi(shotDamage);
@@ -356,6 +348,6 @@ func void GFA_CH_DisableDefaultCriticalHits() {
     var int dmgDescriptor; dmgDescriptor = MEM_ReadInt(ESP+548); // esp+220h+4h // oCNpc::oSDamageDescriptor*
     var C_Npc shooter; shooter = _^(MEM_ReadInt(dmgDescriptor+oSDamageDescriptor_origin_offset)); // oCNpc*
     if (Npc_IsPlayer(shooter)) && (Npc_IsInFightMode(shooter, FMODE_FAR)) {
-        EBP = 0;
+        EBP = 0; // Temporarily set talent value zero
     };
 };

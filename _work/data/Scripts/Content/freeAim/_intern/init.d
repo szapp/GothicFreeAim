@@ -1,5 +1,5 @@
 /*
- * Initialization
+ * Initialization of GFA
  *
  * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
@@ -33,19 +33,19 @@ func void GFA_InitFeatureFreeAiming() {
     MEM_Info("Initializing free aiming mouse controls.");
     HookEngineF(mouseUpdate, 5, GFA_TurnPlayerModel); // Rotate the player model by mouse input
     if (GOTHIC_BASE_VERSION == 1) {
-        MemoryProtectionOverride(oCAIHuman__MagicMode_turnToTarget, 5); // G1: Prevent auto turning in magic combat
+        MemoryProtectionOverride(oCAIHuman__MagicMode_turnToTarget, 5); // G1: Prevent auto turning in spell combat
     } else {
         MemoryProtectionOverride(oCNpc__TurnToEnemy_camCheck, 6); // G2: Prevent auto turning (target lock)
     };
     HookEngineF(oCNpc__OnDamage_Anim_getModel, 9, GFA_DisableDamageAnimation); // Disable damage animation while aiming
 
-    // Free aiming for ranged combat aiming and shooting
+    // Free aiming for ranged combat (aiming and shooting)
     if (GFA_RANGED) {
         MEM_Info("Initializing free aiming for ranged combat.");
         HookEngineF(oCAIHuman__BowMode_notAiming, 6, GFA_RangedIdle); // Fix focus collection while not aiming
         HookEngineF(oCAIHuman__BowMode_interpolateAim, 5, GFA_RangedAiming); // Interpolate aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, GFA_SetupProjectile); // Setup projectile trajectory (shooting)
-        HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_ResetProjectileGravity); // Reset gravity on coll
+        HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_ResetProjectileGravity); // Reset gravity on impact
         HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_OverwriteHitChance); // Manipulate hit chance
         // HookEngineF(oCAIHuman__BowMode_postInterpolate, 6, GFA_RangedStrafing); // Strafe when aiming. NOT WORKING
 
@@ -109,7 +109,7 @@ func void GFA_InitFeatureCustomCollisions() {
     HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_CC_ProjectileCollisionWithNpc); // Hit reg/coll on NPCs
     if (GOTHIC_BASE_VERSION == 1) {
         MemoryProtectionOverride(oCAIArrow__ReportCollisionToAI_destroyPrj, 7); // Disable destroying of projectiles
-        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj, ASMINT_OP_nop); // Remove fixed destruction
+        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj, ASMINT_OP_nop); // Disable fixed destruction
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+1, ASMINT_OP_nop);
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+2, ASMINT_OP_nop);
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+3, ASMINT_OP_nop);
@@ -212,7 +212,7 @@ func void GFA_InitFixDroppedProjectileAI() {
 /*
  * Initializations to perform only once every session. This function overwrites memory protection at certain addresses,
  * and registers hooks and console commands, all depending on the selected features (see config\settings.d). The
- * function is call from GFA_Init().
+ * function is called from GFA_Init().
  */
 func int GFA_InitOnce() {
     // Make sure LeGo is initialized with the required flags
@@ -318,8 +318,8 @@ func void GFA_InitAlways() {
 
 
 /*
- * Initialize free aim framework. This function is called in Init_Global(). It includes registering hooks, console
- * commands and the retrieval of settings from the INI-file and other initializations.
+ * Initialize GFA framework. This function is called in Init_Global(). It includes registering hooks, console commands
+ * and the retrieval of settings from the INI-file and other initializations.
  */
 func void GFA_Init() {
     // Ikarus and LeGo need to be initialized first

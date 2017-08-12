@@ -23,11 +23,11 @@
 
 
 /*
- * Constants missing/renamed in Gothic 1
+ * Missing/rename constants in Gothic 1
  */
 const int   FIGHT_DIST_CANCEL        = HAI_DIST_ABORT_RANGED; // Same, just different name in Gothic 1
 const float RANGED_CHANCE_MINDIST    = 1500;                  // For now, taken from Gothic 2, may need to be adjusted:
-const float RANGED_CHANCE_MAXDIST    = 4500;                  // How is the hit chance calculated in Gothic 1?
+const float RANGED_CHANCE_MAXDIST    = 4500;                  // How exactly is the hit chance calculated in Gothic 1?
 const int   ITEM_NFOCUS              = 1<<23;                 // Same as in Gothic 2 (just not defined in the scripts)
 
 

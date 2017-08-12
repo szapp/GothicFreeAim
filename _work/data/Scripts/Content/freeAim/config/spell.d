@@ -1,5 +1,5 @@
 /*
- * This file contains all configurations for free aiming in magic combat (spells). See config\reticle.d for reticle
+ * This file contains all configurations for free aiming in spell combat (spells). See config\reticle.d for reticle
  * configurations.
  *
  * Requires the feature GFA_SPELLS (see config\settings.d).

@@ -25,7 +25,7 @@
 /*
  * Detach the visual FX from the aim vob. This function should go hand in hand with attaching a visual FX: If you attach
  * an FX, you should make sure to remove the FX, when it is no longer needed. Some precautions are already taken from
- * the side of GFA and this function is called on every weapon change, specifically in GFA_ResetOnWeaponSwitch().
+ * the side of GFA. This function is called on every weapon change, specifically in GFA_ResetOnWeaponSwitch().
  */
 func void GFA_AimVobDetachFX() {
     if (!GFA_AimVobHasFX) {
@@ -117,7 +117,7 @@ func void GFA_AimVobManipulatePos(var int posPtr) {
         var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
 
         // Manipulate the position
-        MEM_WriteInt(posPtr+0, addf(MEM_ReadInt(posPtr+0), mulf(camPos.v0[zMAT4_outVec], shifted)));
+        MEM_WriteInt(posPtr, addf(MEM_ReadInt(posPtr), mulf(camPos.v0[zMAT4_outVec], shifted)));
         MEM_WriteInt(posPtr+4, addf(MEM_ReadInt(posPtr+4), mulf(camPos.v1[zMAT4_outVec], shifted)));
         MEM_WriteInt(posPtr+8, addf(MEM_ReadInt(posPtr+8), mulf(camPos.v2[zMAT4_outVec], shifted)));
     };
@@ -128,6 +128,7 @@ func void GFA_AimVobManipulatePos(var int posPtr) {
  * Retrieve/create aim vob and optionally update its position. This function is constantly called to get the pointer of
  * the aim vob and to reposition it. Manipulating the aim vob from outside of free aiming SHOULD NOT BE DONE. This is
  * an internal mechanic and it should not be touched.
+ * The aim vob is acutally an oCItem, to be focusable for spells.
  */
 func int GFA_SetupAimVob(var int posPtr) {
     // Retrieve vob by name

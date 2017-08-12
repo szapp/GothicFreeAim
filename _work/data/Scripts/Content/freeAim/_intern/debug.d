@@ -54,7 +54,7 @@ func void GFA_VisualizeLine(var int pos1Ptr, var int pos2Ptr, var int color) {
 
 /*
  * Visualize the bounding boxes of the trace ray and its trajectory for debugging. This function hooks
- * zCWorld::AdvanceClock, because it has to happen BEFORE where the frame functions are hooked. Otherwise the drawn
+ * zCWorld::AdvanceClock(), because it has to happen BEFORE where the frame functions are hooked. Otherwise the drawn
  * lines disappear.
  */
 func void GFA_VisualizeTraceRay() {
@@ -81,7 +81,7 @@ func void GFA_VisualizeTraceRay() {
 
 /*
  * Visualize the bounding box of the weak spot (critical hit) and the projectile trajectory for debugging. This function
- * hooks zCWorld::AdvanceClock, because it has to happen BEFORE where the frame functions are hooked. Otherwise the
+ * hooks zCWorld::AdvanceClock(), because it has to happen BEFORE where the frame functions are hooked. Otherwise the
  * drawn lines disappear.
  */
 func void GFA_VisualizeWeakspot() {

@@ -1,5 +1,5 @@
 /*
- * Auxiliary functions for finding active spell instances, weapons and offering animated reticles
+ * Auxiliary functions including finding the active spell instance and ranged weapon and offering animated reticles
  *
  * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
@@ -49,21 +49,21 @@ func MEMINT_HelperClass GFA_GetActiveSpellInst(var C_Npc npc) {
 
 
 /*
- * Retrieve whether a spell is eligible for free aiming, that is supports free aiming by its properties. This function
- * is called to determine whether to activate free aiming, since not all spell need to have this feature, e.g. summoning
- * spells.
+ * Retrieve whether a spell is eligible for free aiming, that is, it supports free aiming by its properties. This
+ * function is called to determine whether to activate free aiming, since not all spell need to have this feature, e.g.
+ * summoning spells.
  * Do not change the properties that make a spell eligible! This is very well thought through and works for ALL Gothic 2
- * spells. For new spells, adjust their properties accordingly.
+ * spells. For new spells, adjust THEIR properties accordingly.
  */
 func int GFA_IsSpellEligible(var C_Spell spell) {
+    // Exit if free aiming is disabled for spells or if the spell instance is invalid
     if (!GFA_SPELLS) || (!_@(spell)) {
-        // If free aiming is disabled for spells or if the spell instance is invalid
         return FALSE;
     };
 
+    // Check if the target collection is not done by focus collection with fall back 'none' or if turning is disabled.
     if (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS_FALLBACK_NONE) // Do not change this property!
     || (!spell.canTurnDuringInvest) || (!spell.canChangeTargetDuringInvest) {
-        // If the target collection is not done by focus collection with fall back 'none' or if turning is disabled
         // It might be tempting to change TARGET_COLLECT_FOCUS_FALLBACK_NONE into something else, but free aiming will
         // break this way, as a focus NEEDS to be enabled, but not fixed. No other target collection algorithm suffices.
         return FALSE;
@@ -149,7 +149,7 @@ func int GFA_GetWeaponAndTalent(var int weaponPtr, var int talentPtr) {
             if (talent) {
                 if (GOTHIC_BASE_VERSION == 1) {
                     // Caution: The hit chance in Gothic 1 is defined by dexterity (same for bow and crossbow). This
-                    // function returns the critical hit chance!
+                    // function, however, returns the critical hit chance!
                     talent = Npc_GetTalentValue(hero, talent);
                 } else {
                     // In Gothic 2 the hit chance is the skill level
@@ -195,8 +195,8 @@ func string GFA_AnimateReticleByTime(var string fileName, var int fps, var int n
 
 /*
  * Return texture file name for an animated texture. This function is not used internally, but is offered as a feature
- * for the config functions of GFA. It allows for animated reticles dependent on a given percentage. This is
- * useful to indicate progress of draw force or distance to target or any gradual spell property.
+ * for the config functions of GFA. It allows for animated reticles dependent on a given percentage. This is useful to
+ * indicate progress of draw force or distance to target or any other gradual property.
  * 'numFrames' files must exist with the postfix '_[frameNo].tga', e.g. 'TEXTURE_00.TGA', 'TEXTURE_01.TGA',...
  */
 func string GFA_AnimateReticleByPercent(var string fileName, var int percent, var int numFrames) {
@@ -222,7 +222,7 @@ func string GFA_AnimateReticleByPercent(var string fileName, var int percent, va
  * Check the inheritance of a zCObject against a zCClassDef. Emulating zCObject::CheckInheritance() at 0x476E30 in G2.
  * This function is used in Wld_StopEffect_Ext().
  *
- * Taken from https://forum.worldofplayers.de/forum/threads/1495001?p=25548652
+ * Taken from http://forum.worldofplayers.de/forum/threads/1495001?p=25548652
  */
 func int objCheckInheritance(var int objPtr, var int classDef) {
     if (!objPtr) || (!classDef) {
@@ -243,10 +243,10 @@ func int objCheckInheritance(var int objPtr, var int classDef) {
  * Emulate the Gothic 2 external function Wld_StopEffect(), with additional settings: Usually it is not clear which
  * effect will be stopped, leading to effects getting "stuck". Here, Wld_StopEffect is extended with additional checks
  * for origin and/or target vob and whether to stop all matching FX or only the first one found (like in Wld_StopEffect)
- * The function returns the number of stopped effects, or zero if none was found or an error occured.
+ * The function returns the number of stopped effects, or zero if none was found or an error occurred.
  * Compatible with Gothic 1 and Gothic 2.
  *
- * Taken from https://forum.worldofplayers.de/forum/threads/1495001?p=25548652
+ * Taken from http://forum.worldofplayers.de/forum/threads/1495001?p=25548652
  */
 func int Wld_StopEffect_Ext(var string effectName, var int originInst, var int targetInst, var int all) {
     var int worldPtr; worldPtr = _@(MEM_World);
@@ -364,6 +364,9 @@ func int Wld_StopEffect_Ext(var string effectName, var int originInst, var int t
  * in Gothic 2. Mind, that this bug has nothing to do with GFA, it is already present in the original Gothic 2!
  * Here, the AI will be released (how it should be done), fixing the problem.
  * The problem is not known to affect Gothic 1 (no error message), but the fix does not hurt.
+ *
+ * In order to hook the engine at this offset, some opcode had to be overwritten to make room for the jump (see init.d).
+ * This overwritten code is first rewritten (beginning of this function, labeled 'old').
  */
 func void GFA_FixDroppedProjectileAI() {
     // Old: Re-write what has been overwritten with nop (for means of a working hook in constrained address space)

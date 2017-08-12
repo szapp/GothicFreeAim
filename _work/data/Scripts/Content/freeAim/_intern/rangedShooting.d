@@ -1,5 +1,5 @@
 /*
- * Ranged combat shooting mechanics
+ * Free aiming mechanics for ranged combat shooting
  *
  * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
@@ -137,24 +137,27 @@ func int GFA_GetRecoil_() {
 
 
 /*
- * Set the projectile direction. This function hooks oCAIArrow::SetupAIVob to overwrite the target vob with the aim vob
- * that is placed in front of the camera at the nearest intersection with the world or an object.
+ * Set the projectile direction. This function hooks oCAIArrow::SetupAIVob() to overwrite the target vob with the aim
+ * vob that is placed in front of the camera at the nearest intersection with the world or an object.
  * Setting up the projectile involves several parts:
  *  1st: Set base damage of projectile:             GFA_GetInitialBaseDamage()
  *  2nd: Manipulate aiming accuracy (scatter):      GFA_GetAccuracy()
  *  3rd: Add recoil to mouse movement:              GFA_GetRecoil()
  *  4th: Set projectile drop-off (by draw force):   GFA_GetDrawForce()
- *  5th: Add trial strip FX for better visibility
+ *  5th: Add trail strip FX for better visibility
  *  6th: Setup the aim vob and overwrite the target
  */
 func void GFA_SetupProjectile() {
-    // Only if shooter is the player and if FA is enabled
+    // Only if shooter is the player and if free aiming is enabled
     var C_Npc shooter; shooter = _^(MEM_ReadInt(ESP+8)); // Second function argument is the shooter
     if (!GFA_ACTIVE) || (!Npc_IsPlayer(shooter)) {
         return;
     };
 
     var int projectilePtr; projectilePtr = MEM_ReadInt(ESP+4); // First function argument is the projectile
+    if (!projectilePtr) {
+        return;
+    };
     if (!Hlp_Is_oCItem(projectilePtr)) {
         return;
     };
@@ -171,6 +174,7 @@ func void GFA_SetupProjectile() {
     if (lf(distPlayer, mkf(GFA_MIN_AIM_DIST))) {
         distance = addf(distance, mkf(GFA_MIN_AIM_DIST));
     };
+
 
     // 1st: Modify the base damage of the projectile
     // This allows for dynamical adjustment of damage (e.g. based on draw force).
@@ -249,6 +253,7 @@ func void GFA_SetupProjectile() {
         } else {
             rmax = FLOATNULL;
         };
+
         // r_MinMax works with integers: scale up
         rmaxI = roundf(mulf(rmax, FLOAT1K));
 
@@ -305,15 +310,15 @@ func void GFA_SetupProjectile() {
 
 
     // 3rd: Add recoil
-    var int recoil; recoil = GFA_GetRecoil_();
+    var int recoil; recoil = GFA_GetRecoil_(); // Modify the recoil in that function, not here!
     GFA_Recoil = (GFA_MAX_RECOIL*recoil)/100;
 
 
     // 4th: Set projectile drop-off (by draw force)
     // The curved trajectory of the projectile is achieved by setting a fixed gravity, but applying it only after a
     // certain air time. This air time is adjustable and depends on draw force: GFA_GetDrawForce().
-    // First get rigidBody of the projectile which is responsible for gravity. The rigidBody object does not exist yet
-    // at this point, so have it retrieved/created by calling this function:
+    // First get the rigid body of the projectile which is responsible for gravity. The rigid body object does not exist
+    // yet at this point, so it has to be retrieved/created by calling this function:
     const int call = 0;
     if (CALL_Begin(call)) {
         CALL__thiscall(_@(projectilePtr), zCVob__GetRigidBody);
@@ -325,10 +330,12 @@ func void GFA_SetupProjectile() {
     var int drawForce; drawForce = GFA_GetDrawForce_(); // Modify the draw force in that function, not here!
 
     // The gravity is a fixed value. An exception are very short draw times. There, the gravity is higher
-    var int gravityMod; gravityMod = FLOATONE;
+    var int gravityMod;
     if (drawForce < 25) {
         // Draw force below 25% (very short draw time) increases gravity
         gravityMod = castToIntf(3.0);
+    } else {
+        gravityMod = FLOATONE;
     };
 
     // Calculate the air time at which to apply the gravity, by the maximum air time GFA_TRAJECTORY_ARC_MAX. Because
@@ -364,9 +371,11 @@ func void GFA_SetupProjectile() {
         Wld_PlayEffect(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0, 0, 0, FALSE);
     };
 
+
     // 6th: Reposition the aim vob and overwrite the target vob
     var int vobPtr; vobPtr = GFA_SetupAimVob(_@(pos));
-    MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob
+    MEM_WriteInt(ESP+12, vobPtr); // Overwrite the third argument (target vob) passed to oCAIArrow::SetupAIVob()
+
 
     // Update the shooting statistics
     GFA_StatsShots += 1;
@@ -439,8 +448,8 @@ func void GFA_SetupProjectile() {
 
 /*
  * This is a frame function timed by draw force and is responsible for applying gravity to a projectile after a certain
- * air time as determined in GFA_SetupProjectile(). The gravity is merely turned on, the gravity value itself is set in
- * GFA_SetupProjectile().
+ * air time as determined in GFA_SetupProjectile(). The gravity is merely turned on, the gravity strength itself is set
+ * in GFA_SetupProjectile().
  */
 func void GFA_EnableProjectileGravity(var int rigidBody) {
     if (!rigidBody) {
@@ -467,10 +476,10 @@ func void GFA_EnableProjectileGravity(var int rigidBody) {
 
 
 /*
- * This function resets the gravity back to its default value, after any collision occured. The function hooks
- * oCAIArrow::ReportCollisionToAI at an offset where a valid collision was detected.
- * It is important to reset the gravity, because the projectile may bounce of walls (etc.), after which it would float
- * around with the previously set drop-off gravity (GFA_PROJECTILE_GRAVITY).
+ * This function resets the gravity back to its default value, after any collision occurred. The function hooks
+ * oCAIArrow::ReportCollisionToAI() at an offset where a valid collision was detected.
+ * It is important to reset the gravity, because the projectile may bounce off of walls (etc.), after which it would
+ * float around with the previously set drop-off gravity (GFA_PROJECTILE_GRAVITY).
  */
 func void GFA_ResetProjectileGravity() {
     var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, ECX);
@@ -501,14 +510,14 @@ func void GFA_ResetProjectileGravity() {
  * Depending on GFA_TRUE_HITCHANCE, the resulting hit chance is either the Gothic default hit chance or always 100%.
  * For the latter (GFA_TRUE_HITCHANCE == true) the hit chance is instead determined earlier by scattering in
  * GFA_SetupProjectile().
- * Additionally, the trial strip is removed (Gothic 1) and the shooting statistics are updated.
+ * Additionally, the shooting statistics are updated.
  * This function is only making changes if the shooter is the player.
  */
 func void GFA_OverwriteHitChance() {
     var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EBP);
     var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
 
-    // Only if shooter is the player and if FA is enabled for ranged combat
+    // Only if shooter is the player and if free aiming is enabled for ranged combat
     if (!GFA_ACTIVE) || (!Npc_IsPlayer(shooter)) {
         return;
     };
@@ -531,7 +540,7 @@ func void GFA_OverwriteHitChance() {
         // Determine if positive hit
         hit = lf(mkf(rand), hitChance); // rand < hitChance
     } else {
-        // If accuracy/scattering is enabled, all shots that hit the target are a positive hit
+        // If accuracy/scattering is enabled, all shots that hit the target are always positive hits
         hit = TRUE;
         MEM_WriteInt(hitChancePtr, MEMINT_SwitchG1G2(FLOAT1C, 100)); // Overwrite to hit always
     };

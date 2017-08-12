@@ -1,5 +1,5 @@
 /*
- * Collectable projectiles
+ * Collectable projectiles feature
  *
  * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
@@ -23,20 +23,19 @@
 
 
 /*
- * This function keeps the projectiles in the world. It hooks the end of the oCAIArrow::DoAI loop and checks whether
- * each projectile stopped moving. Once it has, the AI is detached from the projectile and replaced with the default
- * item-AI (oCAIVobMove). The default behavior of removing the projectile from the world is circumvented by clamping the
- * AI life time to maximum.
+ * This function keeps the projectiles in the world. It hooks the end of the oCAIArrow::DoAI() loop and checks whether
+ * the projectile stopped moving. Once it has, the AI is detached from the projectile. The default behavior of removing
+ * the projectile from the world is circumvented by clamping the AI life time to maximum until it is removed.
  */
 func void GFA_RP_KeepProjectileInWorld() {
     // Check if AI was already removed. Happens if NPC is hit, see GFA_RP_PutProjectileIntoInventory()
-    var int destroyed; destroyed = MEM_ReadInt(EDI); // Determines the removal of the projectile (1=remove, 0=keep)
+    var int destroyed; destroyed = MEM_ReadInt(EDI);
     if (destroyed) {
         return;
     };
 
-    // Check validity of projectile an its rigidBody
-    var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EAX); // oCAIArrow* is the arrow AI of the projectile
+    // Check validity of projectile and its rigid body
+    var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EAX); // oCAIArrow* is the AI of the projectile
     var int projectilePtr; projectilePtr = EBX; // oCItem*
     if (!projectilePtr) {
         return;
@@ -51,9 +50,10 @@ func void GFA_RP_KeepProjectileInWorld() {
 
     // Check if the projectile stopped moving
     if (!(projectile._zCVob_bitfield[0] & zCVob_bitfield0_physicsEnabled)) {
+
+        // Remove the trail strip FX; only if the projectile does not have a different effect (like magic arrows)
         if (GOTHIC_BASE_VERSION == 2) {
-            // Remove the FX; only if the projectile does not have a different effect (like magic arrows)
-            if (Hlp_StrCmp(MEM_ReadString(projectilePtr+oCItem_effect_offset), GFA_TRAIL_FX)) { // Check trail strip
+            if (Hlp_StrCmp(MEM_ReadString(projectilePtr+oCItem_effect_offset), GFA_TRAIL_FX)) {
                 const int call = 0;
                 if (CALL_Begin(call)) {
                     CALL__thiscall(_@(projectilePtr), oCItem__RemoveEffect);
@@ -92,7 +92,8 @@ func void GFA_RP_KeepProjectileInWorld() {
                 call3 = CALL_End();
             };
 
-        } else { // Else: New projectile instance is empty or invalid. Let oCAIArrow::DoAI remove the projectile
+        } else {
+            // New projectile instance is empty or invalid. Let oCAIArrow::DoAI() remove the projectile
             GFA_CC_ProjectileDestroy(arrowAI);
         };
     };
@@ -110,20 +111,19 @@ func void GFA_RP_PutProjectileIntoInventory() {
     // clear at this point, whether the projectile is deflecting off of this NPC, like it is clear here for Gothic 2.
     // To help out, the projectile AI is prior marked as deflecting (-1) by GFA_CC_ProjectileCollisionWithNpc().
     if (MEM_ReadInt(arrowAI+oCAIArrow_destroyProjectile_offset) == -1) {
+        // Reset to zero, otherwise the projectile is removed by oCAIArrow::DoAI()
         MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 0);
         return;
     };
 
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
 
-    // Differentiate between positive hit and collision without damage
+    // Differentiate between positive hit and collision without damage (in case of auto aim hit registration)
     var int positiveHit; positiveHit = MEMINT_SwitchG1G2(
         (ECX != 100),                                      // Gothic 1: ECX is 100 if the hit did not register
         MEM_ReadInt(arrowAI+oCAIArrowBase_hasHit_offset)); // Gothic 2: dedicated property (does not exist in Gothic 1)
 
     if (positiveHit) {
-        // Check if the projectile actually caused damage (in case of auto aim hit registration). Only in that case put
-        // it in the inventory of the victim
         var C_Npc victim; victim = _^(MEMINT_SwitchG1G2(EBX, EDI));
 
         // Replace the projectile if desired, retrieve new projectile instance from config
@@ -138,9 +138,9 @@ func void GFA_RP_PutProjectileIntoInventory() {
 
 
 /*
- * This function is called when a projectile gets stuck in the world (static and dynamic). It is hooked by the collision
- * detection function of projectiles. Here, the projectile is properly positioned to be collectable. This function is
- * only necessary for Gothic 2.
+ * This function is called when a projectile gets 'stuck' in the world (static and dynamic). It is hooked by the
+ * collision detection function of projectiles. Here, the projectile is properly repositioned to be collectable. This
+ * function is only necessary for Gothic 2.
  */
 func void GFA_RP_RepositionProjectileInSurface() {
     var int arrowAI; arrowAI = ESI;

@@ -25,7 +25,7 @@
  *  criticalHit.d   GFA_CRITICALHITS
  */
 const int   GFA_RANGED             = TRUE;  // Free aiming for ranged combat (bow and crossbow)
-const int   GFA_SPELLS             = TRUE;  // Free aiming for magic combat (spells)
+const int   GFA_SPELLS             = TRUE;  // Free aiming for spell combat (spells)
 const int   GFA_REUSE_PROJECTILES  = TRUE;  // Enable collection and re-using of shot projectiles
 const int   GFA_CUSTOM_COLLISIONS  = TRUE;  // Custom collision behaviors, hit registration and damage behaviors
 const int   GFA_CRITICALHITS       = TRUE;  // Critical hits for ranged combat (e.g. head shots)

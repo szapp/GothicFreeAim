@@ -1,5 +1,5 @@
 /*
- * Ranged combat aiming mechanics
+ * Free aiming mechanics for ranged combat aiming
  *
  * Gothic Free Aim (GFA) v1.0.0-alpha - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
@@ -54,7 +54,7 @@ func void GFA_RangedAiming() {
         return;
     };
 
-    // Shoot aim trace ray to retrieve the focus NPC and distance to it from the camera(!)
+    // Shoot aim ray to retrieve the focus NPC and distance to it from the camera(!)
     var int distance; var int target;
     GFA_AimRay(GFA_MAX_DIST, TARGET_TYPE_NPCS, _@(target), 0, _@(distance), 0);
     distance = roundf(divf(mulf(distance, FLOAT1C), mkf(GFA_MAX_DIST))); // Distance scaled between [0, 100]
@@ -109,7 +109,7 @@ func void GFA_RangedAiming() {
         };
     };
 
-    // This following paragraph is inspired by oCAIHuman::BowMode (0x6961FA in Gothic 2)
+    // This following paragraph is inspired by oCAIHuman::BowMode() (0x6961FA in Gothic 2)
     angleY = negf(subf(mulf(angleY, /* 0.0055 */ 1001786197), FLOATHALF)); // Scale and flip Y [-90° +90°] to [+1 0]
     if (lf(angleY, FLOATNULL)) {
         // Maximum aim height (straight up)
@@ -119,7 +119,7 @@ func void GFA_RangedAiming() {
         angleY = FLOATONE;
     };
 
-    // New aiming coordinates. Overwrite the arguments one and two passed to oCAniCtrl_Human::InterpolateCombineAni
+    // New aiming coordinates. Overwrite the arguments one and two passed to oCAniCtrl_Human::InterpolateCombineAni()
     MEM_WriteInt(ESP+20, FLOATHALF); // First argument: Always aim at center (azimuth). G2: esp+44h-30h, G1: esp+2Ch-18h
     ECX = angleY; // Second argument: New elevation
 };
@@ -129,12 +129,11 @@ func void GFA_RangedAiming() {
  * Enable strafing while aiming. This function hooks oCAIHuman::BowMode() at an offset, where the player is aiming.
  *
  * CAUTION: This is just an attempt or more of a test to realize strafing. This is not ready to be used, and thus its
- * hook is not initialized (commented out int _intern\init.d). So far it also only works with Gothic 2 controls, as
- * there is another key press condition in oCAIHuman::PC_Strafe(), preventing strafing on action key press.
+ * hook is not initialized (commented out int _intern\init.d).
  * This function has been deliberately left in the scripts to inspire, in case somebody wants to finish this feature.
  *
  * Here is an explanation of this attempt:
- * Strafing can simply be injected into oCAIHuman::BowMode, resulting in fully functioning strafing while aiming. Of
+ * Strafing can simply be injected into oCAIHuman::BowMode(), resulting in fully functioning strafing while aiming. Of
  * course, the bow is not maintaining the aiming animation, and when stopping to strafe the bow is drawn again.
  * What can be done now, is to create an animation, in which the bow is drawn and centered (that is where the bow always
  * is while aiming) while strafing and figuring out a way to prevent redrawing the bow after strafing. The latter is not
