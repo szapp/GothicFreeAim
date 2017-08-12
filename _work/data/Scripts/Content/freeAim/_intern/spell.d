@@ -73,10 +73,8 @@ func void GFA_SpellAiming() {
     // Only show reticle for spells that support free aiming and during aiming (Gothic 1 controls)
     if (GFA_ACTIVE != FMODE_MAGIC) {
         GFA_RemoveReticle();
-        // Remove the visual FX of the aim vob (if present)
         GFA_AimVobDetachFX();
         if (GFA_NO_AIM_NO_FOCUS) {
-            // Remove focus and target when not aiming
             GFA_SetFocusAndTarget(0);
         };
         return;

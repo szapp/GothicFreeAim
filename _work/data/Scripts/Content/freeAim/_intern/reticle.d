@@ -101,10 +101,7 @@ func void GFA_InsertReticle(var int reticlePtr) {
  * Additionally, this function is called during a level change before Ikarus, LeGo or GFA are initialized.
  */
 func void GFA_ResetOnWeaponSwitch() {
-    // Remove the visual FX of the aim vob (if present)
     GFA_AimVobDetachFX();
-
-    // Hide reticle
     GFA_RemoveReticle();
 
     // Reset draw force, because aiming button may be held

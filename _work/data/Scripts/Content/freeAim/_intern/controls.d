@@ -260,8 +260,15 @@ func void GFA_PreventFocusCollectionBodystates() {
     var oCNpc her; her = Hlp_GetNpc(hero);
     if ((her.fmode == FMODE_FAR) || (her.fmode == FMODE_FAR+1)) && (GFA_RANGED) // Bow or crossbow
     || ((her.fmode == FMODE_MAGIC) && (GFA_SPELLS)) { // Spell
-        // Remove focus and target
         GFA_SetFocusAndTarget(0);
+
+        // With Gothic 2 controls, the reticle is still visible
+        if (GOTHIC_BASE_VERSION == 2) {
+            if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
+                GFA_RemoveReticle();
+                GFA_AimVobDetachFX();
+            };
+        };
     };
 };
 

@@ -33,11 +33,9 @@ func void GFA_RangedIdle() {
         GFA_AimRay(GFA_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, 0);
 
     } else if (GFA_ACTIVE) {
-        // Hide reticle
         GFA_RemoveReticle();
 
         if (GFA_NO_AIM_NO_FOCUS) {
-            // Remove focus and target
             GFA_SetFocusAndTarget(0);
         };
     };
