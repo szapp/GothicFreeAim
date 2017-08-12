@@ -23,18 +23,18 @@
 
 
 /*
- * Shoot a trace ray to retrieve the point of intersection with the nearest object in the world, the distance, and to
+ * Shoot a trace ray to retrieve the point of intersection with the nearest object in the world and the distance, and to
  * overwrite the focus collection with a desired focus type. This function is customized for aiming and it is not
  * recommended to use for any other matter.
- * This function is very complex, but well tested.
+ * This function is rather complex, but well tested. It does not replace Gothic's focus collection, but builds on top of
+ * if. Gothic's collected focus is necessary and acts as a 'suggestion', this function is validating.
  *
  * To increase performance, increase the value of GFA.focusUpdateIntervalMS in the Gothic INI-file. It determines the
  * interval in milliseconds in which the trace ray is recomputed. The upper bound is 500ms, which already introduces
- * a slight lag in the focus collection and reticle size (if applicable). A recommended value is below 50ms.
+ * a significant lag in the focus collection and reticle size (if applicable). A recommended value is below 50ms.
  */
 func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int posPtr, var int distPtr,
         var int trueDistPtr) {
-
     // Only run full trace ray machinery every so often (see GFA_AimRayInterval) to allow weaker machines to run this
     var int curTime; curTime = MEM_Timer.totalTime; // Get current time
     if (curTime-GFA_AimRayPrevCalcTime >= GFA_AimRayInterval) { // If the interval has passed, recompute trace ray
@@ -43,16 +43,15 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
 
         // The trace ray is cast along the camera viewing angle from a start point towards a direction/length vector
 
-        // Get camera vob
+        // Get camera vob and player
         var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
         var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
-
         var oCNpc her; her = Hlp_GetNpc(hero);
         var int herPtr; herPtr = _@(her);
 
         // Shift the start point for the trace ray beyond the player model. This is necessary, because if zooming out
         //  (a) there might be something between camera and hero (unlikely) and
-        //  (b) the maximum aiming distance is off and does not correspond to the argument 'distance'
+        //  (b) the maximum aiming distance is off and does not correspond to the parameter 'distance'
         // To do so, the distance between camera and player is computed:
         var int distCamToPlayer; distCamToPlayer = sqrtf(addf(addf( // Does not care about camera X shift, see below
             sqrf(subf(her._zCVob_trafoObjToWorld[ 3], camPos.v0[zMAT4_position])),
@@ -133,8 +132,8 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
         var int intersection[3];
         MEM_CopyBytes(_@(MEM_World.foundIntersection), _@(intersection), sizeof_zVEC3);
 
-        // Correct focus collection. Since the focus collection in Gothic is designed by angles, manipulating the
-        // instances in Focus.d, will lead nowhere, when aiming at a distance as angles become wider. Instead if a
+        // Correct the focus collection. Since the focus collection in Gothic is designed by angles, manipulating the
+        // instances in Focus.d, will lead nowhere, when aiming at a distance as angles become wider. Instead, if a
         // focus vob was collected by the engine, it will be checked whether it was hit by the trace ray which means
         // the camera is looking directly at it.
         // Unfortunately, NPCs are not registered by normal trace rays like the one above. They are only detected if
@@ -142,16 +141,19 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
         // would obstruct the trace ray immensely, NEVER allowing the focusing of NPCs.
         // Instead, the trace ray vob list is searched for NPCs. The trace ray vob list holds all vobs that were
         // intersected. If the focus vob (from Gothic's standard focus collection) is present in this vob list, one step
-        // remains to confirm, that the NPC is actually in the cross hairs: Running a secondary trace ray with on the
-        // NPC with the bounding box trace ray flags.
-        var int foundFocus; foundFocus = 0; // Variable to specify whether the focus vob is in the trace ray vob list
+        // remains to confirm, that the NPC is actually in the cross hairs: Running a secondary trace ray on the NPC
+        // with the bounding box trace ray flags.
+
+        // Variable to specify whether the focus vob is in the trace ray vob list
+        var int foundFocus; foundFocus = 0;
+
         if (her.focus_vob) {
             // Gothic collected a focus vob
 
             // Second trace ray only if focus vob is reasonable
             var int runDetailedTraceRay; runDetailedTraceRay = 0;
 
-            // Check if collected focus matches the desired focus type (see function parameter focusType)
+            // Check if collected focus matches the desired focus type (see function parameter 'focusType')
             if (!focusType) {
                 // No focus may be desired for spells that estimate distances but do not want to focus anything
                 foundFocus = 0;
@@ -166,17 +168,11 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
                 MEM_Call(C_NpcIsUndead); // C_NpcIsUndead(target);
                 var int npcIsUndead; npcIsUndead = MEM_PopIntResult();
 
-                // Check if NPC is down, function is not yet defined at time of parsing
-                MEM_PushInstParam(target);
-                MEM_Call(C_NpcIsDown); // C_NpcIsDown(target);
-                var int npcIsDown; npcIsDown = MEM_PopIntResult();
-
                 // More detailed focus type tests
-                if ((focusType == TARGET_TYPE_NPCS)                                        // Focus any NPC
+                if (focusType == TARGET_TYPE_NPCS)                                         // Focus any NPC
                 || ((focusType == TARGET_TYPE_ORCS) && target.guild > GIL_SEPERATOR_ORC)   // Only focus orcs
                 || ((focusType == TARGET_TYPE_HUMANS) && target.guild < GIL_SEPERATOR_HUM) // Only focus humans
-                || ((focusType == TARGET_TYPE_UNDEAD) && npcIsUndead))                     // Only focus undead NPCs
-                && (!npcIsDown) {
+                || ((focusType == TARGET_TYPE_UNDEAD) && npcIsUndead) {                    // Only focus undead NPCs
                     // Iterate over trace ray vob list to check if the NPC was collected
                     var int potVobPtr; potVobPtr = _@(her.focus_vob);
                     var int voblist; voblist = _@(MEM_World.traceRayVobList_array);
@@ -219,9 +215,6 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
                 MEM_Free(trRep); // Free the report
             };
         };
-
-        // Update focus and enemy
-        GFA_SetFocusAndTarget(foundFocus);
 
         // Calculate the distance to the player
         var int distHitToPlayer;
@@ -267,6 +260,8 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
         };
     };
 
+    // Update focus and enemy
+    GFA_SetFocusAndTarget(foundFocus);
 
     // Whether or not the trace ray was recomputed, write all call-by-reference variables
     if (vobPtr) {
