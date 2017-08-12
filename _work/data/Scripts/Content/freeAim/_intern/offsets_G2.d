@@ -107,7 +107,7 @@ const int oCAIArrowBase__ReportCollisionToAI_collWld =  6949912; //0x6A0A40 // H
 const int oCNpc__OnDamage_Hit_criticalHit            =  6718100; //0x668294 // Hook len 5  // Not used for Gothic 2
 const int oCNpc__OnDamage_Anim_getModel              =  6774593; //0x675F41 // Hook len 9
 const int oCNpcFocus__SetFocusMode                   =  7072800; //0x6BEC20 // Hook len 7
-const int oCSpell__Setup_oCVisFXinit                 =  4737961; //0x484BA9 // Hook len 6
+const int oCSpell__Setup_initFallbackNone            =  4737961; //0x484BA9 // Hook len 6
 const int mouseUpdate                                =  5062907; //0x4D40FB // Hook len 5
 
 

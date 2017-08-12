@@ -62,7 +62,7 @@ func void GFA_InitFeatureFreeAiming() {
     if (GFA_SPELLS) {
         MEM_Info("Initializing free aiming for spell combat.");
         HookEngineF(oCAIHuman__MagicMode, 7, GFA_SpellAiming); // Manage focus collection and reticle
-        HookEngineF(oCSpell__Setup_oCVisFXinit, 6, GFA_SetupSpell); // Set spell FX trajectory (shooting)
+        HookEngineF(oCSpell__Setup_initFallbackNone, 6, GFA_SetupSpell); // Set spell FX trajectory (shooting)
     };
 
     // Prevent focus collection (necessary for Gothic 2 only)
