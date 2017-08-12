@@ -32,7 +32,6 @@ const int zCVob__TraceRay                            =  6291008; //0x5FFE40
 const int zCVob__SetAI                               =  6285552; //0x5FE8F0
 const int zCVob__SetSleeping                         =  6302000; //0x602930
 const int zCArray_zCVob__IsInList                    =  7159168; //0x6D3D80
-const int zCRigidBody__StopTransRot                  =  5989776; //0x5B6590                // Not used for Gothic 2
 const int zCRigidBody__SetVelocity                   =  5990096; //0x5B66D0                // Not used for Gothic 2
 const int zCWorld__TraceRayNearestHit_Vob            =  6430624; //0x621FA0
 const int oCWorld__AddVobAsChild                     =  7863856; //0x77FE30

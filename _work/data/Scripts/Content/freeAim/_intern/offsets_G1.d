@@ -32,7 +32,6 @@ const int zCVob__TraceRay                            =  6113760; //0x5D49E0
 const int zCVob__SetAI                               =  6108976; //0x5D3730
 const int zCVob__SetSleeping                         =  6124112; //0x5D7250
 const int zCArray_zCVob__IsInList                    =  6590128; //0x648EB0
-const int zCRigidBody__StopTransRot                  =  5853760; //0x595240
 const int zCRigidBody__SetVelocity                   =  5854080; //0x595380
 const int zCWorld__TraceRayNearestHit_Vob            =  6244064; //0x5F46E0
 const int oCWorld__AddVobAsChild                     =  7171232; //0x6D6CA0

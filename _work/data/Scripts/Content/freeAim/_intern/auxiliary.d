@@ -246,7 +246,7 @@ func int objCheckInheritance(var int objPtr, var int classDef) {
  * The function returns the number of stopped effects, or zero if none was found or an error occured.
  * Compatible with Gothic 1 and Gothic 2.
  *
- * Modified (to allow empty effect string) from https://forum.worldofplayers.de/forum/threads/1495001?p=25548652
+ * Taken from https://forum.worldofplayers.de/forum/threads/1495001?p=25548652
  */
 func int Wld_StopEffect_Ext(var string effectName, var int originInst, var int targetInst, var int all) {
     var int worldPtr; worldPtr = _@(MEM_World);
