@@ -287,10 +287,17 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
 
         // Get visual
         var zCVob vob; vob = _^(vobPtr);
-        if (!vob.visual) {
+        if (!vob.visual) || (Hlp_Is_oCNpc(vobPtr))  {
             return;
         };
-        if (MEM_GetClassDef(vob.visual) != zCProgMeshProto__classDef) || (Hlp_Is_oCNpc(vobPtr)) {
+        if (!objCheckInheritance(vob.visual, zCProgMeshProto__classDef)) {
+            // Adjust the projectile to deflect (Gothic 2 does it by default)
+            if (GOTHIC_BASE_VERSION == 1) {
+                GFA_CC_ProjectileDeflect(rigidBody);
+            };
+
+            // Increase collision counter before leaving this function
+            MEM_WriteInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset, collisionCounter+1);
             return;
         };
 
@@ -481,6 +488,15 @@ func void GFA_CC_SetDamageBehavior() {
     var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EBP);
     var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
     if (!Npc_IsPlayer(shooter)) {
+        return;
+    };
+
+    // Do this for DAM_POINT only (relevant for Gothic 1, in Gothic 2 EVERYTHING counts as DAM_POINT for projectiles)
+    var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
+    if (projectile.damageType != DAM_POINT) {
+        if (GFA_DEBUG_PRINT) {
+            MEM_Info("GFA_CC_SetDamageBehavior: Ignoring projectile: Does not have pure POINT damage.");
+        };
         return;
     };
 

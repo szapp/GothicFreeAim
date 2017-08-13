@@ -136,7 +136,9 @@ func int GFA_SetupAimVob(var int posPtr) {
 
     // Create vob if it does not exit
     if (!vobPtr) {
-        MEM_Info("GFA_SetupAimVob: Creating aim vob."); // Should be printed only once ever (each world)
+        if (GFA_DEBUG_PRINT) {
+            MEM_Info("GFA_SetupAimVob: Creating aim vob."); // Should be printed only once ever (each world)
+        };
 
         // This actually allocates the memory, so no need to care about freeing
         CALL__cdecl(oCItem___CreateNewInstance);

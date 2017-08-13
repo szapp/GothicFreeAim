@@ -99,6 +99,15 @@ func void GFA_CH_DetectCriticalHit() {
         return;
     };
 
+    // Do this for DAM_POINT only (relevant for Gothic 1, in Gothic 2 EVERYTHING counts as DAM_POINT for projectiles)
+    var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
+    if (projectile.damageType != DAM_POINT) {
+        if (GFA_DEBUG_PRINT) {
+            MEM_Info("GFA_CH_DetectCriticalHit: Ignoring projectile: Does not have pure POINT damage.");
+        };
+        return;
+    };
+
     var int damagePtr; damagePtr = MEMINT_SwitchG1G2(/*esp+48h-48h*/ ESP, /*esp+1ACh-C8h*/ ESP+228); // zREAL*
     var int targetPtr; targetPtr = MEMINT_SwitchG1G2(EBX, MEM_ReadInt(/*esp+1ACh-190h*/ ESP+28)); // oCNpc*
     var C_Npc targetNpc; targetNpc = _^(targetPtr);
@@ -215,7 +224,6 @@ func void GFA_CH_DetectCriticalHit() {
 
         // The internal engine functions are not accurate enough for detecting a shot through a bounding box. Instead
         // check here if 'any' point along the line of the projectile direction lies inside the bounding box of the node
-        var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
 
         // Direction of collision line along the right-vector of the projectile (projectile flies sideways)
         var int dir[3];
