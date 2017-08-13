@@ -73,6 +73,11 @@ func string GFA_GetShootingStats(var string command) {
         return "Shooting statistics not available. (Requires free aiming for ranged weapons)";
     };
 
+    // Prevent execution if 'reset' command is called
+    if (!Hlp_StrCmp(command, "")) && (!Hlp_StrCmp(command, " ")) {
+        return "";
+    };
+
     var int s; s = SB_New();
     SB("Total shots taken: ");
     SBi(GFA_StatsShots);
@@ -103,6 +108,18 @@ func string GFA_GetShootingStats(var string command) {
     SB_Destroy();
 
     return ret;
+};
+
+
+/*
+ * Console function to reset free aiming shooting statistics. This function is registered as console command.
+ * When entered in the console, the current shooting statistics are reset to zero.
+ */
+func string GFA_ResetShootingStats(var string command) {
+    GFA_StatsShots = 0;
+    GFA_StatsHits = 0;
+    GFA_StatsCriticalHits = 0;
+    return "Shooting statistics reset.";
 };
 
 

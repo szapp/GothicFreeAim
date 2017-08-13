@@ -270,6 +270,7 @@ func int GFA_InitOnce() {
     CC_Register(GFA_GetLicense, "GFA license", "print GFA license info");
     CC_Register(GFA_GetInfo, "GFA info", "print GFA config info");
     CC_Register(GFA_GetShootingStats, "GFA stats", "print shooting statistics");
+    CC_Register(GFA_ResetShootingStats, "GFA stats reset", "reset shooting statistics");
     if (GFA_DEBUG_CONSOLE) {
         CC_Register(GFA_DebugPrint, "debug GFA zSpy", "turn on GFA debug information in zSpy");
     };
