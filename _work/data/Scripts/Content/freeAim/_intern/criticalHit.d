@@ -336,10 +336,10 @@ func void GFA_CH_DetectCriticalHit() {
 
     // Create an event, if a critical hit was detected
     if (criticalHit) {
-        GFA_CH_StartCriticalHitEvent_(targetNpc); // Use this function to add an event, e.g. a print or a sound
         MEM_WriteInt(damagePtr, weakspot.bDmg); // Base damage not final damage
         GFA_LastHitCritical = TRUE; // Used for GFA_CC_SetDamageBehavior(), will be reset to FALSE immediately
         GFA_StatsCriticalHits += 1; // Update shooting statistics
+        GFA_CH_StartCriticalHitEvent_(targetNpc); // Use this function to add an event, e.g. a print or a sound
     };
     MEM_Free(weakspotPtr);
 };
