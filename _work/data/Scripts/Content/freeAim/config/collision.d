@@ -27,7 +27,7 @@
 func int GFA_GetCollisionWithNpc(var C_Npc shooter, var C_Npc target, var C_Item weapon, var int material) {
     // Valid return values are:
     const int DESTROY = 0; // No hit registration (no damage), projectile vanishes
-    const int DAMAGE  = 1; // Positive hit registration, projectile is put into inventory if GFA_REUSE_PROJECTILES == 1
+    const int DAMAGE  = 1; // Positive hit registration (projectile is put into inventory with GFA_REUSE_PROJECTILES)
     const int DEFLECT = 2; // No hit registration (no damage), projectile bounces off
 
     // Disable friendly-fire for the player

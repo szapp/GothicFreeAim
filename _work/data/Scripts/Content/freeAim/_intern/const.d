@@ -32,6 +32,15 @@ const int    GFA_LEGO_FLAGS         = LeGo_HookEngine       // For initializing 
                                     | LeGo_Random           // For scattering and other uses of random numbers
                                     | LeGo_PrintS;          // To be safe (in case it is used in critical hit event)
 
+var   int    GFA_Flags;                                     // Flags for initialization of GFA
+const int    GFA_BUGFIXES           = 0<<0;                 // Misc Gothic bug fixes, applied always (pseudo flag)
+const int    GFA_RANGED             = 1<<0;                 // Free aiming for ranged combat (bow and crossbow)
+const int    GFA_SPELLS             = 1<<1;                 // Free aiming for spell combat (spells)
+const int    GFA_REUSE_PROJECTILES  = 1<<2;                 // Enable collection and re-using of shot projectiles
+const int    GFA_CUSTOM_COLLISIONS  = 1<<3;                 // Custom collision/damage behaviors and hit registration
+const int    GFA_CRITICALHITS       = 1<<4;                 // Critical hits for ranged combat (e.g. head shots)
+const int    GFA_ALL                = (1<<5) - 1;           // Initialize all features
+
 const int    GFA_DRAWTIME_READY     = 650;                  // Time (ms) for readying the bow. Fixed by animation
 const int    GFA_DRAWTIME_RELOAD    = 1110;                 // Time (ms) for reloading the bow. Fixed by animation
 var   int    GFA_BowDrawOnset;                              // Time onset of drawing the bow

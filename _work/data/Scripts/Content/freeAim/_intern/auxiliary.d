@@ -56,8 +56,8 @@ func MEMINT_HelperClass GFA_GetActiveSpellInst(var C_Npc npc) {
  * spells. For new spells, adjust THEIR properties accordingly.
  */
 func int GFA_IsSpellEligible(var C_Spell spell) {
-    // Exit if free aiming is disabled for spells or if the spell instance is invalid
-    if (!GFA_SPELLS) || (!_@(spell)) {
+    // Exit if the spell instance is invalid
+    if (!_@(spell)) {
         return FALSE;
     };
 

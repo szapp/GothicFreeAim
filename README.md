@@ -60,14 +60,14 @@ A [setup](http://github.com/szapp/GothicFreeAim/releases/latest) is available to
 it, and all scripts should be fully working (originals will be backed up). Alternatively, you can do these following
 steps manually.
 
- 1. Make sure Ikarus and LeGo are installed and initialized with *FrameFunctions* and *ConsoleCommands*.
+ 1. Make sure Ikarus and LeGo are installed and parsed with _work\data\Scripts\Content\Gothic.src`.
  2. Copy all files from this repository into your Gothic II installation. Mind the relative paths. Do not forget the
     binary files (textures) that come with the [release](http://github.com/szapp/GothicFreeAim/releases/latest).
  3. Have the files parsed:
     1. Add the line `FREEAIM\freeAim.src` to `_work\data\Scripts\Content\Gothic.src` somewhere **after** Ikarus, LeGo
        and `AI\AI_INTERN\FOCUS.D`.
     2. Add the line `camera\caminstfreeaim.d` to the end of `_work\data\Scripts\System\Camera.src`.
-    3. Add the line `Pfx\PfxInstFreeAim.d` to the end of `_work\data\Scripts\System\PFX.src`.
+    3. Add the line `Pfx\PfxInstFreeAim_G2.d` to the end of `_work\data\Scripts\System\PFX.src`.
     4. Add the line `sfx\sfxinstfreeaim.d` to the end of `_work\data\Scripts\System\SFX.src`.
     5. Add the line `visualfx\visualfxfreeaim.d` to the end of `_work\data\Scripts\System\VisualFX.src`.
     6. Add the line `menu\menu_opt_game_freeaim.d` to `_work\data\Scripts\System\Menu.src` between `_intern\menu.d` and
@@ -92,8 +92,8 @@ steps manually.
     const int  MENU_ID_GFA      = 7; // Next available Y-spot in the menu
     ```
 
- 7. Finally initialize free aim by adding the line `GFA_Init();` in to the function `INIT_GLOBAL()` in
-    `_work\data\Scripts\Content\Story\Startup.d` somewhere after Ikarus and LeGo.
+ 7. Finally initialize free aim by adding the line `GFA_Init(GFA_ALL);` in to the function `INIT_GLOBAL()` in
+    `_work\data\Scripts\Content\Story\Startup.d` either somewhere *after* Ikarus and LeGo or instead of them.
 
 > Again: The [setup](http://github.com/szapp/GothicFreeAim/releases/latest) will perform all these steps for you.
 

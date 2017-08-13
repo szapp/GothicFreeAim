@@ -28,7 +28,7 @@
  * function is called from GFA_CC_ProjectileCollisionWithNpc() to update the collision behavior for each projectile.
  */
 func void GFA_CC_SetProjectileCollisionWithNpc(var int setting) {
-    if (GOTHIC_BASE_VERSION != 2) || (!GFA_CUSTOM_COLLISIONS) {
+    if (GOTHIC_BASE_VERSION != 2) {
         return;
     };
 
@@ -234,7 +234,7 @@ func void GFA_CC_ProjectileCollisionWithNpc() {
         MEM_WriteInt(hitChancePtr, MEMINT_SwitchG1G2(FLOATNULL, 0)); // G1: float, G2: integer
 
         // Update shooting statistics (decrement, if shot was supposed to hit, see GFA_OverwriteHitChance())
-        if (Npc_IsPlayer(shooter)) && (GFA_ACTIVE) && (GFA_RANGED) {
+        if (Npc_IsPlayer(shooter)) && (GFA_ACTIVE) && (GFA_Flags & GFA_RANGED) {
             GFA_StatsHits -= 1;
         };
     };
@@ -524,7 +524,7 @@ func void GFA_CC_SetDamageBehavior() {
     const int INSTANT_KNOCKOUT = 2; // One shot knockout (HP = 1)
     const int INSTANT_KILL     = 3; // One shot kill (HP = 0)
     var int dmgBehavior;
-    if (GFA_CUSTOM_COLLISIONS) {
+    if (GFA_Flags & GFA_CUSTOM_COLLISIONS) {
         dmgBehavior = GFA_CC_GetDamageBehavior_(targetNpc);
     } else {
         dmgBehavior = DO_NOT_KNOCKOUT;

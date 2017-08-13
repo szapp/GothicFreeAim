@@ -40,7 +40,7 @@ func void GFA_InitFeatureFreeAiming() {
     HookEngineF(oCNpc__OnDamage_Anim_getModel, 9, GFA_DisableDamageAnimation); // Disable damage animation while aiming
 
     // Free aiming for ranged combat (aiming and shooting)
-    if (GFA_RANGED) {
+    if (GFA_Flags & GFA_RANGED) {
         MEM_Info("Initializing free aiming for ranged combat.");
         HookEngineF(oCAIHuman__BowMode_notAiming, 6, GFA_RangedIdle); // Fix focus collection while not aiming
         HookEngineF(oCAIHuman__BowMode_interpolateAim, 5, GFA_RangedAiming); // Interpolate aiming animation
@@ -59,7 +59,7 @@ func void GFA_InitFeatureFreeAiming() {
     };
 
     // Free aiming for spells
-    if (GFA_SPELLS) {
+    if (GFA_Flags & GFA_SPELLS) {
         MEM_Info("Initializing free aiming for spell combat.");
         HookEngineF(oCAIHuman__MagicMode, 7, GFA_SpellAiming); // Manage focus collection and reticle
         HookEngineF(oCSpell__Setup_initFallbackNone, 6, GFA_SetupSpell); // Set spell FX trajectory (shooting)
@@ -232,32 +232,37 @@ func int GFA_InitOnce() {
     MEM_Info("");
 
     // FEATURE: Free aiming
-    if ((GFA_RANGED) || (GFA_SPELLS)) {
+    if (GFA_Flags & GFA_RANGED) || (GFA_Flags & GFA_SPELLS) {
         GFA_InitFeatureFreeAiming();
     };
 
     // FEATURE: Custom collision behaviors
-    if (GFA_CUSTOM_COLLISIONS) {
+    if (GFA_Flags & GFA_CUSTOM_COLLISIONS) {
         GFA_InitFeatureCustomCollisions();
     };
 
     // FEATURE: Critical hits
-    if (GFA_CRITICALHITS) {
+    if (GFA_Flags & GFA_CRITICALHITS) {
         GFA_InitFeatureCriticalHits();
     };
 
     // FEATURE: Reusable projectiles
-    if (GFA_REUSE_PROJECTILES) {
+    if (GFA_Flags & GFA_REUSE_PROJECTILES) {
         // Because of balancing issues, this is feature is stored as a constant and not a variable. It should not be
         // enabled/disabled during the game. That would cause too many/too few projectiles
         GFA_InitFeatureReuseProjectiles();
     };
 
-    // Fix knockout by ranged weapon bug (also allow customization if GFA_CUSTOM_COLLISIONS == TRUE)
-    GFA_InitDamageBehavior();
+    // Remaining initialization also done with no flags/features set (pseudo flag GFA_BUGFIXES)
+    // if (GFA_Flags & GFA_BUGFIXES) { // Would actually be false, because GFA_BUGFIXES == 0
 
-    // Fix dropped projectile AI bug
-    GFA_InitFixDroppedProjectileAI();
+        // Fix knockout by ranged weapon bug (also allow customization with GFA_CUSTOM_COLLISIONS)
+        GFA_InitDamageBehavior();
+
+        // Fix dropped projectile AI bug
+        GFA_InitFixDroppedProjectileAI();
+
+    // };
 
     // Register console commands
     MEM_Info("Initializing console commands.");
@@ -289,7 +294,7 @@ func void GFA_InitAlways() {
     };
 
     // Reset/reinitialize free aiming settings every time to prevent crashes
-    if ((GFA_RANGED) || (GFA_SPELLS)) {
+    if (GFA_Flags & GFA_RANGED) || (GFA_Flags & GFA_SPELLS) {
         // On level change, Gothic does not maintain the focus instances (see Focus.d), nor does it reinitialize them.
         // The focus instances are, however, critical for enabling/disabling free aiming: Reinitialize them by hand.
         if (!_@(Focus_Ranged)) {
@@ -321,7 +326,7 @@ func void GFA_InitAlways() {
  * Initialize GFA framework. This function is called in Init_Global(). It includes registering hooks, console commands
  * and the retrieval of settings from the INI-file and other initializations.
  */
-func void GFA_Init() {
+func void GFA_Init(var int flags) {
     // Ikarus and LeGo need to be initialized first
     const int INIT_LEGO_NEEDED = 0; // Set to 1, if LeGo is not initialized by user (in INIT_Global())
     if (!_LeGo_Init) {
@@ -340,6 +345,7 @@ func void GFA_Init() {
     };
 
     MEM_Info(ConcatStrings(ConcatStrings("Initialize ", GFA_VERSION), "."));
+    GFA_Flags = flags;
 
     // Perform only once per session
     const int INITIALIZED = 0;

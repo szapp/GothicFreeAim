@@ -167,7 +167,7 @@ func void GFA_DisableAutoTurning(var int on) {
  * This function is called from GFA_UpdateStatus() if the menu settings change.
  */
 func void GFA_UpdateSettingsG2Ctrl(var int on) {
-    if (GOTHIC_BASE_VERSION != 2) || (!GFA_RANGED) {
+    if (GOTHIC_BASE_VERSION != 2) || (!(GFA_Flags & GFA_RANGED)) {
         return;
     };
 
@@ -258,8 +258,8 @@ func void GFA_PreventFocusCollectionBodystates() {
     };
 
     var oCNpc her; her = Hlp_GetNpc(hero);
-    if ((her.fmode == FMODE_FAR) || (her.fmode == FMODE_FAR+1)) && (GFA_RANGED) // Bow or crossbow
-    || ((her.fmode == FMODE_MAGIC) && (GFA_SPELLS)) { // Spell
+    if ((her.fmode == FMODE_FAR) || (her.fmode == FMODE_FAR+1)) && (GFA_Flags & GFA_RANGED) // Bow or crossbow
+    || ((her.fmode == FMODE_MAGIC) && (GFA_Flags & GFA_SPELLS)) { // Spell
         GFA_SetFocusAndTarget(0);
 
         // With Gothic 2 controls, the reticle is still visible

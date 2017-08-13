@@ -9,8 +9,8 @@
 
 
 /*
- * When collecting projectiles is enabled (GFA_REUSE_PROJECTILES == 1), this function is called whenever a projectile
- * (arrows and bolts) hits an NPC or stops in the world. It is useful to replace the projectile or to remove it.
+ * When collecting projectiles is enabled (GFA_REUSE_PROJECTILES), this function is called whenever a projectile (arrows
+ * and bolts) hits an NPC or stops in the world. It is useful to replace the projectile or to remove it.
  * Return value is an item instance. When returning zero, the projectile is destroyed.
  * The parameter 'inventoryNpc' holds the NPC in whose inventory it will be put, or is empty if it landed in the world.
  *

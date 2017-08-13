@@ -33,7 +33,7 @@ func void GFA_CH_StartCriticalHitEvent_(var C_Npc target) {
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Start an event from config
-    GFA_StartCriticalHitEvent(target, weapon, (GFA_ACTIVE && GFA_RANGED));
+    GFA_StartCriticalHitEvent(target, weapon, (GFA_ACTIVE && (GFA_Flags & GFA_RANGED)));
 };
 
 
@@ -130,7 +130,7 @@ func void GFA_CH_DetectCriticalHit() {
     if (Hlp_StrCmp(weakspot.node, "")) {
         criticalHit = 0;
         debugInfo = "No weak spot defined in config";
-    } else if (!GFA_ACTIVE) || (!GFA_RANGED) {
+    } else if (!GFA_ACTIVE) || (!(GFA_Flags & GFA_RANGED)) {
         // Critical hits cause an advantage when playing with free aiming enabled compared to auto aim. This is, because
         // there are no critical hits for ranged combat in Gothic 2. Here, they are introduced for balancing reasons.
         // Note: Gothic 1 already has critical hits for auto aiming. This is replaced here.

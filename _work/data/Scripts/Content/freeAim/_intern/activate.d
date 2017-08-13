@@ -36,7 +36,7 @@ func void GFA_UpdateSettings(var int on) {
 
     if (on) {
         // Turn free aiming on
-        if (GFA_RANGED) {
+        if (GFA_Flags & GFA_RANGED) {
             // Set stricter focus collection
             Focus_Ranged.npc_azi = 15.0;
 
@@ -45,7 +45,7 @@ func void GFA_UpdateSettings(var int on) {
 
         };
 
-        if (GFA_SPELLS) {
+        if (GFA_Flags & GFA_SPELLS) {
             // New camera mode (does not affect Gothic 1)
             MEM_WriteString(zString_CamModMagic, STR_Upper(GFA_CAMERA));
         };
@@ -149,7 +149,7 @@ func void GFA_IsActive() {
     // Check fight mode
     if (her.fmode == FMODE_MAGIC) {
         // Check if free aiming for spells is disabled
-        if (!GFA_SPELLS) {
+        if (!(GFA_Flags & GFA_SPELLS)) {
             GFA_DisableAutoTurning(0);
             GFA_SetCameraModes(0);
             GFA_ACTIVE = 1;
@@ -191,7 +191,7 @@ func void GFA_IsActive() {
 
     } else if (her.fmode >= FMODE_FAR) { // Greater or equal: Crossbow has different fight mode!
         // Check if free aiming for ranged combat is disabled
-        if (!GFA_RANGED) {
+        if (!(GFA_Flags & GFA_RANGED)) {
             GFA_DisableAutoTurning(0);
             GFA_SetCameraModes(0);
             GFA_ACTIVE = 1;

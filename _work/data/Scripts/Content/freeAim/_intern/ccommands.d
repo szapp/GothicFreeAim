@@ -69,7 +69,7 @@ func string GFA_DebugTraceRay(var string command) {
  * When entered in the console, the current shooting statistics are displayed as the console output.
  */
 func string GFA_GetShootingStats(var string command) {
-    if (!GFA_ACTIVE) || (!GFA_RANGED) {
+    if (!GFA_ACTIVE) || (!(GFA_Flags & GFA_RANGED)) {
         return "Shooting statistics not available. (Requires free aiming for ranged weapons)";
     };
 
@@ -93,7 +93,7 @@ func string GFA_GetShootingStats(var string command) {
     SB(STR_Prefix(toStringf(pAccuracy), 4));
     SB("%");
 
-    if (GFA_CRITICALHITS) {
+    if (GFA_Flags & GFA_CRITICALHITS) {
         SBc(13); SBc(10);
         SB("Critical hits: ");
         SBi(GFA_StatsCriticalHits);
@@ -154,13 +154,13 @@ func string GFA_GetInfo(var string command) {
     SBc(13); SBc(10);
 
     SB("Free aiming: ");
-    SB(MEM_ReadStatStringArr(onOff, GFA_ACTIVE));
+    SB(MEM_ReadStatStringArr(onOff, GFA_ACTIVE > 0));
     if (GFA_ACTIVE) {
         SB(" for");
-        if (GFA_RANGED) {
+        if (GFA_Flags & GFA_RANGED) {
             SB(" (ranged)");
         };
-        if (GFA_SPELLS) {
+        if (GFA_Flags & GFA_SPELLS) {
             SB(" (spells)");
         };
 
@@ -171,15 +171,15 @@ func string GFA_GetInfo(var string command) {
     SBc(13); SBc(10);
 
     SB("Reusable projectiles: ");
-    SB(MEM_ReadStatStringArr(onOff, GFA_REUSE_PROJECTILES));
+    SB(MEM_ReadStatStringArr(onOff, (GFA_Flags & GFA_REUSE_PROJECTILES) > 0));
     SBc(13); SBc(10);
 
     SB("Custom collision behaviors: ");
-    SB(MEM_ReadStatStringArr(onOff, GFA_CUSTOM_COLLISIONS));
+    SB(MEM_ReadStatStringArr(onOff, (GFA_Flags & GFA_CUSTOM_COLLISIONS) > 0));
     SBc(13); SBc(10);
 
     SB("Criticial hit detection: ");
-    SB(MEM_ReadStatStringArr(onOff, GFA_CRITICALHITS));
+    SB(MEM_ReadStatStringArr(onOff, (GFA_Flags & GFA_CRITICALHITS) > 0));
 
     var string ret; ret = SB_ToString();
     SB_Destroy();
