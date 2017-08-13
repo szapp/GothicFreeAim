@@ -11,11 +11,15 @@
 
 
 /*
- * This function is called every time an NPC is hit by a projectile (arrows and bolts). It can be used to define the
- * collision behavior (or disabling hit registration) on NPCs based on different criteria.
+ * This function is called every time an NPC is hit (positive hit!) by a projectile (arrows and bolts). It can be used
+ * to define the collision behavior (or disabling hit registration) on NPCs based on different criteria.
  * The parameter 'material' holds the material of the armor (of the target), -1 for no armor equipped. For armors of
  * NPCs the materials are defined as in Constants.d (MAT_METAL, MAT_WOOD, ...).
+ *
  * Note: Unlike most other config functions, this function is also called for NPC shooters!
+ *
+ * Note: If GFA_TRUE_HITCHANCE == true, this function is called for ALL hits (all hits are positive hits).
+ *       If GFA_TRUE_HITCHANCE == false, this function is called for POSITIVE hits only.
  *
  * Ideas: 'ineffective' ranged weapons, armor materials immune to arrows, disable friendly-fire, maximum range, ...
  * Examples are written below and commented out and serve as inspiration of what is possible.

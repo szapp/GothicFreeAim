@@ -180,6 +180,18 @@ func void GFA_CC_ProjectileCollisionWithNpc() {
     var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EBP);
     var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
 
+    // Hit chance, calculated from skill (or dexterity in Gothic 1) and distance. G1: float, G2: integer
+    var int hitChancePtr; hitChancePtr = MEMINT_SwitchG1G2(/*esp+3Ch-28h*/ ESP+20, /*esp+1ACh-194h*/ ESP+24);
+    var int hitChance; hitChance = MEMINT_SwitchG1G2(MEM_ReadInt(hitChancePtr), mkf(MEM_ReadInt(hitChancePtr)));
+
+    // Determine if it is a positive hit (may happen if GFA_TRUE_HITCHANCE == false)
+    var int rand; rand = EAX % 100;
+    var int hit; hit = lf(mkf(rand), hitChance);
+
+    // This class variable is abused as collision counter
+    var int collisionCounter; collisionCounter = MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset);
+    MEM_WriteInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset, collisionCounter+1);
+
     // Collision behaviors
     const int DESTROY = 0; // Projectile doest not cause damage and vanishes
     const int DAMAGE  = 1; // Projectile causes damage and may stay in the inventory of the victim
@@ -187,9 +199,17 @@ func void GFA_CC_ProjectileCollisionWithNpc() {
 
     // Retrieve collision behavior
     var int collision;
-    if (MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset)) {
+    if (collisionCounter > 0) {
         // Adjust collision behavior for NPCs, if the projectile bounced off a surface before
         collision = GFA_COLL_PRIOR_NPC;
+    } else if (!hit) {
+        // If not a positive hit, restore default behavior
+        if (GOTHIC_BASE_VERSION == 1) {
+            MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1); // Destroy projectile on impact
+        } else {
+            GFA_CC_SetProjectileCollisionWithNpc(0); // Restore default damage behavior (automatic by armor material)
+        };
+        return;
     } else {
         // Retrieve the collision behavior based on the shooter, target and the material type of their armor
         var C_Npc target; target = _^(MEMINT_SwitchG1G2(EBX, MEM_ReadInt(/*esp+1ACh-190h*/ ESP+28)));
@@ -209,33 +229,12 @@ func void GFA_CC_ProjectileCollisionWithNpc() {
         GFA_CC_SetProjectileCollisionWithNpc((collision == DEFLECT)+1); // 2 == DEFLECT, 1 otherwise
     };
 
-    // This class variable is abused as collision counter
-    var int collisionCounter; collisionCounter = MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset);
-    MEM_WriteInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset, collisionCounter+1);
+    // Overwrite hit chance to disable the hit registration if it was supposed to be a positive hit, but now is not
+    if (hit) && (collision != DAMAGE) {
+        MEM_WriteInt(hitChancePtr, MEMINT_SwitchG1G2(FLOATNULL, 0)); // G1: float, G2: integer
 
-    // Overwrite hit registration accordingly
-    if (collision == DAMAGE) {
-        // Nothing to change
-        return;
-    };
-
-    // Hit chance, calculated from skill (or dexterity in Gothic 1) and distance. G1: float, G2: integer
-    var int hitChancePtr; hitChancePtr = MEMINT_SwitchG1G2(/*esp+3Ch-28h*/ ESP+20, /*esp+1ACh-194h*/ ESP+24);
-
-    // Overwrite hit chance to disable the hit registration
-    MEM_WriteInt(hitChancePtr, MEMINT_SwitchG1G2(FLOATNULL, 0));
-
-    // Update shooting statistics (decrement, if shot was supposed to hit, see GFA_OverwriteHitChance())
-    if (Npc_IsPlayer(shooter)) && (GFA_ACTIVE) && (GFA_RANGED) {
-        // G1: float, G2: integer
-        var int hitChance; hitChance = MEMINT_SwitchG1G2(MEM_ReadInt(hitChancePtr), mkf(MEM_ReadInt(hitChancePtr)));
-
-        // The random number by which a hit is determined (integer)
-        var int rand; rand = EAX % 100;
-
-        // Determine if it would have been a positive hit
-        if (lf(mkf(rand), hitChance)) {
-            // Correct hit statistics
+        // Update shooting statistics (decrement, if shot was supposed to hit, see GFA_OverwriteHitChance())
+        if (Npc_IsPlayer(shooter)) && (GFA_ACTIVE) && (GFA_RANGED) {
             GFA_StatsHits -= 1;
         };
     };

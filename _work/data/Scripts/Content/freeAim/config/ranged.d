@@ -127,7 +127,7 @@ func int GFA_GetRecoil(var C_Item weapon, var int talent) {
 
 /*
  * This function is called at the point of shooting a bow or crossbow. It may be used to alter the base damage at time
- * of shooting (only DAM_POINT damage). This should never be necessary, as all damage specifications should be set in
+ * of shooting (DAM_POINT damage only). This should never be necessary, as all damage specifications should be set in
  * the item script of the weapon. However, here the initial damage may be scaled by draw force or accuracy (see
  * functions above). The return value is the base damage (equivalent to the damage in the item script of the weapon).
  *
