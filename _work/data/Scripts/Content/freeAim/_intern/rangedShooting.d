@@ -29,7 +29,7 @@
 func int GFA_GetDrawForce_() {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
-    if (!GFA_GetWeaponAndTalent(_@(weaponPtr), _@(talent))) {
+    if (!GFA_GetWeaponAndTalent(hero, _@(weaponPtr), _@(talent))) {
         // On error return 50% draw force
         return 50;
     };
@@ -55,7 +55,7 @@ func int GFA_GetDrawForce_() {
 func int GFA_GetAccuracy_() {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
-    if (!GFA_GetWeaponAndTalent(_@(weaponPtr), _@(talent))) {
+    if (!GFA_GetWeaponAndTalent(hero, _@(weaponPtr), _@(talent))) {
         // On error return 50% accuracy
         return 50;
     };
@@ -82,7 +82,7 @@ func int GFA_GetAccuracy_() {
 func int GFA_GetInitialBaseDamage_(var int basePointDamage, var int aimingDistance) {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
-    if (!GFA_GetWeaponAndTalent(_@(weaponPtr), _@(talent))) {
+    if (!GFA_GetWeaponAndTalent(hero, _@(weaponPtr), _@(talent))) {
         // On error return the base damage unaltered
         return basePointDamage;
     };
@@ -117,7 +117,7 @@ func int GFA_GetInitialBaseDamage_(var int basePointDamage, var int aimingDistan
 func int GFA_GetRecoil_() {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
-    if (!GFA_GetWeaponAndTalent(_@(weaponPtr), _@(talent))) {
+    if (!GFA_GetWeaponAndTalent(hero, _@(weaponPtr), _@(talent))) {
         // On error return 0% recoil
         return 0;
     };
@@ -420,7 +420,7 @@ func void GFA_SetupProjectile() {
                 hitchance = hero.attribute[ATR_DEXTERITY];
             } else {
                 // In Gothic 2, the hit chance is the learned skill value (talent)
-                GFA_GetWeaponAndTalent(0, _@(hitchance));
+                GFA_GetWeaponAndTalent(hero, 0, _@(hitchance));
             };
             SB("   hit chance:        ");
             SBi(hitchance);

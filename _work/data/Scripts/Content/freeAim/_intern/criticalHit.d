@@ -29,7 +29,7 @@
 func void GFA_CH_StartCriticalHitEvent_(var C_Npc target) {
     // Get readied/equipped ranged weapon
     var int weaponPtr;
-    GFA_GetWeaponAndTalent(_@(weaponPtr), 0);
+    GFA_GetWeaponAndTalent(hero, _@(weaponPtr), 0);
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Start an event from config
@@ -45,7 +45,7 @@ func void GFA_CH_StartCriticalHitEvent_(var C_Npc target) {
 func void GFA_CH_GetCriticalHitDefinitions_(var C_Npc target, var int damage, var int returnPtr) {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
-    GFA_GetWeaponAndTalent(_@(weaponPtr), _@(talent));
+    GFA_GetWeaponAndTalent(hero, _@(weaponPtr), _@(talent));
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Define a critical hit/weak spot in config
@@ -69,7 +69,7 @@ func void GFA_CH_GetCriticalHitDefinitions_(var C_Npc target, var int damage, va
 func int GFA_CH_GetCriticalHitAutoAim_(var C_Npc target) {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
-    GFA_GetWeaponAndTalent(_@(weaponPtr), _@(talent));
+    GFA_GetWeaponAndTalent(hero, _@(weaponPtr), _@(talent));
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Retrieve auto aim critical hit chance from config

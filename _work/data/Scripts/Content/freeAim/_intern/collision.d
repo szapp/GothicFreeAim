@@ -137,7 +137,7 @@ func void GFA_CC_ProjectileDestroy(var int arrowAI) {
 func int GFA_CC_GetCollisionWithNpc_(var C_Npc shooter, var C_Npc target) {
     // Get readied/equipped ranged weapon
     var int weaponPtr;
-    GFA_GetWeaponAndTalent(_@(weaponPtr), 0);
+    GFA_GetWeaponAndTalent(shooter, _@(weaponPtr), 0);
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Get material of equipped armor
@@ -163,7 +163,7 @@ func int GFA_CC_GetCollisionWithNpc_(var C_Npc shooter, var C_Npc target) {
 func int GFA_CC_GetCollisionWithWorld_(var C_Npc shooter, var int materials, var string textures) {
     // Get readied/equipped ranged weapon
     var int weaponPtr;
-    GFA_GetWeaponAndTalent(_@(weaponPtr), 0);
+    GFA_GetWeaponAndTalent(shooter, _@(weaponPtr), 0);
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Retrieve collision definition from config
@@ -448,7 +448,7 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
 func int GFA_CC_GetDamageBehavior_(var C_Npc target) {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
-    GFA_GetWeaponAndTalent(_@(weaponPtr), _@(talent));
+    GFA_GetWeaponAndTalent(hero, _@(weaponPtr), _@(talent));
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Retrieve damage behavior from config

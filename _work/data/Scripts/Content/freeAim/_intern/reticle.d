@@ -119,7 +119,7 @@ func void GFA_ResetOnWeaponSwitch() {
 func void GFA_GetRangedReticle_(var int target, var int distance, var int returnPtr) {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
-    if (!GFA_GetWeaponAndTalent(_@(weaponPtr), _@(talent))) {
+    if (!GFA_GetWeaponAndTalent(hero, _@(weaponPtr), _@(talent))) {
         return;
     };
     var C_Item weapon; weapon = _^(weaponPtr);

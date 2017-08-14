@@ -114,8 +114,7 @@ func void GFA_SetFocusAndTarget(var int focusPtr) {
  *
  * Returns 1 on success, 0 otherwise.
  */
-func int GFA_GetWeaponAndTalent(var int weaponPtr, var int talentPtr) {
-    var C_Npc slf; slf = Hlp_GetNpc(hero);
+func int GFA_GetWeaponAndTalent(var C_Npc slf, var int weaponPtr, var int talentPtr) {
     var int error; error = 0;
 
     // Get readied/equipped ranged weapon
@@ -150,7 +149,7 @@ func int GFA_GetWeaponAndTalent(var int weaponPtr, var int talentPtr) {
                 if (GOTHIC_BASE_VERSION == 1) {
                     // Caution: The hit chance in Gothic 1 is defined by dexterity (same for bow and crossbow). This
                     // function, however, returns the critical hit chance!
-                    talent = Npc_GetTalentValue(hero, talent);
+                    talent = Npc_GetTalentValue(slf, talent);
                 } else {
                     // In Gothic 2 the hit chance is the skill level
                     // talent = slf.hitChance[NPC_TALENT_BOW]; // Cannot write this, because of Gothic 1 compatibility

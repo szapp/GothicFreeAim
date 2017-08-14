@@ -71,6 +71,8 @@ func int GFA_GetCollisionWithNpc(var C_Npc shooter, var C_Npc target, var C_Item
  *
  * The parameter 'isCriticalHit' states whether the active shot is a critical hit.
  *
+ * Note: This function is only called if the player is the shooter.
+ *
  * Ideas: special knockout munition, NPCs that cannot be killed by ranged weapons, instant kill on critical hit, ...
  * Examples are written below and commented out and serve as inspiration of what is possible.
  */
