@@ -31,6 +31,7 @@ const int zCVob__GetRigidBody                        =  6109088; //0x5D37A0
 const int zCVob__TraceRay                            =  6113760; //0x5D49E0
 const int zCVob__SetAI                               =  6108976; //0x5D3730
 const int zCVob__SetSleeping                         =  6124112; //0x5D7250
+const int zCVob__RotateWorld                         =  6217744; //0x5EE010
 const int zCArray_zCVob__IsInList                    =  6590128; //0x648EB0
 const int zCRigidBody__SetVelocity                   =  5854080; //0x595380
 const int zCWorld__TraceRayNearestHit_Vob            =  6244064; //0x5F46E0

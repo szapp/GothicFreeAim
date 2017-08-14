@@ -393,6 +393,31 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
     };
 
     if (collision == DEFLECT) {
+
+        // Aesthetics: Slightly rotate the projectile, such that they do not all lie/stay in parallel
+        if (GFA_Flags & GFA_REUSE_PROJECTILES) && (collisionCounter < 2) {
+            // Rotate around y-axis
+            var int vec[3];
+            vec[0] = FLOATNULL;
+            vec[1] = FLOATONE;
+            vec[2] = FLOATNULL;
+
+            // Randomize the degrees
+            var int degrees; degrees = fracf(r_MinMax(7, 50), 10); // [0.7, 5.0] degrees (at least 0.7 degrees!)
+            if (r_Max(1)) {
+                degrees = negf(degrees);
+            };
+
+            var int vecPtr; vecPtr = _@(vec);
+            const int call = 0;
+            if (CALL_Begin(call)) {
+                CALL_FloatParam(_@(degrees));
+                CALL_PtrParam(_@(vecPtr));
+                CALL__thiscall(_@(projectilePtr), zCVob__RotateWorld);
+                call = CALL_End();
+            };
+        };
+
         if (GOTHIC_BASE_VERSION == 1) {
             // Gothic 1: Adjust the projectile to deflect
             GFA_CC_ProjectileDeflect(rigidBody);
