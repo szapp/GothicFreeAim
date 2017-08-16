@@ -171,7 +171,15 @@ func void GFA_SetupProjectile() {
 
     // When the target is too close, shots go vertically up, because the reticle is targeted. To solve this problem,
     // restrict the minimum distance
-    if (lf(distPlayer, mkf(GFA_MIN_AIM_DIST))) {
+    var int focusDist;
+    var oCNpc her; her = Hlp_GetNpc(hero);
+    if (Hlp_Is_oCNpc(her.focus_vob)) {
+        var C_Npc focusNpc; focusNpc = _^(her.focus_vob);
+        focusDist = Npc_GetDistToPlayer(focusNpc);
+    } else {
+        focusDist = GFA_MAX_DIST;
+    };
+    if (lf(distPlayer, mkf(GFA_MIN_AIM_DIST))) || (focusDist < GFA_MIN_AIM_DIST) {
         distance = addf(distance, mkf(GFA_MIN_AIM_DIST));
     };
 
