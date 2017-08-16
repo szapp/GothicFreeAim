@@ -162,9 +162,9 @@ func int GFA_GetCollisionWithWorld(var C_Npc shooter, var C_Item weapon, var int
         // ...
     }; */
 
-    // The projectile might break on impact with stone (20% of the shots)
+    // The projectile might break on impact with stone (60% of the shots)
     if ((materials & STONE) || (STR_IndexOf(textures, "STONE") != -1))
-    && (Hlp_Random(100) < 20) {
+    && (Hlp_Random(100) < 60) {
         return DESTROY;
     };
 
