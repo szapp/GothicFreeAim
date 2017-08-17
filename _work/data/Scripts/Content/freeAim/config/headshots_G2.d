@@ -32,6 +32,15 @@ func void headshots(var C_Npc target, var int returnPtr) {
         weakspot.dimX = -1; // Retrieve the dimensions automatically from model. This works only on humanoids AND only
         weakspot.dimY = -1; // for head node! All other creatures need actual hard coded bounding box dimensions
 
+        // Add an exception for metal armors (paladin armor) - Gothic 2 only, because there are no helmets in Gothic 1
+        if (target.guild < GIL_SEPERATOR_HUM) && (Npc_HasEquippedArmor(target)) {
+            var C_Item armor; armor = Npc_GetEquippedArmor(target);
+            if (armor.material == MAT_METAL) {
+                weakspot.node = "";
+                weakspot.debugInfo = "Metal armors protect from head shots";
+            };
+        };
+
     } else if (target.guild == GIL_BLOODFLY) // Bloodflys and meatbugs don't have a head node
            || (target.guild == GIL_MEATBUG)
            || (target.guild == GIL_STONEGUARDIAN) // Stoneguardians have too large heads (head node is not centered)
