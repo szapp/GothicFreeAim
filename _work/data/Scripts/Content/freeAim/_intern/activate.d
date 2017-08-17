@@ -159,6 +159,21 @@ func void GFA_IsActive() {
         // Gothic 1 does not differentiate between camera modes. Force/overwrite all to free aiming mode
         GFA_SetCameraModes(1);
 
+        // Check if active spell supports free aiming
+        var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
+        if (!GFA_IsSpellEligible(spell)) {
+            // Reset ranged focus collection
+            Focus_Magic.npc_azi = 45.0;
+            Focus_Magic.item_prio = MEMINT_SwitchG1G2(0, -1); // There are differences in focus.d (telekinesis!)
+            GFA_DisableAutoTurning(0);
+            GFA_ACTIVE = 1;
+            return;
+        } else {
+            // Spell uses free aiming: Set stricter focus collection
+            Focus_Magic.npc_azi = 15.0;
+            Focus_Magic.item_prio = 0;
+        };
+
         // Gothic 1 controls require action key to be pressed/held
         if (GOTHIC_BASE_VERSION == 2) {
             if (MEM_ReadInt(oCGame__s_bUseOldControls)) && (!keyPressed) {
@@ -172,22 +187,9 @@ func void GFA_IsActive() {
             return;
         };
 
-        // Check if active spell supports free aiming
-        var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
-        if (!GFA_IsSpellEligible(spell)) {
-            // Reset ranged focus collection
-            Focus_Magic.npc_azi = 45.0;
-            Focus_Magic.item_prio = -1;
-            GFA_DisableAutoTurning(0);
-            GFA_ACTIVE = 1;
-            return;
-        } else {
-            // Spell uses free aiming: Set stricter focus collection
-            Focus_Magic.npc_azi = 15.0;
-            Focus_Magic.item_prio = 0;
-            GFA_DisableAutoTurning(1);
-            GFA_ACTIVE = FMODE_MAGIC;
-        };
+        // If this is reach, free aiming for the spell is active
+        GFA_DisableAutoTurning(1);
+        GFA_ACTIVE = FMODE_MAGIC;
 
     } else if (her.fmode >= FMODE_FAR) { // Greater or equal: Crossbow has different fight mode!
         // Check if free aiming for ranged combat is disabled
