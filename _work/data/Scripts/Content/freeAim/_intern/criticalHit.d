@@ -225,11 +225,21 @@ func void GFA_CH_DetectCriticalHit() {
         // The internal engine functions are not accurate enough for detecting a shot through a bounding box. Instead
         // check here if 'any' point along the line of the projectile direction lies inside the bounding box of the node
 
-        // Direction of collision line along the right-vector of the projectile (projectile flies sideways)
+        // Direction of collision line by subtracting the last position of the rigid body from the projectile position
+        var zCRigidBody rBody; rBody = _^(projectile._zCVob_rigidBody);
         var int dir[3];
-        dir[0] = projectile._zCVob_trafoObjToWorld[0];
-        dir[1] = projectile._zCVob_trafoObjToWorld[4];
-        dir[2] = projectile._zCVob_trafoObjToWorld[8];
+        dir[0] = subf(projectile._zCVob_trafoObjToWorld[ 3], rBody.xPos[0]);
+        dir[1] = subf(projectile._zCVob_trafoObjToWorld[ 7], rBody.xPos[1]);
+        dir[2] = subf(projectile._zCVob_trafoObjToWorld[11], rBody.xPos[2]);
+
+        // Direction vector needs to be normalized
+        var int dirPtr; dirPtr = _@(dir);
+        const int call3 = 0;
+        if (CALL_Begin(call3)) {
+            CALL__thiscall(_@(dirPtr), zVEC3__NormalizeSafe);
+            call3 = CALL_End();
+        };
+        MEM_CopyBytes(CALL_RetValAsPtr(), dirPtr, sizeof_zVEC3);
 
         // Trajectory starts 3 meters (FLOAT3C) behind the projectile position, to detect bounding boxes at close range
         GFA_DebugWSTrj[0] = addf(projectile._zCVob_trafoObjToWorld[ 3], mulf(dir[0], FLOAT3C));

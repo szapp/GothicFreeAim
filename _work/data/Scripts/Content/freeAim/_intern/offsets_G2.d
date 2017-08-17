@@ -67,6 +67,7 @@ const int oCVisualFX__Stop                           =  4799456; //0x493BE0
 const int zCModel__SearchNode                        =  5758960; //0x57DFF0
 const int zCModel__GetBBox3DNodeWorld                =  5738736; //0x5790F0
 const int zCModel__GetNodePositionWorld              =  5738816; //0x579140
+const int zVEC3__NormalizeSafe                       =  4819488; //0x498A20
 const int zTBBox3D__Draw                             =  5529312; //0x545EE0
 const int zCLineCache__Line3D                        =  5289040; //0x50B450
 const int zlineCache                                 =  9257720; //0x8D42F8
