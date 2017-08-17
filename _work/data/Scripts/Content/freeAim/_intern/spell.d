@@ -70,17 +70,18 @@ func void GFA_SetupSpell() {
  * but exits right away if the active spell does not support free aiming or if the player is not currently aiming.
  */
 func void GFA_SpellAiming() {
+    var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
+
     // Only show reticle for spells that support free aiming and during aiming (Gothic 1 controls)
     if (GFA_ACTIVE != FMODE_MAGIC) {
         GFA_RemoveReticle();
         GFA_AimVobDetachFX();
-        if (GFA_NO_AIM_NO_FOCUS) {
+        if (GFA_IsSpellEligible(spell)) && (GFA_NO_AIM_NO_FOCUS) {
             GFA_SetFocusAndTarget(0);
         };
         return;
     };
 
-    var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
     var int distance;
     var int target;
 
