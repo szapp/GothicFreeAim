@@ -144,6 +144,7 @@ const int oCAIArrow_origin_offset                    = 88;  //0x0058
 const int oCAIArrow_destroyProjectile_offset         = 92;  //0x005C
 
 const int zCRigidBody_mass_offset                    = 0;   //0x0000
+const int zCRigidBody_xPos_offset                    = 80;  //0x0050
 const int zCRigidBody_gravity_offset                 = 236; //0x00EC
 const int zCRigidBody_velocity_offset                = 188; //0x00BC
 const int zCRigidBody_bitfield_offset                = 256; //0x0100

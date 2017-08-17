@@ -226,11 +226,14 @@ func void GFA_CH_DetectCriticalHit() {
         // check here if 'any' point along the line of the projectile direction lies inside the bounding box of the node
 
         // Direction of collision line by subtracting the last position of the rigid body from the projectile position
-        var zCRigidBody rBody; rBody = _^(projectile._zCVob_rigidBody);
+        var int rBody; rBody = projectile._zCVob_rigidBody;
+        if (!rBody) {
+            return;
+        };
         var int dir[3];
-        dir[0] = subf(projectile._zCVob_trafoObjToWorld[ 3], rBody.xPos[0]);
-        dir[1] = subf(projectile._zCVob_trafoObjToWorld[ 7], rBody.xPos[1]);
-        dir[2] = subf(projectile._zCVob_trafoObjToWorld[11], rBody.xPos[2]);
+        dir[0] = subf(projectile._zCVob_trafoObjToWorld[ 3], MEM_ReadInt(rBody+zCRigidBody_xPos_offset));
+        dir[1] = subf(projectile._zCVob_trafoObjToWorld[ 7], MEM_ReadInt(rBody+zCRigidBody_xPos_offset+4));
+        dir[2] = subf(projectile._zCVob_trafoObjToWorld[11], MEM_ReadInt(rBody+zCRigidBody_xPos_offset+8));
 
         // Direction vector needs to be normalized
         var int dirPtr; dirPtr = _@(dir);
