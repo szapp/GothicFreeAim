@@ -35,9 +35,10 @@ func void headshots(var C_Npc target, var int returnPtr) {
         // Add an exception for metal armors (paladin armor) - Gothic 2 only, because there are no helmets in Gothic 1
         if (target.guild < GIL_SEPERATOR_HUM) && (Npc_HasEquippedArmor(target)) {
             var C_Item armor; armor = Npc_GetEquippedArmor(target);
-            if (armor.material == MAT_METAL) {
+            if (armor.material == MAT_METAL)    // Armor is made out of metal
+            && (!Npc_CanSeeNpc(target, hero)) { // Target is not facing the player (helmets do not cover the face)
                 weakspot.node = "";
-                weakspot.debugInfo = "Metal armors protect from head shots";
+                weakspot.debugInfo = "Metal armors protect from head shots (except for the face)";
             };
         };
 
