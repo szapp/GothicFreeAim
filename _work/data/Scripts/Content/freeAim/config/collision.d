@@ -37,6 +37,14 @@ func int GFA_GetCollisionWithNpc(var C_Npc shooter, var C_Npc target, var C_Item
         return DESTROY;
     };
 
+    // Gothic 1 free mine Gorn fix
+    if (GOTHIC_BASE_VERSION == 1)        // Only for Gothic 1
+    && (Npc_IsPlayer(shooter))           // Only if player is the shooter
+    && (target.id == 5)                  // Gorn in free mine has his own ID (different ID in the main world)
+    && (target.aivar[AIV_PARTYMEMBER]) { // Only while he is not waiting
+        return DESTROY;
+    };
+
     /*
     // Metal armors may be more durable
     if (material == MAT_METAL) && (Hlp_Random(100) < 20) {
