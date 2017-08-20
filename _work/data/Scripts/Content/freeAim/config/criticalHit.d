@@ -4,7 +4,7 @@
  * Requires the feature GFA_CRITICALHITS (see config\settings.d).
  *
  * List of included functions:
- *  func void GFA_GetCriticalHitDefinitions(C_Npc target, C_Item weapon, int talent, int damage, int returnPtr)
+ *  func void GFA_GetCriticalHitDefinitions(C_Npc target, C_Item weapon, int talent, int damage, int damageType, ...)
  *  func int GFA_GetCriticalHitAutoAim(C_Npc target, C_Item weapon, int talent)
  *  func void GFA_StartCriticalHitEvent(C_Npc target, C_Item weapon, int freeAimingIsEnabled)
  */
@@ -32,7 +32,7 @@
  * Here, preliminary weak spots for almost all Gothic 1 and Gothic 2 monsters are defined (all head shots).
  */
 func void GFA_GetCriticalHitDefinitions(var C_Npc target, var C_Item weapon, var int talent, var int damage,
-        var int returnPtr) {
+        var int damageType, var int returnPtr) {
     // Get weak spot instance from call-by-reference argument
     var Weakspot weakspot; weakspot = _^(returnPtr);
 
@@ -40,14 +40,18 @@ func void GFA_GetCriticalHitDefinitions(var C_Npc target, var C_Item weapon, var
     // always. This is part of the fighting mechanics
     if (GOTHIC_BASE_VERSION == 2) {
         // Gothic 2: (damage + dexterity > protection of target)
-        if (roundf(damage)+hero.attribute[ATR_DEXTERITY] < target.protection[PROT_POINT]) {
+        if (roundf(damage)+hero.attribute[ATR_DEXTERITY] < target.protection[PROT_POINT]) { // G2 takes point protection
             weakspot.debugInfo = "Damage does not exceed protection"; // Debugging info for zSpy (see GFA_DEBUG_PRINT)
             return;
         };
     } else {
         // Gothic 1: Do not signal a critical hit, if the total damage would still not cause damage:
         // (damage * 2 < protection of target)
-        if (roundf(damage)*2 < target.protection[PROT_POINT]) {
+
+        // Get protection values from target depending on damage type (is static array)
+        var int protection; protection = MEM_ReadStatArr(_@(target.protection), damageType);
+
+        if (roundf(damage)*2 < protection) {
             weakspot.debugInfo = "Critical hit would not exceed protection";
             return;
         };

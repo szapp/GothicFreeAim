@@ -42,14 +42,14 @@ func void GFA_CH_StartCriticalHitEvent_(var C_Npc target) {
  * GFA_CH_DetectCriticalHit().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
-func void GFA_CH_GetCriticalHitDefinitions_(var C_Npc target, var int damage, var int returnPtr) {
+func void GFA_CH_GetCriticalHitDefinitions_(var C_Npc target, var int damage, var int damageType, var int returnPtr) {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
     GFA_GetWeaponAndTalent(hero, _@(weaponPtr), _@(talent));
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Define a critical hit/weak spot in config
-    GFA_GetCriticalHitDefinitions(target, weapon, talent, damage, returnPtr);
+    GFA_GetCriticalHitDefinitions(target, weapon, talent, damage, damageType, returnPtr);
 
     // Correct the node string to be always upper case
     var Weakspot weakspot; weakspot = _^(returnPtr);
@@ -99,11 +99,19 @@ func void GFA_CH_DetectCriticalHit() {
         return;
     };
 
-    // Do this for DAM_POINT only (relevant for Gothic 1, in Gothic 2 EVERYTHING counts as DAM_POINT for projectiles)
+    // Do this for one damage type only. It gets too complicated for multiple damage types
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
-    if (projectile.damageType != DAM_POINT) {
+    var int iterator; iterator = projectile.damageType;
+    var int damageIndex; damageIndex = 0;
+    // Find damage index from bit field
+    while((iterator > 0) && ((iterator & 1) != 1)); // Check lower bit
+        damageIndex += 1;
+        // Cut off lower bit
+        iterator = iterator >> 1;
+    end;
+    if (iterator > 1) || (damageIndex == DAM_INDEX_MAX) {
         if (GFA_DEBUG_PRINT) {
-            MEM_Info("GFA_CH_DetectCriticalHit: Ignoring projectile: Does not have pure POINT damage.");
+            MEM_Info("GFA_CH_DetectCriticalHit: Ignoring projectile due to multiple/invalid damage types.");
         };
         return;
     };
@@ -111,6 +119,13 @@ func void GFA_CH_DetectCriticalHit() {
     var int damagePtr; damagePtr = MEMINT_SwitchG1G2(/*esp+48h-48h*/ ESP, /*esp+1ACh-C8h*/ ESP+228); // zREAL*
     var int targetPtr; targetPtr = MEMINT_SwitchG1G2(EBX, MEM_ReadInt(/*esp+1ACh-190h*/ ESP+28)); // oCNpc*
     var C_Npc targetNpc; targetNpc = _^(targetPtr);
+    var int protection;
+    if (GOTHIC_BASE_VERSION == 1) {
+        protection = MEM_ReadStatArr(_@(targetNpc.protection), damageIndex);
+    } else {
+        // Gothic 2 always considers point protection
+        protection = targetNpc.protection[PROT_POINT];
+    };
 
     // Check if NPC is down, function is not yet defined at time of parsing
     MEM_PushInstParam(targetNpc);
@@ -122,7 +137,7 @@ func void GFA_CH_DetectCriticalHit() {
     // Get weak spot node from target model
     var int weakspotPtr; weakspotPtr = MEM_Alloc(sizeof_Weakspot);
     var Weakspot weakspot; weakspot = _^(weakspotPtr);
-    GFA_CH_GetCriticalHitDefinitions_(targetNpc, MEM_ReadInt(damagePtr), weakspotPtr); // Retrieve weak spot specs
+    GFA_CH_GetCriticalHitDefinitions_(targetNpc, MEM_ReadInt(damagePtr), damageIndex, weakspotPtr); // Get weak spot
 
     var int criticalHit; // Variable that holds whether a critical hit was detected
     var string debugInfo; debugInfo = ""; // Internal debugging info string to display in zSpy (see GFA_DEBUG_PRINT)
@@ -300,9 +315,9 @@ func void GFA_CH_DetectCriticalHit() {
             SB("(");
             SBi(shotDamage);
             SB(" - ");
-            SBi(targetNpc.protection[PROT_POINT]);
+            SBi(protection);
             SB(") = ");
-            shotDamage = shotDamage-targetNpc.protection[PROT_POINT];
+            shotDamage = shotDamage-protection;
             if (shotDamage < 0) {
                 shotDamage = 0;
             };
@@ -313,11 +328,11 @@ func void GFA_CH_DetectCriticalHit() {
             SB(" + ");
             SBi(hero.attribute[ATR_DEXTERITY]);
             SB(" - ");
-            SBi(targetNpc.protection[PROT_POINT]);
+            SBi(protection);
             SB("), ");
             SBi(NPC_MINIMAL_DAMAGE);
             SB(" ] = ");
-            shotDamage = (shotDamage+hero.attribute[ATR_DEXTERITY])-targetNpc.protection[PROT_POINT];
+            shotDamage = (shotDamage+hero.attribute[ATR_DEXTERITY])-protection;
             if (shotDamage < NPC_MINIMAL_DAMAGE) {
                 shotDamage = NPC_MINIMAL_DAMAGE; // Minimum damage in Gothic 2 as defined in AI_Constants.d
             };

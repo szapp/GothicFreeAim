@@ -516,11 +516,19 @@ func void GFA_CC_SetDamageBehavior() {
         return;
     };
 
-    // Do this for DAM_POINT only (relevant for Gothic 1, in Gothic 2 EVERYTHING counts as DAM_POINT for projectiles)
+    // Do this for one damage type only. It gets too complicated for multiple damage types
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
-    if (projectile.damageType != DAM_POINT) {
+    var int iterator; iterator = projectile.damageType;
+    var int damageIndex; damageIndex = 0;
+    // Find damage index from bit field
+    while((iterator > 0) && ((iterator & 1) != 1)); // Check lower bit
+        damageIndex += 1;
+        // Cut off lower bit
+        iterator = iterator >> 1;
+    end;
+    if (iterator > 1) || (damageIndex == DAM_INDEX_MAX) {
         if (GFA_DEBUG_PRINT) {
-            MEM_Info("GFA_CC_SetDamageBehavior: Ignoring projectile: Does not have pure POINT damage.");
+            MEM_Info("GFA_CC_SetDamageBehavior: Ignoring projectile due to multiple/invalid damage types.");
         };
         return;
     };
@@ -529,16 +537,23 @@ func void GFA_CC_SetDamageBehavior() {
     var int baseDamage; baseDamage = roundf(MEM_ReadInt(damagePtr));
     var int targetPtr; targetPtr = MEMINT_SwitchG1G2(EBX, MEM_ReadInt(/*esp+1ACh-190h*/ ESP+28)); // oCNpc*
     var C_Npc targetNpc; targetNpc = _^(targetPtr);
+    var int protection;
+    if (GOTHIC_BASE_VERSION == 1) {
+        protection = MEM_ReadStatArr(_@(targetNpc.protection), damageIndex);
+    } else {
+        // Gothic 2 always considers point protection
+        protection = targetNpc.protection[PROT_POINT];
+    };
 
     // Calculate final damage (to be applied to the target) from base damage
     var int finalDamage;
     if (GOTHIC_BASE_VERSION == 1) {
-        finalDamage = baseDamage-targetNpc.protection[PROT_POINT];
+        finalDamage = baseDamage-protection;
         if (finalDamage < 0) {
             finalDamage = 0;
         };
     } else {
-        finalDamage = (baseDamage+hero.attribute[ATR_DEXTERITY])-targetNpc.protection[PROT_POINT];
+        finalDamage = (baseDamage+hero.attribute[ATR_DEXTERITY])-protection;
         if (finalDamage < NPC_MINIMAL_DAMAGE) {
             finalDamage = NPC_MINIMAL_DAMAGE;
         };
@@ -587,9 +602,9 @@ func void GFA_CC_SetDamageBehavior() {
     // Calculate new base damage from adjusted newFinalDamage
     var int newBaseDamage;
     if (GOTHIC_BASE_VERSION == 1) {
-        newBaseDamage = newFinalDamage+targetNpc.protection[PROT_POINT];
+        newBaseDamage = newFinalDamage+protection;
     } else {
-        newBaseDamage = (newFinalDamage+targetNpc.protection[PROT_POINT])-hero.attribute[ATR_DEXTERITY];
+        newBaseDamage = (newFinalDamage+protection)-hero.attribute[ATR_DEXTERITY];
     };
     if (newBaseDamage < 0) {
         newBaseDamage = 0;

@@ -79,12 +79,12 @@ func int GFA_GetAccuracy_() {
  * Wrapper function for the config function GFA_GetInitialBaseDamage(). It is called from GFA_SetupProjectile().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
-func int GFA_GetInitialBaseDamage_(var int basePointDamage, var int aimingDistance) {
+func int GFA_GetInitialBaseDamage_(var int baseDamage, var int damageType, var int aimingDistance) {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
     if (!GFA_GetWeaponAndTalent(hero, _@(weaponPtr), _@(talent))) {
         // On error return the base damage unaltered
-        return basePointDamage;
+        return baseDamage;
     };
     var C_Item weapon; weapon = _^(weaponPtr);
 
@@ -100,13 +100,13 @@ func int GFA_GetInitialBaseDamage_(var int basePointDamage, var int aimingDistan
     };
 
     // Retrieve adjusted damage value from config
-    basePointDamage = GFA_GetInitialBaseDamage(basePointDamage, weapon, talent, aimingDistance);
+    baseDamage = GFA_GetInitialBaseDamage(baseDamage, damageType, weapon, talent, aimingDistance);
 
     // No negative damage
-    if (basePointDamage < 0) {
-        basePointDamage = 0;
+    if (baseDamage < 0) {
+        baseDamage = 0;
     };
-    return basePointDamage;
+    return baseDamage;
 };
 
 
@@ -186,9 +186,34 @@ func void GFA_SetupProjectile() {
 
     // 1st: Modify the base damage of the projectile
     // This allows for dynamical adjustment of damage (e.g. based on draw force).
-    var int baseDamage; baseDamage = projectile.damage[DAM_INDEX_POINT]; // Only point damage is considered
-    var int newBaseDamage; newBaseDamage = GFA_GetInitialBaseDamage_(baseDamage, distPlayer);
-    projectile.damage[DAM_INDEX_POINT] = newBaseDamage;
+    var int baseDamage;
+    var int newBaseDamage;
+    // Do this for one damage type only. It gets too complicated for multiple damage types
+    var int iterator; iterator = projectile.damageType;
+    var int damageIndex; damageIndex = 0;
+    // Find damage index from bit field
+    while((iterator > 0) && ((iterator & 1) != 1)); // Check lower bit
+        damageIndex += 1;
+        // Cut off lower bit
+        iterator = iterator >> 1;
+    end;
+    if (iterator > 1) || (damageIndex == DAM_INDEX_MAX) {
+        if (GFA_DEBUG_PRINT) {
+            MEM_Info("GFA_SetupProjectile (initial damage): Ignoring projectile due to multiple/invalid damage types.");
+        };
+
+        // Keep damage as is (the class variable damageTotal might be zero)
+        baseDamage = projectile.damageTotal;
+        newBaseDamage = baseDamage;
+    } else {
+        // Retrieve and update damage
+        baseDamage = MEM_ReadStatArr(_@(projectile.damage), damageIndex);
+        newBaseDamage = GFA_GetInitialBaseDamage_(baseDamage, damageIndex, distPlayer);
+
+        // Apply new damage to projectile
+        projectile.damageTotal = newBaseDamage;
+        MEM_WriteStatArr(_@(projectile.damage), damageIndex, newBaseDamage);
+    };
 
 
     // 2nd: Manipulate aiming accuracy (scatter)

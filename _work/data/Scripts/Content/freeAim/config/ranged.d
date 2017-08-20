@@ -8,7 +8,7 @@
  *  func int GFA_GetDrawForce(C_Item weapon, int talent)
  *  func int GFA_GetAccuracy(C_Item weapon, int talent)
  *  func int GFA_GetRecoil(C_Item weapon, int talent)
- *  func int GFA_GetInitialBaseDamage(int basePointDamage, C_Item weapon, int talent, int aimingDistance)
+ *  func int GFA_GetInitialBaseDamage(int baseDamage, int damageType, C_Item weapon, int talent, int aimingDistance)
  */
 
 
@@ -127,16 +127,18 @@ func int GFA_GetRecoil(var C_Item weapon, var int talent) {
 
 /*
  * This function is called at the point of shooting a bow or crossbow. It may be used to alter the base damage at time
- * of shooting (DAM_POINT damage only). This should never be necessary, as all damage specifications should be set in
- * the item script of the weapon. However, here the initial damage may be scaled by draw force or accuracy (see
- * functions above). The return value is the base damage (equivalent to the damage in the item script of the weapon).
+ * of shooting (if weapon has one damage type only). This should never be necessary, as all damage specifications should
+ * be set in the item script of the weapon. However, here the initial damage may be scaled by draw force or accuracy
+ * (see functions above). The return value is the base damage (equivalent to the damage in the item script of the
+ * weapon).
  *
  * Ideas: incorporate factors like e.g. weapon-specific damage stats, draw force, ...
  * Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW).
  *
  * Here, for example, the damage is scaled by draw force to yield less damage when the bow is only briefly drawn.
  */
-func int GFA_GetInitialBaseDamage(var int basePointDamage, var C_Item weapon, var int talent, var int aimingDistance) {
+func int GFA_GetInitialBaseDamage(var int baseDamage, var int damageType, var C_Item weapon, var int talent,
+        var int aimingDistance) {
     // Here the damage is scaled by draw force:
     //  Draw force = 100% -> baseDamage
     //  Draw force =   0% -> baseDamage/2
@@ -147,8 +149,8 @@ func int GFA_GetInitialBaseDamage(var int basePointDamage, var C_Item weapon, va
     // Re-scale the drawforce to [50, 100]
     drawForce = 50 * drawForce / 100 + 50;
 
-    // Scale initial point damage by draw force
-    basePointDamage = (basePointDamage * drawForce) / 100;
+    // Scale initial damage by draw force
+    baseDamage = (baseDamage * drawForce) / 100;
 
     /*
     // Optionally, it is possible to decrease the damage with distance. Note, however, that the aimingDistance parameter
@@ -156,7 +158,7 @@ func int GFA_GetInitialBaseDamage(var int basePointDamage, var C_Item weapon, va
     // it is not clear which/whether an NPC will be hit. The parameter aimingDistance is scaled between
     // 0 (<= RANGED_CHANCE_MINDIST) and 100 (>= RANGED_CHANCE_MAXDIST), see AI_Constants.d.
     aimingDistance = (-aimingDistance+100); // Inverse distance percentage
-    basePointDamage = (basePointDamage * aimingDistance) / 100; */
+    baseDamage = (baseDamage * aimingDistance) / 100; */
 
-    return basePointDamage;
+    return baseDamage;
 };
