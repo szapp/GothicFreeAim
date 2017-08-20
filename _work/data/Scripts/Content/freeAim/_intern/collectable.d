@@ -35,7 +35,7 @@ func void GFA_RP_KeepProjectileInWorld() {
     };
 
     // Check validity of projectile and its rigid body
-    var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EAX); // oCAIArrow* is the AI of the projectile
+    var int arrowAI; arrowAI = ESI; // oCAIArrow* is the AI of the projectile
     var int projectilePtr; projectilePtr = EBX; // oCItem*
     if (!projectilePtr) {
         return;
@@ -45,8 +45,9 @@ func void GFA_RP_KeepProjectileInWorld() {
         return;
     };
 
-    // Always keep the projectile alive, set high life time
-    MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE);
+    // Always keep the projectile alive, set infinite life time
+    MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, -1082130432); // -1
+    projectile._zCVob_visualAlpha = FLOATONE; // Fully visible
 
     // Check if the projectile stopped moving
     if (!(projectile._zCVob_bitfield[0] & zCVob_bitfield0_physicsEnabled)) {
