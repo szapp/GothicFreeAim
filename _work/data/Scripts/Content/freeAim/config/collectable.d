@@ -20,7 +20,7 @@
 func int GFA_GetUsedProjectileInstance(var int projectileInst, var C_Npc inventoryNpc) {
     /*
     // Exchange the projectile with a 'used' one (e.g. arrow, that needs to be repaired)
-    if (projectileInst == Hlp_GetInstanceID(ItRw_Arrow)) {
+    if (projectileInst == Hlp_GetInstanceID(ItRw_Arrow)) { // ItAmArrow in Gothic 1
         if (!Hlp_IsValidItem(ItRw_UsedArrow)) {
             // Initialize! It is important, that the item instance is valid (must have been created before), otherwise
             // its value is -1. To ensure this, create the item once at way point 'TOT'.
@@ -28,6 +28,14 @@ func int GFA_GetUsedProjectileInstance(var int projectileInst, var C_Npc invento
         };
         projectileInst = Hlp_GetInstanceID(ItRw_UsedArrow);
     }; */
+
+    // Remove magical arrows/bolts from Gothic 2 Addon (if re-usable, they would be overpowered)
+    var string instanceName; instanceName = MEM_ReadString(MEM_GetSymbolByIndex(projectileInst));
+    if (Hlp_StrCmp(instanceName, "ITRW_ADDON_MAGICARROW")) // Strings for Gothic 1 compatibility
+    || (Hlp_StrCmp(instanceName, "ITRW_ADDON_FIREARROW"))
+    || (Hlp_StrCmp(instanceName, "ITRW_ADDON_MAGICBOLT")) {
+        return 0;
+    };
 
     if (Hlp_IsValidNpc(inventoryNpc)) {
         // Projectile hit an NPC and will be put into their inventory
