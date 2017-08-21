@@ -223,6 +223,7 @@ func void GFA_IsActive() {
         // Get onset for drawing the bow - right when pressing down the aiming key
         if (keyStateAiming1 == KEY_PRESSED) || (keyStateAiming2 == KEY_PRESSED) || (keyStateAiming3 == KEY_PRESSED) {
             GFA_BowDrawOnset = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
+            GFA_MouseMovedLast = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
         };
     };
 };

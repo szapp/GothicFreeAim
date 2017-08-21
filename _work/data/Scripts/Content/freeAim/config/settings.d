@@ -7,7 +7,7 @@
 
 // GFA_RANGED
 const int   GFA_TRUE_HITCHANCE     = TRUE;  // Enable accuracy scattering (true) or use Gothic default hit chance
-const int   GFA_DRAWTIME_MAX       = 1200;  // Maximum draw time (ms): When is the bow fully drawn
+const int   GFA_UPDATE_RET_SHOOT   = FALSE; // Also update the reticle while the shooting/reloading animation plays
 const int   GFA_TRAJECTORY_ARC_MAX = 200;   // Maximum time (ms) after which projectile trajectory drops off (gravity)
 const float GFA_PROJECTILE_GRAVITY = 0.1;   // Gravity to apply to projectile after GFA_TRAJECTORY_ARC_MAX ms
 const int   GFA_MAX_RECOIL         = 16;    // Amount of maximum vertical mouse movement on recoil

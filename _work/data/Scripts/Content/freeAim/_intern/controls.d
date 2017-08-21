@@ -49,6 +49,11 @@ func void GFA_TurnPlayerModel() {
     // The _Cursor class from LeGo is used here. It is not necessarily a cursor: it holds mouse properties
     var _Cursor mouse; mouse = _^(Cursor_Ptr);
 
+    // Update time of last mouse movement
+    if (mouse.relX) || (mouse.relY) {
+        GFA_MouseMovedLast = MEM_Timer.totalTime+100; // Keep from jittering
+    };
+
     // Add recoil to mouse movement
     if (GFA_Recoil) {
         // These mouse manipulations work great and are consistent in Gothic 2. Not so much in Gothic 1. This is NOT due

@@ -21,20 +21,29 @@
  * Ideas: incorporate factors like e.g. a quick-draw talent, weapon-specific stats, ...
  * Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW).
  *
- * Here, for example, bows are scaled with draw time, whereas crossbows always have 100% draw force (they are
- * mechanical). This is a design choice and can be changed. Instead, crossbows have recoil, see GFA_GetRecoil() below.
+ * Here, for example, bows are scaled with longer draw time (how long has the bow been drawn), whereas crossbows are
+ * scaled with shorter aiming time (how long was the aim held steady). This results in slower build up once per aiming
+ * for bows and faster build up for crossbows, but restarts every time the mouse moves. Additionally, crossbows have
+ * recoil, see GFA_GetRecoil() below. All of this is a design choice and can be changed in the functions in this file.
  */
 func int GFA_GetDrawForce(var C_Item weapon, var int talent) {
-    // Always full draw force for crossbows (design choice). Instead, crossbows have recoil, see GFA_GetRecoil() below.
-    if (weapon.flags & ITEM_CROSSBOW) {
-        return 100;
+    var int drawForce;
+
+    // Differentiate between bows and crossbows
+    if (weapon.flags & ITEM_BOW) {
+        // Bows: Calculate draw time (how long has the shot been drawn)
+        var int drawTime; drawTime = MEM_Timer.totalTime - GFA_BowDrawOnset;
+
+        // For now, the draw time is scaled by a maximum. Replace 1200 with a variable for adjustable quick-draw talent
+        drawForce = (100 * drawTime) / 1200; // 1200 ms is the draw time with which full draw force is reached
+
+    } else {
+        // Crossbows: Calculate steady aiming time (how long since the last mouse movement)
+        var int steadyTime; steadyTime = MEM_Timer.totalTime - GFA_MouseMovedLast;
+
+        // For now, the steady time is scaled by a maximum. Replace 550 with a variable for adjustable steady-aim talent
+        drawForce = (100 * steadyTime) / 550; // 550 ms is the steady aiming time with which full draw force is reached
     };
-
-    // Get the current draw time (how long has the shot been drawn). Do not change GFA_BowDrawOnset (internal variable)
-    var int drawTime; drawTime = MEM_Timer.totalTime - GFA_BowDrawOnset;
-
-    // For now, the draw time is scaled by a maximum. Replace GFA_DRAWTIME_MAX by a variable for a quick-draw talent
-    var int drawForce; drawForce = (100 * drawTime) / GFA_DRAWTIME_MAX;
 
     // Respect the percentage ranges
     if (drawForce < 0) {
@@ -63,18 +72,21 @@ func int GFA_GetDrawForce(var C_Item weapon, var int talent) {
 func int GFA_GetAccuracy(var C_Item weapon, var int talent) {
     // Here, the 'hit chance' is scaled by draw force, where 'hit chance' is talent (Gothic 2) or dexterity (Gothic 1)
     //  Draw force = 100% -> accuracy = hit chance
-    //  Draw force =   0% -> accuracy = hit chance/2
-
-    // Get draw force from the function above. Already scaled to [0, 100]
-    var int drawForce; drawForce = GFA_GetDrawForce(weapon, talent);
+    //  Draw force =   0% -> accuracy = hit chance * 0.75
 
     // In Gothic 1, the hit chance is actually the dexterity (for both bows and crossbows), NOT the talent!
     if (GOTHIC_BASE_VERSION == 1) {
         talent = hero.attribute[ATR_DEXTERITY];
     };
 
-    // Calculate the accuracy as described in the comment a few lines above
-    var int accuracy; accuracy = (talent-talent/2)*drawForce/100+talent/2;
+    // Get draw force from the function above. Already scaled to [0, 100]
+    var int drawForce; drawForce = GFA_GetDrawForce(weapon, talent);
+
+    // Re-scale the draw force to [75, 100]
+    drawForce = 25 * drawForce / 100 + 75;
+
+    // Scale accuracy by draw force
+    var int accuracy; accuracy = (talent * drawForce) / 100;
 
     // Respect the percentage ranges
     if (accuracy < 0) {
@@ -94,11 +106,11 @@ func int GFA_GetAccuracy(var C_Item weapon, var int talent) {
  * Ideas: incorporate factors like e.g. weapon-specific recoil stats, weapon draw force, strength attribute, ...
  * Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW).
  *
- * Here, for example, the recoil is scaled with strength and is only active for crossbows, to counterbalance the lack
- * of draw force, see GFA_GetDrawForce() above.
+ * Here, for example, the recoil is scaled with strength and is only active for crossbows, to counterbalance the shorter
+ * aiming time (better draw force), see GFA_GetDrawForce() above.
  */
 func int GFA_GetRecoil(var C_Item weapon, var int talent) {
-    // No recoil for bows, since they have variable draw force, see GFA_GetDrawForce() above.
+    // No recoil for bows, since they have longer draw time, see GFA_GetDrawForce() above.
     if (weapon.flags & ITEM_BOW) {
         return 0;
     };
@@ -135,19 +147,27 @@ func int GFA_GetRecoil(var C_Item weapon, var int talent) {
  * Ideas: incorporate factors like e.g. weapon-specific damage stats, draw force, ...
  * Check if bow or crossbow with (weapon.flags & ITEM_BOW) or (weapon.flags & ITEM_CROSSBOW).
  *
- * Here, for example, the damage is scaled by draw force to yield less damage when the bow is only briefly drawn.
+ * Here, for example, the damage is scaled by draw force to yield less damage when the bow is only briefly drawn, or the
+ * crossbow only briefly held steady.
  */
 func int GFA_GetInitialBaseDamage(var int baseDamage, var int damageType, var C_Item weapon, var int talent,
         var int aimingDistance) {
     // Here the damage is scaled by draw force:
     //  Draw force = 100% -> baseDamage
-    //  Draw force =   0% -> baseDamage/2
+    //  Draw force =   0% -> baseDamage * 0.75
+
+    /*
+    // Optionally, it is possible to exclude certain damage types
+    if (damageType == DAM_INDEX_MAGIC) {
+        // No changes for magical damage
+        return baseDamage;
+    }; */
 
     // Get draw force from the function above. Already scaled to [0, 100]
     var int drawForce; drawForce = GFA_GetDrawForce(weapon, talent);
 
-    // Re-scale the drawforce to [50, 100]
-    drawForce = 50 * drawForce / 100 + 50;
+    // Re-scale the draw force to [75, 100]
+    drawForce = 25 * drawForce / 100 + 75;
 
     // Scale initial damage by draw force
     baseDamage = (baseDamage * drawForce) / 100;

@@ -108,6 +108,7 @@ func void GFA_ResetOnWeaponSwitch() {
     if (_@(MEM_Timer)) {
         // This function is called during level change prior to any initialization
         GFA_BowDrawOnset = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
+        GFA_MouseMovedLast = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
     };
 };
 

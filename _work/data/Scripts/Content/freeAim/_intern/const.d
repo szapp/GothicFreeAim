@@ -41,9 +41,10 @@ const int    GFA_CUSTOM_COLLISIONS  = 1<<3;                 // Custom collision/
 const int    GFA_CRITICALHITS       = 1<<4;                 // Critical hits for ranged combat (e.g. head shots)
 const int    GFA_ALL                = (1<<5) - 1;           // Initialize all features
 
-const int    GFA_DRAWTIME_READY     = 650;                  // Time (ms) for readying the bow. Fixed by animation
-const int    GFA_DRAWTIME_RELOAD    = 1110;                 // Time (ms) for reloading the bow. Fixed by animation
+const int    GFA_DRAWTIME_READY     = 475;                  // Time (ms) for readying the weapon. Fixed by animation
+const int    GFA_DRAWTIME_RELOAD    = 1250;                 // Time (ms) for reloading the weapon. Fixed by animation
 var   int    GFA_BowDrawOnset;                              // Time onset of drawing the bow
+var   int    GFA_MouseMovedLast;                            // Time of last mouse movement
 
 const int    GFA_RETICLE_MIN_SIZE   = 32;                   // Smallest reticle size in pixels
 const int    GFA_RETICLE_MAX_SIZE   = 64;                   // Biggest reticle size in pixels

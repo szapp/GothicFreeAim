@@ -52,10 +52,8 @@ func void GFA_GetRangedReticle(var C_Npc target, var C_Item weapon, var int tale
     //  reticle.size = -GFA_GetDrawForce(weapon, talent) + 100; // Or inverse draw force: bigger for less draw force
     //  reticle.size = -GFA_GetAccuracy(weapon, talent) + 100; // Or inverse accuracy: bigger with lower accuracy
 
-    // Differences depending on weapon type
+    // Change reticle texture by draw force (irrespective of size), but differentiate texture depending on weapon type
     if (weapon.flags & ITEM_BOW) {
-        // Change reticle texture by draw force (irrespective of the reticle size set above)
-
         // Get draw force. Already scaled to [0, 100]
         var int drawForce; drawForce = GFA_GetDrawForce(weapon, talent);
 
@@ -63,8 +61,15 @@ func void GFA_GetRangedReticle(var C_Npc target, var C_Item weapon, var int tale
         reticle.texture = GFA_AnimateReticleByPercent(RETICLE_NOTCH, drawForce, 17);
 
     } else if (weapon.flags & ITEM_CROSSBOW) {
-        // Reticle is fixed, but resized with distance
-        reticle.texture = RETICLE_PEAK;
+        // Get draw force. Already scaled to [0, 100]
+        var int steadyAim; steadyAim = GFA_GetDrawForce(weapon, talent);
+
+        // Animate reticle by draw force
+        reticle.texture = GFA_AnimateReticleByPercent(RETICLE_PEAK, steadyAim, 17);
+
+        /*
+        // Alternatively, keep the reticle fixed, only resized with distance
+        reticle.texture = RETICLE_PEAK; */
 
         /*
         // Alternatively, change the reticle texture with distance

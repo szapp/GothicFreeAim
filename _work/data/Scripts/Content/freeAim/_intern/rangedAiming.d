@@ -30,7 +30,25 @@
 func void GFA_RangedIdle() {
     if (GFA_ACTIVE > 1) {
         // Shoot trace ray to update focus
-        GFA_AimRay(GFA_MAX_DIST, TARGET_TYPE_NPCS, 0, 0, 0, 0);
+        var int distance; var int target;
+        GFA_AimRay(GFA_MAX_DIST, TARGET_TYPE_NPCS, _@(target), 0, _@(distance), 0);
+
+        // Additionally, update reticle
+        if (GFA_UPDATE_RET_SHOOT) {
+            distance = roundf(divf(mulf(distance, FLOAT1C), mkf(GFA_MAX_DIST))); // Distance scaled between [0, 100]
+
+            // Create reticle
+            var int reticlePtr; reticlePtr = MEM_Alloc(sizeof_Reticle);
+            var Reticle reticle; reticle = _^(reticlePtr);
+            reticle.texture = ""; // Do not show reticle by default
+            reticle.color = -1; // Do not set color by default
+            reticle.size = 75; // Medium size by default
+
+            // Retrieve reticle specs and draw/update it on screen
+            GFA_GetRangedReticle_(target, distance, reticlePtr); // Retrieve reticle specs
+            GFA_InsertReticle(reticlePtr);
+            MEM_Free(reticlePtr);
+        };
 
     } else if (GFA_ACTIVE) {
         GFA_RemoveReticle();
