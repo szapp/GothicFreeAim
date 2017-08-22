@@ -218,6 +218,27 @@ func string GFA_AnimateReticleByPercent(var string fileName, var int percent, va
 
 
 /*
+ * Scale value x from range [min, max] to range [a, b]. This function is useful for the config functions to scale
+ * attributes to a percentage.
+ */
+func int GFA_ScaleRanges(var int x, var int min, var int max, var int a, var int b) {
+    // (b - a) * (x - min)
+    // ------------------- + a
+    //     max - min
+    var int scaled; scaled = (b-a)*(x-min)/(max-min)+a;
+
+    // Correct values falling out of bounce
+    if (scaled < a) {
+        scaled = a;
+    } else if (scaled > b) {
+        scaled = b;
+    };
+
+    return scaled;
+};
+
+
+/*
  * Check the inheritance of a zCObject against a zCClassDef. Emulating zCObject::CheckInheritance() at 0x476E30 in G2.
  * This function is used in Wld_StopEffect_Ext().
  *

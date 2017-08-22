@@ -45,7 +45,7 @@ func void GFA_InsertReticle(var int reticlePtr) {
     // Only draw the reticle if the texture is specified. An empty texture removes the reticle
     if (!Hlp_StrCmp(reticle.texture, "")) {
         // The reticle size percentage is scaled with the minimum and maximum pixel dimensions
-        size = (((GFA_RETICLE_MAX_SIZE-GFA_RETICLE_MIN_SIZE)*(reticle.size))/100)+GFA_RETICLE_MIN_SIZE;
+        size = GFA_ScaleRanges(reticle.size, 0, 100, GFA_RETICLE_MIN_SIZE, GFA_RETICLE_MAX_SIZE);
 
         // Corrected the ranges in stay within [0, 100]
         if (size > GFA_RETICLE_MAX_SIZE) {

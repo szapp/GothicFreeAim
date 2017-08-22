@@ -164,7 +164,7 @@ func int GFA_GetCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int 
         };
 
         // Scale the critical hit chance between min and max
-        var int critChance; critChance = (max-min)*talent/100+min;
+        var int critChance; critChance = GFA_ScaleRanges(talent, 0, 100, min, max);
 
         /*
         // The critical hit chance may depend on the target NPC. Make use of 'target' for that

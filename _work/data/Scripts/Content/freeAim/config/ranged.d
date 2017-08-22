@@ -79,21 +79,12 @@ func int GFA_GetAccuracy(var C_Item weapon, var int talent) {
         talent = hero.attribute[ATR_DEXTERITY];
     };
 
-    // Get draw force from the function above. Already scaled to [0, 100]
+    // Get draw force from the function above and re-scale it from [0, 100] to [75, 100]
     var int drawForce; drawForce = GFA_GetDrawForce(weapon, talent);
-
-    // Re-scale the draw force to [75, 100]
-    drawForce = 25 * drawForce / 100 + 75;
+    drawForce = GFA_ScaleRanges(drawForce, 0, 100, 75, 100);
 
     // Scale accuracy by draw force
     var int accuracy; accuracy = (talent * drawForce) / 100;
-
-    // Respect the percentage ranges
-    if (accuracy < 0) {
-        accuracy = 0;
-    } else if (accuracy > 100) {
-        accuracy = 100;
-    };
 
     return accuracy;
 };
@@ -115,21 +106,25 @@ func int GFA_GetRecoil(var C_Item weapon, var int talent) {
         return 0;
     };
 
-    // Here, the recoil is scaled by strength:
-    //  Strength >= 120 -> recoil =  20%
-    //  Strength <=  20 -> recoil = 100%
-    var int recoil; recoil = (80*(hero.attribute[ATR_STRENGTH]-120)/-100)+20;
+    // Here, the recoil is scaled by strength and steady aim
+    //  Strength >= 120 -> recoil =  20% * steady aim
+    //  Strength <=  20 -> recoil = 100% * steady aim
 
-    /*
-    // Alternatively, inversely scale with draw force.
-    var int recoil; recoil = -GFA_GetDrawForce(weapon, talent)+100; */
+    // Scale strength form [20, 120] to [0, 80] (will be inversed to [100, 20] later)
+    var int scaledStrength; scaledStrength = hero.attribute[ATR_STRENGTH];
+    scaledStrength = GFA_ScaleRanges(scaledStrength, 20, 120, 0, 80);
 
-    // Respect the percentage ranges
+    // Get draw force (steady aim) from the function above and re-scale it from [0, 100] to [75, 100]
+    var int steadyAim; steadyAim = GFA_GetDrawForce(weapon, talent);
+    steadyAim = GFA_ScaleRanges(steadyAim, 0, 100, 75, 100);
+
+    // Apply steady aim to scaled strength and inverse result to obtain recoil percentage
+    var int recoil; recoil = (scaledStrength * steadyAim) / 100;
+    recoil = -recoil+100;
+
+    // Personal design choice: Even with maximum strength and steady aim, add at least a bit of recoil (20%)
     if (recoil < 20) {
-        // Personal design choice: Even with maximum strengh, add at least a bit of recoil (20%)
         recoil = 20;
-    } else if (recoil > 100) {
-        recoil = 100;
     };
 
     return recoil;
@@ -162,13 +157,11 @@ func int GFA_GetInitialBaseDamage(var int baseDamage, var int damageType, var C_
         return baseDamage;
     }; */
 
-    // Get draw force from the function above. Already scaled to [0, 100]
+    // Get draw force from the function above and re-scale it from [0, 100] to [75, 100]
     var int drawForce; drawForce = GFA_GetDrawForce(weapon, talent);
+    drawForce = GFA_ScaleRanges(drawForce, 0, 100, 75, 100);
 
-    // Re-scale the draw force to [75, 100]
-    drawForce = 25 * drawForce / 100 + 75;
-
-    // Scale initial damage by draw force
+    // Scale initial damage with adjusted draw force
     baseDamage = (baseDamage * drawForce) / 100;
 
     /*
