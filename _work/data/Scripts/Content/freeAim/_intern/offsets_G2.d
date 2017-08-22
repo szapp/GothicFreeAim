@@ -135,6 +135,9 @@ const int oCVisualFX_originVob_offset                = 1192;//0x04A8
 const int oCVisualFX_targetVob_offset                = 1200;//0x04B0
 const int oCVisualFX_instanceName_offset             = 1220;//0x04C4
 
+const int zCAICamera_elevation_offset                = 56;  //0x0038
+const int zCAICamera_azimuth_offset                  = 68;  //0x0044
+
 const int oCAIArrowBase_collision_offset             = 52;  //0x0034
 const int oCAIArrowBase_lifeTime_offset              = 56;  //0x0038
 const int oCAIArrowBase_hostVob_offset               = 60;  //0x003C

@@ -115,14 +115,13 @@ func int GFA_GetRecoil(var C_Item weapon, var int talent) {
         return 0;
     };
 
-    // Here, the recoil is scaled by strengh:
-    //  Strength >= 120 -> recoil =  20
-    //  Strength <=  20 -> recoil = 100
+    // Here, the recoil is scaled by strength:
+    //  Strength >= 120 -> recoil =  20%
+    //  Strength <=  20 -> recoil = 100%
     var int recoil; recoil = (80*(hero.attribute[ATR_STRENGTH]-120)/-100)+20;
 
     /*
-    // Alternatively, inversely scale with draw force. Keep in mind, that by default, draw force is always 100% for
-    // crossbows, see GFA_GetDrawForce() above.
+    // Alternatively, inversely scale with draw force.
     var int recoil; recoil = -GFA_GetDrawForce(weapon, talent)+100; */
 
     // Respect the percentage ranges

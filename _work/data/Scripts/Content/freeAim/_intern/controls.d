@@ -54,22 +54,20 @@ func void GFA_TurnPlayerModel() {
         GFA_MouseMovedLast = MEM_Timer.totalTime+100; // Keep from jittering
     };
 
-    // Add recoil to mouse movement
+    // Add recoil to camera angle
     if (GFA_Recoil) {
-        // These mouse manipulations work great and are consistent in Gothic 2. Not so much in Gothic 1. This is NOT due
-        // to differences in mouse handling (it is pretty much exactly the same, except for some additional mouse
-        // smoothing in Gothic 2, which is ignored for free aiming), but because of the camera easing: Once the camera
-        // is moving in Gothic 1, a single mouse input has much more impact than when the camera is still.
-        // This easing cannot be controlled with the CCamSys_Def instance and it is not clear where this easing is done
-        // internally. Thus, recoil just works a bit different in Gothic 1. (Varying with mouse/camera movement.)
+        // Get game camera
+        var int camAI; camAI = MEM_ReadInt(zCAICamera__current);
 
-        // Manipulate vertical mouse movement: Add negative (upwards) movement (multiplied by sensitivity)
-        mouse.relY = -roundf(divf(mkf(GFA_Recoil), MEM_ReadInt(Cursor_sY)));
-        GFA_Recoil = 0;
+        // Vertical recoil: Classical upwards movement of the camera scaled by GFA_Recoil
+        var int camYAngle; camYAngle = MEM_ReadInt(camAI+zCAICamera_elevation_offset);
+        MEM_WriteInt(camAI+zCAICamera_elevation_offset, subf(camYAngle, mkf(GFA_Recoil)));
+        GFA_Recoil = 0; // Reset recoil
 
-        // Manipulate horizontal mouse movement slightly: Add random positive or negative (sideways) movement
+        // Horizontal recoil: Add random positive or negative (sideways) movement
+        var int camXAngle; camXAngle = MEM_ReadInt(camAI+zCAICamera_azimuth_offset);
         var int manipulateX; manipulateX = fracf(r_MinMax(-GFA_HORZ_RECOIL*10, GFA_HORZ_RECOIL*10), 10);
-        mouse.relX = roundf(divf(manipulateX, MEM_ReadInt(Cursor_sX)));
+        MEM_WriteInt(camAI+zCAICamera_azimuth_offset, subf(camXAngle, manipulateX));
     };
 
     // Gothic 2 controls only need the rotation if currently shooting
