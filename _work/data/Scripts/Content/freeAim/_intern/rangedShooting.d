@@ -347,7 +347,7 @@ func void GFA_SetupProjectile() {
     var int recoil; recoil = GFA_GetRecoil_(); // Modify the recoil in that function, not here!
     if (recoil) {
         var int recoilAngle; recoilAngle = fracf(GFA_MAX_RECOIL*recoil, 100);
-    
+
         // Get game camera
         var int camAI; camAI = MEM_ReadInt(zCAICamera__current);
 

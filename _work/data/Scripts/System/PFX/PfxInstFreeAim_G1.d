@@ -23,9 +23,9 @@
 
 INSTANCE GFA_TRAIL (C_PARTICLEFX)
 {
-    ppsvalue = 4.000000000;
+    ppsvalue = 20.000000000;
     ppsislooping = 0;
-    ppsscalekeys_s = "1 1 1 1 40 40 40 40 40 40   40 40 40 40 40 40 40 40 40 40"; // Artificial delay of 0.4 sec
+    ppsscalekeys_s = "1 1 1 1 8 8 8 8 8 8   8 8 8 8 8 8 8 8 8 8"; // Artificial delay of 0.4 sec
     ppsFPS = 10; // Ten keys = second, that makes 2 seconds total
     ppsissmooth = 0; // Do not interpolate keys
     shptype_s = "POINT";
