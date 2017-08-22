@@ -65,8 +65,6 @@ const float  GFA_SCATTER_HIT        = 2.6;                  // (Visual angle)/2 
 const float  GFA_SCATTER_MISS       = 3.3;                  // (Visual angle)/2 outside which everything is a miss
 const float  GFA_SCATTER_MAX        = 5.0;                  // (Visual angle)/2 of maximum scatter (all in degrees)
 
-var   int    GFA_Recoil;                                    // Amount of vertical mouse movement on recoil
-
 var   int    GFA_LastHitCritical;                           // Was the last hit critical (will be reset immediately)
 
 var   int    GFA_StatsShots;                                // Shooting statistics: Count total number of shots taken

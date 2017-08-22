@@ -54,22 +54,6 @@ func void GFA_TurnPlayerModel() {
         GFA_MouseMovedLast = MEM_Timer.totalTime+100; // Keep from jittering
     };
 
-    // Add recoil to camera angle
-    if (GFA_Recoil) {
-        // Get game camera
-        var int camAI; camAI = MEM_ReadInt(zCAICamera__current);
-
-        // Vertical recoil: Classical upwards movement of the camera scaled by GFA_Recoil
-        var int camYAngle; camYAngle = MEM_ReadInt(camAI+zCAICamera_elevation_offset);
-        MEM_WriteInt(camAI+zCAICamera_elevation_offset, subf(camYAngle, mkf(GFA_Recoil)));
-        GFA_Recoil = 0; // Reset recoil
-
-        // Horizontal recoil: Add random positive or negative (sideways) movement
-        var int camXAngle; camXAngle = MEM_ReadInt(camAI+zCAICamera_azimuth_offset);
-        var int manipulateX; manipulateX = fracf(r_MinMax(-GFA_HORZ_RECOIL*10, GFA_HORZ_RECOIL*10), 10);
-        MEM_WriteInt(camAI+zCAICamera_azimuth_offset, subf(camXAngle, manipulateX));
-    };
-
     // Gothic 2 controls only need the rotation if currently shooting
     if (GOTHIC_BASE_VERSION == 2) {
         // Separate if-conditions to increase performance (Gothic checks ALL chained if-conditions)

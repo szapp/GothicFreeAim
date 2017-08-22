@@ -343,8 +343,23 @@ func void GFA_SetupProjectile() {
 
 
     // 3rd: Add recoil
+    // Add recoil to camera angle
     var int recoil; recoil = GFA_GetRecoil_(); // Modify the recoil in that function, not here!
-    GFA_Recoil = (GFA_MAX_RECOIL*recoil)/100;
+    if (recoil) {
+        var int recoilAngle; recoilAngle = fracf(GFA_MAX_RECOIL*recoil, 100);
+    
+        // Get game camera
+        var int camAI; camAI = MEM_ReadInt(zCAICamera__current);
+
+        // Vertical recoil: Classical upwards movement of the camera scaled by GFA_Recoil
+        var int camYAngle; camYAngle = MEM_ReadInt(camAI+zCAICamera_elevation_offset);
+        MEM_WriteInt(camAI+zCAICamera_elevation_offset, subf(camYAngle, recoilAngle));
+
+        // Horizontal recoil: Add random positive or negative (sideways) movement
+        var int camXAngle; camXAngle = MEM_ReadInt(camAI+zCAICamera_azimuth_offset);
+        var int manipulateX; manipulateX = fracf(r_MinMax(-GFA_HORZ_RECOIL*10, GFA_HORZ_RECOIL*10), 10);
+        MEM_WriteInt(camAI+zCAICamera_azimuth_offset, subf(camXAngle, manipulateX));
+    };
 
 
     // 4th: Set projectile drop-off (by draw force)
