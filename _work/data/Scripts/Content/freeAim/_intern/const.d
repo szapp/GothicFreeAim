@@ -84,3 +84,28 @@ var   int    GFA_DebugWSTrj[6];                             // Projectile trajec
 var   int    GFA_DebugTRBBox[6];                            // Trace ray intersection for debug visualization
 var   int    GFA_DebugTRTrj[6];                             // Trace ray trajectory for debug visualization
 var   int    GFA_DebugTRPrevVob;                            // Trace ray detected vob bounding box pointer for debugging
+
+var   int    GFA_IsStrafing;                                // State of strafing
+
+const int    GFA_MOVE_FORWARD       = 1<<0;                 // ID (first bit) for moving forward while aiming
+const int    GFA_MOVE_BACKWARD      = 1<<1;                 // ID (second bit) for moving backward while aiming
+const int    GFA_MOVE_LEFT          = 1<<2;                 // ID (third bit) for moving left while aiming
+const int    GFA_MOVE_RIGHT         = 1<<3;                 // ID (fourth bit) for moving right while aiming
+
+const int    GFA_MAX_AIM_ANIS       = 11;                   // Number of aiming movement animations
+
+const string GFA_AIM_ANIS[GFA_MAX_AIM_ANIS] = {             // Names of aiming movement animations (upper case!)
+    "",                                                     //  0
+    "AIM_MOVEF",                                            //  1  0001  GFA_MOVE_FORWARD
+    "AIM_MOVEB",                                            //  2  0010  GFA_MOVE_BACKWARD
+    "",                                                     //  3
+    "AIM_MOVEL",                                            //  4  0100  GFA_MOVE_LEFT
+    "_MOVE_LEFTFORWARD",                                    //  5  0101  GFA_MOVE_LEFT | GFA_MOVE_FORWARD
+    "_MOVE_LEFTBACK",                                       //  6  0110  GFA_MOVE_LEFT | GFA_MOVE_BACKWARD
+    "",                                                     //  7
+    "AIM_MOVER",                                            //  8  1000  GFA_MOVE_RIGHT
+    "_MOVE_RIGHTFORWARD",                                   //  9  1001  GFA_MOVE_RIGHT | GFA_MOVE_FORWARD
+    "_MOVE_RIGHTBACK"                                       // 10  1010  GFA_MOVE_RIGHT | GFA_MOVE_BACKWARD
+};
+
+const int    GFA_MOVE_ANI_LAYER     = 2;                    // Layer of aiming movement animations (see Humans.mds)

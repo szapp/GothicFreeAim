@@ -47,7 +47,7 @@ func void GFA_InitFeatureFreeAiming() {
         HookEngineF(oCAIArrow__SetupAIVob, 6, GFA_SetupProjectile); // Setup projectile trajectory (shooting)
         HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_ResetProjectileGravity); // Reset gravity on impact
         HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_OverwriteHitChance); // Manipulate hit chance
-        // HookEngineF(oCAIHuman__BowMode_postInterpolate, 6, GFA_RangedStrafing); // Strafe when aiming. NOT WORKING
+        HookEngineF(oCAIHuman__BowMode_postInterpolate, 6, GFA_Strafe); // Strafe while aiming. Big thanks to Siemekk
 
         // Gothic 2 controls
         if (GOTHIC_BASE_VERSION == 2) {
@@ -63,6 +63,7 @@ func void GFA_InitFeatureFreeAiming() {
         MEM_Info("Initializing free aiming for spell combat.");
         HookEngineF(oCAIHuman__MagicMode, 7, GFA_SpellAiming); // Manage focus collection and reticle
         HookEngineF(oCSpell__Setup_initFallbackNone, 6, GFA_SetupSpell); // Set spell FX trajectory (shooting)
+        MemoryProtectionOverride(oCAniCtrl_Human__PC_GoBackward, 1); // Disallow moving backwards
     };
 
     // Prevent focus collection (necessary for Gothic 2 only)

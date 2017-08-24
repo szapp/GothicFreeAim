@@ -76,6 +76,7 @@ func void GFA_UpdateStatus() {
         // Disable if previously enabled
         GFA_UpdateSettings(0);
         GFA_DisableAutoTurning(0);
+        GFA_DisableGoBackward(0);
         GFA_SetCameraModes(0);
         GFA_UpdateSettingsG2Ctrl(0);
     } else {
@@ -111,6 +112,7 @@ func void GFA_IsActive() {
     if (MEM_Game.pause_screen) || (!InfoManager_HasFinished()) {
         GFA_SetCameraModes(0);
         GFA_DisableAutoTurning(0);
+        GFA_DisableGoBackward(0);
         GFA_ACTIVE = 1;
         return;
     };
@@ -120,6 +122,7 @@ func void GFA_IsActive() {
     if (her.fmode < FMODE_FAR) {
         GFA_SetCameraModes(0);
         GFA_DisableAutoTurning(0);
+        GFA_DisableGoBackward(0);
         GFA_ACTIVE = 1;
         return;
     };
@@ -166,6 +169,7 @@ func void GFA_IsActive() {
             Focus_Magic.npc_azi = 45.0;
             Focus_Magic.item_prio = MEMINT_SwitchG1G2(0, -1); // There are differences in focus.d (telekinesis!)
             GFA_DisableAutoTurning(0);
+            GFA_DisableGoBackward(0);
             GFA_ACTIVE = 1;
             return;
         } else {
@@ -178,20 +182,26 @@ func void GFA_IsActive() {
         if (GOTHIC_BASE_VERSION == 2) {
             if (MEM_ReadInt(oCGame__s_bUseOldControls)) && (!keyPressed) {
                 GFA_DisableAutoTurning(0);
+                GFA_DisableGoBackward(0);
                 GFA_ACTIVE = 1;
                 return;
             };
         } else if (!keyPressed) {
             GFA_DisableAutoTurning(0);
+            GFA_DisableGoBackward(0);
             GFA_ACTIVE = 1;
             return;
         };
 
-        // If this is reach, free aiming for the spell is active
+        // If this is reached, free aiming for the spell is active
         GFA_DisableAutoTurning(1);
+        GFA_DisableGoBackward(keyPressed); // Disable going backwards only, if aiming key is held!
         GFA_ACTIVE = FMODE_MAGIC;
 
     } else if (her.fmode >= FMODE_FAR) { // Greater or equal: Crossbow has different fight mode!
+        // To be safe, if weapon switch directly from spell combat
+        GFA_DisableGoBackward(0);
+
         // Check if free aiming for ranged combat is disabled
         if (!(GFA_Flags & GFA_RANGED)) {
             GFA_DisableAutoTurning(0);

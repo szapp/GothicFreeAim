@@ -76,8 +76,15 @@ func void GFA_SpellAiming() {
     if (GFA_ACTIVE != FMODE_MAGIC) {
         GFA_RemoveReticle();
         GFA_AimVobDetachFX();
-        if (GFA_IsSpellEligible(spell)) && (GFA_NO_AIM_NO_FOCUS) {
-            GFA_SetFocusAndTarget(0);
+        if (GFA_IsSpellEligible(spell)) {
+            if (GFA_NO_AIM_NO_FOCUS) {
+                GFA_SetFocusAndTarget(0);
+            };
+
+            // Allow to stop strafing (not to start strafing, that causes weird behavior)
+            if (GFA_IsStrafing) {
+                GFA_Strafe();
+            };
         };
         return;
     };
@@ -120,4 +127,17 @@ func void GFA_SpellAiming() {
     GFA_GetSpellReticle_(target, spell, distance, reticlePtr);
     GFA_InsertReticle(reticlePtr);
     MEM_Free(reticlePtr);
+
+    // Allow strafing only for Gothic 1 controls or when investing the spell (Gothic 2 controls)
+    if (GOTHIC_BASE_VERSION == 2) {
+        if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
+            // Check oCAIHuman_bitfield
+            var oCAniCtrl_Human aniCtrl; aniCtrl = _^(ECX);
+            const int oCAIHuman_bitfield_spellReleased = 1<<7;
+            if (aniCtrl.oCAIHuman_bitfield & oCAIHuman_bitfield_spellReleased) {
+                return;
+            };
+        };
+    };
+    GFA_Strafe();
 };

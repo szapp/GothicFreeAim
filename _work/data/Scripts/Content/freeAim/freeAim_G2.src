@@ -19,6 +19,7 @@ _intern\debug.d
 _intern\aimVob.d
 _intern\aimRay.d
 _intern\reticle.d
+_intern\strafing.d
 _intern\rangedAiming.d
 _intern\rangedShooting.d
 _intern\spell.d

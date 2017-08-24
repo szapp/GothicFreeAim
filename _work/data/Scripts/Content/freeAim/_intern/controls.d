@@ -104,7 +104,7 @@ func void GFA_TurnPlayerModel() {
  * Disable/re-enable auto turning of player model towards enemy while aiming. The auto turning prevents free aiming, as
  * it moves the player model to always face the focus. Of course, this should only by prevented during aiming such that
  * the melee combat is not affected. Consequently, it needs to be disabled and enabled continuously.
- * This function is called from GFA_IsActive() nearly every frame.
+ * This function is called from GFA_IsActive() and GFA_UpdateStatus().
  */
 func void GFA_DisableAutoTurning(var int on) {
     const int SET = 0;
@@ -142,6 +142,31 @@ func void GFA_DisableAutoTurning(var int on) {
             MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+4, /*00*/ 0);
         };
     };
+    SET = !SET;
+};
+
+
+/*
+ * Disable/re-enable the player model to go backwards. This is not disabled while in spell combat and interferes with
+ * strafing (movement while aiming). Once in spell combat, backwards movement is disabled and re-enabled afterwards.
+ * This function is called from GFA_IsActive() and GFA_UpdateStatus().
+ */
+func void GFA_DisableGoBackward(var int on) {
+    if (!(GFA_Flags & GFA_SPELLS)) {
+        return;
+    };
+
+    const int SET = 0;
+    if (on == SET) {
+        return; // No change necessary
+    };
+
+    if (on) {
+        MEM_WriteByte(oCAniCtrl_Human__PC_GoBackward, /*C3*/ 195); // Leave function right away: retn
+    } else {
+        MEM_WriteByte(oCAniCtrl_Human__PC_GoBackward, /*56*/ 86); // Revert to default: push esi
+    };
+
     SET = !SET;
 };
 
