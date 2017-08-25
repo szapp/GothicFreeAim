@@ -76,14 +76,21 @@ func void GFA_SpellAiming() {
     if (GFA_ACTIVE != FMODE_MAGIC) {
         GFA_RemoveReticle();
         GFA_AimVobDetachFX();
-        if (GFA_ACTIVE) && (GFA_IsSpellEligible(spell)) {
-            if (GFA_NO_AIM_NO_FOCUS) {
-                GFA_SetFocusAndTarget(0);
-            };
+        if (GFA_ACTIVE) {
+            if (GFA_IsSpellEligible(spell)) {
+                if (GFA_NO_AIM_NO_FOCUS) {
+                    GFA_SetFocusAndTarget(0);
+                };
 
-            // Allow to stop strafing (not to start strafing, that causes weird behavior)
-            if (GFA_IsStrafing) {
-                GFA_Strafe();
+                // Allow to stop strafing (not to start strafing, that causes weird behavior)
+                if (GFA_IsStrafing) {
+                    GFA_Strafe();
+                };
+
+            } else if (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS)
+                   && (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS_FALLBACK_CASTER) {
+                // Remove focus for spells that do not need to collect a focus
+                GFA_SetFocusAndTarget(0);
             };
         };
         return;
