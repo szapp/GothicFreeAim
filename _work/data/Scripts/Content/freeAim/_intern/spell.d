@@ -71,13 +71,21 @@ func void GFA_SetupSpell() {
  */
 func void GFA_SpellAiming() {
     var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
+    var oCAniCtrl_Human aniCtrl; aniCtrl = _^(ECX);
 
     // Only show reticle for spells that support free aiming and during aiming (Gothic 1 controls)
     if (GFA_ACTIVE != FMODE_MAGIC) {
         GFA_RemoveReticle();
-        GFA_AimVobDetachFX();
+
+        // Additional settings if free aiming is enabled
         if (GFA_ACTIVE) {
             if (GFA_IsSpellEligible(spell)) {
+                // Remove FX from aim vob only if not currently casting
+                if (aniCtrl.oCAIHuman_bitfield & oCAIHuman_bitfield_spellCastedLastFrame) {
+                    GFA_AimVobDetachFX();
+                };
+
+                // Remove focus and target
                 if (GFA_NO_AIM_NO_FOCUS) {
                     GFA_SetFocusAndTarget(0);
                 };
@@ -91,7 +99,10 @@ func void GFA_SpellAiming() {
                    && (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS_FALLBACK_CASTER) {
                 // Remove focus for spells that do not need to collect a focus
                 GFA_SetFocusAndTarget(0);
+                GFA_AimVobDetachFX();
             };
+        } else {
+            GFA_AimVobDetachFX();
         };
         return;
     };
@@ -137,7 +148,6 @@ func void GFA_SpellAiming() {
 
     // Allow strafing only for Gothic 1 controls or when investing the spell (Gothic 2 controls)
     if (GOTHIC_CONTROL_SCHEME == 2) {
-        var oCAniCtrl_Human aniCtrl; aniCtrl = _^(ECX);
         if (aniCtrl.oCAIHuman_bitfield & oCAIHuman_bitfield_spellReleased) {
             return;
         };
