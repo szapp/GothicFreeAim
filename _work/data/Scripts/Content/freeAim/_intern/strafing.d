@@ -133,16 +133,15 @@ func void GFA_Strafe() {
     var int mLeft;
     var int mRight;
 
-    mFront = FALSE; // False by default, for Gothic 1 controls
     mBack  = (MEM_KeyPressed(MEM_GetKey("keyDown")))        || (MEM_KeyPressed(MEM_GetSecondaryKey("keyDown")));
     mLeft  = (MEM_KeyPressed(MEM_GetKey("keyStrafeLeft")))  || (MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeLeft")));
     mRight = (MEM_KeyPressed(MEM_GetKey("keyStrafeRight"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeRight")));
 
     // Allow forward movement for Gothic 2 controls only
-    if (GOTHIC_BASE_VERSION == 2) {
-        if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
-            mFront = (MEM_KeyPressed(MEM_GetKey("keyUp")))  || (MEM_KeyPressed(MEM_GetSecondaryKey("keyUp")));
-        };
+    if (GOTHIC_CONTROL_SCHEME == 2) {
+        mFront = (MEM_KeyPressed(MEM_GetKey("keyUp"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyUp")));
+    } else {
+        mFront = FALSE;
     };
 
     // Evaluate movement from key presses (because there are also diagonal movements)

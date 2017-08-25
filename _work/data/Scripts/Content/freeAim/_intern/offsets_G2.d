@@ -47,7 +47,6 @@ const int zString_CamModRun                          =  9235008; //0x8CEA40     
 const int oCAIHuman__Cam_Normal                      = 11195896; //0xAAD5F8                // Not used for Gothic 2
 const int oCAIHuman__Cam_Fight                       = 11195876; //0xAAD5E4                // Not used for Gothic 2
 const int oCAniCtrl_Human__Turn                      =  7005504; //0x6AE540
-const int oCAniCtrl_Human__PC_GoBackward             =  7019968; //0x6B1DC0
 const int oCNpc__TurnToEnemy_camCheck                =  7568757; //0x737D75
 const int oCNpc__GetAngles                           =  6820528; //0x6812B0
 const int oCNpc__SetFocusVob                         =  7547744; //0x732B60
@@ -88,7 +87,6 @@ const int oCAIHuman__BowMode_g2ctrlCheck             =  6905643; //0x695F2B
 const int oCAIHuman__BowMode_shootingKey             =  6906610; //0x6962F2
 const int oCAIHuman__MagicMode_turnToTarget          =  0;                                 // Does not exist in Gothic 2
 const int oCAIHuman__PC_ActionMove_aimingKey         =  6922427; //0x69A0BB
-const int oCAIHuman__PC_Strafe                       =  6925440; //0x69AC80
 const int zCCollObjectLevelPolys__s_oCollObjClass    =  9274192; //0x8D8350
 
 const int zCWorld__AdvanceClock                      =  6447328; //0x6260E0 // Hook len 10
@@ -99,6 +97,7 @@ const int oCAIHuman__BowMode_interpolateAim          =  6906518; //0x696296 // H
 const int oCAIHuman__BowMode_postInterpolate         =  6906532; //0x6962A4 // Hook len 6
 const int oCAIHuman__BowMode_notAiming               =  6906078; //0x6960DE // Hook len 6
 const int oCAIHuman__MagicMode                       =  4665296; //0x472FD0 // Hook len 7
+const int oCAIHuman__MagicMode_rtn                   =  4666329; //0x4733D9 // Hook len 7
 const int oCAIArrow__SetupAIVob                      =  6951136; //0x6A10E0 // Hook len 6
 const int oCAIArrow__CanThisCollideWith              =  6952081; //0x6A1491 // Hook len 6
 const int oCAIArrow__DoAI_rtn                        =  6952073; //0x6A1489 // Hook len 6
@@ -142,6 +141,8 @@ const int oCVisualFX_instanceName_offset             = 1220;//0x04C4
 
 const int zCAICamera_elevation_offset                = 56;  //0x0038
 const int zCAICamera_azimuth_offset                  = 68;  //0x0044
+
+const int oCAIHuman_bitfield_spellReleased           = 1<<7;
 
 const int oCAIArrowBase_collision_offset             = 52;  //0x0034
 const int oCAIArrowBase_lifeTime_offset              = 56;  //0x0038

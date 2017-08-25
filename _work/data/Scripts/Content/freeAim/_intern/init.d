@@ -63,7 +63,7 @@ func void GFA_InitFeatureFreeAiming() {
         MEM_Info("Initializing free aiming for spell combat.");
         HookEngineF(oCAIHuman__MagicMode, 7, GFA_SpellAiming); // Manage focus collection and reticle
         HookEngineF(oCSpell__Setup_initFallbackNone, 6, GFA_SetupSpell); // Set spell FX trajectory (shooting)
-        MemoryProtectionOverride(oCAniCtrl_Human__PC_GoBackward, 1); // Disallow moving backwards
+        HookEngineF(oCAIHuman__MagicMode_rtn, 7, GFA_SpellLockMovement); // Lock movement while aiming
     };
 
     // Prevent focus collection (necessary for Gothic 2 only)
@@ -299,14 +299,18 @@ func void GFA_InitAlways() {
     if (GFA_Flags & GFA_RANGED) || (GFA_Flags & GFA_SPELLS) {
         // On level change, Gothic does not maintain the focus instances (see Focus.d), nor does it reinitialize them.
         // The focus instances are, however, critical for enabling/disabling free aiming: Reinitialize them by hand.
-        if (!_@(Focus_Ranged)) {
-            MEM_Info("Initializing focus modes.");
-            const int call = 0;
-            if (CALL_Begin(call)) {
-                CALL__cdecl(oCNpcFocus__InitFocusModes);
-                call = CALL_End();
-            };
+        // Additionally, they need to be reset on loading. Otherwise the default values are lost
+        MEM_Info("Initializing focus modes.");
+        const int call = 0;
+        if (CALL_Begin(call)) {
+            CALL__cdecl(oCNpcFocus__InitFocusModes);
+            call = CALL_End();
         };
+
+        // Backup focus instance values
+        GFA_FOCUS_FAR_NPC_DFT = castToIntf(Focus_Ranged.npc_azi);
+        GFA_FOCUS_SPL_NPC_DFT = castToIntf(Focus_Magic.npc_azi);
+        GFA_FOCUS_SPL_ITM_DFT = Focus_Magic.item_prio;
 
         // Reset internal settings. Focus instances would otherwise not be updated on level change
         GFA_ACTIVE = 0;
@@ -320,6 +324,9 @@ func void GFA_InitAlways() {
 
         // Reset debug vob pointer. Would otherwise result in an invalid vob pointer on loading a game (crash)
         GFA_DebugTRPrevVob = 0;
+
+        // For safety (player might strafe into level change trigger)
+        GFA_IsStrafing = 0;
     };
 };
 

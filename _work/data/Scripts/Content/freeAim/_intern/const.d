@@ -74,6 +74,15 @@ var   int    GFA_StatsCriticalHits;                         // Shooting statisti
 const float  GFA_MAX_TURN_RATE_G1   = 2.0;                  // Gothic 1 has a maximum turn rate (engine default: 2.0)
 
 const int    GFA_ACTIVE             = 0;                    // Status indicator of free aiming
+const int    GOTHIC_CONTROL_SCHEME  = 1;                    // Active control scheme (for Gothic 1 always 1)
+
+const float  GFA_FOCUS_FAR_NPC      = 15.0;                 // NPC azimuth for ranged focus for free aiming
+const float  GFA_FOCUS_SPL_NPC      = 15.0;                 // NPC azimuth for spell focus for free aiming
+const int    GFA_FOCUS_SPL_ITM      = 0;                    // Item priority for spell focus for free aiming
+
+const int    GFA_FOCUS_FAR_NPC_DFT  = FLOATNULL;            // Backup NPC azimuth from ranged focus instance
+const int    GFA_FOCUS_SPL_NPC_DFT  = FLOATNULL;            // Backup NPC azimuth from spell focus instance
+const int    GFA_FOCUS_SPL_ITM_DFT  = 0;                    // Backup item priority from spell focus instance
 
 const int    FLOAT1C                = 1120403456;           // 100 as float
 const int    FLOAT3C                = 1133903872;           // 300 as float

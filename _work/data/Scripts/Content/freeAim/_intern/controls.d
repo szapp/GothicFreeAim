@@ -55,12 +55,9 @@ func void GFA_TurnPlayerModel() {
     };
 
     // Gothic 2 controls only need the rotation if currently shooting
-    if (GOTHIC_BASE_VERSION == 2) {
-        // Separate if-conditions to increase performance (Gothic checks ALL chained if-conditions)
-        if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
-            if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) {
-                return;
-            };
+    if (GOTHIC_CONTROL_SCHEME == 2) {
+        if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) {
+            return;
         };
     };
 
@@ -147,35 +144,12 @@ func void GFA_DisableAutoTurning(var int on) {
 
 
 /*
- * Disable/re-enable the player model to go backwards. This is not disabled while in spell combat and interferes with
- * strafing (movement while aiming). Once in spell combat, backwards movement is disabled and re-enabled afterwards.
- * This function is called from GFA_IsActive() and GFA_UpdateStatus().
- */
-func void GFA_DisableGoBackward(var int on) {
-    if (!(GFA_Flags & GFA_SPELLS)) {
-        return;
-    };
-
-    const int SET = 0;
-    if (on == SET) {
-        return; // No change necessary
-    };
-
-    if (on) {
-        MEM_WriteByte(oCAniCtrl_Human__PC_GoBackward, /*C3*/ 195); // Leave function right away: retn
-    } else {
-        MEM_WriteByte(oCAniCtrl_Human__PC_GoBackward, /*56*/ 86); // Revert to default: push esi
-    };
-
-    SET = !SET;
-};
-
-
-/*
  * Update internal settings for Gothic 2 controls.
  * The support for the Gothic 2 controls is accomplished by emulating the Gothic 1 controls with different sets of
  * aiming and shooting keys. To do this, the condition to differentiate between the control schemes is skipped and the
- * keys are overwritten (all on the level of opcode).
+ * keys are overwritten (all on the level of opcode and only affecting ranged combat).
+ *  on == 0: Gothic 1 controls (GOTHIC_CONTROL_SCHEME == 1)
+ *  on == 1: Gothic 2 controls (GOTHIC_CONTROL_SCHEME == 2)
  * This function is called from GFA_UpdateStatus() if the menu settings change.
  */
 func void GFA_UpdateSettingsG2Ctrl(var int on) {
@@ -183,8 +157,7 @@ func void GFA_UpdateSettingsG2Ctrl(var int on) {
         return;
     };
 
-    const int SET = 0; // Gothic 1 controls are considered default here
-    if (SET == on) {
+    if (GOTHIC_CONTROL_SCHEME == on+1) {
         return; // No change necessary
     };
 
@@ -203,6 +176,7 @@ func void GFA_UpdateSettingsG2Ctrl(var int on) {
         MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+2, ASMINT_OP_nop);
         MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+3, /*6A*/ 106); // push 0
         MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+4, 0); // Will be set to 0 or 1 depending on key press
+        GOTHIC_CONTROL_SCHEME = 2;
     } else {
         // Gothic 2 controls disabled: Revert to original Gothic 2 controls
         MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck, /*0F*/ 15); // Revert G2 controls to default: jz to 0x696391
@@ -217,8 +191,8 @@ func void GFA_UpdateSettingsG2Ctrl(var int on) {
         MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+2, /*24*/ 36);
         MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+3, /*0C*/ 12); // Revert action key to default: push eax
         MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+4, /*50*/ 80);
+        GOTHIC_CONTROL_SCHEME = 1;
     };
-    SET = !SET;
 };
 
 
@@ -275,11 +249,9 @@ func void GFA_PreventFocusCollectionBodystates() {
         GFA_SetFocusAndTarget(0);
 
         // With Gothic 2 controls, the reticle is still visible
-        if (GOTHIC_BASE_VERSION == 2) {
-            if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
-                GFA_RemoveReticle();
-                GFA_AimVobDetachFX();
-            };
+        if (GOTHIC_CONTROL_SCHEME == 2) {
+            GFA_RemoveReticle();
+            GFA_AimVobDetachFX();
         };
     };
 };

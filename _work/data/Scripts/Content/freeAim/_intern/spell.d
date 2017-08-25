@@ -76,7 +76,7 @@ func void GFA_SpellAiming() {
     if (GFA_ACTIVE != FMODE_MAGIC) {
         GFA_RemoveReticle();
         GFA_AimVobDetachFX();
-        if (GFA_IsSpellEligible(spell)) {
+        if (GFA_ACTIVE) && (GFA_IsSpellEligible(spell)) {
             if (GFA_NO_AIM_NO_FOCUS) {
                 GFA_SetFocusAndTarget(0);
             };
@@ -129,15 +129,35 @@ func void GFA_SpellAiming() {
     MEM_Free(reticlePtr);
 
     // Allow strafing only for Gothic 1 controls or when investing the spell (Gothic 2 controls)
-    if (GOTHIC_BASE_VERSION == 2) {
-        if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
-            // Check oCAIHuman_bitfield
-            var oCAniCtrl_Human aniCtrl; aniCtrl = _^(ECX);
-            const int oCAIHuman_bitfield_spellReleased = 1<<7;
-            if (aniCtrl.oCAIHuman_bitfield & oCAIHuman_bitfield_spellReleased) {
-                return;
-            };
+    if (GOTHIC_CONTROL_SCHEME == 2) {
+        var oCAniCtrl_Human aniCtrl; aniCtrl = _^(ECX);
+        if (aniCtrl.oCAIHuman_bitfield & oCAIHuman_bitfield_spellReleased) {
+            return;
         };
     };
     GFA_Strafe();
+};
+
+
+/*
+ * Lock the player in place and prevent movement during aiming in spell combat. This function hooks the end of
+ * oCAIHuman::MagicMode() to overwrite, whether casting is active or not, to disable any consecutive movement in
+ * oCAIHuman::_WalkCycle().
+ */
+func void GFA_SpellLockMovement() {
+    if (GFA_ACTIVE != FMODE_MAGIC) {
+        return;
+    };
+
+    // When using Gothic 2 controls, do not lock movement when not investing the spell (free to move)
+    if (GOTHIC_CONTROL_SCHEME == 2) {
+        var oCAniCtrl_Human aniCtrl; aniCtrl = _^(ESI);
+        if (aniCtrl.oCAIHuman_bitfield & oCAIHuman_bitfield_spellReleased) {
+            EAX = 0;
+            return;
+        };
+    };
+
+    // Set return value to one: Do not call any other movement functions
+    EAX = 1;
 };
