@@ -27,30 +27,24 @@
  * of animation to be played, see GFA_AIM_ANIS.
  */
 func void GFA_AimMovement(var int movement) {
-    // Increase performance: Only update if movement changed
+    // Send perception before anything else (every 1500 ms)
+    if (movement) {
+        var int percTimer; percTimer += MEM_Timer.frameTime;
+        if (percTimer >= 1500) {
+            percTimer -= 1500;
+            // Ignore sneaking, because PERC_OBSERVESUSPECT is disabled
+            Npc_SendPassivePerc(hero, PERC_ASSESSQUIETSOUND, NULL, hero);
+        };
+    };
+
+    // Increase performance: Exit if movement did not change
     if (GFA_IsStrafing == movement) {
         return;
     };
     GFA_IsStrafing = movement;
 
-    // Find animation name prefix by fight mode
-    var oCNpc her; her = Hlp_GetNpc(hero);
-    var string prefix;
-    if (her.fmode == FMODE_MAGIC) {
-        prefix = "S_MAG";
-        // MEM_Warn("GFA_AimMovement: Spell combat movement not supported yet.");
-    } else if (her.fmode == FMODE_FAR) {
-        prefix = "S_BOW";
-    } else if (her.fmode == FMODE_FAR+1) {
-        prefix = "S_CBOW";
-        MEM_Warn("GFA_AimMovement: Crossbow movement not supported yet.");
-        return;
-    } else {
-        MEM_Warn("GFA_AimMovement: Player not in valid aiming fight mode.");
-        return;
-    };
-
     // Get player model
+    var oCNpc her; her = Hlp_GetNpc(hero);
     var int herPtr; herPtr = _@(her);
     var int model;
     const int call = 0;
@@ -66,51 +60,87 @@ func void GFA_AimMovement(var int movement) {
         if (CALL_Begin(call2)) {
             CALL_IntParam(_@(GFA_MOVE_ANI_LAYER));
             CALL_IntParam(_@(GFA_MOVE_ANI_LAYER));
-            CALL__thiscall(_@(model), zCModel__StopAnisLayerRange);
+            CALL__thiscall(_@(model), zCModel__FadeOutAnisLayerRange);
             call2 = CALL_End();
         };
         return;
     };
 
+    // Find animation name prefix by fight mode
+    var string prefix;
+    if (her.fmode == FMODE_MAGIC) {
+        prefix = "S_MAG";
+    } else if (her.fmode == FMODE_FAR) {
+        prefix = "S_BOW";
+    } else if (her.fmode == FMODE_FAR+1) {
+        prefix = "S_CBOW";
+    } else {
+        MEM_Warn("GFA_AimMovement: Player not in valid aiming fight mode.");
+        return;
+    };
+
     // Iterate over all aim movement animations and stop or play them
-    repeat(aniID, GFA_MAX_AIM_ANIS); var int aniID;
-        // Skip empty IDs
-        if (aniID == 0) || (aniID == 3) || (aniID == 7) {
+    repeat(aniIdx, GFA_MAX_AIM_ANIS); var int aniIdx;
+        // Skip empty indices
+        if (aniIdx == 0) || (aniIdx == 3) || (aniIdx == 7) {
             continue;
         };
 
         // Get full name of animation
-        var string aniName; aniName = ConcatStrings(prefix, MEM_ReadStatStringArr(GFA_AIM_ANIS, aniID));
+        var string aniName; aniName = ConcatStrings(prefix, MEM_ReadStatStringArr(GFA_AIM_ANIS, aniIdx));
         var int aniNamePtr; aniNamePtr = _@s(aniName);
 
-        // Check whether animation is active
-        var int aniActive;
+        // Increase performance: work with zCModelAni instead of string (every following function would do this over)
+        var int aniID;
         const int call3 = 0;
         if (CALL_Begin(call3)) {
             CALL_PtrParam(_@(aniNamePtr));
-            CALL_PutRetValTo(_@(aniActive));
-            CALL__thiscall(_@(model), zCModel__IsAnimationActive);
+            CALL_PutRetValTo(_@(aniID));
+            CALL__thiscall(_@(model), zCModel__GetAniIDFromAniName);
             call3 = CALL_End();
+        };
+        var int modelAni;
+        const int call4 = 0;
+        if (CALL_Begin(call4)) {
+            CALL_IntParam(_@(aniID));
+            CALL_PutRetValTo(_@(modelAni));
+            CALL__thiscall(_@(model), zCModel__GetAniFromAniID);
+            call4 = CALL_End();
+        };
+        if (!modelAni) {
+            MEM_SendToSpy(zERR_TYPE_WARN, // Same as MEM_Warn(), but avoid Ikarus stack trace
+                ConcatStrings(ConcatStrings("GFA_AimMovement: Animation not found: ", aniName), "."));
+            continue;
+        };
+
+        // Check whether animation is active
+        var int aniActive;
+        const int call5 = 0;
+        if (CALL_Begin(call5)) {
+            CALL_PtrParam(_@(modelAni));
+            CALL_PutRetValTo(_@(aniActive));
+            CALL__thiscall(_@(model), zCModel__IsAniActive);
+            call5 = CALL_End();
         };
 
         // Update animations
-        if (movement == aniID) && (!aniActive) {
-            // Start animation
+        if (movement == aniIdx) && (!aniActive) {
+            // Start requested animation
             var int zero;
-            const int call4 = 0;
-            if (CALL_Begin(call4)) {
+            const int call6 = 0;
+            if (CALL_Begin(call6)) {
                 CALL_IntParam(_@(zero));
-                CALL_PtrParam(_@(aniNamePtr));
+                CALL_PtrParam(_@(modelAni));
                 CALL__thiscall(_@(model), zCModel__StartAni);
-                call4 = CALL_End();
+                call6 = CALL_End();
             };
         } else if (aniActive) {
-            // Stop all other animations
-            const int call5 = 0;
-            if (CALL_Begin(call5)) {
-                CALL_PtrParam(_@(aniNamePtr));
-                CALL__thiscall(_@(model), zCModel__StopAnimation);
-                call5 = CALL_End();
+            // Stop any other animation
+            const int call7 = 0;
+            if (CALL_Begin(call7)) {
+                CALL_PtrParam(_@(modelAni));
+                CALL__thiscall(_@(model), zCModel__FadeOutAni);
+                call7 = CALL_End();
             };
         };
     end;
@@ -121,10 +151,48 @@ func void GFA_AimMovement(var int movement) {
  * Enable movement while aiming. This function checks key presses and passes on a movement ID to GFA_AimMovement(). The
  * function hooks oCAIHuman::BowMode() at an offset, where the player is aiming. Additionally, the function is called
  * from GFA_RangedIdle() to allow movement during shooting and to reset movement when letting go of the aiming key.
+ * The function is also called from GFA_SpellAiming() for strafing during spell combat.
  */
 func void GFA_Strafe() {
     if (!GFA_ACTIVE) {
+        GFA_AimMovement(0);
         return;
+    };
+
+    // Safety check that player is not running/falling/jumping
+    MEM_PushInstParam(hero);
+    MEM_PushIntParam(BS_STAND);
+    MEM_Call(C_BodyStateContains);
+    if (!MEM_PopIntResult()) {
+        GFA_AimMovement(0);
+    };
+
+    // Magic mode does not allow sneaking (messes up the perception and would require more animations)
+    if (Npc_IsInFightMode(hero, FMODE_MAGIC)) {
+        var oCNpc her; her = Hlp_GetNpc(hero);
+        var int aniCtrlPtr; aniCtrlPtr = her.anictrl;
+
+        // Check if sneaking
+        if (MEM_ReadInt(aniCtrlPtr+oCAIHuman_walkmode_offset) & NPC_SNEAK) {
+            // Set up and check new walk mode as NPC_RUN (see Constants.d)
+            const int call = 0;
+            if (CALL_Begin(call)) {
+                CALL_IntParam(_@(NPC_RUN));
+                CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human__CanToggleWalkModeTo);
+                call = CALL_End();
+            };
+
+            // Toggle walk mode
+            if (CALL_RetValAsInt()) {
+                const int negOne = -1;
+                const int call2 = 0;
+                if (CALL_Begin(call2)) {
+                    CALL_IntParam(_@(negOne));
+                    CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human__ToggleWalkMode);
+                    call2 = CALL_End();
+                };
+            };
+        };
     };
 
     // Check whether keys are pressed down (held)

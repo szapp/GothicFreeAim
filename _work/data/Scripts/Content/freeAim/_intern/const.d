@@ -105,16 +105,16 @@ const int    GFA_MAX_AIM_ANIS       = 11;                   // Number of aiming 
 
 const string GFA_AIM_ANIS[GFA_MAX_AIM_ANIS] = {             // Names of aiming movement animations (upper case!)
     "",                                                     //  0
-    "AIM_MOVEF",                                            //  1  0001  GFA_MOVE_FORWARD
-    "AIM_MOVEB",                                            //  2  0010  GFA_MOVE_BACKWARD
+    "_AIM_MOVEF",                                           //  1  0001  GFA_MOVE_FORWARD
+    "_AIM_MOVEB",                                           //  2  0010  GFA_MOVE_BACKWARD
     "",                                                     //  3
-    "AIM_MOVEL",                                            //  4  0100  GFA_MOVE_LEFT
-    "_MOVE_LEFTFORWARD",                                    //  5  0101  GFA_MOVE_LEFT | GFA_MOVE_FORWARD
-    "_MOVE_LEFTBACK",                                       //  6  0110  GFA_MOVE_LEFT | GFA_MOVE_BACKWARD
+    "_AIM_MOVEL",                                           //  4  0100  GFA_MOVE_LEFT
+    "_AIM_MOVELF",                                          //  5  0101  GFA_MOVE_LEFT | GFA_MOVE_FORWARD
+    "_AIM_MOVELB",                                          //  6  0110  GFA_MOVE_LEFT | GFA_MOVE_BACKWARD
     "",                                                     //  7
-    "AIM_MOVER",                                            //  8  1000  GFA_MOVE_RIGHT
-    "_MOVE_RIGHTFORWARD",                                   //  9  1001  GFA_MOVE_RIGHT | GFA_MOVE_FORWARD
-    "_MOVE_RIGHTBACK"                                       // 10  1010  GFA_MOVE_RIGHT | GFA_MOVE_BACKWARD
+    "_AIM_MOVER",                                           //  8  1000  GFA_MOVE_RIGHT
+    "_AIM_MOVERF",                                          //  9  1001  GFA_MOVE_RIGHT | GFA_MOVE_FORWARD
+    "_AIM_MOVERB"                                           // 10  1010  GFA_MOVE_RIGHT | GFA_MOVE_BACKWARD
 };
 
 const int    GFA_MOVE_ANI_LAYER     = 2;                    // Layer of aiming movement animations (see Humans.mds)

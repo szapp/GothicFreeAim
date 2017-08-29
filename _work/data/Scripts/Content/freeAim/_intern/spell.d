@@ -71,7 +71,7 @@ func void GFA_SetupSpell() {
  */
 func void GFA_SpellAiming() {
     var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
-    var oCAniCtrl_Human aniCtrl; aniCtrl = _^(ECX);
+    var int aniCtrlPtr; aniCtrlPtr = ECX;
 
     // Only show reticle for spells that support free aiming and during aiming (Gothic 1 controls)
     if (GFA_ACTIVE != FMODE_MAGIC) {
@@ -81,7 +81,7 @@ func void GFA_SpellAiming() {
         if (GFA_ACTIVE) {
             if (GFA_IsSpellEligible(spell)) {
                 // Remove FX from aim vob only if not currently casting
-                if (aniCtrl.oCAIHuman_bitfield & oCAIHuman_bitfield_spellCastedLastFrame) {
+                if (MEM_ReadInt(aniCtrlPtr+oCAIHuman_bitfield_offset) & oCAIHuman_bitfield_spellCastedLastFrame) {
                     GFA_AimVobDetachFX();
                 };
 
@@ -90,10 +90,8 @@ func void GFA_SpellAiming() {
                     GFA_SetFocusAndTarget(0);
                 };
 
-                // Allow to stop strafing (not to start strafing, that causes weird behavior)
-                if (GFA_IsStrafing) {
-                    GFA_Strafe();
-                };
+                // Remove movement animations when not aiming
+                GFA_AimMovement(0);
 
             } else if (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS)
                    && (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS_FALLBACK_CASTER) {
@@ -148,7 +146,9 @@ func void GFA_SpellAiming() {
 
     // Allow strafing only for Gothic 1 controls or when investing the spell (Gothic 2 controls)
     if (GOTHIC_CONTROL_SCHEME == 2) {
-        if (aniCtrl.oCAIHuman_bitfield & oCAIHuman_bitfield_spellReleased) {
+        if (MEM_ReadInt(aniCtrlPtr+oCAIHuman_bitfield_offset) & oCAIHuman_bitfield_spellReleased)
+        || ((!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))) {
+            GFA_AimMovement(0);
             return;
         };
     };
@@ -168,8 +168,8 @@ func void GFA_SpellLockMovement() {
 
     // When using Gothic 2 controls, do not lock movement when not investing the spell (free to move)
     if (GOTHIC_CONTROL_SCHEME == 2) {
-        var oCAniCtrl_Human aniCtrl; aniCtrl = _^(ESI);
-        if (aniCtrl.oCAIHuman_bitfield & oCAIHuman_bitfield_spellReleased) {
+        var int aniCtrlPtr; aniCtrlPtr = ESI;
+        if (MEM_ReadInt(aniCtrlPtr+oCAIHuman_bitfield_offset) & oCAIHuman_bitfield_spellReleased) {
             EAX = 0;
             return;
         };
