@@ -91,6 +91,7 @@ const int oCAIHuman__BowMode_g2ctrlCheck             =  0;                      
 const int oCAIHuman__BowMode_shootingKey             =  6359374; //0x61094E                // Not used for Gothic 1
 const int oCAIHuman__MagicMode_turnToTarget          =  4641584; //0x46D330
 const int oCAIHuman__PC_ActionMove_aimingKey         =  6373222; //0x613F66                // Not used for Gothic 1
+const int oCAIHuman__PC_Turnings                     =  6375424; //0x614800                // Not used for Gothic 1
 const int zCCollObjectLevelPolys__s_oCollObjClass    =  8861152; //0x8735E0
 
 const int zCWorld__AdvanceClock                      =  6257280; //0x5F7A80 // Hook len 10

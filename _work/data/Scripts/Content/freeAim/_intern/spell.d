@@ -91,7 +91,9 @@ func void GFA_SpellAiming() {
                 };
 
                 // Remove movement animations when not aiming
-                GFA_AimMovement(0);
+                if (GOTHIC_CONTROL_SCHEME == 1) {
+                    GFA_AimMovement(0);
+                };
 
             } else if (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS)
                    && (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS_FALLBACK_CASTER) {
@@ -144,14 +146,7 @@ func void GFA_SpellAiming() {
     GFA_InsertReticle(reticlePtr);
     MEM_Free(reticlePtr);
 
-    // Allow strafing only for Gothic 1 controls or when investing the spell (Gothic 2 controls)
-    if (GOTHIC_CONTROL_SCHEME == 2) {
-        if (MEM_ReadInt(aniCtrlPtr+oCAIHuman_bitfield_offset) & oCAIHuman_bitfield_spellReleased)
-        || ((!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))) {
-            GFA_AimMovement(0);
-            return;
-        };
-    };
+    // Allow strafing
     GFA_Strafe();
 };
 
@@ -166,12 +161,15 @@ func void GFA_SpellLockMovement() {
         return;
     };
 
-    // When using Gothic 2 controls, do not lock movement when not investing the spell (free to move)
+    // When using Gothic 2 controls completely lock movement except for model rotation
     if (GOTHIC_CONTROL_SCHEME == 2) {
         var int aniCtrlPtr; aniCtrlPtr = ESI;
-        if (MEM_ReadInt(aniCtrlPtr+oCAIHuman_bitfield_offset) & oCAIHuman_bitfield_spellReleased) {
-            EAX = 0;
-            return;
+        var int zero;
+        const int call = 0;
+        if (CALL_Begin(call)) {
+            CALL_IntParam(_@(zero));
+            CALL__thiscall(_@(aniCtrlPtr), oCAIHuman__PC_Turnings);
+            call = CALL_End();
         };
     };
 
