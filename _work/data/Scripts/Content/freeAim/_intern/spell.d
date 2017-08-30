@@ -161,8 +161,15 @@ func void GFA_SpellLockMovement() {
         return;
     };
 
-    // When using Gothic 2 controls completely lock movement except for model rotation
+    // For Gothic 2 controls completely lock movement for spell combat except for weapon switch and model rotation
     if (GOTHIC_CONTROL_SCHEME == 2) {
+        // Weapon switch
+        if (MEM_KeyPressed(MEM_GetKey("keyWeapon"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyWeapon"))) {
+            GFA_AimMovement(0);
+            return;
+        };
+
+        // Model rotation
         var int aniCtrlPtr; aniCtrlPtr = ESI;
         var int zero;
         const int call = 0;
