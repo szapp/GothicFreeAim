@@ -164,7 +164,8 @@ func void GFA_SpellLockMovement() {
     // For Gothic 2 controls completely lock movement for spell combat except for weapon switch and model rotation
     if (GOTHIC_CONTROL_SCHEME == 2) {
         // Weapon switch
-        if (MEM_KeyPressed(MEM_GetKey("keyWeapon"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyWeapon"))) {
+        if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))
+        && ((MEM_KeyPressed(MEM_GetKey("keyWeapon"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyWeapon")))) {
             GFA_AimMovement(0);
             return;
         };
@@ -177,6 +178,25 @@ func void GFA_SpellLockMovement() {
             CALL_IntParam(_@(zero));
             CALL__thiscall(_@(aniCtrlPtr), oCAIHuman__PC_Turnings);
             call = CALL_End();
+        };
+
+        // Remove rotation animations
+        var oCNpc her; her = Hlp_GetNpc(hero);
+        var int herPtr; herPtr = _@(her);
+        var int model;
+        const int call2 = 0;
+        if (CALL_Begin(call2)) {
+            CALL_PutRetValTo(_@(model));
+            CALL__thiscall(_@(herPtr), oCNpc__GetModel);
+            call2 = CALL_End();
+        };
+        const int twenty = 20;
+        const int call3 = 0;
+        if (CALL_Begin(call3)) {
+            CALL_IntParam(_@(twenty));
+            CALL_IntParam(_@(twenty));
+            CALL__thiscall(_@(model), zCModel__StopAnisLayerRange);
+            call3 = CALL_End();
         };
     };
 

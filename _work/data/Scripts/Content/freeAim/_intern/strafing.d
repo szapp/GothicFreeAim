@@ -60,7 +60,7 @@ func void GFA_AimMovement(var int movement) {
         if (CALL_Begin(call2)) {
             CALL_IntParam(_@(GFA_MOVE_ANI_LAYER));
             CALL_IntParam(_@(GFA_MOVE_ANI_LAYER));
-            CALL__thiscall(_@(model), zCModel__FadeOutAnisLayerRange);
+            CALL__thiscall(_@(model), zCModel__StopAnisLayerRange);
             call2 = CALL_End();
         };
         return;
@@ -79,6 +79,40 @@ func void GFA_AimMovement(var int movement) {
         return;
     };
 
+    var int zero;
+
+    // Ensure that there is enough space to move (WIP: NOT WORKING YET)
+    if (movement & GFA_MOVE_FORWARD) || (movement & GFA_MOVE_BACKWARD) {
+        var int aniCtrlPtr; aniCtrlPtr = her.anictrl;
+        var int enoughSpace;
+
+        const int zCAIPlayer__CheckEnoughSpaceMoveForward = 5314304; //0x511700
+        const int zCAIPlayer__CheckEnoughSpaceMoveBackward = 5314368; //0x511740
+
+        if (movement & GFA_MOVE_FORWARD) {
+            const int call3 = 0;
+            if (CALL_Begin(call3)) {
+                CALL_IntParam(_@(zero));
+                CALL_PutRetValTo(_@(enoughSpace));
+                CALL__thiscall(_@(aniCtrlPtr), zCAIPlayer__CheckEnoughSpaceMoveForward);
+                call3 = CALL_End();
+            };
+        } else {
+            const int call4 = 0;
+            if (CALL_Begin(call4)) {
+                CALL_IntParam(_@(zero));
+                CALL_PutRetValTo(_@(enoughSpace));
+                CALL__thiscall(_@(aniCtrlPtr), zCAIPlayer__CheckEnoughSpaceMoveBackward);
+                call4 = CALL_End();
+            };
+        };
+
+        if (!enoughSpace) {
+            MEM_Info("### STOP MOVEMENT ###");
+            movement = movement & ~GFA_MOVE_FORWARD & ~GFA_MOVE_BACKWARD;
+        };
+    };
+
     // Iterate over all aim movement animations and stop or play them
     repeat(aniIdx, GFA_MAX_AIM_ANIS); var int aniIdx;
         // Skip empty indices
@@ -90,47 +124,23 @@ func void GFA_AimMovement(var int movement) {
         var string aniName; aniName = ConcatStrings(prefix, MEM_ReadStatStringArr(GFA_AIM_ANIS, aniIdx));
         var int aniNamePtr; aniNamePtr = _@s(aniName);
 
-        // Increase performance: work with zCModelAni instead of string (every following function would do this over)
-        var int aniID;
-        const int call3 = 0;
-        if (CALL_Begin(call3)) {
-            CALL_PtrParam(_@(aniNamePtr));
-            CALL_PutRetValTo(_@(aniID));
-            CALL__thiscall(_@(model), zCModel__GetAniIDFromAniName);
-            call3 = CALL_End();
-        };
-        var int modelAni;
-        const int call4 = 0;
-        if (CALL_Begin(call4)) {
-            CALL_IntParam(_@(aniID));
-            CALL_PutRetValTo(_@(modelAni));
-            CALL__thiscall(_@(model), zCModel__GetAniFromAniID);
-            call4 = CALL_End();
-        };
-        if (!modelAni) {
-            MEM_SendToSpy(zERR_TYPE_WARN, // Same as MEM_Warn(), but avoid Ikarus stack trace
-                ConcatStrings(ConcatStrings("GFA_AimMovement: Animation not found: ", aniName), "."));
-            continue;
-        };
-
         // Check whether animation is active
         var int aniActive;
         const int call5 = 0;
         if (CALL_Begin(call5)) {
-            CALL_PtrParam(_@(modelAni));
+            CALL_PtrParam(_@(aniNamePtr));
             CALL_PutRetValTo(_@(aniActive));
-            CALL__thiscall(_@(model), zCModel__IsAniActive);
+            CALL__thiscall(_@(model), zCModel__IsAnimationActive);
             call5 = CALL_End();
         };
 
         // Update animations
         if (movement == aniIdx) && (!aniActive) {
             // Start requested animation
-            var int zero;
             const int call6 = 0;
             if (CALL_Begin(call6)) {
                 CALL_IntParam(_@(zero));
-                CALL_PtrParam(_@(modelAni));
+                CALL_PtrParam(_@(aniNamePtr));
                 CALL__thiscall(_@(model), zCModel__StartAni);
                 call6 = CALL_End();
             };
@@ -138,8 +148,8 @@ func void GFA_AimMovement(var int movement) {
             // Stop any other animation
             const int call7 = 0;
             if (CALL_Begin(call7)) {
-                CALL_PtrParam(_@(modelAni));
-                CALL__thiscall(_@(model), zCModel__FadeOutAni);
+                CALL_PtrParam(_@(aniNamePtr));
+                CALL__thiscall(_@(model), zCModel__StopAnimation);
                 call7 = CALL_End();
             };
         };
@@ -160,11 +170,15 @@ func void GFA_Strafe() {
     };
 
     // Safety check that player is not running/falling/jumping
-    MEM_PushInstParam(hero);
-    MEM_PushIntParam(BS_STAND);
-    MEM_Call(C_BodyStateContains);
-    if (!MEM_PopIntResult()) {
-        GFA_AimMovement(0);
+    if (GOTHIC_CONTROL_SCHEME == 1) {
+        // Does not work for Gothic 2 controls (but movement locked anyways, check not necessary)
+        MEM_PushInstParam(hero);
+        MEM_PushIntParam(BS_STAND);
+        MEM_Call(C_BodyStateContains);
+        if (!MEM_PopIntResult()) {
+            GFA_AimMovement(0);
+            return;
+        };
     };
 
     // Magic mode does not allow sneaking (messes up the perception and would require more animations)
@@ -192,6 +206,32 @@ func void GFA_Strafe() {
                     call2 = CALL_End();
                 };
             };
+        };
+
+        // For Gothic 2 control remove running animation if it was started during weapon change
+        if (GOTHIC_CONTROL_SCHEME == 2) {
+            var int herPtr; herPtr = _@(her);
+            var int model;
+            const int call3 = 0;
+            if (CALL_Begin(call3)) {
+                CALL_PutRetValTo(_@(model));
+                CALL__thiscall(_@(herPtr), oCNpc__GetModel);
+                call3 = CALL_End();
+            };
+            const string anis[3] = {
+                "S_MAGRUNL",
+                "S_MAGWALKL",
+                "S_MAGSNEAKL"
+            };
+            repeat(i, 3); var int i;
+                var int aniNamePtr; aniNamePtr = _@s(MEM_ReadStatStringArr(anis, i));
+                const int call4 = 0;
+                if (CALL_Begin(call4)) {
+                    CALL_PtrParam(_@(aniNamePtr));
+                    CALL__thiscall(_@(model), zCModel__StopAnimation);
+                    call4 = CALL_End();
+                };
+            end;
         };
     };
 
