@@ -238,5 +238,14 @@ func void GFA_Strafe() {
                                | (GFA_MOVE_BACKWARD * mBack)
                                | (GFA_MOVE_LEFT     * mLeft)
                                | (GFA_MOVE_RIGHT    * mRight);
+
+    // Prevent opposing directions
+    if (mFront) && (mBack) {
+        movement = movement & ~GFA_MOVE_FORWARD & ~GFA_MOVE_BACKWARD;
+    };
+    if (mLeft) && (mRight) {
+        movement = movement & ~GFA_MOVE_LEFT & ~GFA_MOVE_RIGHT;
+    };
+
     GFA_AimMovement(movement);
 };
