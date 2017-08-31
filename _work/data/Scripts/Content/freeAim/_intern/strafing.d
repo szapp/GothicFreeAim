@@ -113,47 +113,28 @@ func void GFA_AimMovement(var int movement) {
         };
     };
 
-    // Iterate over all aim movement animations and stop or play them
-    repeat(aniIdx, GFA_MAX_AIM_ANIS); var int aniIdx;
-        // Skip empty indices
-        if (aniIdx == 0) || (aniIdx == 3) || (aniIdx == 7) {
-            continue;
-        };
+    // Get full name of animation
+    var string aniName; aniName = ConcatStrings(prefix, MEM_ReadStatStringArr(GFA_AIM_ANIS, movement));
+    var int aniNamePtr; aniNamePtr = _@s(aniName);
 
-        // Get full name of animation
-        var string aniName; aniName = ConcatStrings(prefix, MEM_ReadStatStringArr(GFA_AIM_ANIS, aniIdx));
-        var int aniNamePtr; aniNamePtr = _@s(aniName);
+    // Check whether animation is active
+    const int call5 = 0;
+    if (CALL_Begin(call5)) {
+        CALL_PtrParam(_@(aniNamePtr));
+        CALL__thiscall(_@(model), zCModel__IsAnimationActive);
+        call5 = CALL_End();
+    };
 
-        // Check whether animation is active
-        var int aniActive;
-        const int call5 = 0;
-        if (CALL_Begin(call5)) {
+    // Start animation if not active
+    if (!CALL_RetValAsInt()) {
+        const int call6 = 0;
+        if (CALL_Begin(call6)) {
+            CALL_IntParam(_@(zero));
             CALL_PtrParam(_@(aniNamePtr));
-            CALL_PutRetValTo(_@(aniActive));
-            CALL__thiscall(_@(model), zCModel__IsAnimationActive);
-            call5 = CALL_End();
+            CALL__thiscall(_@(model), zCModel__StartAni);
+            call6 = CALL_End();
         };
-
-        // Update animations
-        if (movement == aniIdx) && (!aniActive) {
-            // Start requested animation
-            const int call6 = 0;
-            if (CALL_Begin(call6)) {
-                CALL_IntParam(_@(zero));
-                CALL_PtrParam(_@(aniNamePtr));
-                CALL__thiscall(_@(model), zCModel__StartAni);
-                call6 = CALL_End();
-            };
-        } else if (aniActive) {
-            // Stop any other animation
-            const int call7 = 0;
-            if (CALL_Begin(call7)) {
-                CALL_PtrParam(_@(aniNamePtr));
-                CALL__thiscall(_@(model), zCModel__StopAnimation);
-                call7 = CALL_End();
-            };
-        };
-    end;
+    };
 };
 
 
