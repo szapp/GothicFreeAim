@@ -114,6 +114,7 @@ func void GFA_IsActive() {
     // Check if currently in a menu or in a dialog
     if (MEM_Game.pause_screen) || (!InfoManager_HasFinished()) {
         GFA_SetCameraModes(0);
+        GFA_AimMovement(0);
         GFA_DisableAutoTurning(0);
         GFA_ACTIVE = 1;
         return;
@@ -123,7 +124,18 @@ func void GFA_IsActive() {
     var oCNpc her; her = Hlp_GetNpc(hero);
     if (her.fmode < FMODE_FAR) {
         GFA_SetCameraModes(0);
+        GFA_AimMovement(0);
         GFA_DisableAutoTurning(0);
+        GFA_ACTIVE = 1;
+        return;
+    };
+
+    // Check if falling (body state BS_FALL is unreliable, because it is set after the falling animation has started)
+    var zCAIPlayer playerAI; playerAI = _^(her.anictrl);
+    if (gef(playerAI.aboveFloor, mkf(12))) {
+        GFA_AimMovement(0);
+        GFA_RemoveReticle();
+        GFA_AimVobDetachFX();
         GFA_ACTIVE = 1;
         return;
     };
@@ -164,7 +176,7 @@ func void GFA_IsActive() {
         // Gothic 1 does not differentiate between camera modes. Force/overwrite all to free aiming mode
         GFA_SetCameraModes(1);
 
-        // Disable reticle while running (will also disable turning!)
+        // Disable reticle when holding the action key while running (will also disable turning!)
         if (GOTHIC_CONTROL_SCHEME == 1) {
             MEM_PushInstParam(hero);
             MEM_PushIntParam(BS_STAND);

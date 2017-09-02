@@ -49,6 +49,7 @@ const int oCAIHuman__Cam_Fight                       =  9275516; //0x8D887C
 const int oCAniCtrl_Human__Turn                      =  6445616; //0x625A30
 const int oCAniCtrl_Human__CanToggleWalkModeTo       =  6437088; //0x6238E0
 const int oCAniCtrl_Human__ToggleWalkMode            =  6442544; //0x624E30
+const int zCAIPlayer__CheckEnoughSpaceMoveDir        =  5248960; //0x5017C0
 const int oCNpc__TurnToEnemy_camCheck                =  0;                                 // Does not exist in Gothic 1
 const int oCNpc__GetAngles                           =  7650560; //0x74BD00
 const int oCNpc__SetFocusVob                         =  6881136; //0x68FF70
@@ -94,7 +95,9 @@ const int zCCollObjectLevelPolys__s_oCollObjClass    =  8861152; //0x8735E0
 
 const int zCWorld__AdvanceClock                      =  6257280; //0x5F7A80 // Hook len 10
 const int cGameManager__ApplySomeSettings_rtn        =  4356499; //0x427993 // Hook len 6
+const int zCAIPlayer__IsSliding_true                 =  5233245; //0x4FDA5D // Hook len 5
 const int oCAIVobMove__DoAI_stopMovement             =  6389348; //0x617E64 // Hook len 7
+const int oCAIHuman__PC_CheckSpecialStates_lie       =  6370192; //0x613390 // Hook len 5
 const int oCAIHuman__PC_ActionMove_bodyState         =  0;                                 // Does not exist in Gothic 1
 const int oCAIHuman__BowMode_interpolateAim          =  6359260; //0x6108DC // Hook len 5
 const int oCAIHuman__BowMode_postInterpolate         =  6359274; //0x6108EA // Hook len 6
@@ -114,7 +117,7 @@ const int oCAIArrowBase__ReportCollisionToAI_collVob =  0;                      
 const int oCAIArrowBase__ReportCollisionToAI_collWld =  0;                                 // Does not exist in Gothic 1
 const int oCNpc__OnDamage_Hit_criticalHit            =  7546035; //0x7324B3 // Hook len 5
 const int oCNpc__OnDamage_Anim_getModel              =  7609592; //0x741CF8 // Hook len 9
-const int oCNpcFocus__SetFocusMode                   =  6508128; //0x634E60 // Hook len 7
+const int oCNpc__SetWeaponMode_player                =  6907265; //0x696581 // Hook len 6
 const int oCSpell__Setup_initFallbackNone            =  4704143; //0x47C78F // Hook len 6
 const int mouseUpdate                                =  5013602; //0x4C8062 // Hook len 5
 
@@ -144,6 +147,8 @@ const int oCVisualFX_instanceName_offset             = 1140;//0x0474
 
 const int zCAICamera_elevation_offset                = 56;  //0x0038
 const int zCAICamera_azimuth_offset                  = 68;  //0x0044
+
+const int zCAIPlayer_bitfield1_forceModelHalt        = 1<<0;
 
 const int oCAIHuman_walkmode_offset                  = 352; //0x0160
 const int oCAIHuman_bitfield_offset                  = 4612;//0x1204

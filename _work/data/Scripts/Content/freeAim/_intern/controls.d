@@ -233,6 +233,27 @@ func void GFA_SetCameraModes(var int on) {
 
 
 /*
+ * Remove reticle, prevent strafing and detach FX from aim vob during special body states. This function hooks at two
+ * different addresses: During sliding (offset where sliding is positively determined in zCAIPlayer::IsSliding()) and
+ * when lying on the ground after a deep fall (offset where lying is positively determined
+ * oCAIHuman::PC_CheckSpecialStates()).
+ * Caution: This function is always called, even if free aiming is not currently active.
+ */
+func void GFA_TreatBodystates() {
+    if (!GFA_ACTIVE) {
+        return;
+    };
+
+    GFA_AimMovement(0);
+    GFA_RemoveReticle();
+    GFA_AimVobDetachFX();
+
+    // Reset draw force
+    GFA_BowDrawOnset = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
+};
+
+
+/*
  * Prevent focus collection while jumping and falling during free aiming fight modes. This function hooks
  * oCAIHuman::PC_ActionMove() at an offset at which the fight modes are not reached. This happens during certain body
  * states. At that offset, the focus collection remains normal, which will counteract the idea of GFA_NO_AIM_NO_FOCUS.

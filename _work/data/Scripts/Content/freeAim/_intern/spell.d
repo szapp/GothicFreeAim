@@ -181,15 +181,8 @@ func void GFA_SpellLockMovement() {
         };
 
         // Remove rotation animations
-        var oCNpc her; her = Hlp_GetNpc(hero);
-        var int herPtr; herPtr = _@(her);
-        var int model;
-        const int call2 = 0;
-        if (CALL_Begin(call2)) {
-            CALL_PutRetValTo(_@(model));
-            CALL__thiscall(_@(herPtr), oCNpc__GetModel);
-            call2 = CALL_End();
-        };
+        var zCAIPlayer playerAI; playerAI = _^(aniCtrlPtr);
+        var int model; model = playerAI.model;
         const int twenty = 20;
         const int call3 = 0;
         if (CALL_Begin(call3)) {

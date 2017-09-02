@@ -66,14 +66,17 @@ func void GFA_InitFeatureFreeAiming() {
         HookEngineF(oCAIHuman__MagicMode_rtn, 7, GFA_SpellLockMovement); // Lock movement while aiming
     };
 
-    // Prevent focus collection (necessary for Gothic 2 only)
+    // Treat special body states (lying or sliding)
+    HookEngineF(zCAIPlayer__IsSliding_true, 5, GFA_TreatBodystates); // Called during sliding
+    HookEngineF(oCAIHuman__PC_CheckSpecialStates_lie, 5, GFA_TreatBodystates); // Called when lying after a fall
+    // Prevent focus collection during jumping and falling (necessary for Gothic 2 only)
     if (GOTHIC_BASE_VERSION == 2) && (GFA_NO_AIM_NO_FOCUS) {
         HookEngineF(oCAIHuman__PC_ActionMove_bodyState, 6, GFA_PreventFocusCollectionBodystates);
     };
 
     // Reticle
     MEM_Info("Initializing reticle.");
-    HookEngineF(oCNpcFocus__SetFocusMode, 7, GFA_ResetOnWeaponSwitch); // Hide reticle, hide aim FX and reset draw force
+    HookEngineF(oCNpc__SetWeaponMode_player, 6, GFA_ResetOnWeaponSwitch); // Hide reticle, hide aim FX, reset draw force
 
     // Debugging
     if (GFA_DEBUG_CONSOLE) || (GFA_DEBUG_WEAKSPOT) || (GFA_DEBUG_TRACERAY) {

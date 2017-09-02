@@ -96,20 +96,16 @@ func void GFA_InsertReticle(var int reticlePtr) {
 
 
 /*
- * Switching between weapon modes (sometimes called several times in a row). This function hooks
- * oCNpcFocus::SetFocusMode() to remove the reticle, remove the aim vob FX and reset the draw force of ranged weapons.
- * Additionally, this function is called during a level change before Ikarus, LeGo or GFA are initialized.
+ * Reset settings when changing the weapon. This function hooks oCNpc::SetWeaponMode() at an offset that is player
+ * specific to remove the reticle, remove the aim vob FX and reset the draw force of ranged weapons.
  */
 func void GFA_ResetOnWeaponSwitch() {
     GFA_AimVobDetachFX();
     GFA_RemoveReticle();
 
     // Reset draw force, because aiming button may be held
-    if (_@(MEM_Timer)) {
-        // This function is called during level change prior to any initialization
-        GFA_BowDrawOnset = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
-        GFA_MouseMovedLast = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
-    };
+    GFA_BowDrawOnset = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
+    GFA_MouseMovedLast = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
 };
 
 
