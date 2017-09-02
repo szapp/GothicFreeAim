@@ -178,10 +178,19 @@ func void GFA_IsActive() {
 
         // Disable reticle when holding the action key while running (will also disable turning!)
         if (GOTHIC_CONTROL_SCHEME == 1) {
+            // Check if standing
             MEM_PushInstParam(hero);
             MEM_PushIntParam(BS_STAND);
             MEM_Call(C_BodyStateContains);
-            if (!MEM_PopIntResult()) {
+            var int standing; standing = MEM_PopIntResult();
+
+            // Exception: casting removes standing body state
+            MEM_PushInstParam(hero);
+            MEM_PushIntParam(BS_CASTING);
+            MEM_Call(C_BodyStateContains);
+            var int casting; casting = MEM_PopIntResult();
+
+            if (!standing) && (!casting) {
                 GFA_DisableAutoTurning(0);
                 GFA_ACTIVE = 1;
                 return;
