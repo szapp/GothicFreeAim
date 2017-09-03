@@ -279,6 +279,41 @@ func void GFA_PreventFocusCollectionBodystates() {
 
 
 /*
+ * This function fixes a bug where Gothics sets the Body state to running, walking or sneaking when the NPC is acutally
+ * standing. This function hooks oCAniCtrl_Human::SearchStandAni() at an offset after the walk mode is set to reset the
+ * body state to standing and oCNpc::SetWeaponMode2() with the same bug.
+ */
+func void GFA_FixStandingBodystate() {
+    var int npcPtr;
+
+    // This function hooks to engine functions (differentiate here)
+    if (Hlp_Is_oCNpc(ESI)) {
+        // oCNpc::SetWeaponMode2()
+        npcPtr = ESI;
+
+        // Exit if NPC is walking/running during weapon switch
+        var int moving; moving = MEM_ReadInt(ESP+MEMINT_SwitchG1G2(/*esp+0A0h-08Ch*/ 20, /*esp+0A0h-088h*/ 24));
+        if (moving) {
+            return;
+        };
+    } else {
+        // oCAniCtrl_Human::SearchStandAni()
+        var zCAIPlayer playerAI; playerAI = _^(ESI);
+        npcPtr = playerAI.vob;
+    };
+
+    // Reset body state back to standing (instead of running/walking/sneaking)
+    var int standing; standing = BS_STAND & ~BS_FLAG_INTERRUPTABLE & ~BS_FLAG_FREEHANDS;
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL_IntParam(_@(standing));
+        CALL__thiscall(_@(npcPtr), oCNpc__SetBodyState);
+        call = CALL_End();
+    };
+};
+
+
+/*
  * Disable damage animation while aiming. This function hooks the function that deals damage to NPCs and prevents the
  * damage animation for the player while aiming, as it looks questionable if the reticle stays centered but the player
  * model is crooked.

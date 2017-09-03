@@ -69,6 +69,8 @@ func void GFA_InitFeatureFreeAiming() {
     // Treat special body states (lying or sliding)
     HookEngineF(zCAIPlayer__IsSliding_true, 5, GFA_TreatBodystates); // Called during sliding
     HookEngineF(oCAIHuman__PC_CheckSpecialStates_lie, 5, GFA_TreatBodystates); // Called when lying after a fall
+    HookEngineF(oCAniCtrl_Human__SearchStandAni_walkmode, 6, GFA_FixStandingBodystate); // Fix bug with wrong body state
+    HookEngineF(oCNpc__SetWeaponMode2_walkmode, 6, GFA_FixStandingBodystate); // Fix bug with wrong body state
     // Prevent focus collection during jumping and falling (necessary for Gothic 2 only)
     if (GOTHIC_BASE_VERSION == 2) && (GFA_NO_AIM_NO_FOCUS) {
         HookEngineF(oCAIHuman__PC_ActionMove_bodyState, 6, GFA_PreventFocusCollectionBodystates);
