@@ -42,7 +42,6 @@ func void GFA_UpdateSettings(var int on) {
 
             // New camera mode (does not affect Gothic 1)
             MEM_WriteString(zString_CamModRanged, STR_Upper(GFA_CAMERA));
-
         };
 
         if (GFA_Flags & GFA_SPELLS) {
@@ -77,6 +76,7 @@ func void GFA_UpdateStatus() {
         GFA_UpdateSettings(0);
         GFA_DisableAutoTurning(0);
         GFA_SetCameraModes(0);
+        GFA_DisableMagicDuringStrafing(0);
         GFA_UpdateSettingsG2Ctrl(0);
 
         // Clean up
@@ -85,6 +85,7 @@ func void GFA_UpdateStatus() {
     } else {
         // Enable if previously disabled
         GFA_UpdateSettings(1);
+        GFA_DisableMagicDuringStrafing(GFA_Flags & GFA_SPELLS);
 
         if (GOTHIC_BASE_VERSION == 2) {
             GFA_UpdateSettingsG2Ctrl(!MEM_ReadInt(oCGame__s_bUseOldControls)); // G1 controls = 0, G2 controls = 1
@@ -133,6 +134,7 @@ func void GFA_IsActive() {
     // Check if falling (body state BS_FALL is unreliable, because it is set after the falling animation has started)
     var zCAIPlayer playerAI; playerAI = _^(her.anictrl);
     if (gef(playerAI.aboveFloor, mkf(12))) {
+        GFA_ResetSpell();
         GFA_AimMovement(0);
         GFA_RemoveReticle();
         GFA_AimVobDetachFX();

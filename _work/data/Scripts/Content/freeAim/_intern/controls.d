@@ -233,6 +233,40 @@ func void GFA_SetCameraModes(var int on) {
 
 
 /*
+ * Disable magic combat during "normal" strafing. This allows quick-casting spells while strafing, which is not desired
+ * with free aiming, because it does not use the normal spell casting functions, does not allow displaying a reticle and
+ * does not investing spells. This questionable design choice was fortunately only made for Gothic 2, hence this
+ * function exits immediately when called with Gothic 1.
+ */
+func void GFA_DisableMagicDuringStrafing(var int on) {
+    if (GOTHIC_BASE_VERSION != 2) || (!(GFA_Flags & GFA_SPELLS)) {
+        return;
+    };
+
+    const int SET = 0;
+    if (on == SET) {
+        return; // No change necessary
+    };
+
+    if (on) {
+        // Disable magic combat during "normal" strafing
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat, ASMINT_OP_nop); // Remove call to oCNpc::FightAttackMagic()
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+1, ASMINT_OP_nop);
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+2, ASMINT_OP_nop);
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+3, ASMINT_OP_nop);
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+4, ASMINT_OP_nop);
+    } else {
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat, /*E8*/ 232); // Revert to default call
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+1, /*A0*/ 160);
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+2, /*B4*/ 180);
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+3, /*FF*/ 255);
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+4, /*FF*/ 255);
+    };
+    SET = !SET;
+};
+
+
+/*
  * Remove reticle, prevent strafing and detach FX from aim vob during special body states. This function hooks at two
  * different addresses: During sliding (offset where sliding is positively determined in zCAIPlayer::IsSliding()) and
  * when lying on the ground after a deep fall (offset where lying is positively determined
@@ -244,6 +278,7 @@ func void GFA_TreatBodystates() {
         return;
     };
 
+    GFA_ResetSpell();
     GFA_AimMovement(0);
     GFA_RemoveReticle();
     GFA_AimVobDetachFX();
@@ -309,6 +344,23 @@ func void GFA_FixStandingBodystate() {
         CALL_IntParam(_@(standing));
         CALL__thiscall(_@(npcPtr), oCNpc__SetBodyState);
         call = CALL_End();
+    };
+};
+
+
+/*
+ * Reset spell FX when interrupting investing/casting by the default strafing. This function hooks oCNpc::EV_Strafe() at
+ * an offset where the fight mode is checked. oCNpc::EV_Strafe() is only called for the player.
+ */
+func void GFA_FixSpellOnStrafe() {
+    if (!GFA_ACTIVE) {
+        return;
+    };
+
+    var oCNpc her; her = _^(ECX);
+    if (her.fmode == FMODE_MAGIC) {
+        GFA_ResetSpell();
+        GFA_AimVobDetachFX();
     };
 };
 

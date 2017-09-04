@@ -161,6 +161,9 @@ func void GFA_SpellLockMovement() {
         return;
     };
 
+    var oCNpc her; her = Hlp_GetNpc(hero);
+    var int aniCtrlPtr; aniCtrlPtr = her.anictrl; // ESI is popped earlier and is unsecure to use
+
     // For Gothic 2 controls completely lock movement for spell combat except for weapon switch and model rotation
     if (GOTHIC_CONTROL_SCHEME == 2) {
         // Weapon switch
@@ -171,7 +174,6 @@ func void GFA_SpellLockMovement() {
         };
 
         // Model rotation
-        var int aniCtrlPtr; aniCtrlPtr = ESI;
         var int zero;
         const int call = 0;
         if (CALL_Begin(call)) {
@@ -179,20 +181,50 @@ func void GFA_SpellLockMovement() {
             CALL__thiscall(_@(aniCtrlPtr), oCAIHuman__PC_Turnings);
             call = CALL_End();
         };
+    };
 
-        // Remove rotation animations
-        var zCAIPlayer playerAI; playerAI = _^(aniCtrlPtr);
-        var int model; model = playerAI.model;
-        const int twenty = 20;
-        const int call3 = 0;
-        if (CALL_Begin(call3)) {
-            CALL_IntParam(_@(twenty));
-            CALL_IntParam(_@(twenty));
-            CALL__thiscall(_@(model), zCModel__StopAnisLayerRange);
-            call3 = CALL_End();
-        };
+    // Remove turning animations (player model sometimes gets stuck in weird animation)
+    var zCAIPlayer playerAI; playerAI = _^(aniCtrlPtr);
+    var int model; model = playerAI.model;
+    const int twenty = 20;
+    const int call2 = 0;
+    if (CALL_Begin(call2)) {
+        CALL_IntParam(_@(twenty));
+        CALL_IntParam(_@(twenty));
+        CALL__thiscall(_@(model), zCModel__StopAnisLayerRange);
+        call2 = CALL_End();
     };
 
     // Set return value to one: Do not call any other movement functions
     EAX = 1;
+};
+
+
+/*
+ * Reset the FX of the spell for invested spells. This function is necessary to reset the spell to its initial state if 
+ * the casting/investing is interrupted by strafing, falling, lying or sliding. This function is called from various
+ * functions. The engine functions called here are the same the engine uses to reset the spell FX.
+ */
+func void GFA_ResetSpell() {
+    var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
+    if (!_@(spell)){
+        return;
+    };
+
+    // Stop active spell (to remove higher spell level)
+    var oCNpc her; her = Hlp_GetNpc(hero);
+    var int magBookPtr; magBookPtr = her.mag_book;
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL__thiscall(_@(magBookPtr), oCMag_Book__StopSelectedSpell);
+        call = CALL_End();
+    };
+
+    // Re-open the spell with initial spell level FX
+    var int spellPtr; spellPtr = _@(spell)-oCSpell_C_Spell_offset;
+    const int call2 = 0;
+    if (CALL_Begin(call2)) {
+        CALL__thiscall(_@(spellPtr), oCSpell__Open);
+        call2 = CALL_End();
+    };
 };

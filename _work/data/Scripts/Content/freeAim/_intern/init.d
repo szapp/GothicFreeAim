@@ -64,6 +64,12 @@ func void GFA_InitFeatureFreeAiming() {
         HookEngineF(oCAIHuman__MagicMode, 7, GFA_SpellAiming); // Manage focus collection and reticle
         HookEngineF(oCSpell__Setup_initFallbackNone, 6, GFA_SetupSpell); // Set spell FX trajectory (shooting)
         HookEngineF(oCAIHuman__MagicMode_rtn, 7, GFA_SpellLockMovement); // Lock movement while aiming
+        HookEngineF(oCNpc__EV_Strafe_commonOffset, 5, GFA_FixSpellOnStrafe); // Fix spell FX after interrupted casting
+
+        // Disable magic during default Gothic strafing (Gothic 2 only)
+        if (GOTHIC_BASE_VERSION == 2) {
+            MemoryProtectionOverride(oCNpc__EV_Strafe_magicCombat, 5);
+        };
     };
 
     // Treat special body states (lying or sliding)

@@ -56,6 +56,7 @@ const int oCNpc__SetFocusVob                         =  6881136; //0x68FF70
 const int oCNpc__SetEnemy                            =  6888064; //0x691A80
 const int oCNpc__SetBodyState                        =  7045120; //0x6B8000
 const int oCNpc__GetModel                            =  6902528; //0x695300
+const int oCNpc__EV_Strafe_magicCombat               =  0;                                 // Does not exist in Gothic 1
 const int oCNpcFocus__InitFocusModes                 =  6507760; //0x634CF0
 const int oCItem___CreateNewInstance                 =  6764320; //0x673720
 const int oCItem__InitByScript                       =  6755936; //0x671660
@@ -65,6 +66,8 @@ const int oCItem__MultiSlot                          =  6758192; //0x671F30
 const int oCMag_Book__GetSelectedSpell               =  4655808; //0x470AC0
 const int oCMag_Book__GetSelectedSpellNr             =  4655888; //0x470B10
 const int oCMag_Book__GetSpellItem                   =  4664896; //0x472E40
+const int oCMag_Book__StopSelectedSpell              =  4656208; //0x470C50
+const int oCSpell__Open                              =  4707312; //0x47D3F0
 const int zCProgMeshProto__classDef                  =  9198408; //0x8C5B48
 const int oCVisualFX__classDef                       =  8822272; //0x869E00
 const int oCVisualFX__Stop                           =  4766512; //0x48BB30
@@ -121,6 +124,7 @@ const int oCNpc__OnDamage_Hit_criticalHit            =  7546035; //0x7324B3 // H
 const int oCNpc__OnDamage_Anim_getModel              =  7609592; //0x741CF8 // Hook len 9
 const int oCNpc__SetWeaponMode_player                =  6907265; //0x696581 // Hook len 6
 const int oCNpc__SetWeaponMode2_walkmode             =  6905437; //0x695E5D // Hook len 6
+const int oCNpc__EV_Strafe_commonOffset              =  7661795; //0x74E8E3 // Hook len 5
 const int oCSpell__Setup_initFallbackNone            =  4704143; //0x47C78F // Hook len 6
 const int mouseUpdate                                =  5013602; //0x4C8062 // Hook len 5
 
@@ -142,6 +146,7 @@ const int oCItem_effect_offset                       = 0;                       
 
 const int oCSpell_spellCasterNpc_offset              = 52;  //0x0034
 const int oCSpell_manaInvested_offset                = 72;  //0x0048
+const int oCSpell_spellStatus_offset                 = 80;  //0x0050
 const int oCSpell_C_Spell_offset                     = 128; //0x0080
 
 const int oCVisualFX_originVob_offset                = 1112;//0x0458
@@ -155,7 +160,6 @@ const int zCAIPlayer_bitfield1_forceModelHalt        = 1<<0;
 
 const int oCAIHuman_walkmode_offset                  = 352; //0x0160
 const int oCAIHuman_bitfield_offset                  = 4612;//0x1204
-const int oCAIHuman_bitfield_spellReleased           = 1<<7;                               // Not used for Gothic 1
 const int oCAIHuman_bitfield_spellCastedLastFrame    = 1<<8;
 
 const int oCAIArrowBase_collision_offset             = 52;  //0x0034
