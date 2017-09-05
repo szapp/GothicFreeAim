@@ -50,7 +50,7 @@ func void GFA_UpdateSettings(var int on) {
         };
 
     } else {
-        // Reset ranged focus collection to standard
+        // Reset focus collection to default
         Focus_Ranged.npc_azi = castFromIntf(GFA_FOCUS_FAR_NPC_DFT);
         Focus_Magic.npc_azi = castFromIntf(GFA_FOCUS_SPL_NPC_DFT);
         Focus_Magic.item_prio = GFA_FOCUS_SPL_ITM_DFT;
@@ -76,6 +76,8 @@ func void GFA_UpdateStatus() {
         GFA_UpdateSettings(0);
         GFA_DisableAutoTurning(0);
         GFA_SetCameraModes(0);
+        GFA_DisableToggleFocusRanged(0);
+        GFA_DisableToggleFocusSpells(0);
         GFA_DisableMagicDuringStrafing(0);
         GFA_UpdateSettingsG2Ctrl(0);
 
@@ -85,6 +87,7 @@ func void GFA_UpdateStatus() {
     } else {
         // Enable if previously disabled
         GFA_UpdateSettings(1);
+        GFA_DisableToggleFocusRanged(GFA_Flags & GFA_RANGED);
         GFA_DisableMagicDuringStrafing(GFA_Flags & GFA_SPELLS);
 
         if (GOTHIC_BASE_VERSION == 2) {
@@ -178,6 +181,25 @@ func void GFA_IsActive() {
         // Gothic 1 does not differentiate between camera modes. Force/overwrite all to free aiming mode
         GFA_SetCameraModes(1);
 
+        // Check if active spell supports free aiming
+        var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
+        if (!GFA_IsSpellEligible(spell)) {
+            // Reset spell focus collection
+            Focus_Magic.npc_azi = castFromIntf(GFA_FOCUS_SPL_NPC_DFT);
+            Focus_Magic.item_prio = GFA_FOCUS_SPL_ITM_DFT;
+            GFA_DisableAutoTurning(0);
+            GFA_DisableToggleFocusSpells(0);
+            GFA_AimMovement(0); // Might have switched directly from other spell while still in movement
+            GFA_ACTIVE = 1;
+            return;
+        } else {
+            // Spell uses free aiming: Set stricter focus collection
+            Focus_Magic.npc_azi = castFromIntf(castToIntf(GFA_FOCUS_SPL_NPC)); // Cast twice, Deadalus floats are dumb
+            Focus_Magic.item_prio = GFA_FOCUS_SPL_ITM;
+            GFA_DisableToggleFocusSpells(1);
+            GFA_DisableAutoTurning(1);
+        };
+
         // Disable reticle when holding the action key while running (will also disable turning!)
         if (GOTHIC_CONTROL_SCHEME == 1) {
             // Check if standing
@@ -193,36 +215,18 @@ func void GFA_IsActive() {
             var int casting; casting = MEM_PopIntResult();
 
             if (!standing) && (!casting) {
-                GFA_DisableAutoTurning(0);
                 GFA_ACTIVE = 1;
                 return;
             };
         };
 
-        // Check if active spell supports free aiming
-        var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
-        if (!GFA_IsSpellEligible(spell)) {
-            // Reset ranged focus collection
-            Focus_Magic.npc_azi = castFromIntf(GFA_FOCUS_SPL_NPC_DFT);
-            Focus_Magic.item_prio = GFA_FOCUS_SPL_ITM_DFT;
-            GFA_DisableAutoTurning(0);
-            GFA_ACTIVE = 1;
-            return;
-        } else {
-            // Spell uses free aiming: Set stricter focus collection
-            Focus_Magic.npc_azi = castFromIntf(castToIntf(GFA_FOCUS_SPL_NPC)); // Cast twice, Deadalus floats are dumb
-            Focus_Magic.item_prio = GFA_FOCUS_SPL_ITM;
-        };
-
         // Gothic 1 controls require action key to be pressed/held
         if (GOTHIC_CONTROL_SCHEME == 1) && (!keyPressed) {
-            GFA_DisableAutoTurning(0);
             GFA_ACTIVE = 1;
             return;
         };
 
         // If this is reached, free aiming for the spell is active
-        GFA_DisableAutoTurning(1);
         GFA_ACTIVE = FMODE_MAGIC;
 
     } else if (her.fmode >= FMODE_FAR) { // Greater or equal: Crossbow has different fight mode!
@@ -236,6 +240,7 @@ func void GFA_IsActive() {
 
         // Gothic 1 does not differentiate between camera modes. Force/overwrite all to free aiming mode
         GFA_SetCameraModes(1);
+        GFA_DisableAutoTurning(1);
 
         // Set internally whether the aiming key is held or not (only if using Gothic 2 controls)
         if (GOTHIC_CONTROL_SCHEME == 2) {
@@ -244,13 +249,12 @@ func void GFA_IsActive() {
 
         // Check if aiming key is not pressed/held
         if (!keyPressed) {
-            GFA_DisableAutoTurning(0);
             GFA_ACTIVE = 1;
             return;
-        } else {
-            GFA_DisableAutoTurning(1);
-            GFA_ACTIVE = FMODE_FAR; // Do not differentiate between bow and crossbow
         };
+
+        // If this is reached, free aiming for ranged weapons is currently active
+        GFA_ACTIVE = FMODE_FAR; // Do not differentiate between bow and crossbow
 
         // Get onset for drawing the bow - right when pressing down the aiming key
         if (keyStateAiming1 == KEY_PRESSED) || (keyStateAiming2 == KEY_PRESSED) || (keyStateAiming3 == KEY_PRESSED) {

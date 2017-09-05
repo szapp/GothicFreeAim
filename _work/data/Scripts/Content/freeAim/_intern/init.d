@@ -48,6 +48,7 @@ func void GFA_InitFeatureFreeAiming() {
         HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_ResetProjectileGravity); // Reset gravity on impact
         HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_OverwriteHitChance); // Manipulate hit chance
         HookEngineF(oCAIHuman__BowMode_postInterpolate, 6, GFA_Strafe); // Strafe while aiming. Big thanks to Siemekk
+        MemoryProtectionOverride(oCAIHuman__CheckFocusVob_ranged, 1); // Prevent toggling focus in ranged combat
 
         // Gothic 2 controls
         if (GOTHIC_BASE_VERSION == 2) {
@@ -65,6 +66,7 @@ func void GFA_InitFeatureFreeAiming() {
         HookEngineF(oCSpell__Setup_initFallbackNone, 6, GFA_SetupSpell); // Set spell FX trajectory (shooting)
         HookEngineF(oCAIHuman__MagicMode_rtn, 7, GFA_SpellLockMovement); // Lock movement while aiming
         HookEngineF(oCNpc__EV_Strafe_commonOffset, 5, GFA_FixSpellOnStrafe); // Fix spell FX after interrupted casting
+        MemoryProtectionOverride(oCAIHuman__CheckFocusVob_spells, 1); // Prevent toggling focus in spell combat
 
         // Disable magic during default Gothic strafing (Gothic 2 only)
         if (GOTHIC_BASE_VERSION == 2) {

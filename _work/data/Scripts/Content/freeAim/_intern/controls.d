@@ -233,6 +233,55 @@ func void GFA_SetCameraModes(var int on) {
 
 
 /*
+ * Enable/disable the switching between targets in focus for ranged combat. This is necessary to stay on the target
+ * below the reticle and to prevent the focus from flickering. This function is called from GFA_UpdateStatus().
+ */
+func void GFA_DisableToggleFocusRanged(var int on) {
+    if (!(GFA_Flags & GFA_RANGED)) {
+        return;
+    };
+
+    const int SET = 0;
+    if (on == SET) {
+        return; // No change necessary
+    };
+
+    if (on) {
+        // Disable toggling focus with left and right keys
+        MEM_WriteByte(oCAIHuman__CheckFocusVob_ranged, FMODE_FAR+1); // No focus toggle if her.fmode <= FMODE_FAR+1
+    } else {
+        MEM_WriteByte(oCAIHuman__CheckFocusVob_ranged, 4); // Revert to default: 83 F8 04  mov eax, 4
+    };
+    SET = !SET;
+};
+
+
+/*
+ * Enable/disable the switching between targets in focus for spell combat. This is necessary to stay on the target
+ * below the reticle and to prevent the focus from flickering. This function is called from GFA_UpdateStatus() and also
+ * from GFA_IsActive() to enable switching the focus for free aiming non-eligible spells.
+ */
+func void GFA_DisableToggleFocusSpells(var int on) {
+    if (!(GFA_Flags & GFA_SPELLS)) {
+        return;
+    };
+
+    const int SET = 0;
+    if (on == SET) {
+        return; // No change necessary
+    };
+
+    if (on) {
+        // Disable toggling focus with left and right keys
+        MEM_WriteByte(oCAIHuman__CheckFocusVob_spells, /*7D*/ 125); // jge: No focus toggle if her.fmode >= FMODE_MAGIC
+    } else {
+        MEM_WriteByte(oCAIHuman__CheckFocusVob_spells, /*7F*/ 127);  // Revert to default: 7F 54  jg 0x61589B
+    };
+    SET = !SET;
+};
+
+
+/*
  * Disable magic combat during "normal" strafing. This allows quick-casting spells while strafing, which is not desired
  * with free aiming, because it does not use the normal spell casting functions, does not allow displaying a reticle and
  * does not investing spells. This questionable design choice was fortunately only made for Gothic 2, hence this
