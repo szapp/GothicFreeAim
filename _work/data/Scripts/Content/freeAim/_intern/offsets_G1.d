@@ -78,7 +78,6 @@ const int zCModel__SearchNode                        =  5652352; //0x563F80
 const int zCModel__GetBBox3DNodeWorld                =  5634160; //0x55F870
 const int zCModel__GetNodePositionWorld              =  5634240; //0x55F8C0
 const int zCModel__StartAni                          =  5640608; //0x5611A0
-const int zCModel__StopAnimation                     =  5623376; //0x55CE50
 const int zCModel__IsAnimationActive                 =  5623536; //0x55CEF0
 const int zCModel__StopAnisLayerRange                =  5657024; //0x5651C0
 const int zVEC3__NormalizeSafe                       =  4900544; //0x4AC6C0
@@ -97,7 +96,6 @@ const int oCAIHuman__BowMode_g2ctrlCheck             =  0;                      
 const int oCAIHuman__BowMode_shootingKey             =  6359374; //0x61094E                // Not used for Gothic 1
 const int oCAIHuman__MagicMode_turnToTarget          =  4641584; //0x46D330
 const int oCAIHuman__PC_ActionMove_aimingKey         =  6373222; //0x613F66                // Not used for Gothic 1
-const int oCAIHuman__PC_Turnings                     =  6375424; //0x614800                // Not used for Gothic 1
 const int zCCollObjectLevelPolys__s_oCollObjClass    =  8861152; //0x8735E0
 
 const int zCWorld__AdvanceClock                      =  6257280; //0x5F7A80 // Hook len 10

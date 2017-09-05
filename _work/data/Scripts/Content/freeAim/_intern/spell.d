@@ -193,17 +193,6 @@ func void GFA_SpellLockMovement() {
             MEM_WriteInt(aniCtrlPtr+oCAIHuman_bitfield_offset,
                 MEM_ReadInt(aniCtrlPtr+oCAIHuman_bitfield_offset) & ~oCAIHuman_bitfield_startObserveIntruder);
         };
-
-        // Model rotation always
-        var int zero;
-        const int call2 = 0;
-        if (CALL_Begin(call2)) {
-            CALL_IntParam(_@(zero));
-            CALL__thiscall(_@(aniCtrlPtr), oCAIHuman__PC_Turnings);
-            call2 = CALL_End();
-        };
-
-        // TODO: Stop turning foot step sound
     };
 
     // Remove turning animations (player model sometimes gets stuck in weird animation)

@@ -56,7 +56,8 @@ func void GFA_TurnPlayerModel() {
 
     // Gothic 2 controls only need the rotation if currently shooting
     if (GOTHIC_CONTROL_SCHEME == 2) {
-        if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) {
+        if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))
+        && (GFA_ACTIVE != FMODE_MAGIC) {
             return;
         };
     };
