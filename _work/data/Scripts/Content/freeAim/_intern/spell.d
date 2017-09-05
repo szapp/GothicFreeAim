@@ -166,33 +166,56 @@ func void GFA_SpellLockMovement() {
 
     // For Gothic 2 controls completely lock movement for spell combat except for weapon switch and model rotation
     if (GOTHIC_CONTROL_SCHEME == 2) {
-        // Weapon switch
-        if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))
+        // Weapon switch when not investing or casting
+        if (!GFA_InvestingOrCasting(hero))
         && ((MEM_KeyPressed(MEM_GetKey("keyWeapon"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyWeapon")))) {
             GFA_AimMovement(0);
             return;
         };
 
-        // Model rotation
+        // Running/walking forward when not investing or casting
+        if (!GFA_InvestingOrCasting(hero))
+        && (!MEM_KeyPressed(MEM_GetKey("keyAction")))      && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))
+        && (!MEM_KeyPressed(MEM_GetKey("keyStrafeLeft")))  && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeLeft")))
+        && (!MEM_KeyPressed(MEM_GetKey("keyStrafeRight"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeRight")))
+        && ((MEM_KeyPressed(MEM_GetKey("keyUp")))          ||  (MEM_KeyPressed(MEM_GetSecondaryKey("keyUp")))) {
+            GFA_AimMovement(0);
+            return;
+        } else {
+            // Stop running/walking animation
+            const int call = 0;
+            if (CALL_Begin(call)) {
+                CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human___Stand);
+                call = CALL_End();
+            };
+
+            // Reset observe intruder flag (seems to be deprecated but clean up anyway like the engine does)
+            MEM_WriteInt(aniCtrlPtr+oCAIHuman_bitfield_offset,
+                MEM_ReadInt(aniCtrlPtr+oCAIHuman_bitfield_offset) & ~oCAIHuman_bitfield_startObserveIntruder);
+        };
+
+        // Model rotation always
         var int zero;
-        const int call = 0;
-        if (CALL_Begin(call)) {
+        const int call2 = 0;
+        if (CALL_Begin(call2)) {
             CALL_IntParam(_@(zero));
             CALL__thiscall(_@(aniCtrlPtr), oCAIHuman__PC_Turnings);
-            call = CALL_End();
+            call2 = CALL_End();
         };
+
+        // TODO: Stop turning foot step sound
     };
 
     // Remove turning animations (player model sometimes gets stuck in weird animation)
     var zCAIPlayer playerAI; playerAI = _^(aniCtrlPtr);
     var int model; model = playerAI.model;
     const int twenty = 20;
-    const int call2 = 0;
-    if (CALL_Begin(call2)) {
+    const int call3 = 0;
+    if (CALL_Begin(call3)) {
         CALL_IntParam(_@(twenty));
         CALL_IntParam(_@(twenty));
         CALL__thiscall(_@(model), zCModel__StopAnisLayerRange);
-        call2 = CALL_End();
+        call3 = CALL_End();
     };
 
     // Set return value to one: Do not call any other movement functions

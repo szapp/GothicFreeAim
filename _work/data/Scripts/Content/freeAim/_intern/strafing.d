@@ -199,26 +199,6 @@ func void GFA_Strafe() {
                 };
             };
         };
-
-        // For Gothic 2 control remove running animation if it was started during weapon change
-        if (GOTHIC_CONTROL_SCHEME == 2) {
-            var zCAIPlayer playerAI; playerAI = _^(aniCtrlPtr);
-            var int model; model = playerAI.model;
-            const string anis[3] = {
-                "S_MAGRUNL",
-                "S_MAGWALKL",
-                "S_MAGSNEAKL"
-            };
-            repeat(i, 3); var int i;
-                var int aniNamePtr; aniNamePtr = _@s(MEM_ReadStatStringArr(anis, i));
-                const int call4 = 0;
-                if (CALL_Begin(call4)) {
-                    CALL_PtrParam(_@(aniNamePtr));
-                    CALL__thiscall(_@(model), zCModel__StopAnimation);
-                    call4 = CALL_End();
-                };
-            end;
-        };
     };
 
     // Check whether keys are pressed down (held)
@@ -231,8 +211,8 @@ func void GFA_Strafe() {
     mLeft  = (MEM_KeyPressed(MEM_GetKey("keyStrafeLeft")))  || (MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeLeft")));
     mRight = (MEM_KeyPressed(MEM_GetKey("keyStrafeRight"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeRight")));
 
-    // Allow forward movement for Gothic 2 controls only
-    if (GOTHIC_CONTROL_SCHEME == 2) {
+    // Allow forward movement only when using Gothic 2 controls while investing or casting a spell
+    if (GOTHIC_CONTROL_SCHEME == 2) && (GFA_InvestingOrCasting(hero)) {
         mFront = (MEM_KeyPressed(MEM_GetKey("keyUp"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyUp")));
     } else {
         mFront = FALSE;

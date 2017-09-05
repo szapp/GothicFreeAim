@@ -48,6 +48,7 @@ const int oCAIHuman__Cam_Normal                      = 11195896; //0xAAD5F8     
 const int oCAIHuman__Cam_Fight                       = 11195876; //0xAAD5E4                // Not used for Gothic 2
 const int oCAIHuman__CheckFocusVob_ranged            =  6928639; //0x69B8FD
 const int oCAIHuman__CheckFocusVob_spells            =  6928645; //0x69B905
+const int oCAniCtrl_Human___Stand                    =  7042192; //0x6B7490
 const int oCAniCtrl_Human__Turn                      =  7005504; //0x6AE540
 const int oCAniCtrl_Human__CanToggleWalkModeTo       =  6995888; //0x6ABFB0
 const int oCAniCtrl_Human__ToggleWalkMode            =  7001344; //0x6AD500
@@ -162,6 +163,8 @@ const int zCAIPlayer_bitfield1_forceModelHalt        = 1<<0;
 
 const int oCAIHuman_walkmode_offset                  = 352; //0x0160
 const int oCAIHuman_bitfield_offset                  = 4612;//0x1204
+const int oCAIHuman_bitfield_startObserveIntruder    = 1<<6;
+const int oCAIHuman_bitfield_spellReleased           = 1<<7;
 const int oCAIHuman_bitfield_spellCastedLastFrame    = 1<<8;
 
 const int oCAIArrowBase_collision_offset             = 52;  //0x0034
