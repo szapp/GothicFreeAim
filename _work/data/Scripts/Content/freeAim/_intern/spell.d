@@ -211,7 +211,7 @@ func void GFA_SpellLockMovement() {
     if (CALL_Begin(call3)) {
         CALL_IntParam(_@(twenty));
         CALL_IntParam(_@(twenty));
-        CALL__thiscall(_@(model), zCModel__StopAnisLayerRange);
+        CALL__thiscall(_@(model), zCModel__FadeOutAnisLayerRange);
         call3 = CALL_End();
     };
 

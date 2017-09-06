@@ -41,6 +41,9 @@ func void GFA_AimMovement(var int movement) {
     if (GFA_IsStrafing == movement) {
         return;
     };
+
+    // Remember last movement for animation transitions
+    var int lastMove; lastMove = GFA_IsStrafing;
     GFA_IsStrafing = movement;
 
     // Get player model
@@ -54,7 +57,7 @@ func void GFA_AimMovement(var int movement) {
         if (CALL_Begin(call2)) {
             CALL_IntParam(_@(GFA_MOVE_ANI_LAYER));
             CALL_IntParam(_@(GFA_MOVE_ANI_LAYER));
-            CALL__thiscall(_@(model), zCModel__StopAnisLayerRange);
+            CALL__thiscall(_@(model), zCModel__FadeOutAnisLayerRange);
             call2 = CALL_End();
         };
         return;
@@ -63,13 +66,14 @@ func void GFA_AimMovement(var int movement) {
     // Find animation name prefix by fight mode
     var string prefix;
     if (her.fmode == FMODE_MAGIC) {
-        prefix = "S_MAG";
+        prefix = "MAG";
     } else if (her.fmode == FMODE_FAR) {
-        prefix = "S_BOW";
+        prefix = "BOW";
     } else if (her.fmode == FMODE_FAR+1) {
-        prefix = "S_CBOW";
+        prefix = "CBOW";
     } else {
         MEM_Warn("GFA_AimMovement: Player not in valid aiming fight mode.");
+        GFA_AimMovement(0);
         return;
     };
 
@@ -136,7 +140,16 @@ func void GFA_AimMovement(var int movement) {
     };
 
 
-    // Get full name of animation
+    // Add animation transition prefix
+    if (lastMove & movement) {
+        prefix = ConcatStrings("T_", prefix);
+        prefix = ConcatStrings(prefix, MEM_ReadStatStringArr(GFA_AIM_ANIS, lastMove));
+        prefix = ConcatStrings(prefix, "_2");
+    } else {
+        prefix = ConcatStrings("S_", prefix);
+    };
+
+    // Get full name of complete animation
     var string aniName; aniName = ConcatStrings(prefix, MEM_ReadStatStringArr(GFA_AIM_ANIS, movement));
     var int aniNamePtr; aniNamePtr = _@s(aniName);
 
