@@ -174,12 +174,13 @@ func void GFA_Strafe() {
     };
 
     // Magic mode does not allow sneaking (messes up the perception and would require more animations)
-    if (Npc_IsInFightMode(hero, FMODE_MAGIC)) {
+    if (GOTHIC_CONTROL_SCHEME == 1)
+    && (Npc_IsInFightMode(hero, FMODE_MAGIC)) {
         var oCNpc her; her = Hlp_GetNpc(hero);
         var int aniCtrlPtr; aniCtrlPtr = her.anictrl;
 
         // Sneaking not allowed
-        if (MEM_ReadInt(aniCtrlPtr+oCAIHuman_walkmode_offset) & NPC_SNEAK) {
+        if (MEM_ReadInt(aniCtrlPtr+oCAniCtrl_Human_walkmode_offset) & NPC_SNEAK) {
             // Set up and check new walk mode as NPC_RUN (see Constants.d)
             const int call = 0;
             if (CALL_Begin(call)) {

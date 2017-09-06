@@ -162,13 +162,21 @@ func void GFA_SpellLockMovement() {
     };
 
     var oCNpc her; her = Hlp_GetNpc(hero);
-    var int aniCtrlPtr; aniCtrlPtr = her.anictrl; // ESI is popped earlier and is unsecure to use
+    var int aniCtrlPtr; aniCtrlPtr = her.anictrl; // ESI is popped earlier and is not secure to use
 
     // For Gothic 2 controls completely lock movement for spell combat except for weapon switch and model rotation
     if (GOTHIC_CONTROL_SCHEME == 2) {
         // Weapon switch when not investing or casting
         if (!GFA_InvestingOrCasting(hero))
         && ((MEM_KeyPressed(MEM_GetKey("keyWeapon"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyWeapon")))) {
+            GFA_AimMovement(0);
+            return;
+        };
+
+        // If sneaking when not investing or casting
+        if (!GFA_InvestingOrCasting(hero))
+        && (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))
+        && (MEM_ReadInt(aniCtrlPtr+oCAniCtrl_Human_walkmode_offset) & NPC_SNEAK) {
             GFA_AimMovement(0);
             return;
         };

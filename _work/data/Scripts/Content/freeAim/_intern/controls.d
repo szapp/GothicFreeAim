@@ -371,7 +371,7 @@ func void GFA_PreventFocusCollectionBodystates() {
 func void GFA_FixStandingBodystate() {
     var int npcPtr;
 
-    // This function hooks to engine functions (differentiate here)
+    // This function hooks two different engine functions (differentiate here)
     if (Hlp_Is_oCNpc(ESI)) {
         // oCNpc::SetWeaponMode2()
         npcPtr = ESI;
