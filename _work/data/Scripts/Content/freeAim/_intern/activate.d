@@ -118,7 +118,7 @@ func void GFA_IsActive() {
     // Check if currently in a menu or in a dialog
     if (MEM_Game.pause_screen) || (!InfoManager_HasFinished()) {
         GFA_SetCameraModes(0);
-        GFA_AimMovement(0);
+        GFA_AimMovement(0, "");
         GFA_DisableAutoTurning(0);
         GFA_ACTIVE = 1;
         return;
@@ -128,7 +128,7 @@ func void GFA_IsActive() {
     var oCNpc her; her = Hlp_GetNpc(hero);
     if (her.fmode < FMODE_FAR) {
         GFA_SetCameraModes(0);
-        GFA_AimMovement(0);
+        GFA_AimMovement(0, "");
         GFA_DisableAutoTurning(0);
         GFA_ACTIVE = 1;
         return;
@@ -138,7 +138,7 @@ func void GFA_IsActive() {
     var zCAIPlayer playerAI; playerAI = _^(her.anictrl);
     if (gef(playerAI.aboveFloor, mkf(12))) {
         GFA_ResetSpell();
-        GFA_AimMovement(0);
+        GFA_AimMovement(0, "");
         GFA_RemoveReticle();
         GFA_AimVobDetachFX();
         GFA_ACTIVE = 1;
@@ -189,7 +189,7 @@ func void GFA_IsActive() {
             Focus_Magic.item_prio = GFA_FOCUS_SPL_ITM_DFT;
             GFA_DisableAutoTurning(0);
             GFA_DisableToggleFocusSpells(0);
-            GFA_AimMovement(0); // Might have switched directly from other spell while still in movement
+            GFA_AimMovement(0, ""); // Might have switched directly from other spell while still in movement
             GFA_ACTIVE = 1;
             return;
         } else {

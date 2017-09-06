@@ -92,7 +92,7 @@ func void GFA_SpellAiming() {
 
                 // Remove movement animations when not aiming
                 if (GOTHIC_CONTROL_SCHEME == 1) {
-                    GFA_AimMovement(0);
+                    GFA_AimMovement(0, "");
                 };
 
             } else if (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS)
@@ -169,7 +169,7 @@ func void GFA_SpellLockMovement() {
         // Weapon switch when not investing or casting
         if (!GFA_InvestingOrCasting(hero))
         && ((MEM_KeyPressed(MEM_GetKey("keyWeapon"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyWeapon")))) {
-            GFA_AimMovement(0);
+            GFA_AimMovement(0, "");
             return;
         };
 
@@ -177,7 +177,7 @@ func void GFA_SpellLockMovement() {
         if (!GFA_InvestingOrCasting(hero))
         && (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))
         && (MEM_ReadInt(aniCtrlPtr+oCAniCtrl_Human_walkmode_offset) & NPC_SNEAK) {
-            GFA_AimMovement(0);
+            GFA_AimMovement(0, "");
             return;
         };
 
@@ -187,7 +187,7 @@ func void GFA_SpellLockMovement() {
         && (!MEM_KeyPressed(MEM_GetKey("keyStrafeLeft")))  && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeLeft")))
         && (!MEM_KeyPressed(MEM_GetKey("keyStrafeRight"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeRight")))
         && ((MEM_KeyPressed(MEM_GetKey("keyUp")))          ||  (MEM_KeyPressed(MEM_GetSecondaryKey("keyUp")))) {
-            GFA_AimMovement(0);
+            GFA_AimMovement(0, "");
             return;
         } else {
             // Stop running/walking animation

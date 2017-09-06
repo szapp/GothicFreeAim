@@ -26,7 +26,7 @@
  * Update movement animations during aiming (i.e. strafing in eight directions). The parameter 'movement' is the index
  * of animation to be played, see GFA_AIM_ANIS.
  */
-func void GFA_AimMovement(var int movement) {
+func void GFA_AimMovement(var int movement, var string modifier) {
     // Send perception before anything else (every 1500 ms)
     if (movement) {
         var int percTimer; percTimer += MEM_Timer.frameTime;
@@ -38,12 +38,13 @@ func void GFA_AimMovement(var int movement) {
     };
 
     // Increase performance: Exit if movement did not change
-    if (GFA_IsStrafing == movement) {
+    if (GFA_IsStrafing == movement) && (Hlp_StrCmp(modifier, lastMod)) {
         return;
     };
 
     // Remember last movement for animation transitions
     var int lastMove; lastMove = GFA_IsStrafing;
+    var string lastMod; lastMod = modifier;
     GFA_IsStrafing = movement;
 
     // Get player model
@@ -63,19 +64,6 @@ func void GFA_AimMovement(var int movement) {
         return;
     };
 
-    // Find animation name prefix by fight mode
-    var string prefix;
-    if (her.fmode == FMODE_MAGIC) {
-        prefix = "MAG";
-    } else if (her.fmode == FMODE_FAR) {
-        prefix = "BOW";
-    } else if (her.fmode == FMODE_FAR+1) {
-        prefix = "CBOW";
-    } else {
-        MEM_Warn("GFA_AimMovement: Player not in valid aiming fight mode.");
-        GFA_AimMovement(0);
-        return;
-    };
 
     // Compute movement direction
     var zMAT4 herTrf; herTrf = _^(_@(her._zCVob_trafoObjToWorld));
@@ -128,48 +116,54 @@ func void GFA_AimMovement(var int movement) {
         call4 = CALL_End();
     };
     if (!CALL_RetValAsInt()) {
-        GFA_AimMovement(0);
+        GFA_AimMovement(0, "");
         return;
     };
 
     // Check force movement halt
     if (playerAI.bitfield[1] & zCAIPlayer_bitfield1_forceModelHalt) {
         playerAI.bitfield[1] = playerAI.bitfield[1] & ~zCAIPlayer_bitfield1_forceModelHalt;
-        GFA_AimMovement(0);
+        GFA_AimMovement(0, "");
         return;
     };
 
 
     // Add animation transition prefix
     if (lastMove & movement) {
-        prefix = ConcatStrings("T_", prefix);
-        prefix = ConcatStrings(prefix, MEM_ReadStatStringArr(GFA_AIM_ANIS, lastMove));
-        prefix = ConcatStrings(prefix, "_2");
+        modifier = ConcatStrings("T_", modifier);
+        modifier = ConcatStrings(modifier, MEM_ReadStatStringArr(GFA_AIM_ANIS, GFA_MOVE_TRANS));
+        modifier = ConcatStrings(modifier, "_2");
     } else {
-        prefix = ConcatStrings("S_", prefix);
+        modifier = ConcatStrings("S_", modifier);
     };
+
 
     // Get full name of complete animation
-    var string aniName; aniName = ConcatStrings(prefix, MEM_ReadStatStringArr(GFA_AIM_ANIS, movement));
+    var string aniName; aniName = ConcatStrings(modifier, MEM_ReadStatStringArr(GFA_AIM_ANIS, movement));
     var int aniNamePtr; aniNamePtr = _@s(aniName);
 
-    // Check whether animation is active
-    const int call5 = 0;
-    if (CALL_Begin(call5)) {
-        CALL_PtrParam(_@(aniNamePtr));
-        CALL__thiscall(_@(model), zCModel__IsAnimationActive);
-        call5 = CALL_End();
+    // Check if spell animation with casting modifier exists (otherwise assume default)
+    if (STR_Len(lastMod) > 3) {
+        var int modelPrototype; modelPrototype = MEM_ReadInt(MEM_ReadInt(model+zCModel__modelPrototype_offset));
+        const int call5 = 0;
+        if (CALL_Begin(call5)) {
+            CALL__fastcall(_@(modelPrototype), _@(aniNamePtr), zCModelPrototype__SearchAniIndex);
+            call5 = CALL_End();
+        };
+        // If animation with modifier does not exist, take base animation
+        if (CALL_RetValAsInt() < 0) {
+            GFA_AimMovement(movement, STR_Prefix(lastMod, 3));
+            return;
+        };
     };
 
-    // Start animation if not active
-    if (!CALL_RetValAsInt()) {
-        const int call6 = 0;
-        if (CALL_Begin(call6)) {
-            CALL_IntParam(_@(zero));
-            CALL_PtrParam(_@(aniNamePtr));
-            CALL__thiscall(_@(model), zCModel__StartAni);
-            call6 = CALL_End();
-        };
+    // Start animation
+    const int call6 = 0;
+    if (CALL_Begin(call6)) {
+        CALL_IntParam(_@(zero));
+        CALL_PtrParam(_@(aniNamePtr));
+        CALL__thiscall(_@(model), zCModel__StartAni);
+        call6 = CALL_End();
     };
 };
 
@@ -182,14 +176,15 @@ func void GFA_AimMovement(var int movement) {
  */
 func void GFA_Strafe() {
     if (GFA_ACTIVE < FMODE_FAR) {
-        GFA_AimMovement(0);
+        GFA_AimMovement(0, "");
         return;
     };
+
+    var oCNpc her; her = Hlp_GetNpc(hero);
 
     // Magic mode does not allow sneaking (messes up the perception and would require more animations)
     if (GOTHIC_CONTROL_SCHEME == 1)
     && (Npc_IsInFightMode(hero, FMODE_MAGIC)) {
-        var oCNpc her; her = Hlp_GetNpc(hero);
         var int aniCtrlPtr; aniCtrlPtr = her.anictrl;
 
         // Sneaking not allowed
@@ -246,5 +241,27 @@ func void GFA_Strafe() {
         movement = movement & ~GFA_MOVE_LEFT & ~GFA_MOVE_RIGHT;
     };
 
-    GFA_AimMovement(movement);
+    // Add animation modifier based on fight mode
+    var string modifier;
+    if (movement) {
+        if (her.fmode == FMODE_MAGIC) {
+            modifier = "MAG";
+            // Also treat variations of casting animations
+            if (GFA_InvestingOrCasting(hero)) {
+                modifier = ConcatStrings(modifier, MEM_ReadStatStringArr(spellFxAniLetters, Npc_GetActiveSpell(hero)));
+            };
+        } else if (her.fmode == FMODE_FAR) {
+            modifier = "BOW";
+        } else if (her.fmode == FMODE_FAR+1) {
+            modifier = "CBOW";
+        } else {
+            MEM_Warn("GFA_AimMovement: Player not in valid aiming fight mode.");
+            movement = 0;
+            modifier = "";
+        };
+    } else {
+        modifier = "";
+    };
+
+    GFA_AimMovement(movement, modifier);
 };

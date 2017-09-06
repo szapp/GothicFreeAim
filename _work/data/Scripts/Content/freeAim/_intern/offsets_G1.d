@@ -80,6 +80,7 @@ const int zCModel__GetNodePositionWorld              =  5634240; //0x55F8C0
 const int zCModel__StartAni                          =  5640608; //0x5611A0
 const int zCModel__IsAnimationActive                 =  5623536; //0x55CEF0
 const int zCModel__FadeOutAnisLayerRange             =  5656944; //0x565170
+const int zCModelPrototype__SearchAniIndex           =  5699664; //0x56F850 
 const int zVEC3__NormalizeSafe                       =  4900544; //0x4AC6C0
 const int zTBBox3D__Draw                             =  5447312; //0x531E90
 const int zCLineCache__Line3D                        =  5224976; //0x4FBA10
@@ -180,6 +181,8 @@ const int zCRigidBody_gravity_offset                 = 236; //0x00EC
 const int zCRigidBody_velocity_offset                = 188; //0x00BC
 const int zCRigidBody_bitfield_offset                = 256; //0x0100
 const int zCRigidBody_bitfield_gravityActive         = 1<<0;
+
+const int zCModel__modelPrototype_offset             = 88;  //0x0058
 
 const int zCModelNodeInst_visual_offset              = 8;   //0x0008
 

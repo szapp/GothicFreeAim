@@ -329,7 +329,7 @@ func void GFA_TreatBodystates() {
     };
 
     GFA_ResetSpell();
-    GFA_AimMovement(0);
+    GFA_AimMovement(0, "");
     GFA_RemoveReticle();
     GFA_AimVobDetachFX();
 

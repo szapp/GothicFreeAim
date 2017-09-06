@@ -66,7 +66,7 @@ func void GFA_RangedIdle() {
         };
 
         // Remove movement animations when not aiming
-        GFA_AimMovement(0);
+        GFA_AimMovement(0, "");
     };
 };
 

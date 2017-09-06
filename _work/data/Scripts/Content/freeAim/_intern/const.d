@@ -100,10 +100,9 @@ const int    GFA_MOVE_FORWARD       = 1<<0;                 // ID (first bit) fo
 const int    GFA_MOVE_BACKWARD      = 1<<1;                 // ID (second bit) for moving backward while aiming
 const int    GFA_MOVE_LEFT          = 1<<2;                 // ID (third bit) for moving left while aiming
 const int    GFA_MOVE_RIGHT         = 1<<3;                 // ID (fourth bit) for moving right while aiming
+const int    GFA_MOVE_TRANS         = 11;                   // Transistion ID
 
-const int    GFA_MAX_AIM_ANIS       = 11;                   // Number of aiming movement animations
-
-const string GFA_AIM_ANIS[GFA_MAX_AIM_ANIS] = {             // Names of aiming movement animations (upper case!)
+const string GFA_AIM_ANIS[12]       = {                     // Names of aiming movement animations (upper case!)
     "",                                                     //  0
     "_AIM_MOVEF",                                           //  1  0001  GFA_MOVE_FORWARD
     "_AIM_MOVEB",                                           //  2  0010  GFA_MOVE_BACKWARD
@@ -114,7 +113,8 @@ const string GFA_AIM_ANIS[GFA_MAX_AIM_ANIS] = {             // Names of aiming m
     "",                                                     //  7
     "_AIM_MOVER",                                           //  8  1000  GFA_MOVE_RIGHT
     "_AIM_MOVERF",                                          //  9  1001  GFA_MOVE_RIGHT | GFA_MOVE_FORWARD
-    "_AIM_MOVERB"                                           // 10  1010  GFA_MOVE_RIGHT | GFA_MOVE_BACKWARD
+    "_AIM_MOVERB",                                          // 10  1010  GFA_MOVE_RIGHT | GFA_MOVE_BACKWARD
+    "_AIM_MOVET"                                            // 11        Transistion prefix
 };
 
 const int    GFA_MOVE_ANI_LAYER     = 2;                    // Layer of aiming movement animations (see Humans.mds)
