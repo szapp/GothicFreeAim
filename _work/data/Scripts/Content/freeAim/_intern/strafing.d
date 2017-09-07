@@ -128,18 +128,21 @@ func void GFA_AimMovement(var int movement, var string modifier) {
     };
 
 
-    // Add animation transition prefix
+    // Add animation transition prefix (transition or state animation)
+    var string prefix;
+    var string postfix;
     if (lastMove & movement) {
-        modifier = ConcatStrings("T_", modifier);
-        modifier = ConcatStrings(modifier, MEM_ReadStatStringArr(GFA_AIM_ANIS, GFA_MOVE_TRANS));
-        modifier = ConcatStrings(modifier, "_2");
+        prefix = "T_";
+        postfix = MEM_ReadStatStringArr(GFA_AIM_ANIS, GFA_MOVE_TRANS);
     } else {
-        modifier = ConcatStrings("S_", modifier);
+        prefix = "S_";
+        postfix = "";
     };
-
+    // New animation
+    postfix = ConcatStrings(postfix, MEM_ReadStatStringArr(GFA_AIM_ANIS, movement));
 
     // Get full name of complete animation
-    var string aniName; aniName = ConcatStrings(modifier, MEM_ReadStatStringArr(GFA_AIM_ANIS, movement));
+    var string aniName; aniName = ConcatStrings(ConcatStrings(prefix, modifier), postfix);
     var int aniNamePtr; aniNamePtr = _@s(aniName);
 
     // Check if spell animation with casting modifier exists (otherwise assume default)
@@ -150,10 +153,13 @@ func void GFA_AimMovement(var int movement, var string modifier) {
             CALL__fastcall(_@(modelPrototype), _@(aniNamePtr), zCModelPrototype__SearchAniIndex);
             call5 = CALL_End();
         };
+
         // If animation with modifier does not exist, take base animation
         if (CALL_RetValAsInt() < 0) {
-            GFA_AimMovement(movement, STR_Prefix(lastMod, 3));
-            return;
+            // Remove spell casting modifier, 'MAG' should remain
+            modifier = STR_Prefix(modifier, 3);
+            lastMod = modifier;
+            aniName = ConcatStrings(ConcatStrings(prefix, modifier), postfix);
         };
     };
 

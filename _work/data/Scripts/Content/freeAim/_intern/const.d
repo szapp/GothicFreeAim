@@ -114,7 +114,7 @@ const string GFA_AIM_ANIS[12]       = {                     // Names of aiming m
     "_AIM_MOVER",                                           //  8  1000  GFA_MOVE_RIGHT
     "_AIM_MOVERF",                                          //  9  1001  GFA_MOVE_RIGHT | GFA_MOVE_FORWARD
     "_AIM_MOVERB",                                          // 10  1010  GFA_MOVE_RIGHT | GFA_MOVE_BACKWARD
-    "_AIM_MOVET"                                            // 11        Transistion prefix
+    "_AIM_MOVET_2"                                          // 11        Transistion prefix
 };
 
 const int    GFA_MOVE_ANI_LAYER     = 2;                    // Layer of aiming movement animations (see Humans.mds)
