@@ -85,6 +85,12 @@ func void GFA_InitFeatureFreeAiming() {
         HookEngineF(oCAIHuman__PC_ActionMove_bodyState, 6, GFA_PreventFocusCollectionBodystates);
     };
 
+    // Do not interrupt strafing by oCNpc::Interrupt()
+    if (GFA_STRAFING) {
+        HookEngineF(oCNpc__Interrupt_stopAnis, 5, GFA_DontInterruptStrafing);
+        MemoryProtectionOverride(oCNpc__Interrupt_stopAnisLayerA, 1);
+    };
+
     // Reticle
     MEM_Info("Initializing reticle.");
     HookEngineF(oCNpc__SetWeaponMode_player, 6, GFA_ResetOnWeaponSwitch); // Hide reticle, hide aim FX, reset draw force

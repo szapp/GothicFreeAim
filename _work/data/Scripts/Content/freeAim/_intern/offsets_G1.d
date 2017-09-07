@@ -60,6 +60,7 @@ const int oCNpc__SetEnemy                            =  6888064; //0x691A80
 const int oCNpc__SetBodyState                        =  7045120; //0x6B8000
 const int oCNpc__GetModel                            =  6902528; //0x695300
 const int oCNpc__EV_Strafe_magicCombat               =  0;                                 // Does not exist in Gothic 1
+const int oCNpc__Interrupt_stopAnisLayerA            =  6891985; //0x6929D1
 const int oCNpcFocus__InitFocusModes                 =  6507760; //0x634CF0
 const int oCItem___CreateNewInstance                 =  6764320; //0x673720
 const int oCItem__InitByScript                       =  6755936; //0x671660
@@ -126,6 +127,7 @@ const int oCNpc__OnDamage_Anim_getModel              =  7609592; //0x741CF8 // H
 const int oCNpc__SetWeaponMode_player                =  6907265; //0x696581 // Hook len 6
 const int oCNpc__SetWeaponMode2_walkmode             =  6905437; //0x695E5D // Hook len 6
 const int oCNpc__EV_Strafe_commonOffset              =  7661795; //0x74E8E3 // Hook len 5
+const int oCNpc__Interrupt_stopAnis                  =  6891924; //0x692994 // Hook len 5
 const int oCSpell__Setup_initFallbackNone            =  4704143; //0x47C78F // Hook len 6
 const int mouseUpdate                                =  5013602; //0x4C8062 // Hook len 5
 

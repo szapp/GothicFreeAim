@@ -176,7 +176,7 @@ func void GFA_SpellAiming() {
  * oCAIHuman::_WalkCycle().
  */
 func void GFA_SpellLockMovement() {
-    if (GFA_ACTIVE != FMODE_MAGIC) || (!GFA_STRAFING) {
+    if (GFA_ACTIVE != FMODE_MAGIC) {
         return;
     };
 

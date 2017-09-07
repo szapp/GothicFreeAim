@@ -60,6 +60,7 @@ const int oCNpc__SetEnemy                            =  7556032; //0x734BC0
 const int oCNpc__SetBodyState                        =  7727392; //0x75E920
 const int oCNpc__GetModel                            =  7571232; //0x738720
 const int oCNpc__EV_Strafe_magicCombat               =  6833595; //0x6845BB
+const int oCNpc__Interrupt_stopAnisLayerA            =  7560322; //0x735C82
 const int oCNpcFocus__InitFocusModes                 =  7072384; //0x6BEA80
 const int oCItem___CreateNewInstance                 =  7423040; //0x714440
 const int oCItem__InitByScript                       =  7412688; //0x711BD0
@@ -126,6 +127,7 @@ const int oCNpc__OnDamage_Anim_getModel              =  6774593; //0x675F41 // H
 const int oCNpc__SetWeaponMode_player                =  7575921; //0x739971 // Hook len 6
 const int oCNpc__SetWeaponMode2_walkmode             =  7574116; //0x739264 // Hook len 6
 const int oCNpc__EV_Strafe_commonOffset              =  6831608; //0x683DF8 // Hook len 5
+const int oCNpc__Interrupt_stopAnis                  =  7560261; //0x735C45 // Hook len 5
 const int oCSpell__Setup_initFallbackNone            =  4737961; //0x484BA9 // Hook len 6
 const int mouseUpdate                                =  5062907; //0x4D40FB // Hook len 5
 

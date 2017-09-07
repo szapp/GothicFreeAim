@@ -283,7 +283,7 @@ func void GFA_DisableToggleFocusSpells(var int on) {
 
 
 /*
- * Disable magic combat during "normal" strafing. This allows quick-casting spells while strafing, which is not desired
+ * Disable magic combat during default strafing. This allows quick-casting spells while strafing, which is not desired
  * with free aiming, because it does not use the normal spell casting functions, does not allow displaying a reticle and
  * does not investing spells. This questionable design choice was fortunately only made for Gothic 2, hence this
  * function exits immediately when called with Gothic 1.
@@ -299,7 +299,7 @@ func void GFA_DisableMagicDuringStrafing(var int on) {
     };
 
     if (on) {
-        // Disable magic combat during "normal" strafing
+        // Disable magic combat during default strafing
         MEM_WriteByte(oCNpc__EV_Strafe_magicCombat, ASMINT_OP_nop); // Remove call to oCNpc::FightAttackMagic()
         MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+1, ASMINT_OP_nop);
         MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+2, ASMINT_OP_nop);
@@ -411,6 +411,24 @@ func void GFA_FixSpellOnStrafe() {
     if (her.fmode == FMODE_MAGIC) {
         GFA_ResetSpell();
         GFA_AimVobDetachFX();
+    };
+};
+
+
+/*
+ * Prevent canceling the aim movement animations in oCNpc::Interrupt(). Naturally, this function hooks
+ * oCNpc::Interrupt() at an offset before all animations are stopped to manipulate the ranges of layers to be stopped.
+ * The first argument passed to the function zCModel::StopAnisLayerRange(), is increased or reset to two depending on
+ * whether aim movement is active.
+ */
+func void GFA_DontInterruptStrafing() {
+    var C_NPC slf; slf = _^(ESI);
+    if (Npc_IsPlayer(slf)) && (GFA_IsStrafing) {
+        // Stop only all animations in layers higher than the aim movements
+        MEM_WriteByte(oCNpc__Interrupt_stopAnisLayerA, GFA_MOVE_ANI_LAYER+1); // zCModel::StopAnisLayerRange(X+1, 1000)
+    } else {
+        // Revert to default
+        MEM_WriteByte(oCNpc__Interrupt_stopAnisLayerA, 2); // zCModel::StopAnisLayerRange(2, 1000)
     };
 };
 
