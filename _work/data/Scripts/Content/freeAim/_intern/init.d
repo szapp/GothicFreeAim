@@ -47,7 +47,6 @@ func void GFA_InitFeatureFreeAiming() {
         HookEngineF(oCAIArrow__SetupAIVob, 6, GFA_SetupProjectile); // Setup projectile trajectory (shooting)
         HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_ResetProjectileGravity); // Reset gravity on impact
         HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_OverwriteHitChance); // Manipulate hit chance
-        HookEngineF(oCAIHuman__BowMode_postInterpolate, 6, GFA_Strafe); // Strafe while aiming. Big thanks to Siemekk
         MemoryProtectionOverride(oCAIHuman__CheckFocusVob_ranged, 1); // Prevent toggling focus in ranged combat
 
         // Gothic 2 controls
@@ -64,9 +63,11 @@ func void GFA_InitFeatureFreeAiming() {
         MEM_Info("Initializing free aiming for spell combat.");
         HookEngineF(oCAIHuman__MagicMode, 7, GFA_SpellAiming); // Manage focus collection and reticle
         HookEngineF(oCSpell__Setup_initFallbackNone, 6, GFA_SetupSpell); // Set spell FX trajectory (shooting)
-        HookEngineF(oCAIHuman__MagicMode_rtn, 7, GFA_SpellLockMovement); // Lock movement while aiming
         HookEngineF(oCNpc__EV_Strafe_commonOffset, 5, GFA_FixSpellOnStrafe); // Fix spell FX after interrupted casting
         MemoryProtectionOverride(oCAIHuman__CheckFocusVob_spells, 1); // Prevent toggling focus in spell combat
+        if (GFA_STRAFING) {
+            HookEngineF(oCAIHuman__MagicMode_rtn, 7, GFA_SpellLockMovement); // Lock movement while aiming
+        };
 
         // Disable magic during default Gothic strafing (Gothic 2 only)
         if (GOTHIC_BASE_VERSION == 2) {
@@ -75,10 +76,10 @@ func void GFA_InitFeatureFreeAiming() {
     };
 
     // Treat special body states (lying or sliding)
-    HookEngineF(zCAIPlayer__IsSliding_true, 5, GFA_TreatBodystates); // Called during sliding
-    HookEngineF(oCAIHuman__PC_CheckSpecialStates_lie, 5, GFA_TreatBodystates); // Called when lying after a fall
-    HookEngineF(oCAniCtrl_Human__SearchStandAni_walkmode, 6, GFA_FixStandingBodystate); // Fix bug with wrong body state
-    HookEngineF(oCNpc__SetWeaponMode2_walkmode, 6, GFA_FixStandingBodystate); // Fix bug with wrong body state
+    HookEngineF(zCAIPlayer__IsSliding_true, 5, GFA_TreatBodyStates); // Called during sliding
+    HookEngineF(oCAIHuman__PC_CheckSpecialStates_lie, 5, GFA_TreatBodyStates); // Called when lying after a fall
+    HookEngineF(oCAniCtrl_Human__SearchStandAni_walkmode, 6, GFA_FixStandingBodyState); // Fix bug with wrong body state
+    HookEngineF(oCNpc__SetWeaponMode2_walkmode, 6, GFA_FixStandingBodyState); // Fix bug with wrong body state
     // Prevent focus collection during jumping and falling (necessary for Gothic 2 only)
     if (GOTHIC_BASE_VERSION == 2) && (GFA_NO_AIM_NO_FOCUS) {
         HookEngineF(oCAIHuman__PC_ActionMove_bodyState, 6, GFA_PreventFocusCollectionBodystates);

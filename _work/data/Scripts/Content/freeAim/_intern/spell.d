@@ -148,6 +148,25 @@ func void GFA_SpellAiming() {
 
     // Allow strafing
     GFA_Strafe();
+
+    // Remove turning animations (player model sometimes gets stuck in turning animation)
+    if (GOTHIC_CONTROL_SCHEME == 2) && (!GFA_STRAFING) {
+        // Do not remove turning animations when strafing is disabled and player is not investing/casting
+        if (!GFA_InvestingOrCasting(hero))
+        && (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) {
+            return;
+        };
+    };
+    var zCAIPlayer playerAI; playerAI = _^(aniCtrlPtr);
+    var int model; model = playerAI.model;
+    const int twenty = 20;
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL_IntParam(_@(twenty));
+        CALL_IntParam(_@(twenty));
+        CALL__thiscall(_@(model), zCModel__FadeOutAnisLayerRange);
+        call = CALL_End();
+    };
 };
 
 
@@ -157,7 +176,7 @@ func void GFA_SpellAiming() {
  * oCAIHuman::_WalkCycle().
  */
 func void GFA_SpellLockMovement() {
-    if (GFA_ACTIVE != FMODE_MAGIC) {
+    if (GFA_ACTIVE != FMODE_MAGIC) || (!GFA_STRAFING) {
         return;
     };
 
@@ -201,18 +220,6 @@ func void GFA_SpellLockMovement() {
             MEM_WriteInt(aniCtrlPtr+oCAIHuman_bitfield_offset,
                 MEM_ReadInt(aniCtrlPtr+oCAIHuman_bitfield_offset) & ~oCAIHuman_bitfield_startObserveIntruder);
         };
-    };
-
-    // Remove turning animations (player model sometimes gets stuck in weird animation)
-    var zCAIPlayer playerAI; playerAI = _^(aniCtrlPtr);
-    var int model; model = playerAI.model;
-    const int twenty = 20;
-    const int call3 = 0;
-    if (CALL_Begin(call3)) {
-        CALL_IntParam(_@(twenty));
-        CALL_IntParam(_@(twenty));
-        CALL__thiscall(_@(model), zCModel__FadeOutAnisLayerRange);
-        call3 = CALL_End();
     };
 
     // Set return value to one: Do not call any other movement functions

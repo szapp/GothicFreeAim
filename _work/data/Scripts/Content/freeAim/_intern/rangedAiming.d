@@ -149,4 +149,7 @@ func void GFA_RangedAiming() {
     // New aiming coordinates. Overwrite the arguments one and two passed to oCAniCtrl_Human::InterpolateCombineAni()
     MEM_WriteInt(ESP+20, FLOATHALF); // First argument: Always aim at center (azimuth). G2: esp+44h-30h, G1: esp+2Ch-18h
     ECX = angleY; // Second argument: New elevation
+
+    // Allow strafing
+    GFA_Strafe();
 };

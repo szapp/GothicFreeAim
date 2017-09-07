@@ -27,12 +27,15 @@
  * of animation to be played, see GFA_AIM_ANIS.
  */
 func void GFA_AimMovement(var int movement, var string modifier) {
+    if (!GFA_STRAFING) {
+        return;
+    };
+
     // Send perception before anything else (every 1500 ms)
     if (movement) {
         var int percTimer; percTimer += MEM_Timer.frameTime;
         if (percTimer >= 1500) {
             percTimer -= 1500;
-            // Ignore sneaking, because PERC_OBSERVESUSPECT is disabled
             Npc_SendPassivePerc(hero, PERC_ASSESSQUIETSOUND, NULL, hero);
         };
     };
@@ -181,7 +184,7 @@ func void GFA_AimMovement(var int movement, var string modifier) {
  * The function is also called from GFA_SpellAiming() for strafing during spell combat.
  */
 func void GFA_Strafe() {
-    if (GFA_ACTIVE < FMODE_FAR) {
+    if (GFA_ACTIVE < FMODE_FAR) || (!GFA_STRAFING) {
         GFA_AimMovement(0, "");
         return;
     };

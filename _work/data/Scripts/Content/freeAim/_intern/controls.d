@@ -323,7 +323,7 @@ func void GFA_DisableMagicDuringStrafing(var int on) {
  * oCAIHuman::PC_CheckSpecialStates()).
  * Caution: This function is always called, even if free aiming is not currently active.
  */
-func void GFA_TreatBodystates() {
+func void GFA_TreatBodyStates() {
     if (!GFA_ACTIVE) {
         return;
     };
@@ -364,11 +364,11 @@ func void GFA_PreventFocusCollectionBodystates() {
 
 
 /*
- * This function fixes a bug where Gothics sets the Body state to running, walking or sneaking when the NPC is acutally
+ * This function fixes a bug where Gothics sets the body state to running, walking or sneaking when the NPC is acutally
  * standing. This function hooks oCAniCtrl_Human::SearchStandAni() at an offset after the walk mode is set to reset the
  * body state to standing and oCNpc::SetWeaponMode2() with the same bug.
  */
-func void GFA_FixStandingBodystate() {
+func void GFA_FixStandingBodyState() {
     var int npcPtr;
 
     // This function hooks two different engine functions (differentiate here)
