@@ -54,6 +54,7 @@ func void GFA_AimMovement(var int movement, var string modifier) {
     var oCNpc her; her = Hlp_GetNpc(hero);
     var zCAIPlayer playerAI; playerAI = _^(her.anictrl);
     var int model; model = playerAI.model;
+    var int bitfield; bitfield = MEM_ReadInt(her.anictrl+oCAIHuman_bitfield_offset);
 
     // Stopping all movements is faster this way
     if (!movement) {
@@ -63,6 +64,12 @@ func void GFA_AimMovement(var int movement, var string modifier) {
             CALL_IntParam(_@(GFA_MOVE_ANI_LAYER));
             CALL__thiscall(_@(model), zCModel__FadeOutAnisLayerRange);
             call2 = CALL_End();
+        };
+
+        // Send observe intruder perception (relevant for Gothic 1 only)
+        if (bitfield & oCAIHuman_bitfield_startObserveIntruder) {
+            MEM_WriteInt(aniCtrlPtr+oCAIHuman_bitfield_offset, bitfield & ~oCAIHuman_bitfield_startObserveIntruder);
+            Npc_SendPassivePerc(hero, PERC_OBSERVEINTRUDER, NULL, hero);
         };
         return;
     };
@@ -174,6 +181,9 @@ func void GFA_AimMovement(var int movement, var string modifier) {
         CALL__thiscall(_@(model), zCModel__StartAni);
         call6 = CALL_End();
     };
+
+    // Set observe intruder flag (relevant for Gothic 1 only)
+    MEM_WriteInt(aniCtrlPtr+oCAIHuman_bitfield_offset, bitfield | oCAIHuman_bitfield_startObserveIntruder);
 };
 
 

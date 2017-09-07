@@ -215,10 +215,6 @@ func void GFA_SpellLockMovement() {
                 CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human___Stand);
                 call = CALL_End();
             };
-
-            // Reset observe intruder flag (seems to be deprecated but clean up anyway like the engine does)
-            MEM_WriteInt(aniCtrlPtr+oCAIHuman_bitfield_offset,
-                MEM_ReadInt(aniCtrlPtr+oCAIHuman_bitfield_offset) & ~oCAIHuman_bitfield_startObserveIntruder);
         };
     };
 
