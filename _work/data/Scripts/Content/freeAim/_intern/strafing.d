@@ -203,7 +203,7 @@ func void GFA_Strafe() {
 
     // Magic mode does not allow sneaking (messes up the perception and would require more animations)
     if (GOTHIC_CONTROL_SCHEME == 1)
-    && (Npc_IsInFightMode(hero, FMODE_MAGIC)) {
+    && (her.fmode == FMODE_MAGIC) {
         var int aniCtrlPtr; aniCtrlPtr = her.anictrl;
 
         // Sneaking not allowed
@@ -239,8 +239,8 @@ func void GFA_Strafe() {
     mLeft  = (MEM_KeyPressed(MEM_GetKey("keyStrafeLeft")))  || (MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeLeft")));
     mRight = (MEM_KeyPressed(MEM_GetKey("keyStrafeRight"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeRight")));
 
-    // Allow forward movement only when using Gothic 2 controls while investing or casting a spell
-    if (GOTHIC_CONTROL_SCHEME == 2) && (GFA_InvestingOrCasting(hero)) {
+    // Allow forward movement only when using Gothic 2 controls while investing or casting a spell (or ranged combat)
+    if (GOTHIC_CONTROL_SCHEME == 2) && ((GFA_InvestingOrCasting(hero)) || (her.fmode != FMODE_MAGIC)) {
         mFront = (MEM_KeyPressed(MEM_GetKey("keyUp"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyUp")));
     } else {
         mFront = FALSE;
