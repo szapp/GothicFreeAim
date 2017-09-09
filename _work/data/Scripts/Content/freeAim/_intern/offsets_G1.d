@@ -164,7 +164,7 @@ const int zCAIPlayer_bitfield1_forceModelHalt        = 1<<0;
 const int oCAniCtrl_Human_walkmode_offset            = 352; //0x0160
 
 const int oCAIHuman_bitfield_offset                  = 4612;//0x1204
-const int oCAIHuman_bitfield_startObserveIntruder    = 1<<6;                               // Not used for Gothic 1
+const int oCAIHuman_bitfield_startObserveIntruder    = 1<<6;
 const int oCAIHuman_bitfield_spellReleased           = 1<<7;
 const int oCAIHuman_bitfield_spellCastedLastFrame    = 1<<8;
 
