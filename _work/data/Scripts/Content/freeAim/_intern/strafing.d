@@ -168,7 +168,7 @@ func void GFA_AimMovement(var int movement, var string modifier) {
     var int aniNamePtr; aniNamePtr = _@s(aniName);
 
     // Check if spell animation with casting modifier exists (otherwise assume default)
-    if (STR_Len(lastMod) > 3) {
+    if (STR_Len(modifier) > 3) {
         var int modelPrototype; modelPrototype = MEM_ReadInt(MEM_ReadInt(model+zCModel__modelPrototype_offset));
         const int call5 = 0;
         if (CALL_Begin(call5)) {
@@ -180,7 +180,6 @@ func void GFA_AimMovement(var int movement, var string modifier) {
         if (CALL_RetValAsInt() < 0) {
             // Remove spell casting modifier, 'MAG' should remain
             modifier = STR_Prefix(modifier, 3);
-            lastMod = modifier;
             aniName = ConcatStrings(ConcatStrings(prefix, modifier), postfix);
         };
     };
