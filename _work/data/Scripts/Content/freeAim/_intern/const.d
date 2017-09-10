@@ -103,7 +103,7 @@ const int    GFA_MOVE_RIGHT         = 1<<3;                 // ID (fourth bit) f
 const int    GFA_MOVE_TRANS         = 11;                   // Transistion ID
 
 const string GFA_AIM_ANIS[12]       = {                     // Names of aiming movement animations (upper case!)
-    "",                                                     //  0
+    "_AIM_STAND",                                           //  0        Transition to standing (ranged combat only)
     "_AIM_MOVEF",                                           //  1  0001  GFA_MOVE_FORWARD
     "_AIM_MOVEB",                                           //  2  0010  GFA_MOVE_BACKWARD
     "",                                                     //  3

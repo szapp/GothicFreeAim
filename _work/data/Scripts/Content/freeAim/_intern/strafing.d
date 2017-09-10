@@ -55,8 +55,9 @@ func void GFA_AimMovement(var int movement, var string modifier) {
     var zCAIPlayer playerAI; playerAI = _^(her.anictrl);
     var int model; model = playerAI.model;
     var int bitfield; bitfield = MEM_ReadInt(her.anictrl+oCAIHuman_bitfield_offset);
+    var int zero;
 
-    // Stopping all movements is faster this way
+    // Stop movement
     if (!movement) {
         const int call2 = 0;
         if (CALL_Begin(call2)) {
@@ -71,77 +72,88 @@ func void GFA_AimMovement(var int movement, var string modifier) {
             MEM_WriteInt(aniCtrlPtr+oCAIHuman_bitfield_offset, bitfield & ~oCAIHuman_bitfield_startObserveIntruder);
             Npc_SendPassivePerc(hero, PERC_OBSERVEINTRUDER, NULL, hero);
         };
-        return;
-    };
 
-
-    // Compute movement direction
-    var zMAT4 herTrf; herTrf = _^(_@(her._zCVob_trafoObjToWorld));
-    var int dir[3];
-    var int dirPtr; dirPtr = _@(dir);
-
-    // Front/back axis
-    if (movement & GFA_MOVE_FORWARD) {
-        dir[0] = herTrf.v0[zMAT4_outVec];
-        dir[1] = herTrf.v1[zMAT4_outVec];
-        dir[2] = herTrf.v2[zMAT4_outVec];
-    } else if (movement & GFA_MOVE_BACKWARD) {
-        dir[0] = negf(herTrf.v0[zMAT4_outVec]);
-        dir[1] = negf(herTrf.v1[zMAT4_outVec]);
-        dir[2] = negf(herTrf.v2[zMAT4_outVec]);
-    } else {
-        dir[0] = FLOATNULL;
-        dir[1] = FLOATNULL;
-        dir[2] = FLOATNULL;
-    };
-
-    // Left right axis (combine vector for diagonal movement directions)
-    if (movement & GFA_MOVE_LEFT) || (movement & GFA_MOVE_RIGHT) {
-        if (movement & GFA_MOVE_LEFT) {
-            dir[0] = subf(dir[0], herTrf.v0[zMAT4_rightVec]);
-            dir[1] = subf(dir[1], herTrf.v1[zMAT4_rightVec]);
-            dir[2] = subf(dir[2], herTrf.v2[zMAT4_rightVec]);
+        // For ranged combat, animations need to be actively blended back to standing (see below)
+        if (her.fmode == FMODE_FAR) {
+            // Set modifier (function usually does not receive a modifier if movement == 0)
+            modifier = "BOW";
+        } else if (her.fmode == FMODE_FAR+1) {
+            modifier = "CBOW";
         } else {
-            dir[0] = addf(dir[0], herTrf.v0[zMAT4_rightVec]);
-            dir[1] = addf(dir[1], herTrf.v1[zMAT4_rightVec]);
-            dir[2] = addf(dir[2], herTrf.v2[zMAT4_rightVec]);
+            // For spell combat or no fight mode, it was sufficient to fade out the animation in the aim movement layer
+            return;
         };
-        // Direction vector needs to be normalized
-        const int call3 = 0;
-        if (CALL_Begin(call3)) {
-            CALL__thiscall(_@(dirPtr), zVEC3__NormalizeSafe);
-            call3 = CALL_End();
+
+    } else {
+        // Compute movement direction
+        var zMAT4 herTrf; herTrf = _^(_@(her._zCVob_trafoObjToWorld));
+        var int dir[3];
+        var int dirPtr; dirPtr = _@(dir);
+
+        // Front/back axis
+        if (movement & GFA_MOVE_FORWARD) {
+            dir[0] = herTrf.v0[zMAT4_outVec];
+            dir[1] = herTrf.v1[zMAT4_outVec];
+            dir[2] = herTrf.v2[zMAT4_outVec];
+        } else if (movement & GFA_MOVE_BACKWARD) {
+            dir[0] = negf(herTrf.v0[zMAT4_outVec]);
+            dir[1] = negf(herTrf.v1[zMAT4_outVec]);
+            dir[2] = negf(herTrf.v2[zMAT4_outVec]);
+        } else {
+            dir[0] = FLOATNULL;
+            dir[1] = FLOATNULL;
+            dir[2] = FLOATNULL;
         };
-        MEM_CopyBytes(CALL_RetValAsPtr(), dirPtr, sizeof_zVEC3);
-    };
 
-    // Check if there is enough space in the computed movement direction
-    var int aniCtrlPtr; aniCtrlPtr = her.anictrl;
-    var int zero;
-    const int call4 = 0;
-    if (CALL_Begin(call4)) {
-        CALL_IntParam(_@(zero));
-        CALL_PtrParam(_@(dirPtr));
-        CALL__thiscall(_@(aniCtrlPtr), zCAIPlayer__CheckEnoughSpaceMoveDir);
-        call4 = CALL_End();
-    };
-    if (!CALL_RetValAsInt()) {
-        GFA_AimMovement(0, "");
-        return;
-    };
+        // Left right axis (combine vector for diagonal movement directions)
+        if (movement & GFA_MOVE_LEFT) || (movement & GFA_MOVE_RIGHT) {
+            if (movement & GFA_MOVE_LEFT) {
+                dir[0] = subf(dir[0], herTrf.v0[zMAT4_rightVec]);
+                dir[1] = subf(dir[1], herTrf.v1[zMAT4_rightVec]);
+                dir[2] = subf(dir[2], herTrf.v2[zMAT4_rightVec]);
+            } else {
+                dir[0] = addf(dir[0], herTrf.v0[zMAT4_rightVec]);
+                dir[1] = addf(dir[1], herTrf.v1[zMAT4_rightVec]);
+                dir[2] = addf(dir[2], herTrf.v2[zMAT4_rightVec]);
+            };
+            // Direction vector needs to be normalized
+            const int call3 = 0;
+            if (CALL_Begin(call3)) {
+                CALL__thiscall(_@(dirPtr), zVEC3__NormalizeSafe);
+                call3 = CALL_End();
+            };
+            MEM_CopyBytes(CALL_RetValAsPtr(), dirPtr, sizeof_zVEC3);
+        };
 
-    // Check force movement halt
-    if (playerAI.bitfield[1] & zCAIPlayer_bitfield1_forceModelHalt) {
-        playerAI.bitfield[1] = playerAI.bitfield[1] & ~zCAIPlayer_bitfield1_forceModelHalt;
-        GFA_AimMovement(0, "");
-        return;
-    };
+        // Check if there is enough space in the computed movement direction
+        var int aniCtrlPtr; aniCtrlPtr = her.anictrl;
+        const int call4 = 0;
+        if (CALL_Begin(call4)) {
+            CALL_IntParam(_@(zero));
+            CALL_PtrParam(_@(dirPtr));
+            CALL__thiscall(_@(aniCtrlPtr), zCAIPlayer__CheckEnoughSpaceMoveDir);
+            call4 = CALL_End();
+        };
+        if (!CALL_RetValAsInt()) {
+            GFA_AimMovement(0, "");
+            return;
+        };
 
+        // Check force movement halt
+        if (playerAI.bitfield[1] & zCAIPlayer_bitfield1_forceModelHalt) {
+            playerAI.bitfield[1] = playerAI.bitfield[1] & ~zCAIPlayer_bitfield1_forceModelHalt;
+            GFA_AimMovement(0, "");
+            return;
+        };
+
+        // Moving: Set observe intruder flag (relevant for Gothic 1 only)
+        MEM_WriteInt(aniCtrlPtr+oCAIHuman_bitfield_offset, bitfield | oCAIHuman_bitfield_startObserveIntruder);
+    };
 
     // Add animation transition prefix (transition or state animation)
     var string prefix;
     var string postfix;
-    if (lastMove & movement) {
+    if (lastMove & movement) || (!movement) {
         prefix = "T_";
         postfix = MEM_ReadStatStringArr(GFA_AIM_ANIS, GFA_MOVE_TRANS);
     } else {
@@ -181,9 +193,6 @@ func void GFA_AimMovement(var int movement, var string modifier) {
         CALL__thiscall(_@(model), zCModel__StartAni);
         call6 = CALL_End();
     };
-
-    // Set observe intruder flag (relevant for Gothic 1 only)
-    MEM_WriteInt(aniCtrlPtr+oCAIHuman_bitfield_offset, bitfield | oCAIHuman_bitfield_startObserveIntruder);
 };
 
 
