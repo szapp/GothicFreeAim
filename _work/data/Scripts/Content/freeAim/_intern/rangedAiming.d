@@ -29,6 +29,8 @@
  */
 func void GFA_RangedIdle() {
     if (GFA_ACTIVE > 1) {
+        // In bow mode during transition between shooting and reloading
+
         // Shoot trace ray to update focus
         var int distance; var int target;
         GFA_AimRay(GFA_MAX_DIST, TARGET_TYPE_NPCS, _@(target), 0, _@(distance), 0);
@@ -50,12 +52,21 @@ func void GFA_RangedIdle() {
             MEM_Free(reticlePtr);
         };
 
+        // Allow to stop strafing (not to start strafing, that causes weird behavior)
+        if (GFA_IsStrafing) {
+            GFA_Strafe();
+        };
+
     } else if (GFA_ACTIVE) {
+        // In bow mode but not pressing down the aiming key
         GFA_RemoveReticle();
 
         if (GFA_NO_AIM_NO_FOCUS) {
             GFA_SetFocusAndTarget(0);
         };
+
+        // Remove movement animations when not aiming
+        GFA_AimMovement(0, "");
     };
 };
 
@@ -138,43 +149,7 @@ func void GFA_RangedAiming() {
     // New aiming coordinates. Overwrite the arguments one and two passed to oCAniCtrl_Human::InterpolateCombineAni()
     MEM_WriteInt(ESP+20, FLOATHALF); // First argument: Always aim at center (azimuth). G2: esp+44h-30h, G1: esp+2Ch-18h
     ECX = angleY; // Second argument: New elevation
-};
 
-
-/*
- * Enable strafing while aiming. This function hooks oCAIHuman::BowMode() at an offset, where the player is aiming.
- *
- * CAUTION: This is just an attempt or more of a test to realize strafing. This is not ready to be used, and thus its
- * hook is not initialized (commented out int _intern\init.d).
- * This function has been deliberately left in the scripts to inspire, in case somebody wants to finish this feature.
- *
- * Here is an explanation of this attempt:
- * Strafing can simply be injected into oCAIHuman::BowMode(), resulting in fully functioning strafing while aiming. Of
- * course, the bow is not maintaining the aiming animation, and when stopping to strafe the bow is drawn again.
- * What can be done now, is to create an animation, in which the bow is drawn and centered (that is where the bow always
- * is while aiming) while strafing and figuring out a way to prevent redrawing the bow after strafing. The latter is not
- * guaranteed to work.
- */
-func void GFA_RangedStrafing() {
-    var oCNpc her; her = Hlp_GetNpc(hero);
-
-    // Call strafing function. It handles button presses and directions
-    const int call = 0;
-    var int herAIPtr; herAIPtr = her.human_ai;
-    var int zero; zero = 1;
-    var int ret;
-    if (CALL_Begin(call)) {
-        CALL_IntParam(_@(zero)); // Argument ignored by function
-        CALL_PutRetValTo(_@(ret));
-        CALL__thiscall(_@(herAIPtr), oCAIHuman__PC_Strafe);
-        call = CALL_End();
-    };
-
-    // The return value specifies whether the player is currently strafing or not
-    if (ret) {
-        MEM_Info("Strafing now"); // Debug
-
-        // Exchange animation or something like that (actually needs to be done before starting to strafe)
-        // her.anictrl._t_strafel = aniID; // zTModelAniID* of new animation
-    };
+    // Allow strafing
+    GFA_Strafe();
 };

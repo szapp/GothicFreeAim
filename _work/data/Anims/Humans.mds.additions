@@ -1,0 +1,167 @@
+// Additions to Humans.mds
+//
+// Place in between the two curly brackets: { {  here  } }
+// Remember to delete the file _compiled\HUMANS.MSB (Gothic 2) or _compiled\HUMANS.MDH (Gothic 1)
+
+
+
+/////////////////////////////
+//     Gothic Free Aim     //
+/////////////////////////////
+
+
+// Bow aiming movement
+            ani         ("s_Bow_Aim_MoveF"          2   "s_Bow_Aim_MoveF"   0.0 0.0 M.  "Hum_Bow_Aim_MoveF.asc"   F   3   26)
+            aniAlias    ("s_Bow_Aim_MoveB"          2   "s_Bow_Aim_MoveB"   0.0 0.0 M.  "s_Bow_Aim_MoveF"         R)
+
+            ani         ("s_Bow_Aim_MoveL"          2   "s_Bow_Aim_MoveL"   0.0 0.0 M.  "Hum_Bow_Aim_MoveL.asc"   F   3   26)
+            aniAlias    ("s_Bow_Aim_MoveR"          2   "s_Bow_Aim_MoveR"   0.0 0.0 M.  "s_Bow_Aim_MoveL"         R)
+
+            ani         ("s_Bow_Aim_MoveLF"         2   "s_Bow_Aim_MoveLF"  0.0 0.0 M.  "Hum_Bow_Aim_MoveLF.asc"  F   3   26)
+            aniAlias    ("s_Bow_Aim_MoveRB"         2   "s_Bow_Aim_MoveRB"  0.0 0.0 M.  "s_Bow_Aim_MoveLF"        R)
+
+            ani         ("s_Bow_Aim_MoveRF"         2   "s_Bow_Aim_MoveRF"  0.0 0.0 M.  "Hum_Bow_Aim_MoveRF.asc"  F   3   26)
+            aniAlias    ("s_Bow_Aim_MoveLB"         2   "s_Bow_Aim_MoveLB"  0.0 0.0 M.  "s_Bow_Aim_MoveRF"        R)
+
+            ani         ("t_Bow_Aim_Move_2_Aim_Stand"  2   ""               0.2 0.0 M.  "Hum_Bow_Aim_MoveF.asc"   F   1   1)
+
+            aniBlend    ("t_Bow_Aim_Move_2_Aim_MoveF"   "s_Bow_Aim_MoveF"   0.2 0.2)
+            aniBlend    ("t_Bow_Aim_Move_2_Aim_MoveB"   "s_Bow_Aim_MoveB"   0.2 0.2)
+
+            aniBlend    ("t_Bow_Aim_Move_2_Aim_MoveL"   "s_Bow_Aim_MoveL"   0.2 0.2)
+            aniBlend    ("t_Bow_Aim_Move_2_Aim_MoveR"   "s_Bow_Aim_MoveR"   0.2 0.2)
+
+            aniBlend    ("t_Bow_Aim_Move_2_Aim_MoveLF"  "s_Bow_Aim_MoveLF"  0.2 0.2)
+            aniBlend    ("t_Bow_Aim_Move_2_Aim_MoveRF"  "s_Bow_Aim_MoveRF"  0.2 0.2)
+
+            aniBlend    ("t_Bow_Aim_Move_2_Aim_MoveLB"  "s_Bow_Aim_MoveLB"  0.2 0.2)
+            aniBlend    ("t_Bow_Aim_Move_2_Aim_MoveRB"  "s_Bow_Aim_MoveRB"  0.2 0.2)
+
+
+// Crossbow aiming movement
+            ani         ("s_CBow_Aim_MoveF"         2   "s_CBow_Aim_MoveF"  0.0 0.0 M.  "Hum_CBow_Aim_MoveF.asc"  F   3   26)
+            aniAlias    ("s_CBow_Aim_MoveB"         2   "s_CBow_Aim_MoveB"  0.0 0.0 M.  "s_CBow_Aim_MoveF"        R)
+
+            ani         ("s_CBow_Aim_MoveL"         2   "s_CBow_Aim_MoveL"  0.0 0.0 M.  "Hum_CBow_Aim_MoveL.asc"  F   3   26)
+            aniAlias    ("s_CBow_Aim_MoveR"         2   "s_CBow_Aim_MoveR"  0.0 0.0 M.  "s_CBow_Aim_MoveL"        R)
+
+            ani         ("s_CBow_Aim_MoveLF"        2   "s_CBow_Aim_MoveLF" 0.0 0.0 M.  "Hum_CBow_Aim_MoveLF.asc" F   3   26)
+            aniAlias    ("s_CBow_Aim_MoveRB"        2   "s_CBow_Aim_MoveRB" 0.0 0.0 M.  "s_CBow_Aim_MoveLF"       R)
+
+            ani         ("s_CBow_Aim_MoveRF"        2   "s_CBow_Aim_MoveRF" 0.0 0.0 M.  "Hum_CBow_Aim_MoveRF.asc" F   3   26)
+            aniAlias    ("s_CBow_Aim_MoveLB"        2   "s_CBow_Aim_MoveLB" 0.0 0.0 M.  "s_CBow_Aim_MoveRF"       R)
+
+            ani         ("t_CBow_Aim_Move_2_Aim_Stand"  2   ""              0.2 0.0 M.  "Hum_CBow_Aim_MoveF.asc"  F   1   1)
+
+            aniBlend    ("t_CBow_Aim_Move_2_Aim_MoveF"  "s_CBow_Aim_MoveF"  0.2 0.2)
+            aniBlend    ("t_CBow_Aim_Move_2_Aim_MoveB"  "s_CBow_Aim_MoveB"  0.2 0.2)
+
+            aniBlend    ("t_CBow_Aim_Move_2_Aim_MoveL"  "s_CBow_Aim_MoveL"  0.2 0.2)
+            aniBlend    ("t_CBow_Aim_Move_2_Aim_MoveR"  "s_CBow_Aim_MoveR"  0.2 0.2)
+
+            aniBlend    ("t_CBow_Aim_Move_2_Aim_MoveLF" "s_CBow_Aim_MoveLF" 0.2 0.2)
+            aniBlend    ("t_CBow_Aim_Move_2_Aim_MoveRF" "s_CBow_Aim_MoveRF" 0.2 0.2)
+
+            aniBlend    ("t_CBow_Aim_Move_2_Aim_MoveLB" "s_CBow_Aim_MoveLB" 0.2 0.2)
+            aniBlend    ("t_CBow_Aim_Move_2_Aim_MoveRB" "s_CBow_Aim_MoveRB" 0.2 0.2)
+
+
+// Spell aiming movement
+            ani         ("s_Mag_Aim_MoveF"          2   "s_Mag_Aim_MoveF"   0.0 0.0 M.  "Hum_Mag_Aim_MoveF.asc"   F   3   26)
+            aniAlias    ("s_Mag_Aim_MoveB"          2   "s_Mag_Aim_MoveB"   0.0 0.0 M.  "s_Mag_Aim_MoveF"         R)
+
+            ani         ("s_Mag_Aim_MoveL"          2   "s_Mag_Aim_MoveL"   0.0 0.0 M.  "Hum_Mag_Aim_MoveL.asc"   F   3   26)
+            aniAlias    ("s_Mag_Aim_MoveR"          2   "s_Mag_Aim_MoveR"   0.0 0.0 M.  "s_Mag_Aim_MoveL"         R)
+
+            ani         ("s_Mag_Aim_MoveLF"         2   "s_Mag_Aim_MoveLF"  0.0 0.0 M.  "Hum_Mag_Aim_MoveLF.asc"  F   3   26)
+            aniAlias    ("s_Mag_Aim_MoveRB"         2   "s_Mag_Aim_MoveRB"  0.0 0.0 M.  "s_Mag_Aim_MoveLF"        R)
+
+            ani         ("s_Mag_Aim_MoveRF"         2   "s_Mag_Aim_MoveRF"  0.0 0.0 M.  "Hum_Mag_Aim_MoveRF.asc"  F   3   26)
+            aniAlias    ("s_Mag_Aim_MoveLB"         2   "s_Mag_Aim_MoveLB"  0.0 0.0 M.  "s_Mag_Aim_MoveRF"        R)
+
+            aniBlend    ("t_Mag_Aim_Move_2_Aim_MoveF"   "s_Mag_Aim_MoveF"   0.2 0.2)
+            aniBlend    ("t_Mag_Aim_Move_2_Aim_MoveB"   "s_Mag_Aim_MoveB"   0.2 0.2)
+
+            aniBlend    ("t_Mag_Aim_Move_2_Aim_MoveL"   "s_Mag_Aim_MoveL"   0.2 0.2)
+            aniBlend    ("t_Mag_Aim_Move_2_Aim_MoveR"   "s_Mag_Aim_MoveR"   0.2 0.2)
+
+            aniBlend    ("t_Mag_Aim_Move_2_Aim_MoveLF"  "s_Mag_Aim_MoveLF"  0.2 0.2)
+            aniBlend    ("t_Mag_Aim_Move_2_Aim_MoveRF"  "s_Mag_Aim_MoveRF"  0.2 0.2)
+
+            aniBlend    ("t_Mag_Aim_Move_2_Aim_MoveLB"  "s_Mag_Aim_MoveLB"  0.2 0.2)
+            aniBlend    ("t_Mag_Aim_Move_2_Aim_MoveRB"  "s_Mag_Aim_MoveRB"  0.2 0.2)
+
+// WND
+            ani         ("s_MagWnd_Aim_MoveF"       2   "s_MagWnd_Aim_MoveF"   0.0 0.0 M.  "Hum_MagWnd_Aim_MoveF.asc"   F   3   26)
+            aniAlias    ("s_MagWnd_Aim_MoveB"       2   "s_MagWnd_Aim_MoveB"   0.0 0.0 M.  "s_MagWnd_Aim_MoveF"         R)
+
+            ani         ("s_MagWnd_Aim_MoveL"       2   "s_MagWnd_Aim_MoveL"   0.0 0.0 M.  "Hum_MagWnd_Aim_MoveL.asc"   F   3   26)
+            aniAlias    ("s_MagWnd_Aim_MoveR"       2   "s_MagWnd_Aim_MoveR"   0.0 0.0 M.  "s_MagWnd_Aim_MoveL"         R)
+
+            ani         ("s_MagWnd_Aim_MoveLF"      2   "s_MagWnd_Aim_MoveLF"  0.0 0.0 M.  "Hum_MagWnd_Aim_MoveLF.asc"  F   3   26)
+            aniAlias    ("s_MagWnd_Aim_MoveRB"      2   "s_MagWnd_Aim_MoveRB"  0.0 0.0 M.  "s_MagWnd_Aim_MoveLF"        R)
+
+            ani         ("s_MagWnd_Aim_MoveRF"      2   "s_MagWnd_Aim_MoveRF"  0.0 0.0 M.  "Hum_MagWnd_Aim_MoveRF.asc"  F   3   26)
+            aniAlias    ("s_MagWnd_Aim_MoveLB"      2   "s_MagWnd_Aim_MoveLB"  0.0 0.0 M.  "s_MagWnd_Aim_MoveRF"        R)
+
+            aniBlend    ("t_MagWnd_Aim_Move_2_Aim_MoveF"   "s_MagWnd_Aim_MoveF"   0.2 0.2)
+            aniBlend    ("t_MagWnd_Aim_Move_2_Aim_MoveB"   "s_MagWnd_Aim_MoveB"   0.2 0.2)
+
+            aniBlend    ("t_MagWnd_Aim_Move_2_Aim_MoveL"   "s_MagWnd_Aim_MoveL"   0.2 0.2)
+            aniBlend    ("t_MagWnd_Aim_Move_2_Aim_MoveR"   "s_MagWnd_Aim_MoveR"   0.2 0.2)
+
+            aniBlend    ("t_MagWnd_Aim_Move_2_Aim_MoveLF"  "s_MagWnd_Aim_MoveLF"  0.2 0.2)
+            aniBlend    ("t_MagWnd_Aim_Move_2_Aim_MoveRF"  "s_MagWnd_Aim_MoveRF"  0.2 0.2)
+
+            aniBlend    ("t_MagWnd_Aim_Move_2_Aim_MoveLB"  "s_MagWnd_Aim_MoveLB"  0.2 0.2)
+            aniBlend    ("t_MagWnd_Aim_Move_2_Aim_MoveRB"  "s_MagWnd_Aim_MoveRB"  0.2 0.2)
+
+// FRZ
+            ani         ("s_MagFrz_Aim_MoveF"       2   "s_MagFrz_Aim_MoveF"   0.0 0.0 M.  "Hum_MagFrz_Aim_MoveF.asc"   F   3   26)
+            aniAlias    ("s_MagFrz_Aim_MoveB"       2   "s_MagFrz_Aim_MoveB"   0.0 0.0 M.  "s_MagFrz_Aim_MoveF"         R)
+
+            ani         ("s_MagFrz_Aim_MoveL"       2   "s_MagFrz_Aim_MoveL"   0.0 0.0 M.  "Hum_MagFrz_Aim_MoveL.asc"   F   3   26)
+            aniAlias    ("s_MagFrz_Aim_MoveR"       2   "s_MagFrz_Aim_MoveR"   0.0 0.0 M.  "s_MagFrz_Aim_MoveL"         R)
+
+            ani         ("s_MagFrz_Aim_MoveLF"      2   "s_MagFrz_Aim_MoveLF"  0.0 0.0 M.  "Hum_MagFrz_Aim_MoveLF.asc"  F   3   26)
+            aniAlias    ("s_MagFrz_Aim_MoveRB"      2   "s_MagFrz_Aim_MoveRB"  0.0 0.0 M.  "s_MagFrz_Aim_MoveLF"        R)
+
+            ani         ("s_MagFrz_Aim_MoveRF"      2   "s_MagFrz_Aim_MoveRF"  0.0 0.0 M.  "Hum_MagFrz_Aim_MoveRF.asc"  F   3   26)
+            aniAlias    ("s_MagFrz_Aim_MoveLB"      2   "s_MagFrz_Aim_MoveLB"  0.0 0.0 M.  "s_MagFrz_Aim_MoveRF"        R)
+
+            aniBlend    ("t_MagFrz_Aim_Move_2_Aim_MoveF"   "s_MagFrz_Aim_MoveF"   0.2 0.2)
+            aniBlend    ("t_MagFrz_Aim_Move_2_Aim_MoveB"   "s_MagFrz_Aim_MoveB"   0.2 0.2)
+
+            aniBlend    ("t_MagFrz_Aim_Move_2_Aim_MoveL"   "s_MagFrz_Aim_MoveL"   0.2 0.2)
+            aniBlend    ("t_MagFrz_Aim_Move_2_Aim_MoveR"   "s_MagFrz_Aim_MoveR"   0.2 0.2)
+
+            aniBlend    ("t_MagFrz_Aim_Move_2_Aim_MoveLF"  "s_MagFrz_Aim_MoveLF"  0.2 0.2)
+            aniBlend    ("t_MagFrz_Aim_Move_2_Aim_MoveRF"  "s_MagFrz_Aim_MoveRF"  0.2 0.2)
+
+            aniBlend    ("t_MagFrz_Aim_Move_2_Aim_MoveLB"  "s_MagFrz_Aim_MoveLB"  0.2 0.2)
+            aniBlend    ("t_MagFrz_Aim_Move_2_Aim_MoveRB"  "s_MagFrz_Aim_MoveRB"  0.2 0.2)
+
+// LIN (Gothic 1 relevant only)
+            ani         ("s_MagLin_Aim_MoveF"       2   "s_MagLin_Aim_MoveF"   0.0 0.0 M.  "Hum_MagLin_Aim_MoveF.asc"   F   3   26)
+            aniAlias    ("s_MagLin_Aim_MoveB"       2   "s_MagLin_Aim_MoveB"   0.0 0.0 M.  "s_MagLin_Aim_MoveF"         R)
+
+            ani         ("s_MagLin_Aim_MoveL"       2   "s_MagLin_Aim_MoveL"   0.0 0.0 M.  "Hum_MagLin_Aim_MoveL.asc"   F   3   26)
+            aniAlias    ("s_MagLin_Aim_MoveR"       2   "s_MagLin_Aim_MoveR"   0.0 0.0 M.  "s_MagLin_Aim_MoveL"         R)
+
+            ani         ("s_MagLin_Aim_MoveLF"      2   "s_MagLin_Aim_MoveLF"  0.0 0.0 M.  "Hum_MagLin_Aim_MoveLF.asc"  F   3   26)
+            aniAlias    ("s_MagLin_Aim_MoveRB"      2   "s_MagLin_Aim_MoveRB"  0.0 0.0 M.  "s_MagLin_Aim_MoveLF"        R)
+
+            ani         ("s_MagLin_Aim_MoveRF"      2   "s_MagLin_Aim_MoveRF"  0.0 0.0 M.  "Hum_MagLin_Aim_MoveRF.asc"  F   3   26)
+            aniAlias    ("s_MagLin_Aim_MoveLB"      2   "s_MagLin_Aim_MoveLB"  0.0 0.0 M.  "s_MagLin_Aim_MoveRF"        R)
+
+            aniBlend    ("t_MagLin_Aim_Move_2_Aim_MoveF"   "s_MagLin_Aim_MoveF"   0.2 0.2)
+            aniBlend    ("t_MagLin_Aim_Move_2_Aim_MoveB"   "s_MagLin_Aim_MoveB"   0.2 0.2)
+
+            aniBlend    ("t_MagLin_Aim_Move_2_Aim_MoveL"   "s_MagLin_Aim_MoveL"   0.2 0.2)
+            aniBlend    ("t_MagLin_Aim_Move_2_Aim_MoveR"   "s_MagLin_Aim_MoveR"   0.2 0.2)
+
+            aniBlend    ("t_MagLin_Aim_Move_2_Aim_MoveLF"  "s_MagLin_Aim_MoveLF"  0.2 0.2)
+            aniBlend    ("t_MagLin_Aim_Move_2_Aim_MoveRF"  "s_MagLin_Aim_MoveRF"  0.2 0.2)
+
+            aniBlend    ("t_MagLin_Aim_Move_2_Aim_MoveLB"  "s_MagLin_Aim_MoveLB"  0.2 0.2)
+            aniBlend    ("t_MagLin_Aim_Move_2_Aim_MoveRB"  "s_MagLin_Aim_MoveRB"  0.2 0.2)

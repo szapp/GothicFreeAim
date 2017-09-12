@@ -1,0 +1,24 @@
+// Additions to Humans_CBowT2.mds
+//
+// Place in between the two curly brackets: { {  here  } }
+// Remember to delete the file _compiled\HUMANS_CBOWT2.MSB (Gothic 2) or _compiled\HUMANS_CBOWT2.MDH (Gothic 1)
+
+
+
+/////////////////////////////
+//     Gothic Free Aim     //
+/////////////////////////////
+
+            ani         ("s_CBow_Aim_MoveF"         2   "s_CBow_Aim_MoveF"  0.0 0.0 M.  "Hum_CBowT2_Aim_MoveF.asc"  F   3   26)
+            aniAlias    ("s_CBow_Aim_MoveB"         2   "s_CBow_Aim_MoveB"  0.0 0.0 M.  "s_CBow_Aim_MoveF"          R)
+
+            ani         ("s_CBow_Aim_MoveL"         2   "s_CBow_Aim_MoveL"  0.0 0.0 M.  "Hum_CBowT2_Aim_MoveL.asc"  F   3   26)
+            aniAlias    ("s_CBow_Aim_MoveR"         2   "s_CBow_Aim_MoveR"  0.0 0.0 M.  "s_CBow_Aim_MoveL"          R)
+
+            ani         ("s_CBow_Aim_MoveLF"        2   "s_CBow_Aim_MoveLF" 0.0 0.0 M.  "Hum_CBowT2_Aim_MoveLF.asc" F   3   26)
+            aniAlias    ("s_CBow_Aim_MoveRB"        2   "s_CBow_Aim_MoveRB" 0.0 0.0 M.  "s_CBow_Aim_MoveLF"         R)
+
+            ani         ("s_CBow_Aim_MoveRF"        2   "s_CBow_Aim_MoveRF" 0.0 0.0 M.  "Hum_CBowT2_Aim_MoveRF.asc" F   3   26)
+            aniAlias    ("s_CBow_Aim_MoveLB"        2   "s_CBow_Aim_MoveLB" 0.0 0.0 M.  "s_CBow_Aim_MoveRF"         R)
+
+            ani         ("t_CBow_Aim_Move_2_Aim_Stand"  2   ""              0.2 0.0 M.  "Hum_CBowT2_Aim_MoveF.asc"  F   1   1)

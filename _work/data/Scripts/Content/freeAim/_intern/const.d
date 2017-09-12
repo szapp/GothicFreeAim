@@ -74,6 +74,15 @@ var   int    GFA_StatsCriticalHits;                         // Shooting statisti
 const float  GFA_MAX_TURN_RATE_G1   = 2.0;                  // Gothic 1 has a maximum turn rate (engine default: 2.0)
 
 const int    GFA_ACTIVE             = 0;                    // Status indicator of free aiming
+const int    GOTHIC_CONTROL_SCHEME  = 1;                    // Active control scheme (for Gothic 1 always 1)
+
+const float  GFA_FOCUS_FAR_NPC      = 15.0;                 // NPC azimuth for ranged focus for free aiming
+const float  GFA_FOCUS_SPL_NPC      = 15.0;                 // NPC azimuth for spell focus for free aiming
+const int    GFA_FOCUS_SPL_ITM      = 0;                    // Item priority for spell focus for free aiming
+
+const int    GFA_FOCUS_FAR_NPC_DFT  = FLOATNULL;            // Backup NPC azimuth from ranged focus instance
+const int    GFA_FOCUS_SPL_NPC_DFT  = FLOATNULL;            // Backup NPC azimuth from spell focus instance
+const int    GFA_FOCUS_SPL_ITM_DFT  = 0;                    // Backup item priority from spell focus instance
 
 const int    FLOAT1C                = 1120403456;           // 100 as float
 const int    FLOAT3C                = 1133903872;           // 300 as float
@@ -84,3 +93,28 @@ var   int    GFA_DebugWSTrj[6];                             // Projectile trajec
 var   int    GFA_DebugTRBBox[6];                            // Trace ray intersection for debug visualization
 var   int    GFA_DebugTRTrj[6];                             // Trace ray trajectory for debug visualization
 var   int    GFA_DebugTRPrevVob;                            // Trace ray detected vob bounding box pointer for debugging
+
+var   int    GFA_IsStrafing;                                // State of strafing
+
+const int    GFA_MOVE_FORWARD       = 1<<0;                 // ID (first bit) for moving forward while aiming
+const int    GFA_MOVE_BACKWARD      = 1<<1;                 // ID (second bit) for moving backward while aiming
+const int    GFA_MOVE_LEFT          = 1<<2;                 // ID (third bit) for moving left while aiming
+const int    GFA_MOVE_RIGHT         = 1<<3;                 // ID (fourth bit) for moving right while aiming
+const int    GFA_MOVE_TRANS         = 11;                   // Transistion ID
+
+const string GFA_AIM_ANIS[12]       = {                     // Names of aiming movement animations (upper case!)
+    "_AIM_STAND",                                           //  0        Transition to standing (ranged combat only)
+    "_AIM_MOVEF",                                           //  1  0001  GFA_MOVE_FORWARD
+    "_AIM_MOVEB",                                           //  2  0010  GFA_MOVE_BACKWARD
+    "",                                                     //  3
+    "_AIM_MOVEL",                                           //  4  0100  GFA_MOVE_LEFT
+    "_AIM_MOVELF",                                          //  5  0101  GFA_MOVE_LEFT | GFA_MOVE_FORWARD
+    "_AIM_MOVELB",                                          //  6  0110  GFA_MOVE_LEFT | GFA_MOVE_BACKWARD
+    "",                                                     //  7
+    "_AIM_MOVER",                                           //  8  1000  GFA_MOVE_RIGHT
+    "_AIM_MOVERF",                                          //  9  1001  GFA_MOVE_RIGHT | GFA_MOVE_FORWARD
+    "_AIM_MOVERB",                                          // 10  1010  GFA_MOVE_RIGHT | GFA_MOVE_BACKWARD
+    "_AIM_MOVE_2"                                           // 11        Transistion prefix
+};
+
+const int    GFA_MOVE_ANI_LAYER     = 2;                    // Layer of aiming movement animations (see Humans.mds)

@@ -46,12 +46,21 @@ const int zString_CamModMelee                        =  8823108; //0x86A144
 const int zString_CamModRun                          =  8823128; //0x86A158
 const int oCAIHuman__Cam_Normal                      =  9275536; //0x8D8890
 const int oCAIHuman__Cam_Fight                       =  9275516; //0x8D887C
+const int oCAIHuman__CheckFocusVob_ranged            =  6379583; //0x61583F
+const int oCAIHuman__CheckFocusVob_spells            =  6379589; //0x615845
+const int oCAniCtrl_Human___Stand                    =  6479088; //0x62DCF0                // Not used for Gothic 1
 const int oCAniCtrl_Human__Turn                      =  6445616; //0x625A30
+const int oCAniCtrl_Human__CanToggleWalkModeTo       =  6437088; //0x6238E0
+const int oCAniCtrl_Human__ToggleWalkMode            =  6442544; //0x624E30
+const int zCAIPlayer__CheckEnoughSpaceMoveDir        =  5248960; //0x5017C0
 const int oCNpc__TurnToEnemy_camCheck                =  0;                                 // Does not exist in Gothic 1
 const int oCNpc__GetAngles                           =  7650560; //0x74BD00
 const int oCNpc__SetFocusVob                         =  6881136; //0x68FF70
 const int oCNpc__SetEnemy                            =  6888064; //0x691A80
+const int oCNpc__SetBodyState                        =  7045120; //0x6B8000
 const int oCNpc__GetModel                            =  6902528; //0x695300
+const int oCNpc__EV_Strafe_magicCombat               =  0;                                 // Does not exist in Gothic 1
+const int oCNpc__Interrupt_stopAnisLayerA            =  6891985; //0x6929D1
 const int oCNpcFocus__InitFocusModes                 =  6507760; //0x634CF0
 const int oCItem___CreateNewInstance                 =  6764320; //0x673720
 const int oCItem__InitByScript                       =  6755936; //0x671660
@@ -61,12 +70,18 @@ const int oCItem__MultiSlot                          =  6758192; //0x671F30
 const int oCMag_Book__GetSelectedSpell               =  4655808; //0x470AC0
 const int oCMag_Book__GetSelectedSpellNr             =  4655888; //0x470B10
 const int oCMag_Book__GetSpellItem                   =  4664896; //0x472E40
+const int oCMag_Book__StopSelectedSpell              =  4656208; //0x470C50
+const int oCSpell__Open                              =  4707312; //0x47D3F0
 const int zCProgMeshProto__classDef                  =  9198408; //0x8C5B48
 const int oCVisualFX__classDef                       =  8822272; //0x869E00
 const int oCVisualFX__Stop                           =  4766512; //0x48BB30
 const int zCModel__SearchNode                        =  5652352; //0x563F80
 const int zCModel__GetBBox3DNodeWorld                =  5634160; //0x55F870
 const int zCModel__GetNodePositionWorld              =  5634240; //0x55F8C0
+const int zCModel__StartAni                          =  5640608; //0x5611A0
+const int zCModel__IsAnimationActive                 =  5623536; //0x55CEF0
+const int zCModel__FadeOutAnisLayerRange             =  5656944; //0x565170
+const int zCModelPrototype__SearchAniIndex           =  5699664; //0x56F850 
 const int zVEC3__NormalizeSafe                       =  4900544; //0x4AC6C0
 const int zTBBox3D__Draw                             =  5447312; //0x531E90
 const int zCLineCache__Line3D                        =  5224976; //0x4FBA10
@@ -80,20 +95,22 @@ const int oCAIArrowBase__ReportCollisionToAI_collNpc =  0;                      
 const int oCAIArrow__ReportCollisionToAI_destroyPrj  =  6396025; //0x619879
 const int oCAIArrow__ReportCollisionToAI_keepPlyStrp =  6395401; //0x619609
 const int oCAIHuman__BowMode_g2ctrlCheck             =  0;                                 // Does not exist in Gothic 1
-const int oCAIHuman__BowMode_shootingKey             =  0;                                 // Does not exist in Gothic 1
+const int oCAIHuman__BowMode_shootingKey             =  6359374; //0x61094E                // Not used for Gothic 1
 const int oCAIHuman__MagicMode_turnToTarget          =  4641584; //0x46D330
 const int oCAIHuman__PC_ActionMove_aimingKey         =  6373222; //0x613F66                // Not used for Gothic 1
-const int oCAIHuman__PC_Strafe                       =  6376000; //0x614A40
 const int zCCollObjectLevelPolys__s_oCollObjClass    =  8861152; //0x8735E0
 
 const int zCWorld__AdvanceClock                      =  6257280; //0x5F7A80 // Hook len 10
 const int cGameManager__ApplySomeSettings_rtn        =  4356499; //0x427993 // Hook len 6
+const int zCAIPlayer__IsSliding_true                 =  5233245; //0x4FDA5D // Hook len 5
+const int oCAniCtrl_Human__SearchStandAni_walkmode   =  6408587; //0x61C98B // Hook len 6
 const int oCAIVobMove__DoAI_stopMovement             =  6389348; //0x617E64 // Hook len 7
+const int oCAIHuman__PC_CheckSpecialStates_lie       =  6370192; //0x613390 // Hook len 5
 const int oCAIHuman__PC_ActionMove_bodyState         =  0;                                 // Does not exist in Gothic 1
 const int oCAIHuman__BowMode_interpolateAim          =  6359260; //0x6108DC // Hook len 5
-const int oCAIHuman__BowMode_postInterpolate         =  6359274; //0x6108EA // Hook len 6
 const int oCAIHuman__BowMode_notAiming               =  6359422; //0x61097E // Hook len 6
 const int oCAIHuman__MagicMode                       =  4641376; //0x46D260 // Hook len 7
+const int oCAIHuman__MagicMode_rtn                   =  4641958; //0x46D4A6 // Hook len 7
 const int oCAIArrow__SetupAIVob                      =  6394320; //0x6191D0 // Hook len 6
 const int oCAIArrow__CanThisCollideWith              =  6395216; //0x619550 // Hook len 6
 const int oCAIArrow__DoAI_rtn                        =  6395210; //0x61954A // Hook len 6
@@ -107,7 +124,10 @@ const int oCAIArrowBase__ReportCollisionToAI_collVob =  0;                      
 const int oCAIArrowBase__ReportCollisionToAI_collWld =  0;                                 // Does not exist in Gothic 1
 const int oCNpc__OnDamage_Hit_criticalHit            =  7546035; //0x7324B3 // Hook len 5
 const int oCNpc__OnDamage_Anim_getModel              =  7609592; //0x741CF8 // Hook len 9
-const int oCNpcFocus__SetFocusMode                   =  6508128; //0x634E60 // Hook len 7
+const int oCNpc__SetWeaponMode_player                =  6907265; //0x696581 // Hook len 6
+const int oCNpc__SetWeaponMode2_walkmode             =  6905437; //0x695E5D // Hook len 6
+const int oCNpc__EV_Strafe_commonOffset              =  7661795; //0x74E8E3 // Hook len 5
+const int oCNpc__Interrupt_stopAnis                  =  6891924; //0x692994 // Hook len 5
 const int oCSpell__Setup_initFallbackNone            =  4704143; //0x47C78F // Hook len 6
 const int mouseUpdate                                =  5013602; //0x4C8062 // Hook len 5
 
@@ -129,6 +149,7 @@ const int oCItem_effect_offset                       = 0;                       
 
 const int oCSpell_spellCasterNpc_offset              = 52;  //0x0034
 const int oCSpell_manaInvested_offset                = 72;  //0x0048
+const int oCSpell_spellStatus_offset                 = 80;  //0x0050
 const int oCSpell_C_Spell_offset                     = 128; //0x0080
 
 const int oCVisualFX_originVob_offset                = 1112;//0x0458
@@ -137,6 +158,15 @@ const int oCVisualFX_instanceName_offset             = 1140;//0x0474
 
 const int zCAICamera_elevation_offset                = 56;  //0x0038
 const int zCAICamera_azimuth_offset                  = 68;  //0x0044
+
+const int zCAIPlayer_bitfield1_forceModelHalt        = 1<<0;
+
+const int oCAniCtrl_Human_walkmode_offset            = 352; //0x0160
+
+const int oCAIHuman_bitfield_offset                  = 4612;//0x1204
+const int oCAIHuman_bitfield_startObserveIntruder    = 1<<6;
+const int oCAIHuman_bitfield_spellReleased           = 1<<7;
+const int oCAIHuman_bitfield_spellCastedLastFrame    = 1<<8;
 
 const int oCAIArrowBase_collision_offset             = 52;  //0x0034
 const int oCAIArrowBase_lifeTime_offset              = 56;  //0x0038
@@ -152,6 +182,8 @@ const int zCRigidBody_gravity_offset                 = 236; //0x00EC
 const int zCRigidBody_velocity_offset                = 188; //0x00BC
 const int zCRigidBody_bitfield_offset                = 256; //0x0100
 const int zCRigidBody_bitfield_gravityActive         = 1<<0;
+
+const int zCModel__modelPrototype_offset             = 88;  //0x0058
 
 const int zCModelNodeInst_visual_offset              = 8;   //0x0008
 

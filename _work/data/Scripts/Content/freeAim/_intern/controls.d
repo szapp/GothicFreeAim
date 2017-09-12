@@ -55,12 +55,10 @@ func void GFA_TurnPlayerModel() {
     };
 
     // Gothic 2 controls only need the rotation if currently shooting
-    if (GOTHIC_BASE_VERSION == 2) {
-        // Separate if-conditions to increase performance (Gothic checks ALL chained if-conditions)
-        if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
-            if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) {
-                return;
-            };
+    if (GOTHIC_CONTROL_SCHEME == 2) {
+        if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))
+        && (GFA_ACTIVE != FMODE_MAGIC) {
+            return;
         };
     };
 
@@ -104,7 +102,7 @@ func void GFA_TurnPlayerModel() {
  * Disable/re-enable auto turning of player model towards enemy while aiming. The auto turning prevents free aiming, as
  * it moves the player model to always face the focus. Of course, this should only by prevented during aiming such that
  * the melee combat is not affected. Consequently, it needs to be disabled and enabled continuously.
- * This function is called from GFA_IsActive() nearly every frame.
+ * This function is called from GFA_IsActive() and GFA_UpdateStatus().
  */
 func void GFA_DisableAutoTurning(var int on) {
     const int SET = 0;
@@ -150,7 +148,9 @@ func void GFA_DisableAutoTurning(var int on) {
  * Update internal settings for Gothic 2 controls.
  * The support for the Gothic 2 controls is accomplished by emulating the Gothic 1 controls with different sets of
  * aiming and shooting keys. To do this, the condition to differentiate between the control schemes is skipped and the
- * keys are overwritten (all on the level of opcode).
+ * keys are overwritten (all on the level of opcode and only affecting ranged combat).
+ *  on == 0: Gothic 1 controls (GOTHIC_CONTROL_SCHEME == 1)
+ *  on == 1: Gothic 2 controls (GOTHIC_CONTROL_SCHEME == 2)
  * This function is called from GFA_UpdateStatus() if the menu settings change.
  */
 func void GFA_UpdateSettingsG2Ctrl(var int on) {
@@ -158,8 +158,7 @@ func void GFA_UpdateSettingsG2Ctrl(var int on) {
         return;
     };
 
-    const int SET = 0; // Gothic 1 controls are considered default here
-    if (SET == on) {
+    if (GOTHIC_CONTROL_SCHEME == on+1) {
         return; // No change necessary
     };
 
@@ -178,6 +177,7 @@ func void GFA_UpdateSettingsG2Ctrl(var int on) {
         MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+2, ASMINT_OP_nop);
         MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+3, /*6A*/ 106); // push 0
         MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+4, 0); // Will be set to 0 or 1 depending on key press
+        GOTHIC_CONTROL_SCHEME = 2;
     } else {
         // Gothic 2 controls disabled: Revert to original Gothic 2 controls
         MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck, /*0F*/ 15); // Revert G2 controls to default: jz to 0x696391
@@ -192,8 +192,8 @@ func void GFA_UpdateSettingsG2Ctrl(var int on) {
         MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+2, /*24*/ 36);
         MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+3, /*0C*/ 12); // Revert action key to default: push eax
         MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+4, /*50*/ 80);
+        GOTHIC_CONTROL_SCHEME = 1;
     };
-    SET = !SET;
 };
 
 
@@ -234,12 +234,117 @@ func void GFA_SetCameraModes(var int on) {
 
 
 /*
+ * Enable/disable the switching between targets in focus for ranged combat. This is necessary to stay on the target
+ * below the reticle and to prevent the focus from flickering. This function is called from GFA_UpdateStatus().
+ */
+func void GFA_DisableToggleFocusRanged(var int on) {
+    if (!(GFA_Flags & GFA_RANGED)) {
+        return;
+    };
+
+    const int SET = 0;
+    if (on == SET) {
+        return; // No change necessary
+    };
+
+    if (on) {
+        // Disable toggling focus with left and right keys
+        MEM_WriteByte(oCAIHuman__CheckFocusVob_ranged, FMODE_FAR+1); // No focus toggle if her.fmode <= FMODE_FAR+1
+    } else {
+        MEM_WriteByte(oCAIHuman__CheckFocusVob_ranged, 4); // Revert to default: 83 F8 04  mov eax, 4
+    };
+    SET = !SET;
+};
+
+
+/*
+ * Enable/disable the switching between targets in focus for spell combat. This is necessary to stay on the target
+ * below the reticle and to prevent the focus from flickering. This function is called from GFA_UpdateStatus() and also
+ * from GFA_IsActive() to enable switching the focus for free aiming non-eligible spells.
+ */
+func void GFA_DisableToggleFocusSpells(var int on) {
+    if (!(GFA_Flags & GFA_SPELLS)) {
+        return;
+    };
+
+    const int SET = 0;
+    if (on == SET) {
+        return; // No change necessary
+    };
+
+    if (on) {
+        // Disable toggling focus with left and right keys
+        MEM_WriteByte(oCAIHuman__CheckFocusVob_spells, /*7D*/ 125); // jge: No focus toggle if her.fmode >= FMODE_MAGIC
+    } else {
+        MEM_WriteByte(oCAIHuman__CheckFocusVob_spells, /*7F*/ 127);  // Revert to default: 7F 54  jg 0x61589B
+    };
+    SET = !SET;
+};
+
+
+/*
+ * Disable magic combat during default strafing. This allows quick-casting spells while strafing, which is not desired
+ * with free aiming, because it does not use the normal spell casting functions, does not allow displaying a reticle and
+ * does not investing spells. This questionable design choice was fortunately only made for Gothic 2, hence this
+ * function exits immediately when called with Gothic 1.
+ */
+func void GFA_DisableMagicDuringStrafing(var int on) {
+    if (GOTHIC_BASE_VERSION != 2) || (!(GFA_Flags & GFA_SPELLS)) {
+        return;
+    };
+
+    const int SET = 0;
+    if (on == SET) {
+        return; // No change necessary
+    };
+
+    if (on) {
+        // Disable magic combat during default strafing
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat, ASMINT_OP_nop); // Remove call to oCNpc::FightAttackMagic()
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+1, ASMINT_OP_nop);
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+2, ASMINT_OP_nop);
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+3, ASMINT_OP_nop);
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+4, ASMINT_OP_nop);
+    } else {
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat, /*E8*/ 232); // Revert to default call
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+1, /*A0*/ 160);
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+2, /*B4*/ 180);
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+3, /*FF*/ 255);
+        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+4, /*FF*/ 255);
+    };
+    SET = !SET;
+};
+
+
+/*
+ * Remove reticle, prevent strafing and detach FX from aim vob during special body states. This function hooks at two
+ * different addresses: During sliding (offset where sliding is positively determined in zCAIPlayer::IsSliding()) and
+ * when lying on the ground after a deep fall (offset where lying is positively determined
+ * oCAIHuman::PC_CheckSpecialStates()).
+ * Caution: This function is always called, even if free aiming is not currently active.
+ */
+func void GFA_TreatBodyStates() {
+    if (!GFA_ACTIVE) {
+        return;
+    };
+
+    GFA_ResetSpell();
+    GFA_AimMovement(0, "");
+    GFA_RemoveReticle();
+    GFA_AimVobDetachFX();
+
+    // Reset draw force
+    GFA_BowDrawOnset = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
+};
+
+
+/*
  * Prevent focus collection while jumping and falling during free aiming fight modes. This function hooks
  * oCAIHuman::PC_ActionMove() at an offset at which the fight modes are not reached. This happens during certain body
  * states. At that offset, the focus collection remains normal, which will counteract the idea of GFA_NO_AIM_NO_FOCUS.
  * This only happens for Gothic 2.
  */
-func void GFA_PreventFocusCollectionBodystates() {
+func void GFA_PreventFocusCollectionBodyStates() {
     if (!GFA_ACTIVE) {
         return;
     };
@@ -250,12 +355,80 @@ func void GFA_PreventFocusCollectionBodystates() {
         GFA_SetFocusAndTarget(0);
 
         // With Gothic 2 controls, the reticle is still visible
-        if (GOTHIC_BASE_VERSION == 2) {
-            if (!MEM_ReadInt(oCGame__s_bUseOldControls)) {
-                GFA_RemoveReticle();
-                GFA_AimVobDetachFX();
-            };
+        if (GOTHIC_CONTROL_SCHEME == 2) {
+            GFA_RemoveReticle();
+            GFA_AimVobDetachFX();
         };
+    };
+};
+
+
+/*
+ * This function fixes a bug where Gothics sets the body state to running, walking or sneaking when the NPC is acutally
+ * standing. This function hooks oCAniCtrl_Human::SearchStandAni() at an offset after the walk mode is set to reset the
+ * body state to standing and oCNpc::SetWeaponMode2() with the same bug.
+ */
+func void GFA_FixStandingBodyState() {
+    var int npcPtr;
+
+    // This function hooks two different engine functions (differentiate here)
+    if (Hlp_Is_oCNpc(ESI)) {
+        // oCNpc::SetWeaponMode2()
+        npcPtr = ESI;
+
+        // Exit if NPC is walking/running during weapon switch
+        var int moving; moving = MEM_ReadInt(ESP+MEMINT_SwitchG1G2(/*esp+0A0h-08Ch*/ 20, /*esp+0A0h-088h*/ 24));
+        if (moving) {
+            return;
+        };
+    } else {
+        // oCAniCtrl_Human::SearchStandAni()
+        var zCAIPlayer playerAI; playerAI = _^(ESI);
+        npcPtr = playerAI.vob;
+    };
+
+    // Reset body state back to standing (instead of running/walking/sneaking)
+    var int standing; standing = BS_STAND & ~BS_FLAG_INTERRUPTABLE & ~BS_FLAG_FREEHANDS;
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL_IntParam(_@(standing));
+        CALL__thiscall(_@(npcPtr), oCNpc__SetBodyState);
+        call = CALL_End();
+    };
+};
+
+
+/*
+ * Reset spell FX when interrupting investing/casting by the default strafing. This function hooks oCNpc::EV_Strafe() at
+ * an offset where the fight mode is checked. oCNpc::EV_Strafe() is only called for the player.
+ */
+func void GFA_FixSpellOnStrafe() {
+    if (!GFA_ACTIVE) {
+        return;
+    };
+
+    var oCNpc her; her = _^(ECX);
+    if (her.fmode == FMODE_MAGIC) {
+        GFA_ResetSpell();
+        GFA_AimVobDetachFX();
+    };
+};
+
+
+/*
+ * Prevent canceling the aim movement animations in oCNpc::Interrupt(). Naturally, this function hooks
+ * oCNpc::Interrupt() at an offset before all animations are stopped to manipulate the ranges of layers to be stopped.
+ * The first argument passed to the function zCModel::StopAnisLayerRange(), is increased or reset to two depending on
+ * whether aim movement is active.
+ */
+func void GFA_DontInterruptStrafing() {
+    var C_NPC slf; slf = _^(ESI);
+    if (Npc_IsPlayer(slf)) && (GFA_IsStrafing) {
+        // Stop only all animations in layers higher than the aim movements
+        MEM_WriteByte(oCNpc__Interrupt_stopAnisLayerA, GFA_MOVE_ANI_LAYER+1); // zCModel::StopAnisLayerRange(X+1, 1000)
+    } else {
+        // Revert to default
+        MEM_WriteByte(oCNpc__Interrupt_stopAnisLayerA, 2); // zCModel::StopAnisLayerRange(2, 1000)
     };
 };
 

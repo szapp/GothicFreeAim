@@ -75,6 +75,29 @@ func int GFA_IsSpellEligible(var C_Spell spell) {
 
 
 /*
+ * Returns whether an NPC is currently investing (1) or casting (2) a spell, otherwise 0.
+ */
+func int GFA_InvestingOrCasting(var C_Npc npc) {
+    // Investing
+    var oCNpc npcOC; npcOC = Hlp_GetNpc(npc);
+    if (!(MEM_ReadInt(npcOC.anictrl+oCAIHuman_bitfield_offset) & oCAIHuman_bitfield_spellReleased)) {
+        return 1;
+    };
+
+    // Casting
+    var C_Spell spell; spell = GFA_GetActiveSpellInst(npc);
+    if (_@(spell)) {
+        if (MEM_ReadInt(_@(spell)-oCSpell_C_Spell_offset+oCSpell_spellStatus_offset) == SPL_SENDCAST) {
+            return 2;
+        };
+    };
+
+    // Else
+    return FALSE;
+};
+
+
+/*
  * This function updates the focus (oCNpc.focus_vob) and the target (oCNpc.enemy) of the player with a new focus. The
  * focus and target can be set to empty, by passing zero as argument.
  */

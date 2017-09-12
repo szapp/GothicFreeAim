@@ -71,13 +71,38 @@ func void GFA_SetupSpell() {
  */
 func void GFA_SpellAiming() {
     var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
+    var int aniCtrlPtr; aniCtrlPtr = ECX;
 
     // Only show reticle for spells that support free aiming and during aiming (Gothic 1 controls)
     if (GFA_ACTIVE != FMODE_MAGIC) {
         GFA_RemoveReticle();
-        GFA_AimVobDetachFX();
-        if (GFA_IsSpellEligible(spell)) && (GFA_NO_AIM_NO_FOCUS) {
-            GFA_SetFocusAndTarget(0);
+
+        // Additional settings if free aiming is enabled
+        if (GFA_ACTIVE) {
+            if (GFA_IsSpellEligible(spell)) {
+                // Remove FX from aim vob only if not currently casting
+                if (MEM_ReadInt(aniCtrlPtr+oCAIHuman_bitfield_offset) & oCAIHuman_bitfield_spellCastedLastFrame) {
+                    GFA_AimVobDetachFX();
+                };
+
+                // Remove focus and target
+                if (GFA_NO_AIM_NO_FOCUS) {
+                    GFA_SetFocusAndTarget(0);
+                };
+
+                // Remove movement animations when not aiming
+                if (GOTHIC_CONTROL_SCHEME == 1) {
+                    GFA_AimMovement(0, "");
+                };
+
+            } else if (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS)
+                   && (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS_FALLBACK_CASTER) {
+                // Remove focus for spells that do not need to collect a focus
+                GFA_SetFocusAndTarget(0);
+                GFA_AimVobDetachFX();
+            };
+        } else {
+            GFA_AimVobDetachFX();
         };
         return;
     };
@@ -120,4 +145,109 @@ func void GFA_SpellAiming() {
     GFA_GetSpellReticle_(target, spell, distance, reticlePtr);
     GFA_InsertReticle(reticlePtr);
     MEM_Free(reticlePtr);
+
+    // Allow strafing
+    GFA_Strafe();
+
+    // Remove turning animations (player model sometimes gets stuck in turning animation)
+    if (GOTHIC_CONTROL_SCHEME == 2) && (!GFA_STRAFING) {
+        // Do not remove turning animations when strafing is disabled and player is not investing/casting
+        if (!GFA_InvestingOrCasting(hero))
+        && (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) {
+            return;
+        };
+    };
+    var zCAIPlayer playerAI; playerAI = _^(aniCtrlPtr);
+    var int model; model = playerAI.model;
+    const int twenty = 20;
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL_IntParam(_@(twenty));
+        CALL_IntParam(_@(twenty));
+        CALL__thiscall(_@(model), zCModel__FadeOutAnisLayerRange);
+        call = CALL_End();
+    };
+};
+
+
+/*
+ * Lock the player in place and prevent movement during aiming in spell combat. This function hooks the end of
+ * oCAIHuman::MagicMode() to overwrite, whether casting is active or not, to disable any consecutive movement in
+ * oCAIHuman::_WalkCycle().
+ */
+func void GFA_SpellLockMovement() {
+    if (GFA_ACTIVE != FMODE_MAGIC) {
+        return;
+    };
+
+    var oCNpc her; her = Hlp_GetNpc(hero);
+    var int aniCtrlPtr; aniCtrlPtr = her.anictrl; // ESI is popped earlier and is not secure to use
+
+    // For Gothic 2 controls completely lock movement for spell combat except for weapon switch and model rotation
+    if (GOTHIC_CONTROL_SCHEME == 2) {
+        // Weapon switch when not investing or casting
+        if (!GFA_InvestingOrCasting(hero))
+        && ((MEM_KeyPressed(MEM_GetKey("keyWeapon"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyWeapon")))) {
+            GFA_AimMovement(0, "");
+            return;
+        };
+
+        // If sneaking when not investing or casting
+        if (!GFA_InvestingOrCasting(hero))
+        && (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))
+        && (MEM_ReadInt(aniCtrlPtr+oCAniCtrl_Human_walkmode_offset) & NPC_SNEAK) {
+            GFA_AimMovement(0, "");
+            return;
+        };
+
+        // Running/walking forward when not investing or casting
+        if (!GFA_InvestingOrCasting(hero))
+        && (!MEM_KeyPressed(MEM_GetKey("keyAction")))      && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))
+        && (!MEM_KeyPressed(MEM_GetKey("keyStrafeLeft")))  && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeLeft")))
+        && (!MEM_KeyPressed(MEM_GetKey("keyStrafeRight"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeRight")))
+        && ((MEM_KeyPressed(MEM_GetKey("keyUp")))          ||  (MEM_KeyPressed(MEM_GetSecondaryKey("keyUp")))) {
+            GFA_AimMovement(0, "");
+            return;
+        } else {
+            // Stop running/walking animation
+            const int call = 0;
+            if (CALL_Begin(call)) {
+                CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human___Stand);
+                call = CALL_End();
+            };
+        };
+    };
+
+    // Set return value to one: Do not call any other movement functions
+    EAX = 1;
+};
+
+
+/*
+ * Reset the FX of the spell for invested spells. This function is necessary to reset the spell to its initial state if 
+ * the casting/investing is interrupted by strafing, falling, lying or sliding. This function is called from various
+ * functions. The engine functions called here are the same the engine uses to reset the spell FX.
+ */
+func void GFA_ResetSpell() {
+    var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
+    if (!_@(spell)){
+        return;
+    };
+
+    // Stop active spell (to remove higher spell level)
+    var oCNpc her; her = Hlp_GetNpc(hero);
+    var int magBookPtr; magBookPtr = her.mag_book;
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL__thiscall(_@(magBookPtr), oCMag_Book__StopSelectedSpell);
+        call = CALL_End();
+    };
+
+    // Re-open the spell with initial spell level FX
+    var int spellPtr; spellPtr = _@(spell)-oCSpell_C_Spell_offset;
+    const int call2 = 0;
+    if (CALL_Begin(call2)) {
+        CALL__thiscall(_@(spellPtr), oCSpell__Open);
+        call2 = CALL_End();
+    };
 };
