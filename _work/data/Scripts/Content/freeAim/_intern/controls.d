@@ -285,7 +285,7 @@ func void GFA_DisableToggleFocusSpells(var int on) {
 /*
  * Disable magic combat during default strafing. This allows quick-casting spells while strafing, which is not desired
  * with free aiming, because it does not use the normal spell casting functions, does not allow displaying a reticle and
- * does not investing spells. This questionable design choice was fortunately only made for Gothic 2, hence this
+ * does not allow investing spells. This questionable design choice was fortunately only made for Gothic 2, hence this
  * function exits immediately when called with Gothic 1.
  */
 func void GFA_DisableMagicDuringStrafing(var int on) {
@@ -319,7 +319,7 @@ func void GFA_DisableMagicDuringStrafing(var int on) {
 /*
  * Remove reticle, prevent strafing and detach FX from aim vob during special body states. This function hooks at two
  * different addresses: During sliding (offset where sliding is positively determined in zCAIPlayer::IsSliding()) and
- * when lying on the ground after a deep fall (offset where lying is positively determined
+ * when lying on the ground after a deep fall (offset where lying is positively determined in
  * oCAIHuman::PC_CheckSpecialStates()).
  * Caution: This function is always called, even if free aiming is not currently active.
  */

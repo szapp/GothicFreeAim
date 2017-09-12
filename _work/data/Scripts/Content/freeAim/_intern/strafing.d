@@ -197,9 +197,7 @@ func void GFA_AimMovement(var int movement, var string modifier) {
 
 /*
  * Enable movement while aiming. This function checks key presses and passes on a movement ID to GFA_AimMovement(). The
- * function hooks oCAIHuman::BowMode() at an offset, where the player is aiming. Additionally, the function is called
- * from GFA_RangedIdle() to allow movement during shooting and to reset movement when letting go of the aiming key.
- * The function is also called from GFA_SpellAiming() for strafing during spell combat.
+ * function is called from GFA_RangedIdle(), GFA_RangedAiming() and GFA_SpellAiming().
  */
 func void GFA_Strafe() {
     if (GFA_ACTIVE < FMODE_FAR) || (!GFA_STRAFING) {
@@ -209,7 +207,7 @@ func void GFA_Strafe() {
 
     var oCNpc her; her = Hlp_GetNpc(hero);
 
-    // Magic mode does not allow sneaking (messes up the perception and would require more animations)
+    // Spell combat does not allow sneaking (messes up the perception and would require more animations)
     if (GOTHIC_CONTROL_SCHEME == 1)
     && (her.fmode == FMODE_MAGIC) {
         var int aniCtrlPtr; aniCtrlPtr = her.anictrl;
