@@ -282,7 +282,7 @@ func void GFA_Strafe() {
         } else if (her.fmode == FMODE_FAR+1) {
             modifier = "CBOW";
         } else {
-            MEM_Warn("GFA_AimMovement: Player not in valid aiming fight mode.");
+            MEM_Warn("GFA_Strafe: Player not in valid aiming fight mode.");
             movement = 0;
             modifier = "";
         };

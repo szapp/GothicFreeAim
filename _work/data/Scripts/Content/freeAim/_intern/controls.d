@@ -344,7 +344,7 @@ func void GFA_TreatBodyStates() {
  * states. At that offset, the focus collection remains normal, which will counteract the idea of GFA_NO_AIM_NO_FOCUS.
  * This only happens for Gothic 2.
  */
-func void GFA_PreventFocusCollectionBodystates() {
+func void GFA_PreventFocusCollectionBodyStates() {
     if (!GFA_ACTIVE) {
         return;
     };

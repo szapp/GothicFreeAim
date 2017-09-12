@@ -82,7 +82,7 @@ func void GFA_InitFeatureFreeAiming() {
     HookEngineF(oCNpc__SetWeaponMode2_walkmode, 6, GFA_FixStandingBodyState); // Fix bug with wrong body state
     // Prevent focus collection during jumping and falling (necessary for Gothic 2 only)
     if (GOTHIC_BASE_VERSION == 2) && (GFA_NO_AIM_NO_FOCUS) {
-        HookEngineF(oCAIHuman__PC_ActionMove_bodyState, 6, GFA_PreventFocusCollectionBodystates);
+        HookEngineF(oCAIHuman__PC_ActionMove_bodyState, 6, GFA_PreventFocusCollectionBodyStates);
     };
 
     // Do not interrupt strafing by oCNpc::Interrupt()
