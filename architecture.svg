@@ -11,9 +11,21 @@
    height="1753.2141mm"
    width="746.9635mm">
   <title
-     id="title2473">GFA project architecture</title>
+     id="title5677">GFA Project Architecture</title>
   <defs
      id="defs4">
+    <marker
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker2472"
+       style="overflow:visible">
+      <path
+         id="path2470"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:0.625;stroke-linejoin:round;stroke-opacity:1"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="matrix(-1.1,0,0,-1.1,-1.1,0)" />
+    </marker>
     <marker
        style="overflow:visible"
        id="marker73585"
@@ -2015,7 +2027,13 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title>GFA project architecture</dc:title>
+        <dc:title>GFA Project Architecture</dc:title>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>mud-freak (@szapp)</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <dc:date>2017-09-13</dc:date>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -4517,11 +4535,11 @@
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#marker27810)" />
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#marker16700-07-4-7)"
-       d="m 950.245,-156.67116 c 79.3252,0.9198 26.4642,26.43393 125.4019,25.97213"
+       d="m 950.245,-145.65554 c 79.3252,0.9198 26.4642,15.41831 125.4019,14.95651"
        id="path16692-9-3-1" />
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#marker16700-07-4-7-6)"
-       d="m 950.0463,-145.79238 c 64.3252,2.4198 60.641,90.274137 126.5788,91.812337"
+       d="m 950.0463,-134.77676 c 64.3252,2.4198 60.641,79.258517 126.5788,80.796717"
        id="path16692-9-3-1-8" />
     <path
        id="path22712-2"
@@ -6854,7 +6872,7 @@
          style="font-size:12.5px;stroke-width:0.93749994"
          y="4603.9595"
          x="2586.7891"
-         id="tspan8601">GFA, 2017-09-12</tspan></text>
+         id="tspan8601">GFA, 2017-09-13</tspan></text>
     <g
        transform="translate(0,241.87499)"
        id="g4116">
@@ -7336,7 +7354,7 @@
     </g>
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#marker2256)"
-       d="m 1000.1352,-332.8867 c 44.3877,-2.1427 17.9812,131.53743 75.9189,131.07563"
+       d="m 1000.1352,-332.8867 c 44.3877,-2.1427 17.9812,123.56868 75.9189,123.10688"
        id="path2252" />
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#marker2262)"
@@ -8321,5 +8339,9 @@
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#marker73585)"
        d="m 875.30744,-120.41774 c 2.73661,110.213941 10.95365,463.09725 18.49437,647.07971 30.21698,737.24983 87.34692,1127.78633 -34.65754,1243.80613"
        id="path73581" />
+    <path
+       id="path2468"
+       d="m 950.0463,-157.97988 c 64.3252,2.4198 59.7035,-40.50711 125.6413,-38.96891"
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#marker2472)" />
   </g>
 </svg>

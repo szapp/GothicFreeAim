@@ -80,8 +80,8 @@ func void GFA_SpellAiming() {
         // Additional settings if free aiming is enabled
         if (GFA_ACTIVE) {
             if (GFA_IsSpellEligible(spell)) {
-                // Remove FX from aim vob after spell was cast
-                if (MEM_ReadInt(aniCtrlPtr+oCAIHuman_bitfield_offset) & oCAIHuman_bitfield_spellCastedLastFrame) {
+                // Remove FX from aim vob when casting is complete
+                if (!GFA_InvestingOrCasting(hero)) {
                     GFA_AimVobDetachFX();
                 };
 
@@ -91,9 +91,7 @@ func void GFA_SpellAiming() {
                 };
 
                 // Remove movement animations when not aiming
-                if (GOTHIC_CONTROL_SCHEME == 1) {
-                    GFA_AimMovement(0, "");
-                };
+                GFA_AimMovement(0, "");
 
             } else if (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS)
                    && (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS_FALLBACK_CASTER) {
@@ -105,6 +103,11 @@ func void GFA_SpellAiming() {
             GFA_AimVobDetachFX();
         };
         return;
+    };
+
+    // For safety: Clean up, in case custom spells are recklessly designed
+    if (!GFA_InvestingOrCasting(hero)) {
+        GFA_AimVobDetachFX();
     };
 
     var int distance;

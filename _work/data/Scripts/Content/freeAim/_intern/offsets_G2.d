@@ -79,7 +79,6 @@ const int zCModel__SearchNode                        =  5758960; //0x57DFF0
 const int zCModel__GetBBox3DNodeWorld                =  5738736; //0x5790F0
 const int zCModel__GetNodePositionWorld              =  5738816; //0x579140
 const int zCModel__StartAni                          =  5746544; //0x57AF70
-const int zCModel__IsAnimationActive                 =  5727888; //0x576690
 const int zCModel__FadeOutAnisLayerRange             =  5763568; //0x57F1F0
 const int zCModelPrototype__SearchAniIndex           =  5808064; //0x589FC0
 const int zVEC3__NormalizeSafe                       =  4819488; //0x498A20
@@ -170,7 +169,6 @@ const int oCAniCtrl_Human_t_shoot_2_stand_offset     = 4592;//0x11F0
 const int oCAIHuman_bitfield_offset                  = 4612;//0x1204
 const int oCAIHuman_bitfield_startObserveIntruder    = 1<<6;
 const int oCAIHuman_bitfield_spellReleased           = 1<<7;
-const int oCAIHuman_bitfield_spellCastedLastFrame    = 1<<8;
 
 const int oCAIArrowBase_collision_offset             = 52;  //0x0034
 const int oCAIArrowBase_lifeTime_offset              = 56;  //0x0038
