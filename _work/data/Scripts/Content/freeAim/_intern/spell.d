@@ -80,7 +80,7 @@ func void GFA_SpellAiming() {
         // Additional settings if free aiming is enabled
         if (GFA_ACTIVE) {
             if (GFA_IsSpellEligible(spell)) {
-                // Remove FX from aim vob only if not currently casting
+                // Remove FX from aim vob after spell was cast
                 if (MEM_ReadInt(aniCtrlPtr+oCAIHuman_bitfield_offset) & oCAIHuman_bitfield_spellCastedLastFrame) {
                     GFA_AimVobDetachFX();
                 };
@@ -180,41 +180,44 @@ func void GFA_SpellLockMovement() {
         return;
     };
 
-    var oCNpc her; her = Hlp_GetNpc(hero);
-    var int aniCtrlPtr; aniCtrlPtr = her.anictrl; // ESI is popped earlier and is not secure to use
+    if (GOTHIC_CONTROL_SCHEME == 1) {
+        // Set return value to one: Do not call any other movement functions
+        EAX = 1;
+        return;
+    };
 
-    // For Gothic 2 controls completely lock movement for spell combat except for weapon switch and model rotation
-    if (GOTHIC_CONTROL_SCHEME == 2) {
+    // For Gothic 2 controls completely lock movement for spell combat with a few exceptions
+    if (!GFA_InvestingOrCasting(hero)) {
+        var oCNpc her; her = Hlp_GetNpc(hero);
+        var int aniCtrlPtr; aniCtrlPtr = her.anictrl; // ESI is popped earlier and is not secure to use
+
         // Weapon switch when not investing or casting
-        if (!GFA_InvestingOrCasting(hero))
-        && ((MEM_KeyPressed(MEM_GetKey("keyWeapon"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyWeapon")))) {
+        if (MEM_KeyPressed(MEM_GetKey("keyWeapon"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyWeapon"))) {
             GFA_AimMovement(0, "");
             return;
         };
 
         // If sneaking when not investing or casting
-        if (!GFA_InvestingOrCasting(hero))
-        && (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))
+        if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))
         && (MEM_ReadInt(aniCtrlPtr+oCAniCtrl_Human_walkmode_offset) & NPC_SNEAK) {
             GFA_AimMovement(0, "");
             return;
         };
 
         // Running/walking forward when not investing or casting
-        if (!GFA_InvestingOrCasting(hero))
-        && (!MEM_KeyPressed(MEM_GetKey("keyAction")))      && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))
+        if (!MEM_KeyPressed(MEM_GetKey("keyAction")))      && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))
         && (!MEM_KeyPressed(MEM_GetKey("keyStrafeLeft")))  && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeLeft")))
         && (!MEM_KeyPressed(MEM_GetKey("keyStrafeRight"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeRight")))
         && ((MEM_KeyPressed(MEM_GetKey("keyUp")))          ||  (MEM_KeyPressed(MEM_GetSecondaryKey("keyUp")))) {
             GFA_AimMovement(0, "");
             return;
-        } else {
-            // Stop running/walking animation
-            const int call = 0;
-            if (CALL_Begin(call)) {
-                CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human___Stand);
-                call = CALL_End();
-            };
+        };
+
+        // Stop running/walking animation
+        const int call = 0;
+        if (CALL_Begin(call)) {
+            CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human___Stand);
+            call = CALL_End();
         };
     };
 
@@ -224,13 +227,13 @@ func void GFA_SpellLockMovement() {
 
 
 /*
- * Reset the FX of the spell for invested spells. This function is necessary to reset the spell to its initial state if 
+ * Reset the FX of the spell for invested spells. This function is necessary to reset the spell to its initial state if
  * the casting/investing is interrupted by strafing, falling, lying or sliding. This function is called from various
  * functions. The engine functions called here are the same the engine uses to reset the spell FX.
  */
 func void GFA_ResetSpell() {
     var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
-    if (!_@(spell)){
+    if (!_@(spell)) {
         return;
     };
 

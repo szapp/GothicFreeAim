@@ -84,13 +84,26 @@ func int GFA_InvestingOrCasting(var C_Npc npc) {
         return 1;
     };
 
-    // Casting
-    var C_Spell spell; spell = GFA_GetActiveSpellInst(npc);
-    if (_@(spell)) {
-        if (MEM_ReadInt(_@(spell)-oCSpell_C_Spell_offset+oCSpell_spellStatus_offset) == SPL_SENDCAST) {
+    // Casting (check by active animations)
+    var zCAIPlayer playerAI; playerAI = _^(npcOC.anictrl);
+    var int model; model = playerAI.model;
+
+    // Pointer to list of active animations
+    var int actAniOffset; actAniOffset = model+zCModel_actAniList_offset;
+
+    // Iterate over active animations
+    repeat(i, MEM_ReadInt(model+zCModel_numActAnis_offset)); var int i;
+        var int aniID; aniID = MEM_ReadInt(MEM_ReadInt(MEM_ReadInt(actAniOffset))+zCModelAni_aniID_offset);
+
+        if (aniID == MEM_ReadInt(npcOC.anictrl+oCAniCtrl_Human_s_cast_offset))
+        || (aniID == MEM_ReadInt(npcOC.anictrl+oCAniCtrl_Human_t_cast_2_shoot_offset))
+        || (aniID == MEM_ReadInt(npcOC.anictrl+oCAniCtrl_Human_s_shoot_offset))
+        || (aniID == MEM_ReadInt(npcOC.anictrl+oCAniCtrl_Human_t_shoot_2_stand_offset)) {
             return 2;
         };
-    };
+
+        actAniOffset += 4;
+    end;
 
     // Else
     return FALSE;

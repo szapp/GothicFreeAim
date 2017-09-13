@@ -162,6 +162,10 @@ const int zCAICamera_azimuth_offset                  = 68;  //0x0044
 const int zCAIPlayer_bitfield1_forceModelHalt        = 1<<0;
 
 const int oCAniCtrl_Human_walkmode_offset            = 352; //0x0160
+const int oCAniCtrl_Human_s_cast_offset              = 4576;//0x11E0
+const int oCAniCtrl_Human_t_cast_2_shoot_offset      = 4580;//0x11E4
+const int oCAniCtrl_Human_s_shoot_offset             = 4588;//0x11EC
+const int oCAniCtrl_Human_t_shoot_2_stand_offset     = 4592;//0x11F0
 
 const int oCAIHuman_bitfield_offset                  = 4612;//0x1204
 const int oCAIHuman_bitfield_startObserveIntruder    = 1<<6;
@@ -183,7 +187,11 @@ const int zCRigidBody_velocity_offset                = 188; //0x00BC
 const int zCRigidBody_bitfield_offset                = 256; //0x0100
 const int zCRigidBody_bitfield_gravityActive         = 1<<0;
 
+const int zCModel_numActAnis_offset                  = 52;  //0x0034
+const int zCModel_actAniList_offset                  = 56;  //0x0037
 const int zCModel__modelPrototype_offset             = 100; //0x0064
+
+const int zCModelAni_aniID_offset                    = 76;  //0x004C
 
 const int zCModelNodeInst_visual_offset              = 8;   //0x0008
 
