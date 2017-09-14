@@ -617,7 +617,7 @@ func void GFA_CC_SetDamageBehavior() {
         MEM_Info("GFA_CC_SetDamageBehavior:");
         var int s; s = SB_New();
 
-        SB("   damage bahavior:   ");
+        SB("   damage behavior:   ");
         SB(damageBehaviorStr);
         MEM_Info(SB_ToString());
         SB_Clear();
