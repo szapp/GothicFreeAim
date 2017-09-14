@@ -3,7 +3,7 @@ Gothic Free Aim
 
 **Script package for the video games Gothic and Gothic II that enables free aiming for ranged weapons and spells.**
 
-[![Trailer on Youtube](http://i.imgur.com/1smu8Az.jpg)](http://www.youtube.com/watch?v=9CrFlxo21Qw)
+[![Trailer on Youtube](https://raw.githubusercontent.com/wiki/szapp/GothicFreeAim/media/thumb_small.jpg)](http://www.youtube.com/watch?v=9CrFlxo21Qw)
 
 
 Features
