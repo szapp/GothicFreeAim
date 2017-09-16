@@ -399,6 +399,43 @@ func void GFA_FixStandingBodyState() {
 
 
 /*
+ * Perform a stricter check whether to allow opening the inventory. This fixes the bug, where the player freezes when
+ * opening the inventory while casting a spell. This function hooks oCGame::HandleEvent() at an offset where or the
+ * inventory key was pressed and it is check whether to open the inventory.
+ * Because of restricted address space, a function call was overwritten with this hook and is re-written at the start of
+ * this function.
+ */
+func void GFA_FixOpenInventory() {
+    // Re-write what has been overwritten with nop
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL_PutRetValTo(_@(EAX));
+        CALL__stdcall(oCNpc__GetInteractMob); // ECX is already in place
+        call = CALL_End();
+    };
+
+    // New: Additionally check if player is performing aim movement or not standing during spell combat
+    if (!EAX) {
+        EAX = GFA_IsStrafing;
+
+        if (!EAX) {
+            var oCNpc her; her = _^(ECX);
+            if (her.fmode == FMODE_MAGIC) {
+                var int aniCtrlPtr; aniCtrlPtr = her.anictrl;
+                const int call2 = 0;
+                if (CALL_Begin(call2)) {
+                    CALL_PutRetValTo(_@(EAX));
+                    CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human__IsStanding);
+                    call2 = CALL_End();
+                };
+                EAX = !EAX;
+            };
+        };
+    };
+};
+
+
+/*
  * Reset spell FX when interrupting investing/casting by the default strafing. This function hooks oCNpc::EV_Strafe() at
  * an offset where the fight mode is checked. oCNpc::EV_Strafe() is only called for the player.
  */

@@ -231,6 +231,21 @@ func void GFA_InitFixDroppedProjectileAI() {
 
 
 /*
+ * Initialize hook for the open inventory bug fix. This function is called from GFA_InitOnce().
+ */
+func void GFA_InitFixOpenInventory() {
+    MEM_Info("Initializing open inventory bug fix.");
+    MemoryProtectionOverride(oCGame__HandleEvent_openInvCheck, 5); // First erase a call, to make room for hook
+    MEM_WriteByte(oCGame__HandleEvent_openInvCheck, ASMINT_OP_nop);
+    MEM_WriteByte(oCGame__HandleEvent_openInvCheck+1, ASMINT_OP_nop);
+    MEM_WriteByte(oCGame__HandleEvent_openInvCheck+2, ASMINT_OP_nop);
+    MEM_WriteByte(oCGame__HandleEvent_openInvCheck+3, ASMINT_OP_nop);
+    MEM_WriteByte(oCGame__HandleEvent_openInvCheck+4, ASMINT_OP_nop);
+    HookEngineF(oCGame__HandleEvent_openInvCheck, 5, GFA_FixOpenInventory); // Re-write what has been overwritten
+};
+
+
+/*
  * Initializations to perform only once every session. This function overwrites memory protection at certain addresses,
  * and registers hooks and console commands, all depending on the selected features (see config\settings.d). The
  * function is called from GFA_Init().
@@ -282,6 +297,9 @@ func int GFA_InitOnce() {
 
         // Fix dropped projectile AI bug
         GFA_InitFixDroppedProjectileAI();
+
+        // Fix open inventory bug
+        GFA_InitFixOpenInventory();
 
     // };
 
