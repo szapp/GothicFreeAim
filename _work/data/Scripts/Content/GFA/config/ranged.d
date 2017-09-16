@@ -86,6 +86,11 @@ func int GFA_GetAccuracy(var C_Item weapon, var int talent) {
     // Scale accuracy by draw force
     var int accuracy; accuracy = (talent * drawForce) / 100;
 
+    // Decrease accuracy if moving by 0.25
+    if (GFA_IsStrafing) {
+        accuracy = accuracy*3/4;
+    };
+
     return accuracy;
 };
 
