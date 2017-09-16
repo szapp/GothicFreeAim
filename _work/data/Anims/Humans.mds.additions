@@ -37,6 +37,8 @@
             aniBlend    ("t_Bow_Aim_Move_2_Aim_MoveLB"  "s_Bow_Aim_MoveLB"  0.2 0.2)
             aniBlend    ("t_Bow_Aim_Move_2_Aim_MoveRB"  "s_Bow_Aim_MoveRB"  0.2 0.2)
 
+            ani         ("t_Bow_Aim_Hurt"           3   ""                  0.1 0.1 .   "Hum_Bow_Aim_Hurt.asc"    F   1   10)
+
 
 // Crossbow aiming movement
             ani         ("s_CBow_Aim_MoveF"         2   "s_CBow_Aim_MoveF"  0.0 0.0 M.  "Hum_CBow_Aim_MoveF.asc"  F   3   26)
@@ -65,6 +67,8 @@
             aniBlend    ("t_CBow_Aim_Move_2_Aim_MoveLB" "s_CBow_Aim_MoveLB" 0.2 0.2)
             aniBlend    ("t_CBow_Aim_Move_2_Aim_MoveRB" "s_CBow_Aim_MoveRB" 0.2 0.2)
 
+            ani         ("t_CBow_Aim_Hurt"          3   ""                  0.1 0.1 .   "Hum_CBow_Aim_Hurt.asc"   F   1   10)
+
 
 // Spell aiming movement
             ani         ("s_Mag_Aim_MoveF"          2   "s_Mag_Aim_MoveF"   0.0 0.0 M.  "Hum_Mag_Aim_MoveF.asc"   F   3   26)
@@ -91,6 +95,8 @@
             aniBlend    ("t_Mag_Aim_Move_2_Aim_MoveLB"  "s_Mag_Aim_MoveLB"  0.2 0.2)
             aniBlend    ("t_Mag_Aim_Move_2_Aim_MoveRB"  "s_Mag_Aim_MoveRB"  0.2 0.2)
 
+            ani         ("t_Mag_Aim_Hurt"           3   ""                  0.1 0.1 .   "Hum_Mag_Aim_Hurt.asc"    F   1   10)
+
 // WND
             ani         ("s_MagWnd_Aim_MoveF"       2   "s_MagWnd_Aim_MoveF"   0.0 0.0 M.  "Hum_MagWnd_Aim_MoveF.asc"   F   3   26)
             aniAlias    ("s_MagWnd_Aim_MoveB"       2   "s_MagWnd_Aim_MoveB"   0.0 0.0 M.  "s_MagWnd_Aim_MoveF"         R)
@@ -115,6 +121,8 @@
 
             aniBlend    ("t_MagWnd_Aim_Move_2_Aim_MoveLB"  "s_MagWnd_Aim_MoveLB"  0.2 0.2)
             aniBlend    ("t_MagWnd_Aim_Move_2_Aim_MoveRB"  "s_MagWnd_Aim_MoveRB"  0.2 0.2)
+
+            ani         ("t_MagWnd_Aim_Hurt"        3   ""                     0.1 0.1 .   "Hum_MagWnd_Aim_Hurt.asc"    F   1   10)
 
 // FRZ
             ani         ("s_MagFrz_Aim_MoveF"       2   "s_MagFrz_Aim_MoveF"   0.0 0.0 M.  "Hum_MagFrz_Aim_MoveF.asc"   F   3   26)

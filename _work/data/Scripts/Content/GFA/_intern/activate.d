@@ -214,7 +214,13 @@ func void GFA_IsActive() {
             MEM_Call(C_BodyStateContains);
             var int casting; casting = MEM_PopIntResult();
 
-            if (!standing) && (!casting) {
+            // Exception: receiving damage removes standing body state
+            MEM_PushInstParam(hero);
+            MEM_PushIntParam(BS_STUMBLE);
+            MEM_Call(C_BodyStateContains);
+            var int stumbling; stumbling = MEM_PopIntResult();
+
+            if (!standing) && (!casting) && (!stumbling) {
                 GFA_ACTIVE = 1;
                 return;
             };

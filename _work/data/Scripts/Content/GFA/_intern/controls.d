@@ -471,28 +471,57 @@ func void GFA_DontInterruptStrafing() {
 
 
 /*
- * Disable damage animation while aiming. This function hooks the function that deals damage to NPCs and prevents the
- * damage animation for the player while aiming, as it looks questionable if the reticle stays centered but the player
- * model is crooked.
- * Modified (to allow fly damage) from http://forum.worldofplayers.de/forum/threads/1474431?p=25057480
+ * Adjust damage animation while aiming. This function hooks oCNpc::OnDamage_Anim() and replaces the hurting animation
+ * if the player is aiming. Also the draw force and steady aim are reset.
  */
-func void GFA_DisableDamageAnimation() {
-    var C_Npc victim; victim = _^(ECX);
+func void GFA_AdjustDamageAnimation() {
+    var C_Npc victim; victim = _^(MEM_ReadInt(ESP+204)); // G1: esp+200h-134h, G2: esp+1FCh-130h
     if (!Npc_IsPlayer(victim)) || (GFA_ACTIVE < FMODE_FAR) {
         return;
     };
 
-    // Get damage type
-    var int dmgDescriptor; dmgDescriptor = MEMINT_SwitchG1G2(MEM_ReadInt(/*esp+200h+4h*/ ESP+516),
-                                                             MEM_ReadInt(/*esp+1FCh+4h*/ ESP+512));
-    var int dmgType; dmgType = MEM_ReadInt(dmgDescriptor+oSDamageDescriptor_damageType_offset);
+    // Reset draw time and steady aim
+    GFA_BowDrawOnset = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
+    GFA_MouseMovedLast = MEM_Timer.totalTime + 100; // Keep from jittering
 
-    // Preserve animation for fly damage (and for fire damage. Gothic 1 only, because of fire animation, removed in G2)
-    if (dmgType & DAM_BARRIER) || (dmgType & DAM_FLY)
-    || ((GOTHIC_BASE_VERSION == 1) && (dmgType & DAM_FIRE)) {
-        return;
+    // Retrieve hurting animation name
+    var string aniName; aniName = MEM_ReadStatStringArr(GFA_AIM_ANIS, GFA_HURT_ANI);
+    var string prefix; prefix = "T_";
+    var string modifier;
+
+    // Retrieve animation name modifier by fight mode
+    var oCNpc npc; npc = Hlp_GetNpc(victim);
+    if (npc.fmode == FMODE_MAGIC) {
+        modifier = "MAG";
+
+        // Also treat variations of casting animations
+        if (GFA_InvestingOrCasting(victim)) {
+            var string castMod;
+            castMod = ConcatStrings(modifier, MEM_ReadStatStringArr(spellFxAniLetters, Npc_GetActiveSpell(victim)));
+
+            // Check if animation with casting modifier exists
+            var int aniNamePtr; aniNamePtr = _@s(ConcatStrings(ConcatStrings(prefix, castMod), aniName));
+            var int model; model = MEM_ReadInt(MEMINT_SwitchG1G2(/*esp+200h-ECh*/ ESP+276, /*esp+1FCh-DCh*/ ESP+288));
+            var int modelPrototype; modelPrototype = MEM_ReadInt(MEM_ReadInt(model+zCModel__modelPrototype_offset));
+            const int call = 0;
+            if (CALL_Begin(call)) {
+                CALL__fastcall(_@(modelPrototype), _@(aniNamePtr), zCModelPrototype__SearchAniIndex);
+                call = CALL_End();
+            };
+            if (CALL_RetValAsInt() >= 0) {
+                modifier = castMod;
+            };
+        };
+    } else if (npc.fmode == FMODE_FAR) {
+        modifier = "BOW";
+    } else {
+        modifier = "CBOW";
     };
 
-    // Disable animation for all other damage types by removing 'this' (the zCModel of victim)
-    EAX = 0;
+    // Build complete animation name
+    aniName = ConcatStrings(ConcatStrings(prefix, modifier), aniName);
+
+    // Overwrite damage animation
+    var int aniNameAddr; aniNameAddr = ESP+24; // G1: esp+200h-1E8h, G2: esp+1FCh-1E4h
+    MEM_WriteString(aniNameAddr, aniName);
 };

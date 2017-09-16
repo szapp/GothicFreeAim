@@ -34,10 +34,11 @@ func void GFA_InitFeatureFreeAiming() {
     HookEngineF(mouseUpdate, 5, GFA_TurnPlayerModel); // Rotate the player model by mouse input
     if (GOTHIC_BASE_VERSION == 1) {
         MemoryProtectionOverride(oCAIHuman__MagicMode_turnToTarget, 5); // G1: Prevent auto turning in spell combat
+        HookEngineF(oCNpc__OnDamage_Anim_stumbleAniName, 5, GFA_AdjustDamageAnimation); // Additional hurt animation
     } else {
         MemoryProtectionOverride(oCNpc__TurnToEnemy_camCheck, 6); // G2: Prevent auto turning (target lock)
     };
-    HookEngineF(oCNpc__OnDamage_Anim_getModel, 9, GFA_DisableDamageAnimation); // Disable damage animation while aiming
+    HookEngineF(oCNpc__OnDamage_Anim_gotHitAniName, 5, GFA_AdjustDamageAnimation); // Adjust hurt animation while aiming
 
     // Free aiming for ranged combat (aiming and shooting)
     if (GFA_Flags & GFA_RANGED) {
