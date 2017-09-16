@@ -148,7 +148,6 @@ const int oCItem_effect_offset                       = 0;                       
 
 const int oCSpell_spellCasterNpc_offset              = 52;  //0x0034
 const int oCSpell_manaInvested_offset                = 72;  //0x0048
-const int oCSpell_spellStatus_offset                 = 80;  //0x0050
 const int oCSpell_C_Spell_offset                     = 128; //0x0080
 
 const int oCVisualFX_originVob_offset                = 1112;//0x0458

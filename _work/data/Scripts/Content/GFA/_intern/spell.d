@@ -235,6 +235,11 @@ func void GFA_SpellLockMovement() {
  * functions. The engine functions called here are the same the engine uses to reset the spell FX.
  */
 func void GFA_ResetSpell() {
+    // First check if resetting is necessary
+    if (Npc_GetActiveSpellLevel(hero) <= 1) {
+        return;
+    };
+
     var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
     if (!_@(spell)) {
         return;
