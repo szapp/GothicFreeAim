@@ -495,9 +495,9 @@ func void GFA_AdjustDamageAnimation() {
         modifier = "MAG";
 
         // Also treat variations of casting animations
-        if (GFA_InvestingOrCasting(victim)) {
-            var string castMod;
-            castMod = ConcatStrings(modifier, MEM_ReadStatStringArr(spellFxAniLetters, Npc_GetActiveSpell(victim)));
+        var int spellID; spellID = Npc_GetActiveSpell(victim); // Scrolls are removed: sometimes not found
+        if (GFA_InvestingOrCasting(victim)) && (spellID != -1) {
+            var string castMod; castMod = ConcatStrings(modifier, MEM_ReadStatStringArr(spellFxAniLetters, spellID));
 
             // Check if animation with casting modifier exists
             var int aniNamePtr; aniNamePtr = _@s(ConcatStrings(ConcatStrings(prefix, castMod), aniName));

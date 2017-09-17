@@ -276,8 +276,9 @@ func void GFA_Strafe() {
         if (her.fmode == FMODE_MAGIC) {
             modifier = "MAG";
             // Also treat variations of casting animations
-            if (GFA_InvestingOrCasting(hero)) {
-                modifier = ConcatStrings(modifier, MEM_ReadStatStringArr(spellFxAniLetters, Npc_GetActiveSpell(hero)));
+            var int spellID; spellID = Npc_GetActiveSpell(hero); // Scrolls are removed: sometimes not found
+            if (GFA_InvestingOrCasting(hero)) && (spellID != -1) {
+                modifier = ConcatStrings(modifier, MEM_ReadStatStringArr(spellFxAniLetters, spellID));
             };
         } else if (her.fmode == FMODE_FAR) {
             modifier = "BOW";
