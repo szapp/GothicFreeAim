@@ -153,20 +153,16 @@ func void GFA_IsActive() {
         keyAiming = "keyParade";
     };
 
-    var int keyStateAiming1; keyStateAiming1 = MEM_KeyState(MEM_GetKey(keyAiming));
-    var int keyStateAiming2; keyStateAiming2 = MEM_KeyState(MEM_GetSecondaryKey(keyAiming));
-    var int keyStateAiming3; // Gothic 1 has additional fixed bindings for the mouse buttons: LMB is always aiming
+    // Check if aiming buttons are held
+    var _Cursor mouse; mouse = _^(Cursor_Ptr); // The _Cursor class from LeGo holds mouse properties
+    var int keyPressed; keyPressed = (MEM_KeyPressed(MEM_GetKey(keyAiming)))
+                                  || (MEM_KeyPressed(MEM_GetSecondaryKey(keyAiming)))
+                                  || (MEMINT_SwitchG1G2(mouse.keyLeft, FALSE)); // Additional key binding for Gothic 1
 
-    if (GOTHIC_BASE_VERSION == 1) {
-        // The _Cursor class from LeGo is used here. It is not necessarily a cursor: it holds mouse properties
-        var _Cursor mouse; mouse = _^(Cursor_Ptr);
-        Cursor_KeyState(_@(keyStateAiming3), mouse.keyLeft);
-    };
-
-    // Check if aiming button is pressed/held
-    var int keyPressed; keyPressed = (keyStateAiming1 == KEY_PRESSED) || (keyStateAiming1 == KEY_HOLD)
-                                  || (keyStateAiming2 == KEY_PRESSED) || (keyStateAiming2 == KEY_HOLD)
-                                  || (keyStateAiming3 == KEY_PRESSED) || (keyStateAiming3 == KEY_HOLD);
+    // Variables for checking body states
+    var int standing;
+    var int casting;
+    var int stumbling;
 
     // Check fight mode
     if (her.fmode == FMODE_MAGIC) {
@@ -206,30 +202,25 @@ func void GFA_IsActive() {
             MEM_PushInstParam(hero);
             MEM_PushIntParam(BS_STAND);
             MEM_Call(C_BodyStateContains);
-            var int standing; standing = MEM_PopIntResult();
+            standing = MEM_PopIntResult();
 
             // Exception: casting removes standing body state
             MEM_PushInstParam(hero);
             MEM_PushIntParam(BS_CASTING);
             MEM_Call(C_BodyStateContains);
-            var int casting; casting = MEM_PopIntResult();
+            casting = MEM_PopIntResult();
 
             // Exception: receiving damage removes standing body state
             MEM_PushInstParam(hero);
             MEM_PushIntParam(BS_STUMBLE);
             MEM_Call(C_BodyStateContains);
-            var int stumbling; stumbling = MEM_PopIntResult();
+            stumbling = MEM_PopIntResult();
 
-            if (!standing) && (!casting) && (!stumbling) {
+            // Additionally, Gothic 1 controls require action key to be held
+            if ((!standing) && (!casting) && (!stumbling)) || (!keyPressed) {
                 GFA_ACTIVE = 1;
                 return;
             };
-        };
-
-        // Gothic 1 controls require action key to be pressed/held
-        if (GOTHIC_CONTROL_SCHEME == 1) && (!keyPressed) {
-            GFA_ACTIVE = 1;
-            return;
         };
 
         // If this is reached, free aiming for the spell is active
@@ -253,19 +244,31 @@ func void GFA_IsActive() {
             MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+4, keyPressed);
         };
 
-        // Check if aiming key is not pressed/held
-        if (!keyPressed) {
+        // Check if standing
+        MEM_PushInstParam(hero);
+        MEM_PushIntParam(BS_STAND);
+        MEM_Call(C_BodyStateContains);
+        standing = MEM_PopIntResult();
+
+        // Exception: receiving damage removes standing body state
+        MEM_PushInstParam(hero);
+        MEM_PushIntParam(BS_STUMBLE);
+        MEM_Call(C_BodyStateContains);
+        stumbling = MEM_PopIntResult();
+
+        // Additionally, action key is required to be held
+        if ((!standing) && (!stumbling)) || (!keyPressed) {
             GFA_ACTIVE = 1;
             return;
         };
 
-        // If this is reached, free aiming for ranged weapons is currently active
-        GFA_ACTIVE = FMODE_FAR; // Do not differentiate between bow and crossbow
-
-        // Get onset for drawing the bow - right when pressing down the aiming key
-        if (keyStateAiming1 == KEY_PRESSED) || (keyStateAiming2 == KEY_PRESSED) || (keyStateAiming3 == KEY_PRESSED) {
+        // Get onset for drawing the bow, if aiming starts
+        if (GFA_ACTIVE != FMODE_FAR) {
             GFA_BowDrawOnset = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
             GFA_MouseMovedLast = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
         };
+
+        // If this is reached, free aiming for ranged weapons is currently active
+        GFA_ACTIVE = FMODE_FAR; // Do not differentiate between bow and crossbow
     };
 };
