@@ -31,12 +31,40 @@ func void GFA_AimMovement(var int movement, var string modifier) {
         return;
     };
 
+    var oCNpc her; her = Hlp_GetNpc(hero);
+
     // Send perception before anything else (every 1500 ms)
+    var int newBodystate; newBodystate = -1;
     if (movement) {
         var int percTimer; percTimer += MEM_Timer.frameTime;
         if (percTimer >= 1500) {
             percTimer -= 1500;
-            Npc_SendPassivePerc(hero, PERC_ASSESSQUIETSOUND, NULL, hero);
+
+            // Send perception depending on sneaking or walking
+            if (MEM_ReadInt(her.anictrl+oCAniCtrl_Human_walkmode_offset) & NPC_SNEAK) {
+                // Only relevant for Gothic 1, this perception disabled in Gothic 2
+                Npc_SendPassivePerc(hero, PERC_OBSERVESUSPECT, NULL, hero);
+
+                // For Gothic 2, set BS_SNEAK
+                newBodystate = BS_SNEAK;
+            } else {
+                Npc_SendPassivePerc(hero, PERC_ASSESSQUIETSOUND, NULL, hero);
+            };
+        };
+    } else if (GFA_IsStrafing) && (MEM_ReadInt(her.anictrl+oCAniCtrl_Human_walkmode_offset) & NPC_SNEAK) {
+        // Reset body state if sneaking but not moving (like Gothic usually does)
+        newBodystate = BS_STAND;
+    };
+
+    // Set body state if necessary
+    if (newBodystate > -1) {
+        newBodystate = newBodystate & ~BS_FLAG_INTERRUPTABLE & ~BS_FLAG_FREEHANDS;
+        var int herPtr; herPtr = _@(her);
+        const int call = 0;
+        if (CALL_Begin(call)) {
+            CALL_IntParam(_@(newBodystate));
+            CALL__thiscall(_@(herPtr), oCNpc__SetBodyState);
+            call = CALL_End();
         };
     };
 
@@ -51,7 +79,6 @@ func void GFA_AimMovement(var int movement, var string modifier) {
     GFA_IsStrafing = movement;
 
     // Get player model
-    var oCNpc her; her = Hlp_GetNpc(hero);
     var zCAIPlayer playerAI; playerAI = _^(her.anictrl);
     var int model; model = playerAI.model;
     var int bitfield; bitfield = MEM_ReadInt(her.anictrl+oCAIHuman_bitfield_offset);
@@ -200,40 +227,16 @@ func void GFA_AimMovement(var int movement, var string modifier) {
  * function is called from GFA_RangedIdle(), GFA_RangedAiming() and GFA_SpellAiming().
  */
 func void GFA_Strafe() {
-    if (GFA_ACTIVE < FMODE_FAR) || (!GFA_STRAFING) {
+    if (!GFA_STRAFING) {
+        return;
+    };
+
+    if (GFA_ACTIVE < FMODE_FAR) {
         GFA_AimMovement(0, "");
         return;
     };
 
     var oCNpc her; her = Hlp_GetNpc(hero);
-
-    // Spell combat does not allow sneaking (messes up the perception and would require more animations)
-    if (GOTHIC_CONTROL_SCHEME == 1)
-    && (her.fmode == FMODE_MAGIC) {
-        var int aniCtrlPtr; aniCtrlPtr = her.anictrl;
-
-        // Sneaking not allowed
-        if (MEM_ReadInt(aniCtrlPtr+oCAniCtrl_Human_walkmode_offset) & NPC_SNEAK) {
-            // Set up and check new walk mode as NPC_RUN (see Constants.d)
-            const int call = 0;
-            if (CALL_Begin(call)) {
-                CALL_IntParam(_@(NPC_RUN));
-                CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human__CanToggleWalkModeTo);
-                call = CALL_End();
-            };
-
-            // Toggle walk mode
-            if (CALL_RetValAsInt()) {
-                const int negOne = -1;
-                const int call2 = 0;
-                if (CALL_Begin(call2)) {
-                    CALL_IntParam(_@(negOne));
-                    CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human__ToggleWalkMode);
-                    call2 = CALL_End();
-                };
-            };
-        };
-    };
 
     // Check whether keys are pressed down (held)
     var int mFront;
@@ -241,15 +244,16 @@ func void GFA_Strafe() {
     var int mLeft;
     var int mRight;
 
+    mFront = FALSE; // Only set for Gothic 2 controls, see below
     mBack  = (MEM_KeyPressed(MEM_GetKey("keyDown")))        || (MEM_KeyPressed(MEM_GetSecondaryKey("keyDown")));
     mLeft  = (MEM_KeyPressed(MEM_GetKey("keyStrafeLeft")))  || (MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeLeft")));
     mRight = (MEM_KeyPressed(MEM_GetKey("keyStrafeRight"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeRight")));
 
     // Allow forward movement only when using Gothic 2 controls while investing or casting a spell (or ranged combat)
-    if (GOTHIC_CONTROL_SCHEME == 2) && ((GFA_InvestingOrCasting(hero)) || (her.fmode != FMODE_MAGIC)) {
-        mFront = (MEM_KeyPressed(MEM_GetKey("keyUp"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyUp")));
-    } else {
-        mFront = FALSE;
+    if (GOTHIC_CONTROL_SCHEME == 2) {
+        if (GFA_InvestingOrCasting(hero)) || (her.fmode != FMODE_MAGIC) {
+            mFront = (MEM_KeyPressed(MEM_GetKey("keyUp"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyUp")));
+        };
     };
 
     // Evaluate movement from key presses (because there are also diagonal movements)

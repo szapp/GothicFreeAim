@@ -482,7 +482,7 @@ func void GFA_AdjustDamageAnimation() {
 
     // Reset draw time and steady aim
     GFA_BowDrawOnset = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
-    GFA_MouseMovedLast = MEM_Timer.totalTime + 100; // Keep from jittering
+    GFA_MouseMovedLast = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
 
     // Retrieve hurting animation name
     var string aniName; aniName = MEM_ReadStatStringArr(GFA_AIM_ANIS, GFA_HURT_ANI);

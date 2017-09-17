@@ -149,9 +149,6 @@ func void GFA_SpellAiming() {
     GFA_InsertReticle(reticlePtr);
     MEM_Free(reticlePtr);
 
-    // Allow strafing
-    GFA_Strafe();
-
     // Remove turning animations (player model sometimes gets stuck in turning animation)
     if (GOTHIC_CONTROL_SCHEME == 2) && (!GFA_STRAFING) {
         // Do not remove turning animations when strafing is disabled and player is not investing/casting
@@ -179,21 +176,48 @@ func void GFA_SpellAiming() {
  * oCAIHuman::_WalkCycle().
  */
 func void GFA_SpellLockMovement() {
+    // Only lock movement for eligible spells
     if (GFA_ACTIVE != FMODE_MAGIC) {
         return;
     };
 
+    var oCNpc her; her = Hlp_GetNpc(hero);
+    var int aniCtrlPtr; aniCtrlPtr = her.anictrl; // ESI is popped earlier and is not secure to use
+
+    // For Gothic 1 controls, lock movement always for all eligible spells
     if (GOTHIC_CONTROL_SCHEME == 1) {
+        // Disallow sneaking (messes up the perception and the animations)
+        if (MEM_ReadInt(aniCtrlPtr+oCAniCtrl_Human_walkmode_offset) & NPC_SNEAK) {
+            // Set up and check new walk mode as NPC_RUN (see Constants.d)
+            const int call = 0;
+            if (CALL_Begin(call)) {
+                CALL_IntParam(_@(NPC_RUN));
+                CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human__CanToggleWalkModeTo);
+                call = CALL_End();
+            };
+
+            // Toggle walk mode
+            if (CALL_RetValAsInt()) {
+                const int negOne = -1;
+                const int call2 = 0;
+                if (CALL_Begin(call2)) {
+                    CALL_IntParam(_@(negOne));
+                    CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human__ToggleWalkMode);
+                    call2 = CALL_End();
+                };
+            };
+        };
+
+        // Allow strafing
+        GFA_Strafe();
+
         // Set return value to one: Do not call any other movement functions
         EAX = 1;
         return;
     };
 
-    // For Gothic 2 controls completely lock movement for spell combat with a few exceptions
+    // For Gothic 2 controls, lock movement with a few exceptions
     if (!GFA_InvestingOrCasting(hero)) {
-        var oCNpc her; her = Hlp_GetNpc(hero);
-        var int aniCtrlPtr; aniCtrlPtr = her.anictrl; // ESI is popped earlier and is not secure to use
-
         // Weapon switch when not investing or casting
         if (MEM_KeyPressed(MEM_GetKey("keyWeapon"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyWeapon"))) {
             GFA_AimMovement(0, "");
@@ -215,14 +239,17 @@ func void GFA_SpellLockMovement() {
             GFA_AimMovement(0, "");
             return;
         };
-
-        // Stop running/walking animation
-        const int call = 0;
-        if (CALL_Begin(call)) {
-            CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human___Stand);
-            call = CALL_End();
-        };
     };
+
+    // Stop running/walking/sneaking animation
+    const int call3 = 0;
+    if (CALL_Begin(call3)) {
+        CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human___Stand);
+        call3 = CALL_End();
+    };
+
+    // Allow strafing
+    GFA_Strafe();
 
     // Set return value to one: Do not call any other movement functions
     EAX = 1;
