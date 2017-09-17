@@ -354,11 +354,6 @@ func void GFA_SetupProjectile() {
         // Vertical recoil: Classical upwards movement of the camera scaled by GFA_Recoil
         var int camYAngle; camYAngle = MEM_ReadInt(camAI+zCAICamera_elevation_offset);
         MEM_WriteInt(camAI+zCAICamera_elevation_offset, subf(camYAngle, recoilAngle));
-
-        // Horizontal recoil: Add random positive or negative (sideways) movement
-        var int camXAngle; camXAngle = MEM_ReadInt(camAI+zCAICamera_azimuth_offset);
-        var int manipulateX; manipulateX = fracf(r_MinMax(-GFA_HORZ_RECOIL*10, GFA_HORZ_RECOIL*10), 10);
-        MEM_WriteInt(camAI+zCAICamera_azimuth_offset, subf(camXAngle, manipulateX));
     };
 
 

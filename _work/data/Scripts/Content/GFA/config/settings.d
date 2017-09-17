@@ -11,7 +11,6 @@ const int   GFA_UPDATE_RET_SHOOT   = FALSE; // Also update the reticle while the
 const int   GFA_TRAJECTORY_ARC_MAX = 200;   // Maximum time (ms) after which projectile trajectory drops off (gravity)
 const float GFA_PROJECTILE_GRAVITY = 0.1;   // Gravity to apply to projectile after GFA_TRAJECTORY_ARC_MAX ms
 const int   GFA_MAX_RECOIL         = 15;    // Visual angle (degrees) of maximum recoil (recoil = 100%)
-const int   GFA_HORZ_RECOIL        = 2;     // Range [-x, x] in degrees of horizontal recoil
 
 // GFA_RANGED and/or GFA_SPELLS
 const int   GFA_STRAFING           = TRUE;  // Enable/disable movement while aiming (for both ranged and spell combat)
