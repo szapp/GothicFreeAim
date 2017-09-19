@@ -78,6 +78,10 @@ func void GFA_RangedIdle() {
  */
 func void GFA_RangedAiming() {
     if (GFA_ACTIVE < FMODE_FAR) {
+        GFA_RemoveReticle();
+        if (GFA_NO_AIM_NO_FOCUS) {
+            GFA_SetFocusAndTarget(0);
+        };
         return;
     };
 
