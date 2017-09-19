@@ -111,6 +111,7 @@ const int oCAIHuman__PC_CheckSpecialStates_lie       =  6920688; //0x6999F0 // H
 const int oCAIHuman__PC_ActionMove_bodyState         =  6922115; //0x699F83 // Hook len 6
 const int oCAIHuman__BowMode_interpolateAim          =  6906518; //0x696296 // Hook len 5
 const int oCAIHuman__BowMode_notAiming               =  6906078; //0x6960DE // Hook len 6
+const int oCAIHuman__BowMode_rtn                     =  6908156; //0x6968FC // Hook len 7
 const int oCAIHuman__MagicMode                       =  4665296; //0x472FD0 // Hook len 7
 const int oCAIHuman__MagicMode_rtn                   =  4666329; //0x4733D9 // Hook len 7
 const int oCAIArrow__SetupAIVob                      =  6951136; //0x6A10E0 // Hook len 6

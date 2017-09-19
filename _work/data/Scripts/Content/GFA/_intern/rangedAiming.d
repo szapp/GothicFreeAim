@@ -77,7 +77,7 @@ func void GFA_RangedIdle() {
  * collection is overwritten and the reticle is displayed.
  */
 func void GFA_RangedAiming() {
-    if (!GFA_ACTIVE) {
+    if (GFA_ACTIVE < FMODE_FAR) {
         return;
     };
 
@@ -149,7 +149,25 @@ func void GFA_RangedAiming() {
     // New aiming coordinates. Overwrite the arguments one and two passed to oCAniCtrl_Human::InterpolateCombineAni()
     MEM_WriteInt(ESP+20, FLOATHALF); // First argument: Always aim at center (azimuth). G2: esp+44h-30h, G1: esp+2Ch-18h
     ECX = angleY; // Second argument: New elevation
+};
 
-    // Allow strafing
-    GFA_Strafe();
+
+/*
+ * Prevent locking the player in place when aiming in ranged combat while falling. This function hooks the end of
+ * oCAIHuman::BowMode() to overwrite, whether aiming is active or not, to force reaction to falling in
+ * oCAIHuman::_WalkCycle().
+ */
+func void GFA_RangedLockMovement() {
+    if (!GFA_ACTIVE) {
+        return;
+    };
+
+    if (GFA_ACTIVE < FMODE_FAR) {
+        // Overwrite: Not aiming. Necessary for falling while strafing
+        EAX = 0;
+    } else {
+        // Otherwise allow strafing and lock movement
+        GFA_Strafe();
+        EAX = 1; // Should not be necessary, just for safety
+    };
 };

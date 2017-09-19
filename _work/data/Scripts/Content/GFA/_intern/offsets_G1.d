@@ -111,6 +111,7 @@ const int oCAIHuman__PC_CheckSpecialStates_lie       =  6370192; //0x613390 // H
 const int oCAIHuman__PC_ActionMove_bodyState         =  0;                                 // Does not exist in Gothic 1
 const int oCAIHuman__BowMode_interpolateAim          =  6359260; //0x6108DC // Hook len 5
 const int oCAIHuman__BowMode_notAiming               =  6359422; //0x61097E // Hook len 6
+const int oCAIHuman__BowMode_rtn                     =  6359713; //0x610AA1 // Hook len 7
 const int oCAIHuman__MagicMode                       =  4641376; //0x46D260 // Hook len 7
 const int oCAIHuman__MagicMode_rtn                   =  4641958; //0x46D4A6 // Hook len 7
 const int oCAIArrow__SetupAIVob                      =  6394320; //0x6191D0 // Hook len 6
