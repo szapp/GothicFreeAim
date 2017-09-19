@@ -164,6 +164,7 @@ func void GFA_RangedLockMovement() {
 
     if (GFA_ACTIVE < FMODE_FAR) {
         // Overwrite: Not aiming. Necessary for falling while strafing
+        GFA_AimMovement(0, "");
         EAX = 0;
     } else {
         // Otherwise allow strafing and lock movement
