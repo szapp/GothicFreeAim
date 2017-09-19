@@ -109,6 +109,7 @@ const int oCAniCtrl_Human__SearchStandAni_walkmode   =  6408587; //0x61C98B // H
 const int oCAIVobMove__DoAI_stopMovement             =  6389348; //0x617E64 // Hook len 7
 const int oCAIHuman__PC_CheckSpecialStates_lie       =  6370192; //0x613390 // Hook len 5
 const int oCAIHuman__PC_ActionMove_bodyState         =  0;                                 // Does not exist in Gothic 1
+const int oCAIHuman__BowMode_aimCondition            =  6359641; //0x610A59 // Hook len 5
 const int oCAIHuman__BowMode_interpolateAim          =  6359260; //0x6108DC // Hook len 5
 const int oCAIHuman__BowMode_notAiming               =  6359422; //0x61097E // Hook len 6
 const int oCAIHuman__BowMode_rtn                     =  6359713; //0x610AA1 // Hook len 7

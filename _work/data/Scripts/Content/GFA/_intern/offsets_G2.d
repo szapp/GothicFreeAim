@@ -109,6 +109,7 @@ const int oCAniCtrl_Human__SearchStandAni_walkmode   =  6967211; //0x6A4FAB // H
 const int oCAIVobMove__DoAI_stopMovement             =  6945300; //0x69FA14 // Hook len 7
 const int oCAIHuman__PC_CheckSpecialStates_lie       =  6920688; //0x6999F0 // Hook len 5
 const int oCAIHuman__PC_ActionMove_bodyState         =  6922115; //0x699F83 // Hook len 6
+const int oCAIHuman__BowMode_aimCondition            =  6906730; //0x69636A // Hook len 5
 const int oCAIHuman__BowMode_interpolateAim          =  6906518; //0x696296 // Hook len 5
 const int oCAIHuman__BowMode_notAiming               =  6906078; //0x6960DE // Hook len 6
 const int oCAIHuman__BowMode_rtn                     =  6908156; //0x6968FC // Hook len 7

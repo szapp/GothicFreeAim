@@ -249,12 +249,6 @@ func void GFA_IsActive() {
             return;
         };
 
-        // Get onset for drawing the bow, if aiming starts
-        if (GFA_ACTIVE != FMODE_FAR) {
-            GFA_BowDrawOnset = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
-            GFA_MouseMovedLast = MEM_Timer.totalTime + GFA_DRAWTIME_READY;
-        };
-
         // If this is reached, free aiming for ranged weapons is currently active
         GFA_ACTIVE = FMODE_FAR; // Do not differentiate between bow and crossbow
     };

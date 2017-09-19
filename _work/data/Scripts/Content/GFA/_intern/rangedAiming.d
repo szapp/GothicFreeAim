@@ -182,13 +182,18 @@ func void GFA_RangedLockMovement() {
  * This function hooks the condition whether to start aiming or not. Setting EAX to one starts aiming, setting it to
  * zero prevents the initiation of aiming. This function hooks oCAIHuman::BowMode() at the aiming condition and
  * overwrites the outcome of the if-condition. Essentially, this function allows to start aiming while running.
+ * Additionally, this function is used to detect the onset of aiming (so it is also used if GFA_STRAFING is disabled).
  */
 func void GFA_RangedAimingCondition() {
     var oCNpc her; her = Hlp_GetNpc(hero);
     var int herPtr; herPtr = _@(her);
 
-    if (!GFA_ACTIVE) {
-        // If free aiming is not enabled, revert to default condition (aiming only if standing)
+    // Set onset for draw force and steady aim
+    GFA_BowDrawOnset = MEM_Timer.totalTime;
+    GFA_MouseMovedLast = MEM_Timer.totalTime;
+
+    // If free aiming or aim movement are not enabled, revert to default condition (aiming only if standing)
+    if (!GFA_ACTIVE) || (!GFA_STRAFING) {
         var int aniCtrlPtr; aniCtrlPtr = her.anictrl;
         const int call = 0;
         if (CALL_Begin(call)) {
@@ -221,7 +226,4 @@ func void GFA_RangedAimingCondition() {
 
     // Start aiming animation
     EAX = 1;
-
-    // Allow strafing
-    GFA_Strafe();
 };
