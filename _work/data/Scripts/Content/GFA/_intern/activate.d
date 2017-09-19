@@ -163,11 +163,6 @@ func void GFA_IsActive() {
                                   || (MEM_KeyPressed(MEM_GetSecondaryKey(keyAiming)))
                                   || (MEMINT_SwitchG1G2(mouse.keyLeft, FALSE)); // Additional key binding for Gothic 1
 
-    // Variables for checking body states
-    var int standing;
-    var int casting;
-    var int stumbling;
-
     // Check fight mode
     if (her.fmode == FMODE_MAGIC) {
         // Check if free aiming for spells is disabled
@@ -206,19 +201,19 @@ func void GFA_IsActive() {
             MEM_PushInstParam(hero);
             MEM_PushIntParam(BS_STAND);
             MEM_Call(C_BodyStateContains);
-            standing = MEM_PopIntResult();
+            var int standing; standing = MEM_PopIntResult();
 
             // Exception: casting removes standing body state
             MEM_PushInstParam(hero);
             MEM_PushIntParam(BS_CASTING);
             MEM_Call(C_BodyStateContains);
-            casting = MEM_PopIntResult();
+            var int casting; casting = MEM_PopIntResult();
 
             // Exception: receiving damage removes standing body state
             MEM_PushInstParam(hero);
             MEM_PushIntParam(BS_STUMBLE);
             MEM_Call(C_BodyStateContains);
-            stumbling = MEM_PopIntResult();
+            var int stumbling; stumbling = MEM_PopIntResult();
 
             // Additionally, Gothic 1 controls require action key to be held
             if ((!standing) && (!casting) && (!stumbling)) || (!keyPressed) {
@@ -248,20 +243,8 @@ func void GFA_IsActive() {
             MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+4, keyPressed);
         };
 
-        // Check if standing
-        MEM_PushInstParam(hero);
-        MEM_PushIntParam(BS_STAND);
-        MEM_Call(C_BodyStateContains);
-        standing = MEM_PopIntResult();
-
-        // Exception: receiving damage removes standing body state
-        MEM_PushInstParam(hero);
-        MEM_PushIntParam(BS_STUMBLE);
-        MEM_Call(C_BodyStateContains);
-        stumbling = MEM_PopIntResult();
-
-        // Additionally, action key is required to be held
-        if ((!standing) && (!stumbling)) || (!keyPressed) {
+        // Aiming key is required to be held
+        if (!keyPressed) {
             GFA_ACTIVE = 1;
             return;
         };

@@ -176,3 +176,52 @@ func void GFA_RangedLockMovement() {
         EAX = 1; // Should not be necessary, just for safety
     };
 };
+
+
+/*
+ * This function hooks the condition whether to start aiming or not. Setting EAX to one starts aiming, setting it to
+ * zero prevents the initiation of aiming. This function hooks oCAIHuman::BowMode() at the aiming condition and
+ * overwrites the outcome of the if-condition. Essentially, this function allows to start aiming while running.
+ */
+func void GFA_RangedAimingCondition() {
+    var oCNpc her; her = Hlp_GetNpc(hero);
+    var int herPtr; herPtr = _@(her);
+
+    if (!GFA_ACTIVE) {
+        // If free aiming is not enabled, revert to default condition (aiming only if standing)
+        var int aniCtrlPtr; aniCtrlPtr = her.anictrl;
+        const int call = 0;
+        if (CALL_Begin(call)) {
+            CALL_PutRetValTo(_@(EAX));
+            CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human__IsStanding);
+            call = CALL_End();
+        };
+        return;
+    } else if (GFA_ACTIVE < FMODE_FAR) {
+        EAX = 0;
+        return;
+    };
+
+    // There is no forward aim movement with Gothic 1 controls
+    if (GOTHIC_CONTROL_SCHEME == 1) {
+        if (MEM_KeyPressed(MEM_GetKey("keyUp"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyUp"))) {
+            EAX = 0;
+            return;
+        };
+    };
+
+    // Set body state to standing
+    var int standing; standing = BS_STAND & ~BS_FLAG_INTERRUPTABLE & ~BS_FLAG_FREEHANDS;
+    const int call2 = 0;
+    if (CALL_Begin(call2)) {
+        CALL_IntParam(_@(standing));
+        CALL__thiscall(_@(herPtr), oCNpc__SetBodyState);
+        call2 = CALL_End();
+    };
+
+    // Start aiming animation
+    EAX = 1;
+
+    // Allow strafing
+    GFA_Strafe();
+};

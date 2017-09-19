@@ -51,6 +51,16 @@ func void GFA_InitFeatureFreeAiming() {
         MemoryProtectionOverride(oCAIHuman__CheckFocusVob_ranged, 1); // Prevent toggling focus in ranged combat
         if (GFA_STRAFING) {
             HookEngineF(oCAIHuman__BowMode_rtn, 7, GFA_RangedLockMovement); // Allow strafing or not when falling
+
+            // Allow to start aiming from running and continue into aim movement
+            const int oCAIHuman__BowMode_aimCondition =  6906730; //0x69636A
+            MemoryProtectionOverride(oCAIHuman__BowMode_aimCondition, 5);
+            MEM_WriteByte(oCAIHuman__BowMode_aimCondition, ASMINT_OP_nop); // Erase standing condition
+            MEM_WriteByte(oCAIHuman__BowMode_aimCondition+1, ASMINT_OP_nop);
+            MEM_WriteByte(oCAIHuman__BowMode_aimCondition+2, ASMINT_OP_nop);
+            MEM_WriteByte(oCAIHuman__BowMode_aimCondition+3, ASMINT_OP_nop);
+            MEM_WriteByte(oCAIHuman__BowMode_aimCondition+4, ASMINT_OP_nop);
+            HookEngineF(oCAIHuman__BowMode_aimCondition, 5, GFA_RangedAimingCondition); // Replace condition with own
         };
 
         // Gothic 2 controls
