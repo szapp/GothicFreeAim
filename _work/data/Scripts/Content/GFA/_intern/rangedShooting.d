@@ -591,3 +591,72 @@ func void GFA_OverwriteHitChance() {
     // Update the shooting statistics
     GFA_StatsHits += hit;
 };
+
+
+/*
+ * For hit registration of projectiles with NPCs, Gothic only checks the bounding box of the collision vob. This results
+ * in a large number of false positive hits when using free aiming with scattering. This function performs a refined
+ * collision check once the bounding box collision was determined. This function is called from
+ * GFA_ExtendCollisionCheck() only if GFA_TRUE_HITCHANCE is true.
+ */
+func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
+    if (!GFA_ACTIVE) {
+        return TRUE;
+    };
+
+    // Direction of collision line by subtracting the last position of the rigid body from the projectile position
+    var int projectilePtr; projectilePtr = MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset);
+    if (!projectilePtr) {
+        return TRUE;
+    };
+    var oCItem projectile; projectile = _^(projectilePtr);
+    var int rBody; rBody = projectile._zCVob_rigidBody;
+    if (!rBody) {
+        return TRUE;
+    };
+    var int traceRayVec[6];
+    traceRayVec[0] = projectile._zCVob_trafoObjToWorld[ 3];
+    traceRayVec[1] = projectile._zCVob_trafoObjToWorld[ 7];
+    traceRayVec[2] = projectile._zCVob_trafoObjToWorld[11];
+    traceRayVec[3] = subf(MEM_ReadInt(rBody+zCRigidBody_xPos_offset), traceRayVec[0]);
+    traceRayVec[4] = subf(MEM_ReadInt(rBody+zCRigidBody_xPos_offset+4), traceRayVec[1]);
+    traceRayVec[5] = subf(MEM_ReadInt(rBody+zCRigidBody_xPos_offset+8), traceRayVec[2]);
+    var int fromPosPtr; fromPosPtr = _@(traceRayVec);
+    var int dirPosPtr; dirPosPtr = _@(traceRayVec)+sizeof_zVEC3;
+
+    // Direction vector needs to be normalized
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL__thiscall(_@(dirPosPtr), zVEC3__NormalizeSafe);
+        call = CALL_End();
+    };
+    MEM_CopyBytes(CALL_RetValAsPtr(), dirPosPtr, sizeof_zVEC3);
+
+    // Adjust length of ray (large models have hugh bounding boxes)
+    traceRayVec[0] = subf(traceRayVec[0], mulf(traceRayVec[3], FLOAT1C)); // Start one meter behind the projectile
+    traceRayVec[1] = subf(traceRayVec[1], mulf(traceRayVec[4], FLOAT1C));
+    traceRayVec[2] = subf(traceRayVec[2], mulf(traceRayVec[5], FLOAT1C));
+    traceRayVec[3] = mulf(traceRayVec[3], FLOAT7C); // Trace trajectory from bounding box edge for seven meters
+    traceRayVec[4] = mulf(traceRayVec[4], FLOAT7C);
+    traceRayVec[5] = mulf(traceRayVec[5], FLOAT7C);
+
+    // Perform refined collision check
+    GFA_AllowSoftSkinTraceRay(1);
+    var int hit;
+    var int flags; flags = zTraceRay_poly_normal | zTraceRay_poly_ignore_transp;
+    var int trRep; trRep = MEM_Alloc(sizeof_zTTraceRayReport);
+    const int call2 = 0;
+    if (CALL_Begin(call2)) {
+        CALL_PtrParam(_@(trRep));      // zTTraceRayReport (not needed)
+        CALL_IntParam(_@(flags));      // Trace ray flags
+        CALL_PtrParam(_@(dirPosPtr));  // Trace ray direction
+        CALL_PtrParam(_@(fromPosPtr)); // Start vector
+        CALL_PutRetValTo(_@(hit));     // Did the trace ray hit
+        CALL__thiscall(_@(vobPtr), zCVob__TraceRay); // This is a vob specific trace ray
+        call2 = CALL_End();
+    };
+    MEM_Free(trRep); // Free the report
+    GFA_AllowSoftSkinTraceRay(0);
+
+    return +hit;
+};

@@ -195,8 +195,9 @@ func void GFA_AimMovement(var int movement, var string modifier) {
     var int aniNamePtr; aniNamePtr = _@s(aniName);
 
     // Check if spell animation with casting modifier exists (otherwise assume default)
-    if (STR_Len(modifier) > 3) {
-        var int modelPrototype; modelPrototype = MEM_ReadInt(MEM_ReadInt(model+zCModel__modelPrototype_offset));
+    if (STR_Len(modifier) > 4) {
+        var zCArray protoTypes; protoTypes = _^(model+zCModel_prototypes_offset);
+        var int modelPrototype; modelPrototype = MEM_ReadInt(protoTypes.array);
         const int call5 = 0;
         if (CALL_Begin(call5)) {
             CALL__fastcall(_@(modelPrototype), _@(aniNamePtr), zCModelPrototype__SearchAniIndex);

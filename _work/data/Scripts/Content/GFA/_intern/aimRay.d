@@ -23,6 +23,39 @@
 
 
 /*
+ * Temporarily allow model trace ray for soft skin mesh.
+ * For more information, see: https://github.com/szapp/GothicFreeAim/issues/159#issuecomment-331067324
+ */
+func void GFA_AllowSoftSkinTraceRay(var int on) {
+    const int SET = 0;
+    if (on == SET) {
+        return; // No change necessary
+    };
+
+    if (on) {
+        // Skip first soft skin check, and first only!
+        // The opcode for G1 and G2 is functionally identical. However, the instruction in G2 is 6 bytes long
+        MEM_WriteByte(zCModel__TraceRay_softSkinCheck, ASMINT_OP_nop);
+        if (GOTHIC_BASE_VERSION == 1) {
+            MEM_WriteByte(zCModel__TraceRay_softSkinCheck+1, /*33*/ 51); // xor  eax, eax
+            MEM_WriteByte(zCModel__TraceRay_softSkinCheck+2, /*C0*/ 192);
+        } else {
+            MEM_WriteByte(zCModel__TraceRay_softSkinCheck+1, /*B8*/ 184); // mov  eax, 0
+            MEM_WriteByte(zCModel__TraceRay_softSkinCheck+2, 0);
+        };
+    } else {
+        // Disallow soft skin model trace ray (revert to default)
+        // G1:  8B 43 78         mov  eax, [ebx+78h]
+        // G2:  8B 86 84 0 0 0   mov  eax, [esi+84h]
+        MEM_WriteByte(zCModel__TraceRay_softSkinCheck, /*8B*/ 139);
+        MEM_WriteByte(zCModel__TraceRay_softSkinCheck+1, MEMINT_SwitchG1G2(/*43*/ 67, /*86*/ 134)); // EBX/ESI zCModel*
+        MEM_WriteByte(zCModel__TraceRay_softSkinCheck+2, zCModel_meshSoftSkinList_numInArray_offset);
+    };
+    SET = !SET;
+};
+
+
+/*
  * Shoot a trace ray to retrieve the point of intersection with the nearest object in the world and the distance, and to
  * overwrite the focus collection with a desired focus type. This function is customized for aiming and it is not
  * recommended to use for any other matter.
@@ -111,12 +144,14 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
         // will be ignored although they have collision. However, this flag is buggy. It NEEDS to be present otherwise
         // artifacts will arise, like pseudo-random ignoring of walls and objects.
         var int flags; flags = zTRACERAY_vob_ignore_no_cd_dyn
+                             | zTraceRay_poly_normal
                              | zTRACERAY_poly_ignore_transp // Do not change (will make trace ray unstable)
                              | zTRACERAY_poly_test_water
                              | zTRACERAY_vob_ignore_projectiles;
         var int fromPosPtr; fromPosPtr = _@(traceRayVec);
         var int dirPosPtr; dirPosPtr = _@(traceRayVec)+sizeof_zVEC3;
         var int worldPtr; worldPtr = _@(MEM_World);
+        GFA_AllowSoftSkinTraceRay(1);
         const int call = 0;
         if (CALL_Begin(call)) {
             CALL_IntParam(_@(flags));     // Trace ray flags
@@ -126,6 +161,7 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
             CALL__fastcall(_@(worldPtr), _@(fromPosPtr), zCWorld__TraceRayNearestHit_Vob);
             call = CALL_End();
         };
+        GFA_AllowSoftSkinTraceRay(0);
 
         // Retrieve trace ray report
         var int foundVob; foundVob = MEM_World.foundVob;
@@ -136,34 +172,15 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
         // instances in Focus.d, will lead nowhere, when aiming at a distance as angles become wider. Instead, if a
         // focus vob was collected by the engine, it will be checked whether it was hit by the trace ray which means
         // the camera is looking directly at it.
-        // Unfortunately, NPCs are not registered by normal trace rays like the one above. They are only detected if
-        // Boundingbox detection is turned on. This is to be avoided, however, because otherwise all vob bounding boxes
-        // would obstruct the trace ray immensely, NEVER allowing the focusing of NPCs.
-        // Instead, the trace ray vob list is searched for NPCs. The trace ray vob list holds all vobs that were
-        // intersected. If the focus vob (from Gothic's standard focus collection) is present in this vob list, one step
-        // remains to confirm, that the NPC is actually in the cross hairs: Running a secondary trace ray on the NPC
-        // with the bounding box trace ray flags.
-
-        // Variable to specify whether the focus vob is in the trace ray vob list
         var int foundFocus; foundFocus = 0;
-
-        if (her.focus_vob) {
-            // Gothic collected a focus vob
-
-            // Second trace ray only if focus vob is reasonable
-            var int runDetailedTraceRay; runDetailedTraceRay = 0;
-
+        if (her.focus_vob) && (focusType) {
             // Check if collected focus matches the desired focus type (see function parameter 'focusType')
-            if (!focusType) {
-                // No focus may be desired for spells that estimate distances but do not want to focus anything
-                foundFocus = 0;
 
-            } else if (focusType != TARGET_TYPE_ITEMS) && (Hlp_Is_oCNpc(her.focus_vob)) {
+            if (focusType != TARGET_TYPE_ITEMS) && (Hlp_Is_oCNpc(her.focus_vob)) &&  (her.focus_vob == foundVob) {
                 // If an NPC focus is desired, more detailed checks are necessary
 
-                var C_Npc target; target = _^(her.focus_vob);
-
                 // Check if NPC is undead, function is not yet defined at time of parsing
+                var C_Npc target; target = _^(her.focus_vob);
                 MEM_PushInstParam(target);
                 MEM_Call(C_NpcIsUndead); // C_NpcIsUndead(target);
                 var int npcIsUndead; npcIsUndead = MEM_PopIntResult();
@@ -173,38 +190,24 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
                 || ((focusType == TARGET_TYPE_ORCS) && target.guild > GIL_SEPERATOR_ORC)   // Only focus orcs
                 || ((focusType == TARGET_TYPE_HUMANS) && target.guild < GIL_SEPERATOR_HUM) // Only focus humans
                 || ((focusType == TARGET_TYPE_UNDEAD) && npcIsUndead) {                    // Only focus undead NPCs
-                    // Iterate over trace ray vob list to check if the NPC was collected
-                    var int potVobPtr; potVobPtr = _@(her.focus_vob);
-                    var int voblist; voblist = _@(MEM_World.traceRayVobList_array);
-                    const int call2 = 0;
-                    if (CALL_Begin(call2)) { // More complicated for NPCs: Check if NPC is in trace ray vob list
-                        CALL_PtrParam(_@(potVobPtr)); // Explanation: NPCs are never HIT by a trace ray (only collected)
-                        CALL_PutRetValTo(_@(runDetailedTraceRay)); // Perform detailed trace ray if NPC was in vob list
-                        CALL__thiscall(_@(voblist), zCArray_zCVob__IsInList);
-                        call2 = CALL_End();
-                    };
+                    foundFocus = her.focus_vob;
                 };
 
             } else if (focusType <= TARGET_TYPE_ITEMS) && (Hlp_Is_oCItem(her.focus_vob)) {
-                // If an item focus is desired, also perform a detailed trace ray. This ensures a stable focus
-                runDetailedTraceRay = 1;
-            };
+                // If an item focus is desired, perform another rougher trace ray (by bounding box). This ensures a
+                // stable focus, because items might be rather small
 
-            // If focus collection is reasonable, run a more detailed examination, a vob-specific trace ray
-            if (runDetailedTraceRay) {
-
-                // Update the flags and specific trace ray
-                flags = zTRACERAY_vob_ignore_no_cd_dyn | zTRACERAY_vob_bbox; // Important!
+                flags = flags | zTRACERAY_vob_bbox;
                 var int focusVobPtr; focusVobPtr = her.focus_vob; // Write to variable, otherwise crash on new game
                 var int trRep; trRep = MEM_Alloc(sizeof_zTTraceRayReport);
-                const int call3 = 0;
-                if (CALL_Begin(call3)) {
+                const int call2 = 0;
+                if (CALL_Begin(call2)) {
                     CALL_PtrParam(_@(trRep));      // zTTraceRayReport
                     CALL_IntParam(_@(flags));      // Trace ray flags
                     CALL_PtrParam(_@(dirPosPtr));  // Trace ray direction
                     CALL_PtrParam(_@(fromPosPtr)); // Start vector
                     CALL__thiscall(_@(focusVobPtr), zCVob__TraceRay); // This is a vob specific trace ray
-                    call3 = CALL_End();
+                    call2 = CALL_End();
                 };
                 if (CALL_RetValAsInt()) {
                     // Got a hit: Update trace ray report

@@ -77,6 +77,8 @@ const int oCSpell__Open                              =  4741280; //0x4858A0
 const int zCProgMeshProto__classDef                  =  9972552; //0x982B48
 const int oCVisualFX__classDef                       =  9234008; //0x8CE658
 const int oCVisualFX__Stop                           =  4799456; //0x493BE0
+const int zCModel__classDef                          =  9275680; //0x8D8920
+const int zCModel__TraceRay_softSkinCheck            =  5777440; //0x582820
 const int zCModel__SearchNode                        =  5758960; //0x57DFF0
 const int zCModel__GetBBox3DNodeWorld                =  5738736; //0x5790F0
 const int zCModel__GetNodePositionWorld              =  5738816; //0x579140
@@ -116,7 +118,7 @@ const int oCAIHuman__BowMode_rtn                     =  6908156; //0x6968FC // H
 const int oCAIHuman__MagicMode                       =  4665296; //0x472FD0 // Hook len 7
 const int oCAIHuman__MagicMode_rtn                   =  4666329; //0x4733D9 // Hook len 7
 const int oCAIArrow__SetupAIVob                      =  6951136; //0x6A10E0 // Hook len 6
-const int oCAIArrow__CanThisCollideWith              =  6952081; //0x6A1491 // Hook len 6
+const int oCAIArrow__CanThisCollideWith_positive     =  6952212; //0x6A1514 // Hook len 7
 const int oCAIArrow__DoAI_rtn                        =  6952073; //0x6A1489 // Hook len 6
 const int oCAIArrow__ReportCollisionToAI_collAll     =  6949315; //0x6A09C3 // Hook len 8
 const int oCAIArrow__ReportCollisionToAI_hitChc      =  6953482; //0x6A1A0A // Hook len 6
@@ -175,6 +177,7 @@ const int oCAIHuman_bitfield_offset                  = 4612;//0x1204
 const int oCAIHuman_bitfield_startObserveIntruder    = 1<<6;
 const int oCAIHuman_bitfield_spellReleased           = 1<<7;
 
+const int oCAIArrowBase_ignoreVobList_offset         = 48;  //0x0030
 const int oCAIArrowBase_collision_offset             = 52;  //0x0034
 const int oCAIArrowBase_lifeTime_offset              = 56;  //0x0038
 const int oCAIArrowBase_hostVob_offset               = 60;  //0x003C
@@ -192,7 +195,8 @@ const int zCRigidBody_bitfield_gravityActive         = 1<<0;
 
 const int zCModel_numActAnis_offset                  = 52;  //0x0034
 const int zCModel_actAniList_offset                  = 56;  //0x0037
-const int zCModel__modelPrototype_offset             = 100; //0x0064
+const int zCModel_prototypes_offset                  = 100; //0x0064
+const int zCModel_meshSoftSkinList_numInArray_offset = 132; //0x0084
 
 const int zCModelAni_aniID_offset                    = 76;  //0x004C
 
@@ -210,6 +214,7 @@ const int zCCollObjectLevelPolys_polyList_offset     = 140; //0x008C
 
 const int zTraceRay_vob_ignore_no_cd_dyn             = 1<<0;  // Ignore vobs without collision
 const int zTraceRay_vob_bbox                         = 1<<2;  // Intersect bounding boxes (important to detect NPCs)
+const int zTraceRay_poly_normal                      = 1<<7;  // Report normal vector of intersection
 const int zTraceRay_poly_ignore_transp               = 1<<8;  // Ignore alpha polys (without this, trace ray is bugged)
 const int zTraceRay_poly_test_water                  = 1<<9;  // Intersect water
 const int zTraceRay_vob_ignore_projectiles           = 1<<14; // Ignore projectiles

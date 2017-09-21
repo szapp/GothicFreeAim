@@ -502,7 +502,8 @@ func void GFA_AdjustDamageAnimation() {
             // Check if animation with casting modifier exists
             var int aniNamePtr; aniNamePtr = _@s(ConcatStrings(ConcatStrings(prefix, castMod), aniName));
             var int model; model = MEM_ReadInt(MEMINT_SwitchG1G2(/*esp+200h-ECh*/ ESP+276, /*esp+1FCh-DCh*/ ESP+288));
-            var int modelPrototype; modelPrototype = MEM_ReadInt(MEM_ReadInt(model+zCModel__modelPrototype_offset));
+            var zCArray protoTypes; protoTypes = _^(model+zCModel_prototypes_offset);
+            var int modelPrototype; modelPrototype = MEM_ReadInt(protoTypes.array);
             const int call = 0;
             if (CALL_Begin(call)) {
                 CALL__fastcall(_@(modelPrototype), _@(aniNamePtr), zCModelPrototype__SearchAniIndex);

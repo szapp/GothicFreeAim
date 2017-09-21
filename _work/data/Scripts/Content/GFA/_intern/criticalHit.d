@@ -259,10 +259,10 @@ func void GFA_CH_DetectCriticalHit() {
         };
         MEM_CopyBytes(CALL_RetValAsPtr(), dirPtr, sizeof_zVEC3);
 
-        // Trajectory starts 3 meters (FLOAT3C) behind the projectile position, to detect bounding boxes at close range
-        GFA_DebugWSTrj[0] = addf(projectile._zCVob_trafoObjToWorld[ 3], mulf(dir[0], FLOAT3C));
-        GFA_DebugWSTrj[1] = addf(projectile._zCVob_trafoObjToWorld[ 7], mulf(dir[1], FLOAT3C));
-        GFA_DebugWSTrj[2] = addf(projectile._zCVob_trafoObjToWorld[11], mulf(dir[2], FLOAT3C));
+        // Trajectory starts one meter behind the projectile position, to detect bounding boxes at close range
+        GFA_DebugWSTrj[0] = addf(projectile._zCVob_trafoObjToWorld[ 3], mulf(dir[0], FLOAT1C));
+        GFA_DebugWSTrj[1] = addf(projectile._zCVob_trafoObjToWorld[ 7], mulf(dir[1], FLOAT1C));
+        GFA_DebugWSTrj[2] = addf(projectile._zCVob_trafoObjToWorld[11], mulf(dir[2], FLOAT1C));
 
         // Loop to walk along the trajectory of the projectile
         criticalHit = 0;

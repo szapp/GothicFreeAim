@@ -640,62 +640,84 @@ func void GFA_CC_SetDamageBehavior() {
 
 
 /*
- * This function disables collision of projectiles with NPCs once the projectiles have bounced off of another surface.
- * Like GFA_CC_DisableProjectileCollisionWithTrigger(), this function hooks oCAIArrow::CanThisCollideWith() and checks
- * whether the object in question is an NPC to prevent the collision, if the projectiles has collided before. The hook
- * is done in a separate function to increase performance, if only one of the two settings is enabled; also, the trigger
- * collision fix is not used in Gothic 1.
- *
- * Note: This hook is only initialized if GFA_COLL_PRIOR_NPC == -1.
+ * Disable collision of projectiles with NPCs once the projectiles have bounced off of another surface. This function is
+ * called from GFA_ExtendCollisionCheck() only if GFA_COLL_PRIOR_NPC == -1.
  */
-func void GFA_CC_DisableProjectileCollisionOnRebound() {
-    var int arrowAI; arrowAI = ECX;
-
+func int GFA_CC_DisableProjectileCollisionOnRebound(var int vobPtr, var int arrowAI) {
     // Check if the projectile bounced off of a surface before
-    if (!MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset)) {
-        return;
+    if (MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset)) {
+        return FALSE;
+    } else {
+        return TRUE;
     };
-
-    var int vobPtr; vobPtr = MEMINT_SwitchG1G2(ESP+4, ESP+8);
-    if (!Hlp_Is_oCNpc(MEM_ReadInt(vobPtr))) {
-        return;
-    };
-
-    // Replace the collision object with the shooter, because the shooter is always ignored
-    var int shooterPtr; shooterPtr = MEM_ReadInt(arrowAI+oCAIArrow_origin_offset);
-    MEM_WriteInt(vobPtr, shooterPtr);
 };
 
 
 /*
  * Fix trigger collision bug. When shooting a projectile inside a trigger with certain properties, the projectile
- * collides continuously and causes a nerve recking sound. Like GFA_CC_DisableProjectileCollisionOnRebound(), this
- * function hooks oCAIArrow::CanThisCollideWith() and checks whether the object in question is a trigger with certain
- * properties to prevent the collision. The hook is done in a separate function to increase performance, if only one of
- * the two settings is enabled. This fix is only necessary for Gothic 2.
- *
- * Taken from http://forum.worldofplayers.de/forum/threads/1126551/page10?p=20894916
- *
- * Note: This hook is only initialized if GFA_TRIGGER_COLL_FIX == true.
+ * collides continuously and causes a nerve recking sound. Any trigger collising with a projectile is checked for
+ * certain properties to prevent the collision. This function is called from GFA_ExtendCollisionCheck() if
+ * GFA_TRIGGER_COLL_FIX == true.
  */
-func void GFA_CC_DisableProjectileCollisionWithTrigger() {
-    var int vobPtr; vobPtr = MEMINT_SwitchG1G2(ESP+4, ESP+8);
-    var zCVob vob; vob = _^(MEM_ReadInt(vobPtr));
-
+func int GFA_CC_DisableProjectileCollisionWithTrigger(var int vobPtr, var int arrowAI) {
     // Check if the collision object is a trigger
+    var zCVob vob; vob = _^(MEM_ReadInt(vobPtr));
     if (vob._vtbl != zCTrigger__vtbl) && (vob._vtbl != oCTriggerScript__vtbl) {
-        return;
+        return TRUE;
     };
     var zCTrigger trigger; trigger = _^(MEM_ReadInt(vobPtr));
 
     if (trigger.bitfield & zCTrigger_bitfield_respondToObject)
     && (trigger.bitfield & zCTrigger_bitfield_reactToOnTouch) {
         // Object-reacting trigger. This kind of trigger needs the collision, e.g. to react to projectiles
-        return;
+        return TRUE;
+    } else {
+        return FALSE;
+    };
+};
+
+
+/*
+ * Perform additional collision checks after Gothic determines a positive collision of a projectile with a vob bounding
+ * box. This function calls various functions from different features to have the projectile ignore the vob in question.
+ * Additionally, this vob is added at the beginning of the vob ignore list of the projectile, such that this function is
+ * only called once for each projectile-vob-combination for minimum impact on performance. This function hooks
+ * oCAIArrow::CanThisCollideWith() at an offset where positive collision with the bounding box was determined, just
+ * before leaving the function.
+ */
+func void GFA_ExtendCollisionCheck() {
+    // Retrieve oCAIArrow and collision vob
+    var int vobPtr; vobPtr = MEM_ReadInt(MEMINT_SwitchG1G2(/*esp+4h+4h*/ ESP+8, /*esp+8h+4h*/ ESP+12));
+    var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EDI);
+
+    // Perform refined collision checks (in priority order to exit ASAP)
+    var int hit; hit = TRUE;
+    if (Hlp_Is_oCNpc(vobPtr)) {
+        // Ignore NPCs on rebound
+        if (GFA_Flags & GFA_CUSTOM_COLLISIONS) && (GFA_COLL_PRIOR_NPC == -1) {
+            hit = GFA_CC_DisableProjectileCollisionOnRebound(vobPtr, arrowAI);
+        };
+
+        // Ignore by refined collision check with NPCs
+        if (GFA_Flags & GFA_RANGED) && (GFA_TRUE_HITCHANCE) && (hit) {
+            hit = GFA_RefinedProjectileCollisionCheck(vobPtr, arrowAI);
+        };
+    } else if (GFA_Flags & GFA_CUSTOM_COLLISIONS) && (GFA_TRIGGER_COLL_FIX) && (GOTHIC_BASE_VERSION == 2) {
+        // Ignore when colliding with triggers
+        hit = GFA_CC_DisableProjectileCollisionWithTrigger(vobPtr, arrowAI);
     };
 
-    // Replace the collision object with the shooter, because the shooter is always ignored
-    var int arrowAI; arrowAI = ECX;
-    var int shooterPtr; shooterPtr = MEM_ReadInt(arrowAI+oCAIArrow_origin_offset);
-    MEM_WriteInt(vobPtr, shooterPtr);
+    // Ignore vob in question
+    if (!hit) {
+        // Add vob to ignore list
+        var int ignoreVobList; ignoreVobList = MEM_ReadInt(arrowAI+oCAIArrowBase_ignoreVobList_offset);
+        List_AddFront(ignoreVobList, vobPtr);
+
+        // Increase reference counter, otherwise NPC/vob will be deleted on list destruction!
+        var zCVob vob; vob = _^(vobPtr);
+        vob._zCObject_refCtr += 1;
+
+        // Set return value of collision check to false
+        ECX = 0;
+    };
 };

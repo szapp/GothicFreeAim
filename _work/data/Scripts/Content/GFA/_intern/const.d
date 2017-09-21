@@ -41,6 +41,8 @@ const int    GFA_CUSTOM_COLLISIONS  = 1<<3;                 // Custom collision/
 const int    GFA_CRITICALHITS       = 1<<4;                 // Critical hits for ranged combat (e.g. head shots)
 const int    GFA_ALL                = (1<<5) - 1;           // Initialize all features
 
+const int    GFA_INIT_COLL_CHECK    = 0;                    // Initialize extended collision detection
+
 const int    GFA_DRAWTIME_READY     = 475;                  // Time (ms) for readying the weapon. Fixed by animation
 const int    GFA_DRAWTIME_RELOAD    = 1250;                 // Time (ms) for reloading the weapon. Fixed by animation
 var   int    GFA_BowDrawOnset;                              // Time onset of drawing the bow
@@ -86,6 +88,7 @@ const int    GFA_FOCUS_SPL_ITM_DFT  = 0;                    // Backup item prior
 
 const int    FLOAT1C                = 1120403456;           // 100 as float
 const int    FLOAT3C                = 1133903872;           // 300 as float
+const int    FLOAT7C                = 1171963904;           // 700 as float
 const int    FLOAT1K                = 1148846080;           // 1000 as float
 
 var   int    GFA_DebugWSBBox[6];                            // Weak spot bounding box for debug visualization

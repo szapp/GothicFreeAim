@@ -69,6 +69,16 @@ func void GFA_InitFeatureFreeAiming() {
             MemoryProtectionOverride(oCAIHuman__BowMode_shootingKey, 2); // Shooting key: push 3
             MemoryProtectionOverride(oCAIHuman__PC_ActionMove_aimingKey, 5); // Aim key: mov eax [esp+8+4], push eax
         };
+
+        // Extend and refine collision detection on vobs
+        if (GFA_TRUE_HITCHANCE) {
+            MemoryProtectionOverride(zCModel__TraceRay_softSkinCheck, 3); // Prepare allowing soft skin model trace ray
+
+            if (!GFA_INIT_COLL_CHECK) {
+                HookEngineF(oCAIArrow__CanThisCollideWith_positive, MEMINT_SwitchG1G2(6, 7), GFA_ExtendCollisionCheck);
+                GFA_INIT_COLL_CHECK = TRUE;
+            };
+        };
     };
 
     // Free aiming for spells
@@ -113,11 +123,6 @@ func void GFA_InitFeatureFreeAiming() {
         MEM_Info("Initializing debug visualizations.");
         HookEngineF(zCWorld__AdvanceClock, 10, GFA_VisualizeWeakspot); // FrameFunctions hook too late for rendering
         HookEngineF(zCWorld__AdvanceClock, 10, GFA_VisualizeTraceRay);
-        if (GFA_DEBUG_CONSOLE) {
-            // Enable console commands for debugging
-            CC_Register(GFA_DebugWeakspot, "debug GFA weakspot", "turn debug visualization on/off");
-            CC_Register(GFA_DebugTraceRay, "debug GFA traceray", "turn debug visualization on/off");
-        };
     };
 
     // Read INI Settings
@@ -177,15 +182,11 @@ func void GFA_InitFeatureCustomCollisions() {
         MemoryProtectionOverride(oCAIArrowBase__ReportCollisionToAI_collNpc, 2); // Set collision behavior on NPCs
     };
 
-    if (GFA_COLL_PRIOR_NPC == -1) {
-        // Ignore NPCs after a projectile has bounced off of a surface
-        HookEngineF(oCAIArrow__CanThisCollideWith, 6, GFA_CC_DisableProjectileCollisionOnRebound);
-    };
-
-    // Trigger collision fix (only necessary for Gothic 2)
-    if (GFA_TRIGGER_COLL_FIX) && (GOTHIC_BASE_VERSION == 2) {
-        MEM_Info("Initializing trigger collision fix.");
-        HookEngineF(oCAIArrow__CanThisCollideWith, 6, GFA_CC_DisableProjectileCollisionWithTrigger); // Fix trigger bug
+    // Extend and refine collision detection on vobs
+    if ((GFA_COLL_PRIOR_NPC == -1) || ((GFA_TRIGGER_COLL_FIX) && (GOTHIC_BASE_VERSION == 2)))
+    && (!GFA_INIT_COLL_CHECK) {
+        HookEngineF(oCAIArrow__CanThisCollideWith_positive, MEMINT_SwitchG1G2(6, 7), GFA_ExtendCollisionCheck);
+        GFA_INIT_COLL_CHECK = TRUE;
     };
 };
 
@@ -297,8 +298,6 @@ func int GFA_InitOnce() {
 
     // FEATURE: Reusable projectiles
     if (GFA_Flags & GFA_REUSE_PROJECTILES) {
-        // Because of balancing issues, this is feature is stored as a constant and not a variable. It should not be
-        // enabled/disabled during the game. That would cause too many/too few projectiles
         GFA_InitFeatureReuseProjectiles();
     };
 
@@ -315,17 +314,6 @@ func int GFA_InitOnce() {
         GFA_InitFixOpenInventory();
 
     // };
-
-    // Register console commands
-    MEM_Info("Initializing console commands.");
-    CC_Register(GFA_GetVersion, "GFA version", "print GFA version info");
-    CC_Register(GFA_GetLicense, "GFA license", "print GFA license info");
-    CC_Register(GFA_GetInfo, "GFA info", "print GFA config info");
-    CC_Register(GFA_GetShootingStats, "GFA stats", "print shooting statistics");
-    CC_Register(GFA_ResetShootingStats, "GFA stats reset", "reset shooting statistics");
-    if (GFA_DEBUG_CONSOLE) {
-        CC_Register(GFA_DebugPrint, "debug GFA zSpy", "turn on GFA debug information in zSpy");
-    };
 
     // Successfully initialized
     return TRUE;
@@ -378,6 +366,20 @@ func void GFA_InitAlways() {
 
         // For safety (player might strafe into level change trigger)
         GFA_IsStrafing = 0;
+    };
+
+    // Register console commands
+    MEM_Info("Initializing console commands.");
+    CC_Register(GFA_GetVersion, "GFA version", "print GFA version info");
+    CC_Register(GFA_GetLicense, "GFA license", "print GFA license info");
+    CC_Register(GFA_GetInfo, "GFA info", "print GFA config info");
+    CC_Register(GFA_GetShootingStats, "GFA stats", "print shooting statistics");
+    CC_Register(GFA_ResetShootingStats, "GFA stats reset", "reset shooting statistics");
+    if (GFA_DEBUG_CONSOLE) {
+        // Enable console commands for debugging
+        CC_Register(GFA_DebugPrint, "debug GFA zSpy", "turn on GFA debug information in zSpy");
+        CC_Register(GFA_DebugWeakspot, "debug GFA weakspot", "turn debug visualization on/off");
+        CC_Register(GFA_DebugTraceRay, "debug GFA traceray", "turn debug visualization on/off");
     };
 };
 
