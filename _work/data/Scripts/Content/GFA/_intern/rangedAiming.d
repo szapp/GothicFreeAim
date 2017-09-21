@@ -187,6 +187,7 @@ func void GFA_RangedLockMovement() {
 func void GFA_RangedAimingCondition() {
     var oCNpc her; her = Hlp_GetNpc(hero);
     var int herPtr; herPtr = _@(her);
+    var int aniCtrlPtr; aniCtrlPtr = her.anictrl;
 
     // Set onset for draw force and steady aim
     GFA_BowDrawOnset = MEM_Timer.totalTime;
@@ -194,7 +195,6 @@ func void GFA_RangedAimingCondition() {
 
     // If free aiming or aim movement are not enabled, revert to default condition (aiming only if standing)
     if (!GFA_ACTIVE) || (!GFA_STRAFING) {
-        var int aniCtrlPtr; aniCtrlPtr = her.anictrl;
         const int call = 0;
         if (CALL_Begin(call)) {
             CALL_PutRetValTo(_@(EAX));
@@ -222,6 +222,18 @@ func void GFA_RangedAimingCondition() {
         CALL_IntParam(_@(standing));
         CALL__thiscall(_@(herPtr), oCNpc__SetBodyState);
         call2 = CALL_End();
+    };
+
+    // Remove turning animations (player model sometimes gets stuck in turning animation)
+    var zCAIPlayer playerAI; playerAI = _^(aniCtrlPtr);
+    var int model; model = playerAI.model;
+    const int twenty = 20;
+    const int call3 = 0;
+    if (CALL_Begin(call3)) {
+        CALL_IntParam(_@(twenty));
+        CALL_IntParam(_@(twenty));
+        CALL__thiscall(_@(model), zCModel__FadeOutAnisLayerRange);
+        call3 = CALL_End();
     };
 
     // Start aiming animation
