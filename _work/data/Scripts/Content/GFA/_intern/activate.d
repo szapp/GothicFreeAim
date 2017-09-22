@@ -163,6 +163,10 @@ func void GFA_IsActive() {
                                   || (MEM_KeyPressed(MEM_GetSecondaryKey(keyAiming)))
                                   || (MEMINT_SwitchG1G2(mouse.keyLeft, FALSE)); // Additional key binding for Gothic 1
 
+    // Body state checks
+    var int standing;
+    var int stumbling;
+
     // Check fight mode
     if (her.fmode == FMODE_MAGIC) {
         // Check if free aiming for spells is disabled
@@ -197,26 +201,24 @@ func void GFA_IsActive() {
 
         // Disable reticle when holding the action key while running (will also disable turning!)
         if (GOTHIC_CONTROL_SCHEME == 1) {
+            if (!keyPressed) {
+                GFA_ACTIVE = 1;
+                return;
+            };
+
             // Check if standing
             MEM_PushInstParam(hero);
             MEM_PushIntParam(BS_STAND);
             MEM_Call(C_BodyStateContains);
-            var int standing; standing = MEM_PopIntResult();
-
-            // Exception: casting removes standing body state
-            MEM_PushInstParam(hero);
-            MEM_PushIntParam(BS_CASTING);
-            MEM_Call(C_BodyStateContains);
-            var int casting; casting = MEM_PopIntResult();
+            standing = MEM_PopIntResult();
 
             // Exception: receiving damage removes standing body state
             MEM_PushInstParam(hero);
             MEM_PushIntParam(BS_STUMBLE);
             MEM_Call(C_BodyStateContains);
-            var int stumbling; stumbling = MEM_PopIntResult();
+            stumbling = MEM_PopIntResult();
 
-            // Additionally, Gothic 1 controls require action key to be held
-            if ((!standing) && (!casting) && (!stumbling)) || (!keyPressed) {
+            if (!standing) && (!stumbling) && (!GFA_InvestingOrCasting(hero)) {
                 GFA_ACTIVE = 1;
                 return;
             };
@@ -247,6 +249,26 @@ func void GFA_IsActive() {
         if (!keyPressed) {
             GFA_ACTIVE = 1;
             return;
+        };
+
+        // Disable focus collection while running
+        if (GOTHIC_CONTROL_SCHEME == 1) || (!GFA_STRAFING) {
+            // Check if standing
+            MEM_PushInstParam(hero);
+            MEM_PushIntParam(BS_STAND);
+            MEM_Call(C_BodyStateContains);
+            standing = MEM_PopIntResult();
+
+            // Exception: receiving damage removes standing body state
+            MEM_PushInstParam(hero);
+            MEM_PushIntParam(BS_STUMBLE);
+            MEM_Call(C_BodyStateContains);
+            stumbling = MEM_PopIntResult();
+
+            if (!standing) && (!stumbling) {
+                GFA_ACTIVE = 1;
+                return;
+            };
         };
 
         // If this is reached, free aiming for ranged weapons is currently active

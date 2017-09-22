@@ -181,6 +181,9 @@ func string GFA_GetInfo(var string command) {
             SB(" (spells)");
         };
 
+        SB(". Strafing: ");
+        SB(MEM_ReadStatStringArr(onOff, GFA_STRAFING > 0));
+
         SB(". Focus update every ");
         SBi(GFA_AimRayInterval);
         SB(" ms");
