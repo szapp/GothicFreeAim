@@ -1,7 +1,7 @@
 /*
  * Movement during free aiming
  *
- * Gothic Free Aim (GFA) v1.0.0-beta.15 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.0.0-beta.16 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
