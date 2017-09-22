@@ -214,45 +214,29 @@ func void GFA_SpellLockMovement() {
         // Set return value to one: Do not call any other movement functions
         EAX = 1;
         return;
-    };
+    } else {
+        // Gothic 2 controls have a semi-two-key-press system: strafing when investing or holding the parade key
+        if (GFA_InvestingOrCasting(hero))
+        || (MEM_KeyPressed(MEM_GetKey("keyAction"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))
+        || (MEM_KeyPressed(MEM_GetKey("keyParade"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyParade"))) {
+            // Stop running/walking/sneaking animation
+            const int call3 = 0;
+            if (CALL_Begin(call3)) {
+                CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human___Stand);
+                call3 = CALL_End();
+            };
 
-    // For Gothic 2 controls, lock movement with a few exceptions
-    if (!GFA_InvestingOrCasting(hero)) {
-        // Weapon switch when not investing or casting
-        if (MEM_KeyPressed(MEM_GetKey("keyWeapon"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyWeapon"))) {
-            GFA_AimMovement(0, "");
+            // Allow strafing
+            GFA_Strafe();
+
+            // Set return value to one: Do not call any other movement functions
+            EAX = 1;
             return;
-        };
-
-        // If sneaking when not investing or casting
-        if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))
-        && (MEM_ReadInt(aniCtrlPtr+oCAniCtrl_Human_walkmode_offset) & NPC_SNEAK) {
-            GFA_AimMovement(0, "");
-            return;
-        };
-
-        // Running/walking forward when not investing or casting
-        if (!MEM_KeyPressed(MEM_GetKey("keyAction")))      && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))
-        && (!MEM_KeyPressed(MEM_GetKey("keyStrafeLeft")))  && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeLeft")))
-        && (!MEM_KeyPressed(MEM_GetKey("keyStrafeRight"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeRight")))
-        && ((MEM_KeyPressed(MEM_GetKey("keyUp")))          ||  (MEM_KeyPressed(MEM_GetSecondaryKey("keyUp")))) {
+        } else {
             GFA_AimMovement(0, "");
             return;
         };
     };
-
-    // Stop running/walking/sneaking animation
-    const int call3 = 0;
-    if (CALL_Begin(call3)) {
-        CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human___Stand);
-        call3 = CALL_End();
-    };
-
-    // Allow strafing
-    GFA_Strafe();
-
-    // Set return value to one: Do not call any other movement functions
-    EAX = 1;
 };
 
 

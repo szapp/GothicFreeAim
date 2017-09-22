@@ -248,9 +248,7 @@ func void GFA_Strafe() {
 
     // Allow forward movement only when using Gothic 2 controls while investing or casting a spell (or ranged combat)
     if (GOTHIC_CONTROL_SCHEME == 2) {
-        if (GFA_InvestingOrCasting(hero)) || (her.fmode != FMODE_MAGIC) {
-            mFront = (MEM_KeyPressed(MEM_GetKey("keyUp"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyUp")));
-        };
+        mFront = (MEM_KeyPressed(MEM_GetKey("keyUp"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyUp")));
     };
 
     // Evaluate movement from key presses (because there are also diagonal movements)
