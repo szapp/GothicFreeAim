@@ -21,6 +21,6 @@
             ani         ("s_CBow_Aim_MoveRF"        2   "s_CBow_Aim_MoveRF" 0.0 0.0 M.  "Hum_CBowT2_Aim_MoveRF.asc" F   3   26)
             aniAlias    ("s_CBow_Aim_MoveLB"        2   "s_CBow_Aim_MoveLB" 0.0 0.0 M.  "s_CBow_Aim_MoveRF"         R)
 
-            ani         ("t_CBow_Aim_Move_2_Aim_Stand"  2   ""              0.2 0.0 M.  "Hum_CBowT2_Aim_MoveF.asc"  F   1   1)
+            ani         ("t_CBow_Aim_Move_2_Aim_Stand"  2   ""              0.2 0.0 M.  "Hum_CBowT2_Aim_MoveF.asc"  F   27  30)
 
             ani         ("t_CBow_Aim_Hurt"          3   ""                  0.1 0.1 .   "Hum_CBowT2_Aim_Hurt.asc"   F   1   10)
