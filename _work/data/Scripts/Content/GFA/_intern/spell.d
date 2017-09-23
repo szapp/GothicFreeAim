@@ -215,24 +215,40 @@ func void GFA_SpellLockMovement() {
         EAX = 1;
     } else {
         // Gothic 2 controls: Aim movement while investing/casting as well as allowing to cast from running
+
+        // Do not allow any of the below when the player is lying after a fall
+        MEM_PushInstParam(hero);
+        MEM_PushIntParam(BS_LIE);
+        MEM_Call(C_BodyStateContains);
+        if (MEM_PopIntResult()) {
+            return;
+        };
+
+        var int postDelay;
+        var int spellInUse; spellInUse = GFA_InvestingOrCasting(hero);
         var int castKeyDownLastFrame; castKeyDownLastFrame = castKeyDown;
         var int castKeyDown; castKeyDown = (MEM_KeyPressed(MEM_GetKey("keyAction")))
                                         || (MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")));
 
         // At aiming onset stop running/walking/sneaking animation
         if (castKeyDown) && (!castKeyDownLastFrame) {
-            const int call3 = 0;
-            if (CALL_Begin(call3)) {
-                CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human___Stand);
-                call3 = CALL_End();
+            // Stop active animation (except if casting failed animation started)
+            if (spellInUse != -1) {
+                var zCAIPlayer playerAI; playerAI = _^(her.anictrl);
+                var int model; model = playerAI.model;
+
+                const int call3 = 0; const int one = 1;
+                if (CALL_Begin(call3)) {
+                    CALL_IntParam(_@(one));
+                    CALL_IntParam(_@(one));
+                    CALL__thiscall(_@(model), zCModel__StopAnisLayerRange);
+                    call3 = CALL_End();
+                };
             };
 
             // Set return value to one: Do not call any other movement functions
             EAX = 1;
         };
-
-        var int postDelay;
-        var int spellInUse; spellInUse = GFA_InvestingOrCasting(hero);
 
         // Aim movement while investing or casting and for a short period afterwards
         if (spellInUse)
