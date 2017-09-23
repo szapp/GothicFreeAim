@@ -182,19 +182,28 @@ func void GFA_IsActive() {
 
         // Check if active spell supports free aiming
         var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
-        if (!GFA_IsSpellEligible(spell)) {
+        var int eligible; eligible = GFA_IsSpellEligible(spell);
+        if (!(eligible & GFA_SPL_FREEAIM)) {
             // Reset spell focus collection
             Focus_Magic.npc_azi = castFromIntf(GFA_FOCUS_SPL_NPC_DFT);
             Focus_Magic.item_prio = GFA_FOCUS_SPL_ITM_DFT;
-            GFA_DisableAutoTurning(0);
-            GFA_DisableToggleFocusSpells(0);
-            GFA_AimMovement(0, ""); // Might have switched directly from other spell while still in movement
-            GFA_ACTIVE = 1;
-            return;
+
+            // Basic spells, that use neither free aiming nor movement
+            if (!(eligible & GFA_SPL_MOVE)) {
+                GFA_DisableAutoTurning(0);
+                GFA_DisableToggleFocusSpells(0);
+                GFA_AimMovement(0, ""); // Might have switched directly from other spell while still in movement
+                GFA_ACTIVE = 1;
+                return;
+            };
         } else {
             // Spell uses free aiming: Set stricter focus collection
             Focus_Magic.npc_azi = castFromIntf(castToIntf(GFA_FOCUS_SPL_NPC)); // Cast twice, Deadalus floats are dumb
             Focus_Magic.item_prio = GFA_FOCUS_SPL_ITM;
+        };
+
+        // Movement spells disable auto turning
+        if (eligible & GFA_SPL_MOVE) {
             GFA_DisableToggleFocusSpells(1);
             GFA_DisableAutoTurning(1);
         };

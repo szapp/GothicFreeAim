@@ -99,6 +99,8 @@ var   int    GFA_DebugTRPrevVob;                            // Trace ray detecte
 
 var   int    GFA_IsStrafing;                                // State of strafing (movement ID)
 const int    GFA_STRAFE_POSTCAST    = 500;                  // Time (ms) to remain in aim movement after casting a spell
+const int    GFA_SPL_MOVE           = 1<<0;                 // Spell is eligible for movement
+const int    GFA_SPL_FREEAIM        = 1<<1;                 // Spell is eligible for free aiming
 
 const int    GFA_MOVE_FORWARD       = 1<<0;                 // ID (first bit) for moving forward while aiming
 const int    GFA_MOVE_BACKWARD      = 1<<1;                 // ID (second bit) for moving backward while aiming

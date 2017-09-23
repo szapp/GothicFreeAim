@@ -46,6 +46,14 @@ func void GFA_TurnPlayerModel() {
         return;
     };
 
+    // Only allow movement spells
+    if (GFA_ACTIVE == FMODE_MAGIC) {
+        var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
+        if (!(GFA_IsSpellEligible(spell) & GFA_SPL_MOVE)) {
+            return;
+        };
+    };
+
     // The _Cursor class from LeGo is used here. It is not necessarily a cursor: it holds mouse properties
     var _Cursor mouse; mouse = _^(Cursor_Ptr);
 

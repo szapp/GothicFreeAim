@@ -176,7 +176,10 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
         if (her.focus_vob) && (focusType) {
             // Check if collected focus matches the desired focus type (see function parameter 'focusType')
 
-            if (focusType != TARGET_TYPE_ITEMS) && (Hlp_Is_oCNpc(her.focus_vob)) &&  (her.focus_vob == foundVob) {
+            // Perform another rougher trace ray (by bounding box)
+            var int secondRay;
+
+            if (focusType != TARGET_TYPE_ITEMS) && (Hlp_Is_oCNpc(her.focus_vob)) {
                 // If an NPC focus is desired, more detailed checks are necessary
 
                 // Check if NPC is undead, function is not yet defined at time of parsing
@@ -190,13 +193,23 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
                 || ((focusType == TARGET_TYPE_ORCS) && target.guild > GIL_SEPERATOR_ORC)   // Only focus orcs
                 || ((focusType == TARGET_TYPE_HUMANS) && target.guild < GIL_SEPERATOR_HUM) // Only focus humans
                 || ((focusType == TARGET_TYPE_UNDEAD) && npcIsUndead) {                    // Only focus undead NPCs
-                    foundFocus = her.focus_vob;
+                    // If focus was already found
+                    if (her.focus_vob == foundVob) {
+                        foundFocus = her.focus_vob;
+                        secondRay = FALSE;
+                    } else if (her.fmode == FMODE_MAGIC) {
+                        // Aiming is not the priority for spells, a rougher focus collection is desired
+                        secondRay = TRUE;
+                    };
                 };
-
             } else if (focusType <= TARGET_TYPE_ITEMS) && (Hlp_Is_oCItem(her.focus_vob)) {
                 // If an item focus is desired, perform another rougher trace ray (by bounding box). This ensures a
                 // stable focus, because items might be rather small
+                secondRay = TRUE;
+            };
 
+            // Perform the optional second trace ray for a rougher detection
+            if (secondRay) {
                 flags = flags | zTRACERAY_vob_bbox;
                 var int focusVobPtr; focusVobPtr = her.focus_vob; // Write to variable, otherwise crash on new game
                 var int trRep; trRep = MEM_Alloc(sizeof_zTTraceRayReport);

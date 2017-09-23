@@ -41,7 +41,7 @@ func void GFA_SetupSpell() {
 
     // Check if spell supports free aiming (is eligible)
     var C_Spell spell; spell = _^(spellOC+oCSpell_C_Spell_offset);
-    if (!GFA_IsSpellEligible(spell)) {
+    if (!(GFA_IsSpellEligible(spell) & GFA_SPL_FREEAIM)) {
         return;
     };
 
@@ -71,15 +71,21 @@ func void GFA_SetupSpell() {
  */
 func void GFA_SpellAiming() {
     var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
+    var int eligible; eligible = GFA_IsSpellEligible(spell);
     var int aniCtrlPtr; aniCtrlPtr = ECX;
 
     // Only show reticle for spells that support free aiming and during aiming (Gothic 1 controls)
-    if (GFA_ACTIVE != FMODE_MAGIC) {
+    if (GFA_ACTIVE != FMODE_MAGIC) || (!(eligible & GFA_SPL_FREEAIM)) {
         GFA_RemoveReticle();
 
         // Additional settings if free aiming is enabled
         if (GFA_ACTIVE) {
-            if (GFA_IsSpellEligible(spell)) {
+            if (eligible & GFA_SPL_MOVE) && (GFA_ACTIVE != FMODE_MAGIC) {
+                // Remove movement animations when not aiming
+                GFA_AimMovement(0, "");
+            };
+
+            if (eligible & GFA_SPL_FREEAIM) {
                 // Remove FX from aim vob when casting is complete
                 if (GFA_InvestingOrCasting(hero) <= 0) {
                     GFA_AimVobDetachFX();
@@ -90,13 +96,12 @@ func void GFA_SpellAiming() {
                     GFA_SetFocusAndTarget(0);
                 };
 
-                // Remove movement animations when not aiming
-                GFA_AimMovement(0, "");
-
-            } else if (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS)
-                   && (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS_FALLBACK_CASTER) {
+            } else {
                 // Remove focus for spells that do not need to collect a focus
-                GFA_SetFocusAndTarget(0);
+                if (spell.targetCollectAlgo == TARGET_COLLECT_NONE)
+                || (spell.targetCollectAlgo == TARGET_COLLECT_CASTER) {
+                    GFA_SetFocusAndTarget(0);
+                };
                 GFA_AimVobDetachFX();
             };
         } else {
@@ -178,6 +183,12 @@ func void GFA_SpellAiming() {
 func void GFA_SpellLockMovement() {
     // Only lock movement for eligible spells
     if (GFA_ACTIVE != FMODE_MAGIC) {
+        return;
+    };
+
+    // Only allow aim movement for certain spells
+    var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
+    if (!(GFA_IsSpellEligible(spell) & GFA_SPL_MOVE)) {
         return;
     };
 
@@ -266,6 +277,24 @@ func void GFA_SpellLockMovement() {
         } else {
             GFA_AimMovement(0, "");
         };
+    };
+};
+
+
+/*
+ * Update reticle when in Gothic default strafing int Gothic 2 controls. This function hooks oCNpc::EV_Strafe() at an
+ * offset where the Gothic 2 controls are used.
+ */
+func void GFA_SpellStrafeReticle() {
+    if (GOTHIC_CONTROL_SCHEME == 2) && (GFA_ACTIVE == FMODE_MAGIC) {
+        // Use existing function to update reticle. Set ECX and back it up first
+        var int ecxBak; ecxBak = ECX;
+        var oCNpc her; her = Hlp_GetNpc(hero);
+        ECX = her.anictrl;
+
+        GFA_SpellAiming();
+
+        ECX = ecxBak;
     };
 };
 

@@ -92,9 +92,10 @@ func void GFA_InitFeatureFreeAiming() {
             HookEngineF(oCAIHuman__MagicMode_rtn, 7, GFA_SpellLockMovement); // Lock movement while aiming
         };
 
-        // Disable magic during default Gothic strafing (Gothic 2 only)
+        // Fixes for Gothic default strafing (Gothic 2 only)
         if (GOTHIC_BASE_VERSION == 2) {
-            MemoryProtectionOverride(oCNpc__EV_Strafe_magicCombat, 5);
+            MemoryProtectionOverride(oCNpc__EV_Strafe_magicCombat, 5); // Disable magic during default strafing
+            HookEngineF(oCNpc__EV_Strafe_g2ctrl, 6, GFA_SpellStrafeReticle); // Update reticle while default strafing
         };
     };
 

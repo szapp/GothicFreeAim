@@ -60,6 +60,7 @@ const int oCNpc__SetEnemy                            =  7556032; //0x734BC0
 const int oCNpc__SetBodyState                        =  7727392; //0x75E920
 const int oCNpc__GetInteractMob                      =  7646368; //0x74ACA0
 const int oCNpc__GetModel                            =  7571232; //0x738720
+const int oCNpc__EV_Strafe_g2ctrl                    =  6832857; //0x6842D9
 const int oCNpc__EV_Strafe_magicCombat               =  6833595; //0x6845BB
 const int oCNpc__Interrupt_stopAnisLayerA            =  7560322; //0x735C82
 const int oCNpcFocus__InitFocusModes                 =  7072384; //0x6BEA80

@@ -49,11 +49,12 @@ func MEMINT_HelperClass GFA_GetActiveSpellInst(var C_Npc npc) {
 
 
 /*
- * Retrieve whether a spell is eligible for free aiming, that is, it supports free aiming by its properties. This
- * function is called to determine whether to activate free aiming, since not all spell need to have this feature, e.g.
- * summoning spells.
- * Do not change the properties that make a spell eligible! This is very well thought through and works for ALL Gothic 2
- * spells. For new spells, adjust THEIR properties accordingly.
+ * Retrieve whether a spell is eligible for free aiming (GFA_SPL_FREEAIM), that is, it supports free aiming by its
+ * properties, or eligible for movement (GFA_SPL_MOVE). This function is called to determine whether to activate free
+ * aiming or aim movement, since not all spells need to have these features, e.g. summoning spells (no free aiming),
+ * heal (no movement).
+ * Do not change the properties that make a spell eligible! This is very well thought through and works for ALL Gothic 1
+ * and Gothic 2 spells. For new spells, adjust THEIR properties accordingly.
  */
 func int GFA_IsSpellEligible(var C_Spell spell) {
     // Exit if the spell instance is invalid
@@ -62,15 +63,19 @@ func int GFA_IsSpellEligible(var C_Spell spell) {
     };
 
     // Check if the target collection is not done by focus collection with fall back 'none' or if turning is disabled.
-    if (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS_FALLBACK_NONE) // Do not change this property!
-    || (!spell.canTurnDuringInvest) || (!spell.canChangeTargetDuringInvest) {
+    if (spell.targetCollectAlgo == TARGET_COLLECT_FOCUS_FALLBACK_NONE) // Do not change this property!
+    && (spell.canTurnDuringInvest) && (spell.canChangeTargetDuringInvest) {
         // It might be tempting to change TARGET_COLLECT_FOCUS_FALLBACK_NONE into something else, but free aiming will
         // break this way, as a focus NEEDS to be enabled, but not fixed. No other target collection algorithm suffices.
-        return FALSE;
+        return GFA_SPL_FREEAIM | GFA_SPL_MOVE;
+    } else if (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS)
+    && (spell.canTurnDuringInvest) {
+        // Spell supports aim movement
+        return GFA_SPL_MOVE;
     };
 
     // All other cases
-    return TRUE;
+    return FALSE;
 };
 
 

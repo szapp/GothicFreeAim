@@ -60,6 +60,7 @@ const int oCNpc__SetEnemy                            =  6888064; //0x691A80
 const int oCNpc__SetBodyState                        =  7045120; //0x6B8000
 const int oCNpc__GetInteractMob                      =  6973008; //0x6A6650
 const int oCNpc__GetModel                            =  6902528; //0x695300
+const int oCNpc__EV_Strafe_g2ctrl                    =  0;                                 // Does not exist in Gothic 1
 const int oCNpc__EV_Strafe_magicCombat               =  0;                                 // Does not exist in Gothic 1
 const int oCNpc__Interrupt_stopAnisLayerA            =  6891985; //0x6929D1
 const int oCNpcFocus__InitFocusModes                 =  6507760; //0x634CF0
