@@ -81,7 +81,7 @@ func void GFA_SpellAiming() {
         if (GFA_ACTIVE) {
             if (GFA_IsSpellEligible(spell)) {
                 // Remove FX from aim vob when casting is complete
-                if (!GFA_InvestingOrCasting(hero)) {
+                if (GFA_InvestingOrCasting(hero) <= 0) {
                     GFA_AimVobDetachFX();
                 };
 
@@ -106,7 +106,7 @@ func void GFA_SpellAiming() {
     };
 
     // For safety: Clean up, in case custom spells are recklessly designed
-    if (!GFA_InvestingOrCasting(hero)) {
+    if (GFA_InvestingOrCasting(hero) <= 0) {
         GFA_AimVobDetachFX();
     };
 
@@ -213,28 +213,42 @@ func void GFA_SpellLockMovement() {
 
         // Set return value to one: Do not call any other movement functions
         EAX = 1;
-        return;
     } else {
-        // Gothic 2 controls have a semi-two-key-press system: strafing when investing or holding the parade key
-        if (GFA_InvestingOrCasting(hero))
-        || (MEM_KeyPressed(MEM_GetKey("keyAction"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))
-        || (MEM_KeyPressed(MEM_GetKey("keyParade"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyParade"))) {
-            // Stop running/walking/sneaking animation
+        // Gothic 2 controls: Aim movement while investing/casting as well as allowing to cast from running
+        var int castKeyDownLastFrame; castKeyDownLastFrame = castKeyDown;
+        var int castKeyDown; castKeyDown = (MEM_KeyPressed(MEM_GetKey("keyAction")))
+                                        || (MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")));
+
+        // At aiming onset stop running/walking/sneaking animation
+        if (castKeyDown) && (!castKeyDownLastFrame) {
             const int call3 = 0;
             if (CALL_Begin(call3)) {
                 CALL__thiscall(_@(aniCtrlPtr), oCAniCtrl_Human___Stand);
                 call3 = CALL_End();
             };
 
+            // Set return value to one: Do not call any other movement functions
+            EAX = 1;
+        };
+
+        var int postDelay;
+        var int spellInUse; spellInUse = GFA_InvestingOrCasting(hero);
+
+        // Aim movement while investing or casting and for a short period afterwards
+        if (spellInUse)
+        || ((postDelay > MEM_Timer.totalTime) && (GFA_IsStrafing)) {
+            // Set return value to one: Do not call any other movement functions
+            EAX = 1;
+
             // Allow strafing
             GFA_Strafe();
 
-            // Set return value to one: Do not call any other movement functions
-            EAX = 1;
-            return;
+            // Update post-casting delay to allow bridging consecutive casting without stopping aim movement in between
+            if (spellInUse) {
+                postDelay = MEM_Timer.totalTime+GFA_STRAFE_POSTCAST;
+            };
         } else {
             GFA_AimMovement(0, "");
-            return;
         };
     };
 };

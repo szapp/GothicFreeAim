@@ -168,13 +168,15 @@ const int zCAICamera_azimuth_offset                  = 68;  //0x0044
 const int zCAIPlayer_bitfield1_forceModelHalt        = 1<<0;
 
 const int oCAniCtrl_Human_walkmode_offset            = 352; //0x0160
+const int oCAniCtrl_Human_t_stand_2_cast_offset      = 4572;//0x11DC
 const int oCAniCtrl_Human_s_cast_offset              = 4576;//0x11E0
 const int oCAniCtrl_Human_t_cast_2_shoot_offset      = 4580;//0x11E4
 const int oCAniCtrl_Human_s_shoot_offset             = 4588;//0x11EC
 const int oCAniCtrl_Human_t_shoot_2_stand_offset     = 4592;//0x11F0
 
 const int oCAIHuman_bitfield_offset                  = 4612;//0x1204
-const int oCAIHuman_bitfield_startObserveIntruder    = 1<<6;
+const int oCAIHuman_bitfield_startObserveIntruder    = 1<<5;
+const int oCAIHuman_bitfield_dontKnowAniPlayed       = 1<<6;
 const int oCAIHuman_bitfield_spellReleased           = 1<<7;
 
 const int oCAIArrowBase_ignoreVobList_offset         = 48;  //0x0030

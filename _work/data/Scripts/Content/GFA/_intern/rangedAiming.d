@@ -207,7 +207,7 @@ func void GFA_RangedAimingCondition() {
         return;
     };
 
-    // There is no forward aim movement with Gothic 1 controls
+    // There is no forward aim movement with Gothic 1 controls (do not allow aiming while moving forwards)
     if (GOTHIC_CONTROL_SCHEME == 1) {
         if (MEM_KeyPressed(MEM_GetKey("keyUp"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyUp"))) {
             EAX = 0;

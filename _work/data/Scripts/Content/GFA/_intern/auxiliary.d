@@ -75,18 +75,33 @@ func int GFA_IsSpellEligible(var C_Spell spell) {
 
 
 /*
- * Returns whether an NPC is currently investing (1) or casting (2) a spell, otherwise 0.
+ * Returns whether an NPC is currently investing (1), casting (2) or failing (-1) a spell, otherwise 0.
  */
 func int GFA_InvestingOrCasting(var C_Npc npc) {
-    // Investing
+    // Investing (when the cast fails, the release status is stuck, so also check dontKnowAniPlayed)
     var oCNpc npcOC; npcOC = Hlp_GetNpc(npc);
-    if (!(MEM_ReadInt(npcOC.anictrl+oCAIHuman_bitfield_offset) & oCAIHuman_bitfield_spellReleased)) {
+    if (!(MEM_ReadInt(npcOC.anictrl+oCAIHuman_bitfield_offset) & oCAIHuman_bitfield_spellReleased))
+    && (!(MEM_ReadInt(npcOC.anictrl+oCAIHuman_bitfield_offset) & oCAIHuman_bitfield_dontKnowAniPlayed)) {
         return 1;
     };
 
-    // Casting (check by active animations)
+    // Casting or failing (check by active animations)
     var zCAIPlayer playerAI; playerAI = _^(npcOC.anictrl);
     var int model; model = playerAI.model;
+
+    // Get ID of fail animation
+    var int failAniID;
+    if (!failAniID) {
+        var int aniNamePtr; aniNamePtr = _@s("T_CASTFAIL");
+        var zCArray protoTypes; protoTypes = _^(model+zCModel_prototypes_offset);
+        var int modelPrototype; modelPrototype = MEM_ReadInt(protoTypes.array);
+        const int call = 0;
+        if (CALL_Begin(call)) {
+            CALL_PutRetValTo(_@(failAniID));
+            CALL__fastcall(_@(modelPrototype), _@(aniNamePtr), zCModelPrototype__SearchAniIndex);
+            call = CALL_End();
+        };
+    };
 
     // Pointer to list of active animations
     var int actAniOffset; actAniOffset = model+zCModel_actAniList_offset;
@@ -95,11 +110,16 @@ func int GFA_InvestingOrCasting(var C_Npc npc) {
     repeat(i, MEM_ReadInt(model+zCModel_numActAnis_offset)); var int i;
         var int aniID; aniID = MEM_ReadInt(MEM_ReadInt(MEM_ReadInt(actAniOffset))+zCModelAni_aniID_offset);
 
-        if (aniID == MEM_ReadInt(npcOC.anictrl+oCAniCtrl_Human_s_cast_offset))
+        if (aniID == MEM_ReadInt(npcOC.anictrl+oCAniCtrl_Human_t_stand_2_cast_offset))
+        || (aniID == MEM_ReadInt(npcOC.anictrl+oCAniCtrl_Human_s_cast_offset))
         || (aniID == MEM_ReadInt(npcOC.anictrl+oCAniCtrl_Human_t_cast_2_shoot_offset))
         || (aniID == MEM_ReadInt(npcOC.anictrl+oCAniCtrl_Human_s_shoot_offset))
         || (aniID == MEM_ReadInt(npcOC.anictrl+oCAniCtrl_Human_t_shoot_2_stand_offset)) {
             return 2;
+        };
+
+        if (aniID == failAniID) {
+            return -1;
         };
 
         actAniOffset += 4;

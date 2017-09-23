@@ -272,7 +272,7 @@ func void GFA_Strafe() {
             modifier = "MAG";
             // Also treat variations of casting animations
             var int spellID; spellID = Npc_GetActiveSpell(hero); // Scrolls are removed: sometimes not found
-            if (GFA_InvestingOrCasting(hero)) && (spellID != -1) {
+            if (GFA_InvestingOrCasting(hero) > 0) && (spellID != -1) {
                 modifier = ConcatStrings(modifier, MEM_ReadStatStringArr(spellFxAniLetters, spellID));
             };
         } else if (her.fmode == FMODE_FAR) {

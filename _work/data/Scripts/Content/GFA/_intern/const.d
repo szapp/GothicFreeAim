@@ -97,7 +97,8 @@ var   int    GFA_DebugTRBBox[6];                            // Trace ray interse
 var   int    GFA_DebugTRTrj[6];                             // Trace ray trajectory for debug visualization
 var   int    GFA_DebugTRPrevVob;                            // Trace ray detected vob bounding box pointer for debugging
 
-var   int    GFA_IsStrafing;                                // State of strafing
+var   int    GFA_IsStrafing;                                // State of strafing (movement ID)
+const int    GFA_STRAFE_POSTCAST    = 500;                  // Time (ms) to remain in aim movement after casting a spell
 
 const int    GFA_MOVE_FORWARD       = 1<<0;                 // ID (first bit) for moving forward while aiming
 const int    GFA_MOVE_BACKWARD      = 1<<1;                 // ID (second bit) for moving backward while aiming

@@ -496,7 +496,7 @@ func void GFA_AdjustDamageAnimation() {
 
         // Also treat variations of casting animations
         var int spellID; spellID = Npc_GetActiveSpell(victim); // Scrolls are removed: sometimes not found
-        if (GFA_InvestingOrCasting(victim)) && (spellID != -1) {
+        if (GFA_InvestingOrCasting(victim) > 0) && (spellID != -1) {
             var string castMod; castMod = ConcatStrings(modifier, MEM_ReadStatStringArr(spellFxAniLetters, spellID));
 
             // Check if animation with casting modifier exists

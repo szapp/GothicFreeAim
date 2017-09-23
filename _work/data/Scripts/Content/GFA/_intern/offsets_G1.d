@@ -48,7 +48,7 @@ const int oCAIHuman__Cam_Normal                      =  9275536; //0x8D8890
 const int oCAIHuman__Cam_Fight                       =  9275516; //0x8D887C
 const int oCAIHuman__CheckFocusVob_ranged            =  6379583; //0x61583F
 const int oCAIHuman__CheckFocusVob_spells            =  6379589; //0x615845
-const int oCAniCtrl_Human___Stand                    =  6479088; //0x62DCF0                // Not used for Gothic 1
+const int oCAniCtrl_Human___Stand                    =  6479088; //0x62DCF0
 const int oCAniCtrl_Human__IsStanding                =  6444512; //0x6255E0
 const int oCAniCtrl_Human__Turn                      =  6445616; //0x625A30
 const int oCAniCtrl_Human__CanToggleWalkModeTo       =  6437088; //0x6238E0
@@ -168,13 +168,15 @@ const int zCAICamera_azimuth_offset                  = 68;  //0x0044
 const int zCAIPlayer_bitfield1_forceModelHalt        = 1<<0;
 
 const int oCAniCtrl_Human_walkmode_offset            = 352; //0x0160
+const int oCAniCtrl_Human_t_stand_2_cast_offset      = 4572;//0x11DC
 const int oCAniCtrl_Human_s_cast_offset              = 4576;//0x11E0
 const int oCAniCtrl_Human_t_cast_2_shoot_offset      = 4580;//0x11E4
 const int oCAniCtrl_Human_s_shoot_offset             = 4588;//0x11EC
 const int oCAniCtrl_Human_t_shoot_2_stand_offset     = 4592;//0x11F0
 
 const int oCAIHuman_bitfield_offset                  = 4612;//0x1204
-const int oCAIHuman_bitfield_startObserveIntruder    = 1<<6;
+const int oCAIHuman_bitfield_startObserveIntruder    = 1<<5;
+const int oCAIHuman_bitfield_dontKnowAniPlayed       = 1<<6;
 const int oCAIHuman_bitfield_spellReleased           = 1<<7;
 
 const int oCAIArrowBase_ignoreVobList_offset         = 48;  //0x0030
