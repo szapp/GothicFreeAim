@@ -242,19 +242,17 @@ func void GFA_SpellLockMovement() {
                                         || (MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")));
 
         // At aiming onset stop running/walking/sneaking animation
-        if (castKeyDown) && (!castKeyDownLastFrame) {
+        if (castKeyDown) && (!castKeyDownLastFrame) && (!spellInUse) {
             // Stop active animation (except if casting failed animation started)
-            if (spellInUse != -1) {
-                var zCAIPlayer playerAI; playerAI = _^(her.anictrl);
-                var int model; model = playerAI.model;
+            var zCAIPlayer playerAI; playerAI = _^(her.anictrl);
+            var int model; model = playerAI.model;
 
-                const int call3 = 0; const int one = 1;
-                if (CALL_Begin(call3)) {
-                    CALL_IntParam(_@(one));
-                    CALL_IntParam(_@(one));
-                    CALL__thiscall(_@(model), zCModel__StopAnisLayerRange);
-                    call3 = CALL_End();
-                };
+            const int call3 = 0; const int one = 1;
+            if (CALL_Begin(call3)) {
+                CALL_IntParam(_@(one));
+                CALL_IntParam(_@(one));
+                CALL__thiscall(_@(model), zCModel__StopAnisLayerRange);
+                call3 = CALL_End();
             };
 
             // Set return value to one: Do not call any other movement functions
