@@ -147,25 +147,6 @@ func void GFA_SpellAiming() {
     GFA_GetSpellReticle_(target, spell, distance, reticlePtr);
     GFA_InsertReticle(reticlePtr);
     MEM_Free(reticlePtr);
-
-    // Remove turning animations (player model sometimes gets stuck in turning animation)
-    if (GOTHIC_CONTROL_SCHEME == 2) && (!GFA_STRAFING) {
-        // Do not remove turning animations when strafing is disabled and player is not investing/casting
-        if (!GFA_InvestingOrCasting(hero))
-        && (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) {
-            return;
-        };
-    };
-    var zCAIPlayer playerAI; playerAI = _^(aniCtrlPtr);
-    var int model; model = playerAI.model;
-    const int twenty = 20;
-    const int call = 0;
-    if (CALL_Begin(call)) {
-        CALL_IntParam(_@(twenty));
-        CALL_IntParam(_@(twenty));
-        CALL__thiscall(_@(model), zCModel__FadeOutAnisLayerRange);
-        call = CALL_End();
-    };
 };
 
 
@@ -182,6 +163,8 @@ func void GFA_SpellLockMovement() {
 
     var oCNpc her; her = Hlp_GetNpc(hero);
     var int aniCtrlPtr; aniCtrlPtr = her.anictrl; // ESI is popped earlier and is not secure to use
+    var zCAIPlayer playerAI; playerAI = _^(her.anictrl);
+    var int model; model = playerAI.model;
 
     // For Gothic 1 controls, lock movement always for all eligible spells
     if (GOTHIC_CONTROL_SCHEME == 1) {
@@ -232,9 +215,6 @@ func void GFA_SpellLockMovement() {
         // At aiming onset stop running/walking/sneaking animation
         if (castKeyDown) && (!castKeyDownLastFrame) && (!spellInUse) {
             // Stop active animation (except if casting failed animation started)
-            var zCAIPlayer playerAI; playerAI = _^(her.anictrl);
-            var int model; model = playerAI.model;
-
             const int call3 = 0; const int one = 1;
             if (CALL_Begin(call3)) {
                 CALL_IntParam(_@(one));
@@ -263,6 +243,21 @@ func void GFA_SpellLockMovement() {
         } else {
             GFA_AimMovement(0, "");
         };
+
+        // Do not remove turn animations for Gothic 2 controls, if not using the spell
+        if (!spellInUse) && (!castKeyDown) {
+            return;
+        };
+    };
+
+    // Remove turning animations (player model sometimes gets stuck in turning animation)
+    const int twenty = 20;
+    const int call4 = 0;
+    if (CALL_Begin(call4)) {
+        CALL_IntParam(_@(twenty));
+        CALL_IntParam(_@(twenty));
+        CALL__thiscall(_@(model), zCModel__FadeOutAnisLayerRange);
+        call4 = CALL_End();
     };
 };
 
