@@ -68,6 +68,7 @@ func void GFA_InitFeatureFreeAiming() {
             MemoryProtectionOverride(oCAIHuman__BowMode_g2ctrlCheck, 6); // Skip jump to G2 controls: jz to 0x696391
             MemoryProtectionOverride(oCAIHuman__BowMode_shootingKey, 2); // Shooting key: push 3
             MemoryProtectionOverride(oCAIHuman__PC_ActionMove_aimingKey, 5); // Aim key: mov eax [esp+8+4], push eax
+            HookEngineF(cGameManager__HandleEvent_clearKeyBuffer, 6, GFA_CancelOUsDontClearKeyBuffer); // Fix key buffer
         };
 
         // Extend and refine collision detection on vobs

@@ -471,6 +471,18 @@ func void GFA_DontInterruptStrafing() {
 
 
 /*
+ * Ambient OUs can be canceled with right mouse button, which will reset the aiming animation when using Gothic 2
+ * controls, because it clears the key buffer. This is prevented with this function. It hooks
+ * CGameManager::HandleEvent() at an offset where the key buffer is cleared after canceling OUs.
+ */
+func void GFA_CancelOUsDontClearKeyBuffer() {
+    if (GOTHIC_CONTROL_SCHEME == 2) && (GFA_ACTIVE == FMODE_FAR) {
+        EAX = 0;
+    };
+};
+
+
+/*
  * Adjust damage animation while aiming. This function hooks oCNpc::OnDamage_Anim() and replaces the hurting animation
  * if the player is aiming. Also the draw force and steady aim are reset.
  */

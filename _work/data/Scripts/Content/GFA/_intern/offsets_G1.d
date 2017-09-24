@@ -107,6 +107,7 @@ const int zCCollObjectLevelPolys__s_oCollObjClass    =  8861152; //0x8735E0
 const int zCWorld__AdvanceClock                      =  6257280; //0x5F7A80 // Hook len 10
 const int oCGame__HandleEvent_openInvCheck           =  6680765; //0x65F0BD // Hook len 5
 const int cGameManager__ApplySomeSettings_rtn        =  4356499; //0x427993 // Hook len 6
+const int cGameManager__HandleEvent_clearKeyBuffer   =  0;                                 // Does not exist in Gothic 1
 const int zCAIPlayer__IsSliding_true                 =  5233245; //0x4FDA5D // Hook len 5
 const int oCAniCtrl_Human__SearchStandAni_walkmode   =  6408587; //0x61C98B // Hook len 6
 const int oCAIVobMove__DoAI_stopMovement             =  6389348; //0x617E64 // Hook len 7
