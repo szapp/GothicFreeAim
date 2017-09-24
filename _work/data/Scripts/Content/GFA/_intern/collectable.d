@@ -84,6 +84,7 @@ func void GFA_RP_KeepProjectileInWorld() {
 
             // Make the projectile focusable, i.e. collectable
             projectile.flags = projectile.flags & ~ITEM_NFOCUS;
+            projectile._zCVob_bitfield[4] = projectile._zCVob_bitfield[4] & ~zCVob_bitfield4_dontWriteIntoArchive;
 
             // Detach arrow AI from projectile (projectile will have no AI)
             const int call3 = 0; var int zero;

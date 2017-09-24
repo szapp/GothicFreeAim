@@ -183,6 +183,9 @@ func void GFA_SetupProjectile() {
         distance = addf(distance, mkf(GFA_MIN_AIM_DIST));
     };
 
+    // Remove projectile from any saves that might be written while the projectile is mid-air
+    projectile._zCVob_bitfield[4] = projectile._zCVob_bitfield[4] | zCVob_bitfield4_dontWriteIntoArchive;
+
 
     // 1st: Modify the base damage of the projectile
     // This allows for dynamical adjustment of damage (e.g. based on draw force).
