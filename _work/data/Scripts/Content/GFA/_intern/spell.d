@@ -35,17 +35,12 @@ func void GFA_SetupSpell() {
 
     // Only if caster is player and if free aiming is enabled
     var C_Npc caster; caster = _^(casterPtr);
-    if (!GFA_ACTIVE) || (!Npc_IsPlayer(caster)) {
-        return;
-    };
-
-    // Check if spell supports free aiming (is eligible)
-    var C_Spell spell; spell = _^(spellOC+oCSpell_C_Spell_offset);
-    if (!(GFA_IsSpellEligible(spell) & GFA_SPL_FREEAIM)) {
+    if (!(GFA_ACTIVE & GFA_MOVEMENT)) || (!Npc_IsPlayer(caster)) {
         return;
     };
 
     // Determine focus type. If focusType == 0, then no focus will be collect, but only an intersection with the world
+    var C_Spell spell; spell = _^(spellOC+oCSpell_C_Spell_offset);
     var int focusType;
     if (!spell.targetCollectAlgo) {
         focusType = 0;
@@ -71,21 +66,20 @@ func void GFA_SetupSpell() {
  */
 func void GFA_SpellAiming() {
     var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
-    var int eligible; eligible = GFA_IsSpellEligible(spell);
     var int aniCtrlPtr; aniCtrlPtr = ECX;
 
     // Only show reticle for spells that support free aiming and during aiming (Gothic 1 controls)
-    if (GFA_ACTIVE != FMODE_MAGIC) || (!(eligible & GFA_SPL_FREEAIM)) {
+    if (GFA_ACTIVE != FMODE_MAGIC) {
         GFA_RemoveReticle();
 
         // Additional settings if free aiming is enabled
         if (GFA_ACTIVE) {
-            if (eligible & GFA_SPL_MOVE) && (GFA_ACTIVE != FMODE_MAGIC) {
+            if (!(GFA_ACTIVE & GFA_MOVEMENT)) {
                 // Remove movement animations when not aiming
                 GFA_AimMovement(0, "");
             };
 
-            if (eligible & GFA_SPL_FREEAIM) {
+            if (GFA_IsSpellEligible(spell) & GFA_SPL_FREEAIM) {
                 // Remove FX from aim vob when casting is complete
                 if (GFA_InvestingOrCasting(hero) <= 0) {
                     GFA_AimVobDetachFX();
@@ -182,13 +176,7 @@ func void GFA_SpellAiming() {
  */
 func void GFA_SpellLockMovement() {
     // Only lock movement for eligible spells
-    if (GFA_ACTIVE != FMODE_MAGIC) {
-        return;
-    };
-
-    // Only allow aim movement for certain spells
-    var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
-    if (!(GFA_IsSpellEligible(spell) & GFA_SPL_MOVE)) {
+    if (!(GFA_ACTIVE & GFA_MOVEMENT)) {
         return;
     };
 

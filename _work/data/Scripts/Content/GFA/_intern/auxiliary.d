@@ -50,7 +50,7 @@ func MEMINT_HelperClass GFA_GetActiveSpellInst(var C_Npc npc) {
 
 /*
  * Retrieve whether a spell is eligible for free aiming (GFA_SPL_FREEAIM), that is, it supports free aiming by its
- * properties, or eligible for movement (GFA_SPL_MOVE). This function is called to determine whether to activate free
+ * properties, or eligible for movement (GFA_MOVEMENT). This function is called to determine whether to activate free
  * aiming or aim movement, since not all spells need to have these features, e.g. summoning spells (no free aiming),
  * heal (no movement).
  * Do not change the properties that make a spell eligible! This is very well thought through and works for ALL Gothic 1
@@ -67,11 +67,10 @@ func int GFA_IsSpellEligible(var C_Spell spell) {
     && (spell.canTurnDuringInvest) && (spell.canChangeTargetDuringInvest) {
         // It might be tempting to change TARGET_COLLECT_FOCUS_FALLBACK_NONE into something else, but free aiming will
         // break this way, as a focus NEEDS to be enabled, but not fixed. No other target collection algorithm suffices.
-        return GFA_SPL_FREEAIM | GFA_SPL_MOVE;
-    } else if (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS)
-    && (spell.canTurnDuringInvest) {
+        return GFA_SPL_FREEAIM | GFA_MOVEMENT; // == FMODE_MAGIC
+    } else if (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS) && (spell.canTurnDuringInvest) {
         // Spell supports aim movement
-        return GFA_SPL_MOVE;
+        return GFA_MOVEMENT;
     };
 
     // All other cases

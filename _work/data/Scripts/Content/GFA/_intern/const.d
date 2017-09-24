@@ -25,6 +25,10 @@
 /*
  * Gothic Free Aim internal constants. Do not modify! Change the settings in config\settings.d
  */
+
+
+/* Initialization */
+
 const string GFA_VERSION            = "Gothic Free Aim v1.0.0-beta.17";
 const int    GFA_LEGO_FLAGS         = LeGo_HookEngine       // For initializing all hooks
                                     | LeGo_FrameFunctions   // For projectile gravity
@@ -43,40 +47,28 @@ const int    GFA_ALL                = (1<<5) - 1;           // Initialize all fe
 
 const int    GFA_INIT_COLL_CHECK    = 0;                    // Initialize extended collision detection
 
-const int    GFA_DRAWTIME_READY     = 475;                  // Time (ms) for readying the weapon. Fixed by animation
-const int    GFA_DRAWTIME_RELOAD    = 1250;                 // Time (ms) for reloading the weapon. Fixed by animation
-var   int    GFA_BowDrawOnset;                              // Time onset of drawing the bow
-var   int    GFA_MouseMovedLast;                            // Time of last mouse movement
 
-const int    GFA_RETICLE_MIN_SIZE   = 32;                   // Smallest reticle size in pixels
-const int    GFA_RETICLE_MAX_SIZE   = 64;                   // Biggest reticle size in pixels
-var   int    GFA_ReticleHndl;                               // Handle of the reticle
-var   int    GFA_AimVobHasFX;                               // For performance: check whether FX needs to be removed
+/* Free aiming and free movement */
 
-const string GFA_TRAIL_FX           = "GFA_TRAIL_VFX";      // Trail strip FX. Should not be changed
-const string GFA_TRAIL_FX_SIMPLE    = "GFA_TRAIL_INST_VFX"; // Simplified trail strip FX for use in Gothic 1
-const string GFA_BREAK_FX           = "GFA_DESTROY_VFX";    // FX of projectile breaking on impact with world
-const string GFA_CAMERA             = "CamModGFA";          // CCamSys_Def script instance
+const int    GFA_ACTIVE             = 0;                    // Status indicator of free aiming/free movement
+const int    GFA_MOVEMENT           = 1<<2;                 // Free movement status
+const int    GFA_SPL_FREEAIM        = (FMODE_MAGIC          // Free aiming modifier for spells
+                                       & ~GFA_MOVEMENT);
+
+const int    GOTHIC_CONTROL_SCHEME  = 1;                    // Active control scheme (for Gothic 1 always 1)
+const float  GFA_MAX_TURN_RATE_G1   = 2.0;                  // Gothic 1 has a maximum turn rate (engine default: 2.0)
 
 const int    GFA_MIN_AIM_DIST       = 140;                  // Minimum targeting distance. Fixes vertical shooting bug
 const int    GFA_MAX_DIST           = 5000;                 // Distance for shooting/reticle. Do not change
 var   int    GFA_AimRayInterval;                            // Perform trace ray every x ms (change in ini-file)
 var   int    GFA_AimRayPrevCalcTime;                        // Time of last trace ray calculation
 
-const float  GFA_SCATTER_HIT        = 2.6;                  // (Visual angle)/2 within which everything is a hit
-const float  GFA_SCATTER_MISS       = 3.3;                  // (Visual angle)/2 outside which everything is a miss
-const float  GFA_SCATTER_MAX        = 5.0;                  // (Visual angle)/2 of maximum scatter (all in degrees)
+const int    GFA_RETICLE_MIN_SIZE   = 32;                   // Smallest reticle size in pixels
+const int    GFA_RETICLE_MAX_SIZE   = 64;                   // Biggest reticle size in pixels
+var   int    GFA_ReticleHndl;                               // Handle of the reticle
+var   int    GFA_AimVobHasFX;                               // For performance: check whether FX needs to be removed
 
-var   int    GFA_LastHitCritical;                           // Was the last hit critical (will be reset immediately)
-
-var   int    GFA_StatsShots;                                // Shooting statistics: Count total number of shots taken
-var   int    GFA_StatsHits;                                 // Shooting statistics: Count positive hits on target
-var   int    GFA_StatsCriticalHits;                         // Shooting statistics: Count number of critical hits
-
-const float  GFA_MAX_TURN_RATE_G1   = 2.0;                  // Gothic 1 has a maximum turn rate (engine default: 2.0)
-
-const int    GFA_ACTIVE             = 0;                    // Status indicator of free aiming
-const int    GOTHIC_CONTROL_SCHEME  = 1;                    // Active control scheme (for Gothic 1 always 1)
+const string GFA_CAMERA             = "CamModGFA";          // CCamSys_Def script instance
 
 const float  GFA_FOCUS_FAR_NPC      = 15.0;                 // NPC azimuth for ranged focus for free aiming
 const float  GFA_FOCUS_SPL_NPC      = 15.0;                 // NPC azimuth for spell focus for free aiming
@@ -86,21 +78,11 @@ const int    GFA_FOCUS_FAR_NPC_DFT  = FLOATNULL;            // Backup NPC azimut
 const int    GFA_FOCUS_SPL_NPC_DFT  = FLOATNULL;            // Backup NPC azimuth from spell focus instance
 const int    GFA_FOCUS_SPL_ITM_DFT  = 0;                    // Backup item priority from spell focus instance
 
-const int    FLOAT1C                = 1120403456;           // 100 as float
-const int    FLOAT3C                = 1133903872;           // 300 as float
-const int    FLOAT7C                = 1171963904;           // 700 as float
-const int    FLOAT1K                = 1148846080;           // 1000 as float
 
-var   int    GFA_DebugWSBBox[6];                            // Weak spot bounding box for debug visualization
-var   int    GFA_DebugWSTrj[6];                             // Projectile trajectory for debug visualization
-var   int    GFA_DebugTRBBox[6];                            // Trace ray intersection for debug visualization
-var   int    GFA_DebugTRTrj[6];                             // Trace ray trajectory for debug visualization
-var   int    GFA_DebugTRPrevVob;                            // Trace ray detected vob bounding box pointer for debugging
+/* Aim movement */
 
 var   int    GFA_IsStrafing;                                // State of strafing (movement ID)
 const int    GFA_STRAFE_POSTCAST    = 500;                  // Time (ms) to remain in aim movement after casting a spell
-const int    GFA_SPL_MOVE           = 1<<0;                 // Spell is eligible for movement
-const int    GFA_SPL_FREEAIM        = 1<<1;                 // Spell is eligible for free aiming
 
 const int    GFA_MOVE_FORWARD       = 1<<0;                 // ID (first bit) for moving forward while aiming
 const int    GFA_MOVE_BACKWARD      = 1<<1;                 // ID (second bit) for moving backward while aiming
@@ -126,3 +108,42 @@ const string GFA_AIM_ANIS[13]       = {                     // Names of aiming m
 };
 
 const int    GFA_MOVE_ANI_LAYER     = 2;                    // Layer of aiming movement animations (see Humans.mds)
+
+
+/* Ranged combat */
+
+const string GFA_TRAIL_FX           = "GFA_TRAIL_VFX";      // Trail strip FX. Should not be changed
+const string GFA_TRAIL_FX_SIMPLE    = "GFA_TRAIL_INST_VFX"; // Simplified trail strip FX for use in Gothic 1
+const string GFA_BREAK_FX           = "GFA_DESTROY_VFX";    // FX of projectile breaking on impact with world
+
+const int    GFA_DRAWTIME_READY     = 475;                  // Time (ms) for readying the weapon. Fixed by animation
+const int    GFA_DRAWTIME_RELOAD    = 1250;                 // Time (ms) for reloading the weapon. Fixed by animation
+var   int    GFA_BowDrawOnset;                              // Time onset of drawing the bow
+var   int    GFA_MouseMovedLast;                            // Time of last mouse movement
+
+const float  GFA_SCATTER_HIT        = 2.6;                  // (Visual angle)/2 within which everything is a hit
+const float  GFA_SCATTER_MISS       = 3.3;                  // (Visual angle)/2 outside which everything is a miss
+const float  GFA_SCATTER_MAX        = 5.0;                  // (Visual angle)/2 of maximum scatter (all in degrees)
+
+var   int    GFA_LastHitCritical;                           // Was the last hit critical (will be reset immediately)
+
+
+/* Debugging */
+
+var   int    GFA_StatsShots;                                // Shooting statistics: Count total number of shots taken
+var   int    GFA_StatsHits;                                 // Shooting statistics: Count positive hits on target
+var   int    GFA_StatsCriticalHits;                         // Shooting statistics: Count number of critical hits
+
+var   int    GFA_DebugWSBBox[6];                            // Weak spot bounding box for debug visualization
+var   int    GFA_DebugWSTrj[6];                             // Projectile trajectory for debug visualization
+var   int    GFA_DebugTRBBox[6];                            // Trace ray intersection for debug visualization
+var   int    GFA_DebugTRTrj[6];                             // Trace ray trajectory for debug visualization
+var   int    GFA_DebugTRPrevVob;                            // Trace ray detected vob bounding box pointer for debugging
+
+
+/* Numerical constants */
+
+const int    FLOAT1C                = 1120403456;           // 100 as float
+const int    FLOAT3C                = 1133903872;           // 300 as float
+const int    FLOAT7C                = 1171963904;           // 700 as float
+const int    FLOAT1K                = 1148846080;           // 1000 as float

@@ -189,7 +189,7 @@ func void GFA_IsActive() {
             Focus_Magic.item_prio = GFA_FOCUS_SPL_ITM_DFT;
 
             // Basic spells, that use neither free aiming nor movement
-            if (!(eligible & GFA_SPL_MOVE)) {
+            if (!(eligible & GFA_MOVEMENT)) {
                 GFA_DisableAutoTurning(0);
                 GFA_DisableToggleFocusSpells(0);
                 GFA_AimMovement(0, ""); // Might have switched directly from other spell while still in movement
@@ -203,7 +203,7 @@ func void GFA_IsActive() {
         };
 
         // Movement spells disable auto turning
-        if (eligible & GFA_SPL_MOVE) {
+        if (eligible & GFA_MOVEMENT) {
             GFA_DisableToggleFocusSpells(1);
             GFA_DisableAutoTurning(1);
         };
@@ -233,8 +233,8 @@ func void GFA_IsActive() {
             };
         };
 
-        // If this is reached, free aiming for the spell is active
-        GFA_ACTIVE = FMODE_MAGIC;
+        // If this is reached, free aiming or at least free movement for the spell is active
+        GFA_ACTIVE = eligible;
 
     } else if (her.fmode >= FMODE_FAR) { // Greater or equal: Crossbow has different fight mode!
         // Check if free aiming for ranged combat is disabled

@@ -42,16 +42,8 @@
 func void GFA_TurnPlayerModel() {
     // Retrieve free aim state and exit if player is not currently aiming
     MEM_Call(GFA_IsActive);
-    if (GFA_ACTIVE < FMODE_FAR) {
+    if (!(GFA_ACTIVE & GFA_MOVEMENT)) {
         return;
-    };
-
-    // Only allow movement spells
-    if (GFA_ACTIVE == FMODE_MAGIC) {
-        var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
-        if (!(GFA_IsSpellEligible(spell) & GFA_SPL_MOVE)) {
-            return;
-        };
     };
 
     // The _Cursor class from LeGo is used here. It is not necessarily a cursor: it holds mouse properties
@@ -64,8 +56,8 @@ func void GFA_TurnPlayerModel() {
 
     // Gothic 2 controls only need the rotation if currently shooting
     if (GOTHIC_CONTROL_SCHEME == 2) {
-        if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction")))
-        && (GFA_ACTIVE != FMODE_MAGIC) {
+        if ((!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))))
+        || (GFA_ACTIVE == FMODE_FAR) {
             return;
         };
     };
