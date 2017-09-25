@@ -117,13 +117,11 @@ func void GFA_IsActive() {
 
     // Check if currently in a menu or in a dialog
     if (MEM_Game.pause_screen) || (!InfoManager_HasFinished()) {
-        if (!MEM_Timer.totalTime) {
-            GFA_ACTIVE = 1;
-            return;
+        if (MEM_Timer.totalTime) && (Hlp_IsValidNpc(hero)) {
+            GFA_SetCameraModes(0);
+            GFA_AimMovement(0, "");
+            GFA_DisableAutoTurning(0);
         };
-        GFA_SetCameraModes(0);
-        GFA_AimMovement(0, "");
-        GFA_DisableAutoTurning(0);
         GFA_ACTIVE = 1;
         return;
     };
