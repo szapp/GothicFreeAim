@@ -181,23 +181,20 @@ func void GFA_CH_DetectCriticalHit() {
             return;
         };
 
+        // Calculate model node bounding boxes
+        const int call3 = 0;
+        if (CALL_Begin(call3)) {
+            CALL__thiscall(_@(model), zCModel__CalcNodeListBBoxWorld);
+            call3 = CALL_End();
+        };
+
         // Retrieve/create bounding box from dimensions
-        var int nodeBBoxPtr;
         if (weakspot.dimX == -1) && (weakspot.dimY == -1) {
             // If the model node has a dedicated visual and hence its own bounding box, the dimensions may be retrieved
             // automatically, by specifying dimensions of -1. (Only works for heads of humanoids.)
             if (MEM_ReadInt(node+zCModelNodeInst_visual_offset)) {
-                // Although zCModelNodeInst has a zTBBox3D class variable, it is empty the first time and needs to be
-                // retrieved by calling this engine function:
-                // No recyclable call possible, because the return value is a structure (needs to be freed manually).
-                CALL_PtrParam(node);
-                CALL_RetValIsStruct(sizeof_zTBBox3D);
-                CALL_PutRetValTo(_@(nodeBBoxPtr));
-                CALL__thiscall(model, zCModel__GetBBox3DNodeWorld);
-
-                // Copy the positions in order to free the retrieved bounding box immediately
-                MEM_CopyBytes(nodeBBoxPtr, _@(GFA_DebugWSBBox), sizeof_zTBBox3D);
-                MEM_Free(nodeBBoxPtr);
+                // Copy the bounding box dimensions
+                MEM_CopyBytes(node+zCModelNodeInst_bbox3D_offset, _@(GFA_DebugWSBBox), sizeof_zTBBox3D);
             } else {
                 // This is an error (instead of a warning), because it is a reckless design flaw if defining a weak spot
                 // with dimensions -1 for a model that does not have a designated node visual (this only works with the
@@ -214,22 +211,34 @@ func void GFA_CH_DetectCriticalHit() {
             return;
 
         } else {
-            // Create bounding box by dimensions
+            // Create bounding box by dimensions and offsets
             var int dimX; dimX = mkf(weakspot.dimX/2); // Do not overwrite weak spot properties, needed for zSpy output
             var int dimY; dimY = mkf(weakspot.dimY/2);
+            var int offX; offX = mkf(weakspot.offset[0]);
+            var int offY; offY = mkf(weakspot.offset[1]);
+            var int offZ; offZ = mkf(weakspot.offset[2]);
 
-            // Although zCModelNodeInst has a position class variable, it is empty the first time and needs to be
-            // retrieved by calling this engine function:
-            // No recyclable call possible, because the return value is a structure (needs to be freed manually).
-            CALL_PtrParam(node);
-            CALL_RetValIsStruct(sizeof_zVEC3);
-            CALL_PutRetValTo(_@(nodPosPtr));
-            CALL__thiscall(model, zCModel__GetNodePositionWorld);
+            // Retrieve trafo from node
+            var zMAT4 nodeTrf; nodeTrf = _^(node+zCModelNodeInst_trafoObjToCam_offset);
 
-            // Copy the positions in order to free the retrieved vector immediately
+            // Get position with position offsets in local space
             var int nodePos[3];
-            MEM_CopyBytes(nodPosPtr, _@(nodePos), sizeof_zVEC3);
-            var int nodPosPtr; MEM_Free(nodPosPtr);
+            nodePos[0] = nodeTrf.v0[zMAT4_position];
+            nodePos[1] = nodeTrf.v1[zMAT4_position];
+            nodePos[2] = nodeTrf.v2[zMAT4_position];
+
+            // X offset (right vector)
+            nodePos[0] = addf(nodePos[0], mulf(nodeTrf.v0[zMAT4_rightVec], offX));
+            nodePos[1] = addf(nodePos[1], mulf(nodeTrf.v1[zMAT4_rightVec], offX));
+            nodePos[2] = addf(nodePos[2], mulf(nodeTrf.v2[zMAT4_rightVec], offX));
+            // Y offset (up vector)
+            nodePos[0] = addf(nodePos[0], mulf(nodeTrf.v0[zMAT4_upVec], offY));
+            nodePos[1] = addf(nodePos[1], mulf(nodeTrf.v1[zMAT4_upVec], offY));
+            nodePos[2] = addf(nodePos[2], mulf(nodeTrf.v2[zMAT4_upVec], offY));
+            // Z offset (out vector)
+            nodePos[0] = addf(nodePos[0], mulf(nodeTrf.v0[zMAT4_outVec], offZ));
+            nodePos[1] = addf(nodePos[1], mulf(nodeTrf.v1[zMAT4_outVec], offZ));
+            nodePos[2] = addf(nodePos[2], mulf(nodeTrf.v2[zMAT4_outVec], offZ));
 
             // Build a bounding box by the passed node dimensions
             GFA_DebugWSBBox[0] = subf(nodePos[0], dimX);
@@ -241,7 +250,7 @@ func void GFA_CH_DetectCriticalHit() {
         };
 
         // Detect if the shot goes through the bounding box
-        nodeBBoxPtr = _@(GFA_DebugWSBBox);
+        var int nodeBBoxPtr; nodeBBoxPtr = _@(GFA_DebugWSBBox);
         var int fromPosPtr; fromPosPtr = _@(GFA_DebugCollTrj);
         var int dir[3];
         dir[0] = subf(GFA_DebugCollTrj[3], GFA_DebugCollTrj[0]);
@@ -249,14 +258,14 @@ func void GFA_CH_DetectCriticalHit() {
         dir[2] = subf(GFA_DebugCollTrj[5], GFA_DebugCollTrj[2]);
         var int dirPosPtr; dirPosPtr = _@(dir);
 
-        const int call3 = 0;
-        if (CALL_Begin(call3)) {
+        const int call4 = 0;
+        if (CALL_Begin(call4)) {
             CALL_PtrParam(_@(dirPosPtr));      // Intersection vector (not needed)
             CALL_PtrParam(_@(dirPosPtr));      // Trace ray direction
             CALL_PtrParam(_@(fromPosPtr));     // Start vector
             CALL_PutRetValTo(_@(criticalhit)); // Did the trace ray hit
             CALL__thiscall(_@(nodeBBoxPtr), zTBBox3D__TraceRay); // This is a bounding box specific trace ray
-            call3 = CALL_End();
+            call4 = CALL_End();
         };
     };
 

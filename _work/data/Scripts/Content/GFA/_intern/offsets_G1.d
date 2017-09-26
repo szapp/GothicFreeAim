@@ -78,8 +78,7 @@ const int oCVisualFX__Stop                           =  4766512; //0x48BB30
 const int zCModel__classDef                          =  8208364; //0x7D3FEC
 const int zCModel__TraceRay_softSkinCheck            =  5669743; //0x56836F
 const int zCModel__SearchNode                        =  5652352; //0x563F80
-const int zCModel__GetBBox3DNodeWorld                =  5634160; //0x55F870
-const int zCModel__GetNodePositionWorld              =  5634240; //0x55F8C0
+const int zCModel__CalcNodeListBBoxWorld             =  5633856; //0x55F740
 const int zCModel__StartAni                          =  5640608; //0x5611A0
 const int zCModel__FadeOutAnisLayerRange             =  5656944; //0x565170
 const int zCModel__StopAnisLayerRange                =  5657024; //0x5651C0                // Not used for Gothic 1
@@ -205,6 +204,8 @@ const int zCModel_meshSoftSkinList_numInArray_offset = 120; //0x0078
 const int zCModelAni_aniID_offset                    = 76;  //0x004C
 
 const int zCModelNodeInst_visual_offset              = 8;   //0x0008
+const int zCModelNodeInst_trafoObjToCam_offset       = 76;  //0x004C
+const int zCModelNodeInst_bbox3D_offset              = 140; //0x008C
 
 const int zCVisual_materials_offset                  = 164; //0x00A4
 const int zCVisual_numMaterials_offset               = 168; //0x00A8

@@ -78,8 +78,7 @@ const int oCVisualFX__Stop                           =  4799456; //0x493BE0
 const int zCModel__classDef                          =  9275680; //0x8D8920
 const int zCModel__TraceRay_softSkinCheck            =  5777440; //0x582820
 const int zCModel__SearchNode                        =  5758960; //0x57DFF0
-const int zCModel__GetBBox3DNodeWorld                =  5738736; //0x5790F0
-const int zCModel__GetNodePositionWorld              =  5738816; //0x579140
+const int zCModel__CalcNodeListBBoxWorld             =  5738432; //0x578FC0
 const int zCModel__StartAni                          =  5746544; //0x57AF70
 const int zCModel__FadeOutAnisLayerRange             =  5763568; //0x57F1F0
 const int zCModel__StopAnisLayerRange                =  5763648; //0x57F240
@@ -205,6 +204,8 @@ const int zCModel_meshSoftSkinList_numInArray_offset = 132; //0x0084
 const int zCModelAni_aniID_offset                    = 76;  //0x004C
 
 const int zCModelNodeInst_visual_offset              = 8;   //0x0008
+const int zCModelNodeInst_trafoObjToCam_offset       = 76;  //0x004C
+const int zCModelNodeInst_bbox3D_offset              = 140; //0x008C
 
 const int zCVisual_materials_offset                  = 164; //0x00A4
 const int zCVisual_numMaterials_offset               = 168; //0x00A8
