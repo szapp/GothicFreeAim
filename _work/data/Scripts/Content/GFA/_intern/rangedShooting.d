@@ -607,7 +607,7 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
         return TRUE;
     };
 
-    // Direction of collision line by subtracting the last position of the rigid body from the projectile position
+    // Retrieve projectile and rigid body
     var int projectilePtr; projectilePtr = MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset);
     if (!projectilePtr) {
         return TRUE;
@@ -617,15 +617,16 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
     if (!rBody) {
         return TRUE;
     };
-    var int traceRayVec[6];
-    traceRayVec[0] = projectile._zCVob_trafoObjToWorld[ 3];
-    traceRayVec[1] = projectile._zCVob_trafoObjToWorld[ 7];
-    traceRayVec[2] = projectile._zCVob_trafoObjToWorld[11];
-    traceRayVec[3] = subf(MEM_ReadInt(rBody+zCRigidBody_xPos_offset), traceRayVec[0]);
-    traceRayVec[4] = subf(MEM_ReadInt(rBody+zCRigidBody_xPos_offset+4), traceRayVec[1]);
-    traceRayVec[5] = subf(MEM_ReadInt(rBody+zCRigidBody_xPos_offset+8), traceRayVec[2]);
-    var int fromPosPtr; fromPosPtr = _@(traceRayVec);
-    var int dirPosPtr; dirPosPtr = _@(traceRayVec)+sizeof_zVEC3;
+
+    // Direction of collision line: projectile position subtracted from the last predicted position of the rigid body
+    GFA_DebugCollTrj[0] = projectile._zCVob_trafoObjToWorld[ 3];
+    GFA_DebugCollTrj[1] = projectile._zCVob_trafoObjToWorld[ 7];
+    GFA_DebugCollTrj[2] = projectile._zCVob_trafoObjToWorld[11];
+    GFA_DebugCollTrj[3] = subf(MEM_ReadInt(rBody+zCRigidBody_xPos_offset), GFA_DebugCollTrj[0]);
+    GFA_DebugCollTrj[4] = subf(MEM_ReadInt(rBody+zCRigidBody_xPos_offset+4), GFA_DebugCollTrj[1]);
+    GFA_DebugCollTrj[5] = subf(MEM_ReadInt(rBody+zCRigidBody_xPos_offset+8), GFA_DebugCollTrj[2]);
+    var int fromPosPtr; fromPosPtr = _@(GFA_DebugCollTrj);
+    var int dirPosPtr; dirPosPtr = _@(GFA_DebugCollTrj)+sizeof_zVEC3;
 
     // Direction vector needs to be normalized
     const int call = 0;
@@ -635,13 +636,13 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
     };
     MEM_CopyBytes(CALL_RetValAsPtr(), dirPosPtr, sizeof_zVEC3);
 
-    // Adjust length of ray (large models have hugh bounding boxes)
-    traceRayVec[0] = subf(traceRayVec[0], mulf(traceRayVec[3], FLOAT1C)); // Start one meter behind the projectile
-    traceRayVec[1] = subf(traceRayVec[1], mulf(traceRayVec[4], FLOAT1C));
-    traceRayVec[2] = subf(traceRayVec[2], mulf(traceRayVec[5], FLOAT1C));
-    traceRayVec[3] = mulf(traceRayVec[3], FLOAT7C); // Trace trajectory from bounding box edge for seven meters
-    traceRayVec[4] = mulf(traceRayVec[4], FLOAT7C);
-    traceRayVec[5] = mulf(traceRayVec[5], FLOAT7C);
+    // Adjust length of ray (large models have huge bounding boxes)
+    GFA_DebugCollTrj[0] = subf(GFA_DebugCollTrj[0], mulf(GFA_DebugCollTrj[3], FLOAT3C)); // Start 3m behind projectile
+    GFA_DebugCollTrj[1] = subf(GFA_DebugCollTrj[1], mulf(GFA_DebugCollTrj[4], FLOAT3C));
+    GFA_DebugCollTrj[2] = subf(GFA_DebugCollTrj[2], mulf(GFA_DebugCollTrj[5], FLOAT3C));
+    GFA_DebugCollTrj[3] = mulf(GFA_DebugCollTrj[3], FLOAT8C); // Trace trajectory from bounding box edge for 8m
+    GFA_DebugCollTrj[4] = mulf(GFA_DebugCollTrj[4], FLOAT8C);
+    GFA_DebugCollTrj[5] = mulf(GFA_DebugCollTrj[5], FLOAT8C);
 
     // Perform refined collision check
     GFA_AllowSoftSkinTraceRay(1);
@@ -660,6 +661,11 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
     };
     MEM_Free(trRep); // Free the report
     GFA_AllowSoftSkinTraceRay(0);
+
+    // Add direction vector to position vector to form a line (for debug visualization)
+    GFA_DebugCollTrj[3] = addf(GFA_DebugCollTrj[0], GFA_DebugCollTrj[3]);
+    GFA_DebugCollTrj[4] = addf(GFA_DebugCollTrj[1], GFA_DebugCollTrj[4]);
+    GFA_DebugCollTrj[5] = addf(GFA_DebugCollTrj[2], GFA_DebugCollTrj[5]);
 
     return +hit;
 };

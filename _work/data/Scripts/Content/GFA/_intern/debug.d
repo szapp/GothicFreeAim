@@ -53,16 +53,10 @@ func void GFA_VisualizeLine(var int pos1Ptr, var int pos2Ptr, var int color) {
 
 
 /*
- * Visualize the bounding boxes of the trace ray and its trajectory for debugging. This function hooks
- * zCWorld::AdvanceClock(), because it has to happen BEFORE where the frame functions are hooked. Otherwise the drawn
- * lines disappear.
+ * Visualize the bounding boxes of the trace ray and its trajectory for debugging.
  */
 func void GFA_VisualizeTraceRay() {
-    if (!GFA_DEBUG_TRACERAY) || (MEM_Game.pause_screen) {
-        return;
-    };
-
-    // Visualize trace ray intersection as small green bounding box
+    // Visualize trace ray intersection as small green box
     if (GFA_DebugTRBBox[0]) {
         GFA_VisualizeBBox(_@(GFA_DebugTRBBox), zCOLOR_GREEN);
     };
@@ -80,22 +74,43 @@ func void GFA_VisualizeTraceRay() {
 
 
 /*
- * Visualize the bounding box of the weak spot (critical hit) and the projectile trajectory for debugging. This function
- * hooks zCWorld::AdvanceClock(), because it has to happen BEFORE where the frame functions are hooked. Otherwise the
- * drawn lines disappear.
+ * Visualize the trajectory of the last shot projectile as red line.
+ */
+func void GFA_VisualizeCollision() {
+    if (GFA_DebugCollTrj[0]) {
+        GFA_VisualizeLine(_@(GFA_DebugCollTrj), _@(GFA_DebugCollTrj)+sizeof_zVEC3, zCOLOR_RED);
+    };
+};
+
+
+/*
+ * Visualize the bounding box of the weak spot (critical hit) in red.
  */
 func void GFA_VisualizeWeakspot() {
-    if (!GFA_DEBUG_WEAKSPOT) || (MEM_Game.pause_screen) {
-        return;
-    };
-
-    // Visualize critical hit node (weak spot) as red bounding box
     if (GFA_DebugWSBBox[0]) {
         GFA_VisualizeBBox(_@(GFA_DebugWSBBox), zCOLOR_RED);
     };
+};
 
-    // Approximate projectile trajectory as red line
-    if (GFA_DebugWSTrj[0]) {
-        GFA_VisualizeLine(_@(GFA_DebugWSTrj), _@(GFA_DebugWSTrj)+sizeof_zVEC3, zCOLOR_RED);
+
+/*
+ * Start the above defined debug visualizations. This function hooks zCWorld::AdvanceClock(), because it has to happen
+ * BEFORE where the frame functions are hooked. Otherwise the drawn lines disappear.
+ */
+func void GFA_DebugVisualization() {
+    if (MEM_Game.pause_screen) {
+        return;
+    };
+
+    if (GFA_DEBUG_COLLISION) || (GFA_DEBUG_WEAKSPOT) {
+        GFA_VisualizeCollision();
+    };
+
+    if (GFA_DEBUG_WEAKSPOT) {
+        GFA_VisualizeWeakspot();
+    };
+
+    if (GFA_DEBUG_TRACERAY) {
+        GFA_VisualizeTraceRay();
     };
 };

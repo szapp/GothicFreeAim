@@ -157,22 +157,24 @@ func void GFA_CH_DetectCriticalHit() {
         // When free aiming is enabled the critical hit is determined by the actual node/bone that the projectile hits
 
         // Get model from target NPC
-        const int call = 0;
-        if (CALL_Begin(call)) {
-            CALL__thiscall(_@(targetPtr), oCNpc__GetModel);
-            call = CALL_End();
+        var zCVob targetVob; targetVob = _^(targetPtr);
+        var int model; model = targetVob.visual;
+        if (!objCheckInheritance(model, zCModel__classDef)) {
+            MEM_Warn("GFA_CH_DetectCriticalHit: NPC has no model visual!");
+            MEM_Free(weakspotPtr);
+            return;
         };
-        var int model; model = CALL_RetValAsPtr();
 
         // Retrieve model node from node name
+        var int node; // zCModelNodeInst*
         var int nodeStrPtr; nodeStrPtr = _@s(weakspot.node);
         const int call2 = 0;
         if (CALL_Begin(call2)) {
             CALL_PtrParam(_@(nodeStrPtr));
+            CALL_PutRetValTo(_@(node));
             CALL__thiscall(_@(model), zCModel__SearchNode);
             call2 = CALL_End();
         };
-        var int node; node = CALL_RetValAsPtr(); // zCModelNodeInst*
         if (!node) {
             MEM_Warn("GFA_CH_DetectCriticalHit: Node not found!");
             MEM_Free(weakspotPtr);
@@ -180,6 +182,7 @@ func void GFA_CH_DetectCriticalHit() {
         };
 
         // Retrieve/create bounding box from dimensions
+        var int nodeBBoxPtr;
         if (weakspot.dimX == -1) && (weakspot.dimY == -1) {
             // If the model node has a dedicated visual and hence its own bounding box, the dimensions may be retrieved
             // automatically, by specifying dimensions of -1. (Only works for heads of humanoids.)
@@ -189,8 +192,8 @@ func void GFA_CH_DetectCriticalHit() {
                 // No recyclable call possible, because the return value is a structure (needs to be freed manually).
                 CALL_PtrParam(node);
                 CALL_RetValIsStruct(sizeof_zTBBox3D);
+                CALL_PutRetValTo(_@(nodeBBoxPtr));
                 CALL__thiscall(model, zCModel__GetBBox3DNodeWorld);
-                var int nodeBBoxPtr; nodeBBoxPtr = CALL_RetValAsPtr();
 
                 // Copy the positions in order to free the retrieved bounding box immediately
                 MEM_CopyBytes(nodeBBoxPtr, _@(GFA_DebugWSBBox), sizeof_zTBBox3D);
@@ -220,13 +223,13 @@ func void GFA_CH_DetectCriticalHit() {
             // No recyclable call possible, because the return value is a structure (needs to be freed manually).
             CALL_PtrParam(node);
             CALL_RetValIsStruct(sizeof_zVEC3);
+            CALL_PutRetValTo(_@(nodPosPtr));
             CALL__thiscall(model, zCModel__GetNodePositionWorld);
-            var int nodPosPtr; nodPosPtr = CALL_RetValAsPtr();
 
             // Copy the positions in order to free the retrieved vector immediately
             var int nodePos[3];
             MEM_CopyBytes(nodPosPtr, _@(nodePos), sizeof_zVEC3);
-            MEM_Free(nodPosPtr);
+            var int nodPosPtr; MEM_Free(nodPosPtr);
 
             // Build a bounding box by the passed node dimensions
             GFA_DebugWSBBox[0] = subf(nodePos[0], dimX);
@@ -237,50 +240,24 @@ func void GFA_CH_DetectCriticalHit() {
             GFA_DebugWSBBox[5] = addf(nodePos[2], dimX);
         };
 
-        // The internal engine functions are not accurate enough for detecting a shot through a bounding box. Instead
-        // check here if 'any' point along the line of the projectile direction lies inside the bounding box of the node
-
-        // Direction of collision line by subtracting the last position of the rigid body from the projectile position
-        var int rBody; rBody = projectile._zCVob_rigidBody;
-        if (!rBody) {
-            return;
-        };
+        // Detect if the shot goes through the bounding box
+        nodeBBoxPtr = _@(GFA_DebugWSBBox);
+        var int fromPosPtr; fromPosPtr = _@(GFA_DebugCollTrj);
         var int dir[3];
-        dir[0] = subf(projectile._zCVob_trafoObjToWorld[ 3], MEM_ReadInt(rBody+zCRigidBody_xPos_offset));
-        dir[1] = subf(projectile._zCVob_trafoObjToWorld[ 7], MEM_ReadInt(rBody+zCRigidBody_xPos_offset+4));
-        dir[2] = subf(projectile._zCVob_trafoObjToWorld[11], MEM_ReadInt(rBody+zCRigidBody_xPos_offset+8));
+        dir[0] = subf(GFA_DebugCollTrj[3], GFA_DebugCollTrj[0]);
+        dir[1] = subf(GFA_DebugCollTrj[4], GFA_DebugCollTrj[1]);
+        dir[2] = subf(GFA_DebugCollTrj[5], GFA_DebugCollTrj[2]);
+        var int dirPosPtr; dirPosPtr = _@(dir);
 
-        // Direction vector needs to be normalized
-        var int dirPtr; dirPtr = _@(dir);
         const int call3 = 0;
         if (CALL_Begin(call3)) {
-            CALL__thiscall(_@(dirPtr), zVEC3__NormalizeSafe);
+            CALL_PtrParam(_@(dirPosPtr));      // Intersection vector (not needed)
+            CALL_PtrParam(_@(dirPosPtr));      // Trace ray direction
+            CALL_PtrParam(_@(fromPosPtr));     // Start vector
+            CALL_PutRetValTo(_@(criticalhit)); // Did the trace ray hit
+            CALL__thiscall(_@(nodeBBoxPtr), zTBBox3D__TraceRay); // This is a bounding box specific trace ray
             call3 = CALL_End();
         };
-        MEM_CopyBytes(CALL_RetValAsPtr(), dirPtr, sizeof_zVEC3);
-
-        // Trajectory starts one meter behind the projectile position, to detect bounding boxes at close range
-        GFA_DebugWSTrj[0] = addf(projectile._zCVob_trafoObjToWorld[ 3], mulf(dir[0], FLOAT1C));
-        GFA_DebugWSTrj[1] = addf(projectile._zCVob_trafoObjToWorld[ 7], mulf(dir[1], FLOAT1C));
-        GFA_DebugWSTrj[2] = addf(projectile._zCVob_trafoObjToWorld[11], mulf(dir[2], FLOAT1C));
-
-        // Loop to walk along the trajectory of the projectile
-        criticalHit = 0;
-        var int i; i=0; // Loop index
-        var int iter; iter = 700/5; // 7m: Max distance from model bounding box edge to node bounding box (e.g. troll)
-        while(i <= iter); i += 1; // Walk along the line in steps of 5 cm
-            // Next point along the collision line
-            GFA_DebugWSTrj[3] = subf(GFA_DebugWSTrj[0], mulf(dir[0], mkf(i*5)));
-            GFA_DebugWSTrj[4] = subf(GFA_DebugWSTrj[1], mulf(dir[1], mkf(i*5)));
-            GFA_DebugWSTrj[5] = subf(GFA_DebugWSTrj[2], mulf(dir[2], mkf(i*5)));
-
-            // Check if current point is inside the node bounding box, but stay in loop for complete line (debugging)
-            if (lef(GFA_DebugWSBBox[0], GFA_DebugWSTrj[3])) && (lef(GFA_DebugWSBBox[1], GFA_DebugWSTrj[4]))
-            && (lef(GFA_DebugWSBBox[2], GFA_DebugWSTrj[5])) && (gef(GFA_DebugWSBBox[3], GFA_DebugWSTrj[3]))
-            && (gef(GFA_DebugWSBBox[4], GFA_DebugWSTrj[4])) && (gef(GFA_DebugWSBBox[5], GFA_DebugWSTrj[5])) {
-                criticalHit = 1;
-            };
-        end;
     };
 
     if (GFA_DEBUG_PRINT) {

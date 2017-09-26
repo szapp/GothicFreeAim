@@ -225,15 +225,16 @@ func void GFA_RangedAimingCondition() {
     };
 
     // Remove turning animations (player model sometimes gets stuck in turning animation)
-    var zCAIPlayer playerAI; playerAI = _^(aniCtrlPtr);
-    var int model; model = playerAI.model;
-    const int twenty = 20;
-    const int call3 = 0;
-    if (CALL_Begin(call3)) {
-        CALL_IntParam(_@(twenty));
-        CALL_IntParam(_@(twenty));
-        CALL__thiscall(_@(model), zCModel__FadeOutAnisLayerRange);
-        call3 = CALL_End();
+    var int model; model = her._zCVob_visual;
+    if (objCheckInheritance(model, zCModel__classDef)) {
+        const int twenty = 20;
+        const int call3 = 0;
+        if (CALL_Begin(call3)) {
+            CALL_IntParam(_@(twenty));
+            CALL_IntParam(_@(twenty));
+            CALL__thiscall(_@(model), zCModel__FadeOutAnisLayerRange);
+            call3 = CALL_End();
+        };
     };
 
     // Start aiming animation

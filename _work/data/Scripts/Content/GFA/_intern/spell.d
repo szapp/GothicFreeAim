@@ -162,12 +162,14 @@ func void GFA_SpellLockMovement() {
     };
 
     var oCNpc her; her = Hlp_GetNpc(hero);
-    var int aniCtrlPtr; aniCtrlPtr = her.anictrl; // ESI is popped earlier and is not secure to use
-    var zCAIPlayer playerAI; playerAI = _^(her.anictrl);
-    var int model; model = playerAI.model;
+    var int model; model = her._zCVob_visual;
+    if (!objCheckInheritance(model, zCModel__classDef)) {
+        return;
+    };
 
     // For Gothic 1 controls, lock movement always for all eligible spells
     if (GOTHIC_CONTROL_SCHEME == 1) {
+        var int aniCtrlPtr; aniCtrlPtr = her.anictrl;
         // Disallow sneaking (messes up the perception and the animations)
         if (MEM_ReadInt(aniCtrlPtr+oCAniCtrl_Human_walkmode_offset) & NPC_SNEAK) {
             // Set up and check new walk mode as NPC_RUN (see Constants.d)

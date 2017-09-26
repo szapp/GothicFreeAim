@@ -36,21 +36,6 @@ func string GFA_DebugPrint(var string command) {
 
 
 /*
- * Console function to enable/disable weak spot debug output. This function is registered as console command.
- * When enabled, the trajectory of the projectile and the defined weak spot of the last shot NPC is visualized with
- * bounding boxes and lines.
- */
-func string GFA_DebugWeakspot(var string command) {
-    GFA_DEBUG_WEAKSPOT = !GFA_DEBUG_WEAKSPOT;
-    if (GFA_DEBUG_WEAKSPOT) {
-        return "Debug weak spot on.";
-    } else {
-        return "Debug weak spot off.";
-    };
-};
-
-
-/*
  * Console function to enable/disable trace ray debug output. This function is registered as console command.
  * When enabled, the trace ray is continuously drawn, as well as the nearest intersection with it.
  */
@@ -60,6 +45,34 @@ func string GFA_DebugTraceRay(var string command) {
         return "Debug trace ray on.";
     } else {
         return "Debug trace ray off.";
+    };
+};
+
+
+/*
+ * Console function to enable/disable trace ray debug output. This function is registered as console command.
+ * When enabled, the trajectory of the projectile is continuously drawn.
+ */
+func string GFA_DebugTrajectory(var string command) {
+    GFA_DEBUG_COLLISION = !GFA_DEBUG_COLLISION;
+    if (GFA_DEBUG_COLLISION) {
+        return "Debug projectile trajectory on.";
+    } else {
+        return "Debug projectile trajectory off.";
+    };
+};
+
+
+/*
+ * Console function to enable/disable weak spot debug output. This function is registered as console command.
+ * When enabled, the defined weak spot of the last shot NPC is visualized by a bounding boxe.
+ */
+func string GFA_DebugWeakspot(var string command) {
+    GFA_DEBUG_WEAKSPOT = !GFA_DEBUG_WEAKSPOT;
+    if (GFA_DEBUG_WEAKSPOT) {
+        return "Debug weak spot on.";
+    } else {
+        return "Debug weak spot off.";
     };
 };
 

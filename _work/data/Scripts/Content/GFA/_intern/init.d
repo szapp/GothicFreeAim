@@ -121,10 +121,9 @@ func void GFA_InitFeatureFreeAiming() {
     HookEngineF(oCNpc__SetWeaponMode_player, 6, GFA_ResetOnWeaponSwitch); // Hide reticle, hide aim FX, reset draw force
 
     // Debugging
-    if (GFA_DEBUG_CONSOLE) || (GFA_DEBUG_WEAKSPOT) || (GFA_DEBUG_TRACERAY) {
+    if (GFA_DEBUG_CONSOLE) || (GFA_DEBUG_WEAKSPOT) || (GFA_DEBUG_TRACERAY) || (GFA_DEBUG_COLLISION) {
         MEM_Info("Initializing debug visualizations.");
-        HookEngineF(zCWorld__AdvanceClock, 10, GFA_VisualizeWeakspot); // FrameFunctions hook too late for rendering
-        HookEngineF(zCWorld__AdvanceClock, 10, GFA_VisualizeTraceRay);
+        HookEngineF(zCWorld__AdvanceClock, 10, GFA_DebugVisualization); // FrameFunctions hook too late for rendering
     };
 
     // Read INI Settings
@@ -380,8 +379,9 @@ func void GFA_InitAlways() {
     if (GFA_DEBUG_CONSOLE) {
         // Enable console commands for debugging
         CC_Register(GFA_DebugPrint, "debug GFA zSpy", "turn on GFA debug information in zSpy");
-        CC_Register(GFA_DebugWeakspot, "debug GFA weakspot", "turn debug visualization on/off");
         CC_Register(GFA_DebugTraceRay, "debug GFA traceray", "turn debug visualization on/off");
+        CC_Register(GFA_DebugTrajectory, "debug GFA trajectory", "turn debug visualization on/off");
+        CC_Register(GFA_DebugWeakspot, "debug GFA weakspot", "turn debug visualization on/off");
     };
 };
 

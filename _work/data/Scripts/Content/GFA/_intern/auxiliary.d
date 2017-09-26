@@ -23,6 +23,27 @@
 
 
 /*
+ * Check the inheritance of a zCObject against a zCClassDef. Emulating zCObject::CheckInheritance() at 0x476E30 in G2.
+ * This function is used in Wld_StopEffect_Ext().
+ *
+ * Taken from http://forum.worldofplayers.de/forum/threads/1495001?p=25548652
+ */
+func int objCheckInheritance(var int objPtr, var int classDef) {
+    if (!objPtr) || (!classDef) {
+        return 0;
+    };
+
+    // Iterate over base classes
+    var int curClassDef; curClassDef = MEM_GetClassDef(objPtr);
+    while((curClassDef) && (curClassDef != classDef));
+        curClassDef = MEM_ReadInt(curClassDef+zCClassDef_baseClassDef_offset);
+    end;
+
+    return (curClassDef == classDef);
+};
+
+
+/*
  * Retrieve the active spell instance of an NPC. Returns an empty instance if no spell is drawn. This function is
  * usually called in conjunction with GFA_IsSpellEligible(), see below. It might prove to also be useful outside of GFA.
  */
@@ -90,8 +111,11 @@ func int GFA_InvestingOrCasting(var C_Npc npc) {
     };
 
     // Casting or failing (check by active animations)
-    var zCAIPlayer playerAI; playerAI = _^(npcOC.anictrl);
-    var int model; model = playerAI.model;
+    var int model; model = npcOC._zCVob_visual;
+    if (!objCheckInheritance(model, zCModel__classDef)) {
+        MEM_Warn("GFA_InvestingOrCasting: NPC has no model visual.");
+        return FALSE;
+    };
 
     // Get ID of fail animation
     var int failAniID;
@@ -295,27 +319,6 @@ func int GFA_ScaleRanges(var int x, var int min, var int max, var int a, var int
     };
 
     return scaled;
-};
-
-
-/*
- * Check the inheritance of a zCObject against a zCClassDef. Emulating zCObject::CheckInheritance() at 0x476E30 in G2.
- * This function is used in Wld_StopEffect_Ext().
- *
- * Taken from http://forum.worldofplayers.de/forum/threads/1495001?p=25548652
- */
-func int objCheckInheritance(var int objPtr, var int classDef) {
-    if (!objPtr) || (!classDef) {
-        return 0;
-    };
-
-    // Iterate over base classes
-    var int curClassDef; curClassDef = MEM_GetClassDef(objPtr);
-    while((curClassDef) && (curClassDef != classDef));
-        curClassDef = MEM_ReadInt(curClassDef+zCClassDef_baseClassDef_offset);
-    end;
-
-    return (curClassDef == classDef);
 };
 
 

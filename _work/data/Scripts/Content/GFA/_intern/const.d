@@ -134,16 +134,16 @@ var   int    GFA_StatsShots;                                // Shooting statisti
 var   int    GFA_StatsHits;                                 // Shooting statistics: Count positive hits on target
 var   int    GFA_StatsCriticalHits;                         // Shooting statistics: Count number of critical hits
 
-var   int    GFA_DebugWSBBox[6];                            // Weak spot bounding box for debug visualization
-var   int    GFA_DebugWSTrj[6];                             // Projectile trajectory for debug visualization
-var   int    GFA_DebugTRBBox[6];                            // Trace ray intersection for debug visualization
 var   int    GFA_DebugTRTrj[6];                             // Trace ray trajectory for debug visualization
+var   int    GFA_DebugTRBBox[6];                            // Trace ray intersection for debug visualization
 var   int    GFA_DebugTRPrevVob;                            // Trace ray detected vob bounding box pointer for debugging
+var   int    GFA_DebugCollTrj[6];                           // Projectile trajectory for debug visualization
+var   int    GFA_DebugWSBBox[6];                            // Weak spot bounding box for debug visualization
 
 
 /* Numerical constants */
 
 const int    FLOAT1C                = 1120403456;           // 100 as float
 const int    FLOAT3C                = 1133903872;           // 300 as float
-const int    FLOAT7C                = 1171963904;           // 700 as float
+const int    FLOAT8C                = 1145569280;           // 800 as float
 const int    FLOAT1K                = 1148846080;           // 1000 as float

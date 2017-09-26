@@ -79,8 +79,10 @@ func void GFA_AimMovement(var int movement, var string modifier) {
     GFA_IsStrafing = movement;
 
     // Get player model
-    var zCAIPlayer playerAI; playerAI = _^(her.anictrl);
-    var int model; model = playerAI.model;
+    var int model; model = her._zCVob_visual;
+    if (!objCheckInheritance(model, zCModel__classDef)) {
+        return;
+    };
     var int bitfield; bitfield = MEM_ReadInt(her.anictrl+oCAIHuman_bitfield_offset);
     var int zero;
 
@@ -167,6 +169,7 @@ func void GFA_AimMovement(var int movement, var string modifier) {
         };
 
         // Check force movement halt
+        var zCAIPlayer playerAI; playerAI = _^(her.anictrl);
         if (playerAI.bitfield[1] & zCAIPlayer_bitfield1_forceModelHalt) {
             playerAI.bitfield[1] = playerAI.bitfield[1] & ~zCAIPlayer_bitfield1_forceModelHalt;
             GFA_AimMovement(0, "");
