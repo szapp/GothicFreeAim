@@ -321,21 +321,23 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
             // Vob iterates over materials (zCMaterial) directly
             matPtr = MEM_ReadInt(materialList+i*88); // 0x0058 magic number? Taken from 0x6A0C20 in Gothic 2
         };
-        if (!matPtr) {
+        if (!objCheckInheritance(matPtr, zCMaterial__classDef)) {
             continue;
         };
-        var zCMaterial mat; mat = _^(matPtr);
+
+        var int matGroup; matGroup = MEM_ReadInt(matPtr+zCMaterial_matGroup_offset);
+        var int texture; texture = MEM_ReadInt(matPtr+zCMaterial_texture_offset);
 
         // Collect material group (enable bits) and texture name (concatenate texture names in string)
-        materials = materials | (1<<mat.matGroup);
-        if (mat.texture) {
+        materials = materials | (1<<matGroup);
+        if (texture) {
             textures = ConcatStrings(textures, "|"); // Delimiter
-            textures = ConcatStrings(textures, zCTexture_GetName(mat.texture));
+            textures = ConcatStrings(textures, zCTexture_GetName(texture));
         };
 
+        // Retrieve the material group of the first material to prevent jump in opcode (see below, Gothic 2 only)
         if (firstMat == -1) {
-            // Retrieve the material group of the first material to prevent jump in opcode (see below, Gothic 2 only)
-            firstMat = mat.matGroup;
+            firstMat = matGroup;
         };
     end;
 

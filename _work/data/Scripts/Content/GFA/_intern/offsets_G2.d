@@ -73,6 +73,7 @@ const int oCMag_Book__GetSpellItem                   =  4692992; //0x479C00     
 const int oCMag_Book__StopSelectedSpell              =  4684048; //0x477910
 const int oCSpell__Open                              =  4741280; //0x4858A0
 const int zCProgMeshProto__classDef                  =  9972552; //0x982B48
+const int zCMaterial__classDef                       =  9275144; //0x8D8708
 const int oCVisualFX__classDef                       =  9234008; //0x8CE658
 const int oCVisualFX__Stop                           =  4799456; //0x493BE0
 const int zCModel__classDef                          =  9275680; //0x8D8920
@@ -211,6 +212,9 @@ const int zCVisual_materials_offset                  = 164; //0x00A4
 const int zCVisual_numMaterials_offset               = 168; //0x00A8
 
 const int zCPolygon_material_offset                  = 24;  //0x0018
+
+const int zCMaterial_texture_offset                  = 52; //0x0034
+const int zCMaterial_matGroup_offset                 = 64; //0x0040
 
 const int zCCollisionReport_hitCollObj_offset        = 48;  //0x0030
 
