@@ -661,11 +661,11 @@ func int GFA_CC_DisableProjectileCollisionOnRebound(var int vobPtr, var int arro
  */
 func int GFA_CC_DisableProjectileCollisionWithTrigger(var int vobPtr, var int arrowAI) {
     // Check if the collision object is a trigger
-    var zCVob vob; vob = _^(MEM_ReadInt(vobPtr));
+    var zCVob vob; vob = _^(vobPtr);
     if (vob._vtbl != zCTrigger__vtbl) && (vob._vtbl != oCTriggerScript__vtbl) {
         return TRUE;
     };
-    var zCTrigger trigger; trigger = _^(MEM_ReadInt(vobPtr));
+    var zCTrigger trigger; trigger = _^(vobPtr);
 
     if (trigger.bitfield & zCTrigger_bitfield_respondToObject)
     && (trigger.bitfield & zCTrigger_bitfield_reactToOnTouch) {
