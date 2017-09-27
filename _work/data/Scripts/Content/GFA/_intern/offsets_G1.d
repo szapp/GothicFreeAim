@@ -76,7 +76,7 @@ const int zCProgMeshProto__classDef                  =  9198408; //0x8C5B48
 const int zCMaterial__classDef                       =  8861992; //0x873928
 const int oCVisualFX__classDef                       =  8822272; //0x869E00
 const int oCVisualFX__Stop                           =  4766512; //0x48BB30
-const int zCModel__classDef                          =  8208364; //0x7D3FEC
+const int zCModel__classDef                          =  8862480; //0x873B10
 const int zCModel__TraceRay_softSkinCheck            =  5669743; //0x56836F
 const int zCModel__SearchNode                        =  5652352; //0x563F80
 const int zCModel__CalcNodeListBBoxWorld             =  5633856; //0x55F740
@@ -85,6 +85,7 @@ const int zCModel__FadeOutAnisLayerRange             =  5656944; //0x565170
 const int zCModel__StopAnisLayerRange                =  5657024; //0x5651C0                // Not used for Gothic 1
 const int zCModelPrototype__SearchAniIndex           =  5699664; //0x56F850
 const int zVEC3__NormalizeSafe                       =  4900544; //0x4AC6C0
+const int zTBBox3D__CalcGreaterBBox3D                =  5441728; //0x5308C0
 const int zTBBox3D__TraceRay                         =  5446896; //0x531CF0
 const int zTBBox3D__Draw                             =  5447312; //0x531E90
 const int zCLineCache__Line3D                        =  5224976; //0x4FBA10
@@ -107,6 +108,7 @@ const int zCWorld__AdvanceClock                      =  6257280; //0x5F7A80 // H
 const int oCGame__HandleEvent_openInvCheck           =  6680765; //0x65F0BD // Hook len 5
 const int cGameManager__ApplySomeSettings_rtn        =  4356499; //0x427993 // Hook len 6
 const int cGameManager__HandleEvent_clearKeyBuffer   =  0;                                 // Does not exist in Gothic 1
+const int zCModel__CalcModelBBox3DWorld              =  5634548; //0x55F9F4 // Hook len 6
 const int zCAIPlayer__IsSliding_true                 =  5233245; //0x4FDA5D // Hook len 5
 const int oCAniCtrl_Human__SearchStandAni_walkmode   =  6408587; //0x61C98B // Hook len 6
 const int oCAIVobMove__DoAI_stopMovement             =  6389348; //0x617E64 // Hook len 7
@@ -152,7 +154,6 @@ const int zCVob_trafoObjToWorld_offset               = 60;  //0x003C
 const int oCNpc_hitChance_offset                     = 0;                                  // Does not exist in Gothic 1
 
 const int oSDamageDescriptor_origin_offset           = 8;   //0x0008
-const int oSDamageDescriptor_damageType_offset       = 32;  //0x0x20
 
 const int oCItem_effect_offset                       = 0;                                  // Does not exist in Gothic 1
 
@@ -199,8 +200,10 @@ const int zCRigidBody_bitfield_gravityActive         = 1<<0;
 
 const int zCModel_numActAnis_offset                  = 52;  //0x0034
 const int zCModel_actAniList_offset                  = 56;  //0x0037
+const int zCModel_hostVob_offset                     = 84;  //0x0054
 const int zCModel_prototypes_offset                  = 88;  //0x0058
 const int zCModel_meshSoftSkinList_numInArray_offset = 120; //0x0078
+const int zCModel_bbox3d_offset                      = 204; //0x00CC
 
 const int zCModelAni_aniID_offset                    = 76;  //0x004C
 

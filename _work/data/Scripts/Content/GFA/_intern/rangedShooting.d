@@ -662,10 +662,121 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
     MEM_Free(trRep); // Free the report
     GFA_AllowSoftSkinTraceRay(0);
 
+    // Also check dedicated head visual if present (not detected by model trace ray)
+    var oCNpc npc; npc = _^(vobPtr);
+    if (!hit) && (!Hlp_StrCmp(npc.head_visualName, "") && (npc.anictrl)) {
+        // Perform a lot of safety checks, to prevent crashes
+        var zCAIPlayer playerAI; playerAI = _^(npc.anictrl);
+        if (playerAI.modelHeadNode) {
+            // Check if head has indeed a dedicated visual
+            var int headNode; headNode = playerAI.modelHeadNode;
+            if (MEM_ReadInt(headNode+zCModelNodeInst_visual_offset))
+            && (objCheckInheritance(npc._zCVob_visual, zCModel__classDef)) {
+                // Calculate bounding boxes of model nodes
+                var int model; model = npc._zCVob_visual;
+                const int call3 = 0;
+                if (CALL_Begin(call3)) {
+                    CALL__thiscall(_@(model), zCModel__CalcNodeListBBoxWorld);
+                    call3 = CALL_End();
+                };
+                var int headBBoxPtr; headBBoxPtr = headNode+zCModelNodeInst_bbox3D_offset;
+
+                // Detect intersection with head bounding box
+                var int vecPtr; vecPtr = MEM_Alloc(sizeof_zVEC3);
+                const int call4 = 0;
+                if (CALL_Begin(call4)) {
+                    CALL_PtrParam(_@(vecPtr));     // Intersection vector (not needed)
+                    CALL_PtrParam(_@(dirPosPtr));  // Trace ray direction
+                    CALL_PtrParam(_@(fromPosPtr)); // Start vector
+                    CALL_PutRetValTo(_@(hit));     // Did the trace ray hit
+                    CALL__thiscall(_@(headBBoxPtr), zTBBox3D__TraceRay); // This is a bounding box specific trace ray
+                    call4 = CALL_End();
+                };
+                MEM_Free(vecPtr);
+            };
+        };
+    };
+
     // Add direction vector to position vector to form a line (for debug visualization)
     GFA_DebugCollTrj[3] = addf(GFA_DebugCollTrj[0], GFA_DebugCollTrj[3]);
     GFA_DebugCollTrj[4] = addf(GFA_DebugCollTrj[1], GFA_DebugCollTrj[4]);
     GFA_DebugCollTrj[5] = addf(GFA_DebugCollTrj[2], GFA_DebugCollTrj[5]);
 
     return +hit;
+};
+
+
+/*
+ * Enlarge the bounding box of human NPCs, because it does not include the head by default. Without the head inside
+ * the bounding box, shots to the head would not be detected. This function hooks zCModel::CalcModelBBox3DWorld() just
+ * before exiting the function. This hook might impact performance, since the bounding boxes of models is calculated
+ * every frame for all unshrunk models.
+ */
+func void GFA_EnlargeHumanModelBBox() {
+    // Prevent crash on startup
+    if (!Hlp_IsValidNpc(hero)) {
+        return;
+    };
+
+    // Exit for non-NPC models
+    var int model; model = EBX;
+    var int vobPtr; vobPtr = MEM_ReadInt(model+zCModel_hostVob_offset);
+    if (!Hlp_Is_oCNpc(vobPtr)) {
+        return;
+    };
+
+    // Exit if NPC is shrunk
+    var oCNpc slf; slf = _^(vobPtr);
+    if (!Hlp_IsValidNpc(slf)) {
+        return;
+    };
+
+    // Exit if NPC is not fully initialized yet
+    if (!slf.anictrl) {
+        return;
+    };
+
+    // Exit if AI is not fully initialized yet
+    var zCAIPlayer playerAI; playerAI = _^(slf.anictrl);
+    if (!playerAI.modelHeadNode) {
+        return;
+    };
+
+    // Only consider NPCs with a dedicated head visual
+    var int headNode; headNode = playerAI.modelHeadNode;
+    if (!MEM_ReadInt(headNode+zCModelNodeInst_visual_offset)) {
+        return;
+    };
+
+    // Calculate the head node bounding box. This will transform the local bounding box to world coordinates
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL__thiscall(_@(model), zCModel__CalcNodeListBBoxWorld);
+        call = CALL_End();
+    };
+
+    // Copy the bounding box of the head
+    var int headBBox[6]; // sizeof_zTBBox3D/4
+    var int headBBoxPtr; headBBoxPtr = _@(headBBox);
+    MEM_CopyBytes(headNode+zCModelNodeInst_bbox3D_offset, headBBoxPtr, sizeof_zTBBox3D);
+
+    // Subtract the world coordinates from the world-transformed bounding box.
+    // There does not seem to be an easier way. It is not clear if the local offset of the head node is accessible
+    // somewhere directly
+    var zMAT4 trafo; trafo = _^(vobPtr+zCVob_trafoObjToWorld_offset);
+    headBBox[0] = subf(headBBox[0], trafo.v0[zMAT4_position]);
+    headBBox[1] = subf(headBBox[1], trafo.v1[zMAT4_position]);
+    headBBox[2] = subf(headBBox[2], trafo.v2[zMAT4_position]);
+    headBBox[3] = subf(headBBox[3], trafo.v0[zMAT4_position]);
+    headBBox[4] = subf(headBBox[4], trafo.v1[zMAT4_position]);
+    headBBox[5] = subf(headBBox[5], trafo.v2[zMAT4_position]);
+
+    // Enlarge the model bounding box by including the head bounding box
+    var int modelBBoxPtr; modelBBoxPtr = model+zCModel_bbox3d_offset;
+    const int call2 = 0;
+    if (CALL_Begin(call2)) {
+        CALL_PtrParam(_@(headBBoxPtr));
+        CALL__thiscall(_@(modelBBoxPtr), zTBBox3D__CalcGreaterBBox3D);
+        call2 = CALL_End();
+    };
 };

@@ -85,6 +85,7 @@ const int zCModel__FadeOutAnisLayerRange             =  5763568; //0x57F1F0
 const int zCModel__StopAnisLayerRange                =  5763648; //0x57F240
 const int zCModelPrototype__SearchAniIndex           =  5808064; //0x589FC0
 const int zVEC3__NormalizeSafe                       =  4819488; //0x498A20
+const int zTBBox3D__CalcGreaterBBox3D                =  5522768; //0x544550
 const int zTBBox3D__TraceRay                         =  5528896; //0x545D40
 const int zTBBox3D__Draw                             =  5529312; //0x545EE0
 const int zCLineCache__Line3D                        =  5289040; //0x50B450
@@ -107,6 +108,7 @@ const int zCWorld__AdvanceClock                      =  6447328; //0x6260E0 // H
 const int oCGame__HandleEvent_openInvCheck           =  7325123; //0x6FC5C3 // Hook len 5
 const int cGameManager__ApplySomeSettings_rtn        =  4362866; //0x429272 // Hook len 6
 const int cGameManager__HandleEvent_clearKeyBuffer   =  4370800; //0x42B170 // Hook len 6
+const int zCModel__CalcModelBBox3DWorld              =  5739160; //0x579298 // Hook len 6
 const int zCAIPlayer__IsSliding_true                 =  5297341; //0x50D4BD // Hook len 5
 const int oCAniCtrl_Human__SearchStandAni_walkmode   =  6967211; //0x6A4FAB // Hook len 6
 const int oCAIVobMove__DoAI_stopMovement             =  6945300; //0x69FA14 // Hook len 7
@@ -152,7 +154,6 @@ const int zCVob_trafoObjToWorld_offset               = 60;  //0x003C
 const int oCNpc_hitChance_offset                     = 472; //0x01D8
 
 const int oSDamageDescriptor_origin_offset           = 8;   //0x0008                       // Not used for Gothic 2
-const int oSDamageDescriptor_damageType_offset       = 36;  //0x0x24
 
 const int oCItem_effect_offset                       = 564; //0x0234
 
@@ -199,8 +200,10 @@ const int zCRigidBody_bitfield_gravityActive         = 1<<0;
 
 const int zCModel_numActAnis_offset                  = 52;  //0x0034
 const int zCModel_actAniList_offset                  = 56;  //0x0037
+const int zCModel_hostVob_offset                     = 96;  //0x0060
 const int zCModel_prototypes_offset                  = 100; //0x0064
 const int zCModel_meshSoftSkinList_numInArray_offset = 132; //0x0084
+const int zCModel_bbox3d_offset                      = 216; //0x00D8
 
 const int zCModelAni_aniID_offset                    = 76;  //0x004C
 

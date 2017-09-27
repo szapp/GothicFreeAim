@@ -49,6 +49,7 @@ func void GFA_InitFeatureFreeAiming() {
         HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_ResetProjectileGravity); // Reset gravity on impact
         HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_OverwriteHitChance); // Manipulate hit chance
         MemoryProtectionOverride(oCAIHuman__CheckFocusVob_ranged, 1); // Prevent toggling focus in ranged combat
+        HookEngineF(zCModel__CalcModelBBox3DWorld, 6, GFA_EnlargeHumanModelBBox); // Include head in model bounding box
         if (GFA_STRAFING) {
             HookEngineF(oCAIHuman__BowMode_rtn, 7, GFA_RangedLockMovement); // Allow strafing or not when falling
         };
