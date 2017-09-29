@@ -11,7 +11,6 @@ config\reticleBySpellID_G2.d
 config\reticle.d
 config\collision.d
 config\collectable.d
-config\headshots_G2.d
 config\criticalHit.d
 
 _intern\ccommands.d

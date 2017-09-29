@@ -39,6 +39,7 @@ func void GFA_InitFeatureFreeAiming() {
         MemoryProtectionOverride(oCNpc__TurnToEnemy_camCheck, 6); // G2: Prevent auto turning (target lock)
     };
     HookEngineF(oCNpc__OnDamage_Anim_gotHitAniName, 5, GFA_AdjustDamageAnimation); // Adjust hurt animation while aiming
+    MemoryProtectionOverride(zCModel__TraceRay_softSkinCheck, 3); // Prepare allowing soft skin model trace ray
 
     // Free aiming for ranged combat (aiming and shooting)
     if (GFA_Flags & GFA_RANGED) {
@@ -50,6 +51,11 @@ func void GFA_InitFeatureFreeAiming() {
         HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_OverwriteHitChance); // Manipulate hit chance
         MemoryProtectionOverride(oCAIHuman__CheckFocusVob_ranged, 1); // Prevent toggling focus in ranged combat
         HookEngineF(zCModel__CalcModelBBox3DWorld, 6, GFA_EnlargeHumanModelBBox); // Include head in model bounding box
+        if (!GFA_INIT_COLL_CHECK) {
+            // Extend and refine collision detection on vobs
+            HookEngineF(oCAIArrow__CanThisCollideWith_positive, MEMINT_SwitchG1G2(6, 7), GFA_ExtendCollisionCheck);
+            GFA_INIT_COLL_CHECK = TRUE;
+        };
         if (GFA_STRAFING) {
             HookEngineF(oCAIHuman__BowMode_rtn, 7, GFA_RangedLockMovement); // Allow strafing or not when falling
         };
@@ -70,16 +76,6 @@ func void GFA_InitFeatureFreeAiming() {
             MemoryProtectionOverride(oCAIHuman__BowMode_shootingKey, 2); // Shooting key: push 3
             MemoryProtectionOverride(oCAIHuman__PC_ActionMove_aimingKey, 5); // Aim key: mov eax [esp+8+4], push eax
             HookEngineF(cGameManager__HandleEvent_clearKeyBuffer, 6, GFA_CancelOUsDontClearKeyBuffer); // Fix key buffer
-        };
-
-        // Extend and refine collision detection on vobs
-        if (GFA_TRUE_HITCHANCE) {
-            MemoryProtectionOverride(zCModel__TraceRay_softSkinCheck, 3); // Prepare allowing soft skin model trace ray
-
-            if (!GFA_INIT_COLL_CHECK) {
-                HookEngineF(oCAIArrow__CanThisCollideWith_positive, MEMINT_SwitchG1G2(6, 7), GFA_ExtendCollisionCheck);
-                GFA_INIT_COLL_CHECK = TRUE;
-            };
         };
     };
 

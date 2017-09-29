@@ -139,11 +139,11 @@ var   int    GFA_DebugTRBBox[6];                            // Trace ray interse
 var   int    GFA_DebugTRPrevVob;                            // Trace ray detected vob bounding box pointer for debugging
 var   int    GFA_DebugCollTrj[6];                           // Projectile trajectory for debug visualization
 var   int    GFA_DebugWSBBox[6];                            // Weak spot bounding box for debug visualization
+var   int    GFA_DebugWSOBBox[17];                          // Weak spot oriented bounding box for debug visualization
 
 
 /* Numerical constants */
 
 const int    FLOAT1C                = 1120403456;           // 100 as float
 const int    FLOAT3C                = 1133903872;           // 300 as float
-const int    FLOAT8C                = 1145569280;           // 800 as float
 const int    FLOAT1K                = 1148846080;           // 1000 as float

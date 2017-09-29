@@ -37,6 +37,20 @@ func void GFA_VisualizeBBox(var int bboxPtr, var int color) {
 
 
 /*
+ * Visualize a bounding box in 3D space. Function can generally be used to debug operations in 3D space.
+ */
+func void GFA_VisualizeOBBox(var int obboxPtr, var int color) {
+    const int one = 1; const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL_PtrParam(_@(color)); // zCOLOR
+        CALL_IntParam(_@(one));   // Do not draw child boxes
+        CALL__thiscall(_@(obboxPtr), zCOBBox3D__Draw);
+        call = CALL_End();
+    };
+};
+
+
+/*
  * Visualize a line in 3D space. Function can generally be used to debug operations in 3D space.
  */
 func void GFA_VisualizeLine(var int pos1Ptr, var int pos2Ptr, var int color) {
@@ -84,11 +98,15 @@ func void GFA_VisualizeCollision() {
 
 
 /*
- * Visualize the bounding box of the weak spot (critical hit) in red.
+ * Visualize the bounding box or oriented bounding box of the weak spot (critical hit) in red.
  */
 func void GFA_VisualizeWeakspot() {
     if (GFA_DebugWSBBox[0]) {
         GFA_VisualizeBBox(_@(GFA_DebugWSBBox), zCOLOR_RED);
+    };
+
+    if (GFA_DebugWSOBBox[0]) {
+        GFA_VisualizeOBBox(_@(GFA_DebugWSOBBox), zCOLOR_RED);
     };
 };
 

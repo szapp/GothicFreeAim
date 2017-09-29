@@ -25,13 +25,10 @@
 /*
  * Class: Critical hit definitions
  */
-const int sizeof_Weakspot = 64;
+const int sizeof_Weakspot = 44;
 
 class Weakspot {
     var string node;
-    var int dimX;
-    var int dimY;
-    var int offset[3]; // Offsets in local space X, Y and Z
     var int bDmg;
     var string debugInfo;
 };

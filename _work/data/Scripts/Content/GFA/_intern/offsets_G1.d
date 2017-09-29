@@ -78,7 +78,6 @@ const int oCVisualFX__classDef                       =  8822272; //0x869E00
 const int oCVisualFX__Stop                           =  4766512; //0x48BB30
 const int zCModel__classDef                          =  8862480; //0x873B10
 const int zCModel__TraceRay_softSkinCheck            =  5669743; //0x56836F
-const int zCModel__SearchNode                        =  5652352; //0x563F80
 const int zCModel__CalcNodeListBBoxWorld             =  5633856; //0x55F740
 const int zCModel__StartAni                          =  5640608; //0x5611A0
 const int zCModel__FadeOutAnisLayerRange             =  5656944; //0x565170
@@ -88,6 +87,9 @@ const int zVEC3__NormalizeSafe                       =  4900544; //0x4AC6C0
 const int zTBBox3D__CalcGreaterBBox3D                =  5441728; //0x5308C0
 const int zTBBox3D__TraceRay                         =  5446896; //0x531CF0
 const int zTBBox3D__Draw                             =  5447312; //0x531E90
+const int zCOBBox3D__Transform                       =  5462192; //0x5358B0
+const int zCOBBox3D__TraceRay                        =  5460224; //0x535100
+const int zCOBBox3D__Draw                            =  5451040; //0x532D20
 const int zCLineCache__Line3D                        =  5224976; //0x4FBA10
 const int zlineCache                                 =  8844672; //0x86F580
 const int ztimer                                     =  9236968; //0x8CF1E8
@@ -202,14 +204,23 @@ const int zCModel_numActAnis_offset                  = 52;  //0x0034
 const int zCModel_actAniList_offset                  = 56;  //0x0037
 const int zCModel_hostVob_offset                     = 84;  //0x0054
 const int zCModel_prototypes_offset                  = 88;  //0x0058
+const int zCModel_modelNodeInstArray_offset          = 100; //0x0064
+const int zCModel_meshSoftSkinList_offset            = 112; //0x0070
 const int zCModel_meshSoftSkinList_numInArray_offset = 120; //0x0078
+const int zCModel_masterFrameCtr_offset              = 188; //0x00BC
 const int zCModel_bbox3d_offset                      = 204; //0x00CC
 
 const int zCModelAni_aniID_offset                    = 76;  //0x004C
 
+const int zCModelNodeInst_protoNode_offset           = 4;   //0x0004
 const int zCModelNodeInst_visual_offset              = 8;   //0x0008
 const int zCModelNodeInst_trafoObjToCam_offset       = 76;  //0x004C
 const int zCModelNodeInst_bbox3D_offset              = 140; //0x008C
+
+const int zCModelNode_nodeName_offset                = 4;   //0x0004
+
+const int zCMeshSoftSkin_nodeIndexList_offset        = 212; //0x00D4
+const int zCMeshSoftSkin_nodeObbList_offset          = 224; //0x00E0
 
 const int zCVisual_materials_offset                  = 164; //0x00A4
 const int zCVisual_numMaterials_offset               = 168; //0x00A8
@@ -235,6 +246,7 @@ const int zTTraceRayReport_foundIntersection_offset  = 12;  //0x000C
 
 const int sizeof_zVEC3                               = 12;  //0x000C
 const int sizeof_zTBBox3D                            = 24;  //0x0018
+const int sizeof_zCOBBox3D                           = 68;  //0x0044
 const int sizeof_zTTraceRayReport                    = 40;  //0x0028
 const int sizeof_zMAT4                               = 64;  //0x0040
 

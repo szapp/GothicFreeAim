@@ -78,7 +78,6 @@ const int oCVisualFX__classDef                       =  9234008; //0x8CE658
 const int oCVisualFX__Stop                           =  4799456; //0x493BE0
 const int zCModel__classDef                          =  9275680; //0x8D8920
 const int zCModel__TraceRay_softSkinCheck            =  5777440; //0x582820
-const int zCModel__SearchNode                        =  5758960; //0x57DFF0
 const int zCModel__CalcNodeListBBoxWorld             =  5738432; //0x578FC0
 const int zCModel__StartAni                          =  5746544; //0x57AF70
 const int zCModel__FadeOutAnisLayerRange             =  5763568; //0x57F1F0
@@ -88,6 +87,9 @@ const int zVEC3__NormalizeSafe                       =  4819488; //0x498A20
 const int zTBBox3D__CalcGreaterBBox3D                =  5522768; //0x544550
 const int zTBBox3D__TraceRay                         =  5528896; //0x545D40
 const int zTBBox3D__Draw                             =  5529312; //0x545EE0
+const int zCOBBox3D__Transform                       =  5544080; //0x549890
+const int zCOBBox3D__TraceRay                        =  5542176; //0x549120
+const int zCOBBox3D__Draw                            =  5533040; //0x546D70
 const int zCLineCache__Line3D                        =  5289040; //0x50B450
 const int zlineCache                                 =  9257720; //0x8D42F8
 const int ztimer                                     = 10073044; //0x99B3D4                // Not used for Gothic 2
@@ -121,7 +123,7 @@ const int oCAIHuman__BowMode_rtn                     =  6908156; //0x6968FC // H
 const int oCAIHuman__MagicMode                       =  4665296; //0x472FD0 // Hook len 7
 const int oCAIHuman__MagicMode_rtn                   =  4666329; //0x4733D9 // Hook len 7
 const int oCAIArrow__SetupAIVob                      =  6951136; //0x6A10E0 // Hook len 6
-const int oCAIArrow__CanThisCollideWith_positive     =  6952212; //0x6A1514 // Hook len 7
+const int oCAIArrow__CanThisCollideWith_positive     =  6952212; //0x6A1514 // Hook len 7 (caution: len 6 in Gothic 1)
 const int oCAIArrow__DoAI_rtn                        =  6952073; //0x6A1489 // Hook len 6
 const int oCAIArrow__ReportCollisionToAI_collAll     =  6949315; //0x6A09C3 // Hook len 8
 const int oCAIArrow__ReportCollisionToAI_hitChc      =  6953482; //0x6A1A0A // Hook len 6
@@ -202,14 +204,23 @@ const int zCModel_numActAnis_offset                  = 52;  //0x0034
 const int zCModel_actAniList_offset                  = 56;  //0x0037
 const int zCModel_hostVob_offset                     = 96;  //0x0060
 const int zCModel_prototypes_offset                  = 100; //0x0064
+const int zCModel_modelNodeInstArray_offset          = 112; //0x0070
+const int zCModel_meshSoftSkinList_offset            = 124; //0x007C
 const int zCModel_meshSoftSkinList_numInArray_offset = 132; //0x0084
+const int zCModel_masterFrameCtr_offset              = 200; //0x00C8
 const int zCModel_bbox3d_offset                      = 216; //0x00D8
 
 const int zCModelAni_aniID_offset                    = 76;  //0x004C
 
+const int zCModelNodeInst_protoNode_offset           = 4;   //0x0004
 const int zCModelNodeInst_visual_offset              = 8;   //0x0008
 const int zCModelNodeInst_trafoObjToCam_offset       = 76;  //0x004C
 const int zCModelNodeInst_bbox3D_offset              = 140; //0x008C
+
+const int zCModelNode_nodeName_offset                = 4;   //0x0004
+
+const int zCMeshSoftSkin_nodeIndexList_offset        = 216; //0x00D8
+const int zCMeshSoftSkin_nodeObbList_offset          = 228; //0x00E4
 
 const int zCVisual_materials_offset                  = 164; //0x00A4
 const int zCVisual_numMaterials_offset               = 168; //0x00A8
@@ -235,6 +246,7 @@ const int zTTraceRayReport_foundIntersection_offset  = 12;  //0x000C
 
 const int sizeof_zVEC3                               = 12;  //0x000C
 const int sizeof_zTBBox3D                            = 24;  //0x0018
+const int sizeof_zCOBBox3D                           = 68;  //0x0044
 const int sizeof_zTTraceRayReport                    = 40;  //0x0028
 const int sizeof_zMAT4                               = 64;  //0x0040
 

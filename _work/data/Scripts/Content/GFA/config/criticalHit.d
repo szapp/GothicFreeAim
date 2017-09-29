@@ -75,6 +75,10 @@ func void GFA_GetCriticalHitDefinitions(var C_Npc target, var C_Item weapon, var
         }; // Else stage 2: All positive hits on the weak spot are critical hits (no change)
     };
 
+    // In case this helps with differentiating between NPC types:
+    var zCPar_Symbol sym; sym = _^(MEM_GetSymbolByIndex(Hlp_GetInstanceID(target)));
+    var string instName; instName = sym.name; // Exact instance name in upper case, e.g. "ORCWARRIOR_LOBART1"
+
     /*
     // The damage may depend on the target NPC (e.g. different damage for monsters). Make use of 'target' for that
     if (target.guild < GIL_SEPERATOR_HUM) {
@@ -100,10 +104,21 @@ func void GFA_GetCriticalHitDefinitions(var C_Npc target, var C_Item weapon, var
         weakspot.bDmg = mulf(damage, castToIntf(1.5)); // This is a float
     };
 
-    // For examples of critical hit definitions, see this function in config\headshots_G1.d or config\headshots_G2.d
+
+    // For example, define the critical hits as head shots for all creatures.
     // Keep in mind: This is just a suggestion. In fact, critical hits can be of any bone of the model and completely
     // different for all creatures. So can the damage. Feel free to create more interesting weak spots.
-    headshots(target, returnPtr);
+    weakspot.node = "Bip01 Head"; // Upper/lower case is not important, but spelling and spaces are
+
+    // Add an exception for metal armors (paladin armor) - Gothic 2 only, because there are no helmets in Gothic 1
+    if (GOTHIC_BASE_VERSION == 2) && (target.guild < GIL_SEPERATOR_HUM) && (Npc_HasEquippedArmor(target)) {
+        var C_Item armor; armor = Npc_GetEquippedArmor(target);
+        if (armor.material == MAT_METAL)    // Armor is made out of metal
+        && (!Npc_CanSeeNpc(target, hero)) { // Target is not facing the player (helmets do not cover the face)
+            weakspot.node = ""; // Disable the critical hit his way
+            weakspot.debugInfo = "Metal armors protect from head shots (except for the face)";
+        };
+    };
 };
 
 

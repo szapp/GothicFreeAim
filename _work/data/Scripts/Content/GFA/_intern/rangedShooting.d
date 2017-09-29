@@ -636,13 +636,20 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
     };
     MEM_CopyBytes(CALL_RetValAsPtr(), dirPosPtr, sizeof_zVEC3);
 
+    // Get maximum required length of trajectory inside the bounding box (diagonal of bounding box)
+    var int bbox[6];
+    MEM_CopyBytes(vobPtr+zCVob_bbox3D_offset, _@(bbox), sizeof_zTBBox3D);
+    var int dist; // Distance from bbox.mins to bbox.max
+    dist = sqrtf(addf(addf(sqrf(subf(bbox[3], bbox[0])), sqrf(subf(bbox[4], bbox[1]))), sqrf(subf(bbox[5], bbox[2]))));
+    dist = addf(dist, FLOAT3C); // Add the 3m-shift of the start (see below)
+
     // Adjust length of ray (large models have huge bounding boxes)
     GFA_DebugCollTrj[0] = subf(GFA_DebugCollTrj[0], mulf(GFA_DebugCollTrj[3], FLOAT3C)); // Start 3m behind projectile
     GFA_DebugCollTrj[1] = subf(GFA_DebugCollTrj[1], mulf(GFA_DebugCollTrj[4], FLOAT3C));
     GFA_DebugCollTrj[2] = subf(GFA_DebugCollTrj[2], mulf(GFA_DebugCollTrj[5], FLOAT3C));
-    GFA_DebugCollTrj[3] = mulf(GFA_DebugCollTrj[3], FLOAT8C); // Trace trajectory from bounding box edge for 8m
-    GFA_DebugCollTrj[4] = mulf(GFA_DebugCollTrj[4], FLOAT8C);
-    GFA_DebugCollTrj[5] = mulf(GFA_DebugCollTrj[5], FLOAT8C);
+    GFA_DebugCollTrj[3] = mulf(GFA_DebugCollTrj[3], dist); // Trace trajectory from the edge through the bounding box
+    GFA_DebugCollTrj[4] = mulf(GFA_DebugCollTrj[4], dist);
+    GFA_DebugCollTrj[5] = mulf(GFA_DebugCollTrj[5], dist);
 
     // Perform refined collision check
     GFA_AllowSoftSkinTraceRay(1);
@@ -748,12 +755,18 @@ func void GFA_EnlargeHumanModelBBox() {
         return;
     };
 
+    // Backup frame counter
+    var int frameCtr; frameCtr = MEM_ReadInt(model+zCModel_masterFrameCtr_offset);
+
     // Calculate the head node bounding box. This will transform the local bounding box to world coordinates
     const int call = 0;
     if (CALL_Begin(call)) {
         CALL__thiscall(_@(model), zCModel__CalcNodeListBBoxWorld);
         call = CALL_End();
     };
+
+    // Reset frame counter to allow reassessing the model again. Important for GFA_CH_DetectIntersectionWithNode()
+    MEM_WriteInt(model+zCModel_masterFrameCtr_offset, frameCtr);
 
     // Copy the bounding box of the head
     var int headBBox[6]; // sizeof_zTBBox3D/4

@@ -86,6 +86,142 @@ func int GFA_CH_GetCriticalHitAutoAim_(var C_Npc target) {
 
 
 /*
+ * Detect intersection of the projectile trajectory (defined in GFA_DebugCollTrj) with a node of an npc. This function
+ * is called from GFA_CH_DetectCriticalHit().
+ */
+func int GFA_CH_DetectIntersectionWithNode(var int npcPtr, var string nodeName, var int debugInfoPtr) {
+    // Allow empty string pointer
+    if (!debugInfoPtr) {
+        debugInfoPtr = _@s("");
+    };
+
+    // Retrieve model of the NPC
+    var zCVob npc; npc = _^(npcPtr);
+    var int model; model = npc.visual;
+    if (!objCheckInheritance(model, zCModel__classDef)) {
+        MEM_WriteString(debugInfoPtr, "NPC visual is not a model");
+        return FALSE;
+    };
+
+    // Find node by string in model node list
+    var zCArray nodes; nodes = _^(model+zCModel_modelNodeInstArray_offset); // zCArray<zCModelNodeInst*>
+    repeat(nodeIdx, nodes.numInArray); var int nodeIdx;
+        var int nodeInst; nodeInst = MEM_ReadIntArray(nodes.array, nodeIdx); // zCModelNodeInst*
+        var int node; node = MEM_ReadInt(nodeInst+zCModelNodeInst_protoNode_offset); // zCModelNode*
+        if (Hlp_StrCmp(MEM_ReadString(node+zCModelNode_nodeName_offset), nodeName)) {
+            break;
+        };
+    end;
+    if (nodeIdx == nodes.numInArray) {
+        MEM_WriteString(debugInfoPtr, "Node not found in NPC model");
+        return FALSE;
+    };
+
+    // Set up vectors from projectile trajectory for detection trace rays
+    var int fromPosPtr; fromPosPtr = _@(GFA_DebugCollTrj);
+    var int dir[3];
+    dir[0] = subf(GFA_DebugCollTrj[3], GFA_DebugCollTrj[0]);
+    dir[1] = subf(GFA_DebugCollTrj[4], GFA_DebugCollTrj[1]);
+    dir[2] = subf(GFA_DebugCollTrj[5], GFA_DebugCollTrj[2]);
+    var int dirPosPtr; dirPosPtr = _@(dir);
+    var int criticalhit;
+
+    // Calculate node bounding boxes and world coordinates
+    const int call = 0;
+    if (CALL_Begin(call)) {
+        CALL__thiscall(_@(model), zCModel__CalcNodeListBBoxWorld);
+        call = CALL_End();
+    };
+
+    // Use node visual directly if it exists
+    if (MEM_ReadInt(nodeInst+zCModelNodeInst_visual_offset)) { // zCVisual*
+        // Copy node bounding box
+        MEM_CopyBytes(nodeInst+zCModelNodeInst_bbox3D_offset, _@(GFA_DebugWSBBox), sizeof_zTBBox3D);
+        var int bboxPtr; bboxPtr = _@(GFA_DebugWSBBox);
+
+        // Prevent debug drawing of oriented bounding box
+        GFA_DebugWSOBBox[0] = 0;
+
+        // Detect collision
+        const int call2 = 0;
+        if (CALL_Begin(call2)) {
+            CALL_PtrParam(_@(dirPosPtr));      // Intersection vector (not needed)
+            CALL_PtrParam(_@(dirPosPtr));      // Trace ray direction
+            CALL_PtrParam(_@(fromPosPtr));     // Start vector
+            CALL_PutRetValTo(_@(criticalhit)); // Did the trace ray hit
+            CALL__thiscall(_@(bboxPtr), zTBBox3D__TraceRay); // This is a bounding box specific trace ray
+            call2 = CALL_End();
+        };
+        return +criticalhit;
+    };
+
+    // Check model for soft skin list
+    var zCArray skins; skins = _^(model+zCModel_meshSoftSkinList_offset); // zCArray<zCMeshSoftSkin*>
+    if (skins.numInArray <= 0) {
+        MEM_WriteString(debugInfoPtr, "No soft skins in NPC model");
+        return FALSE;
+    };
+
+    // Some models seem to have several skins with different numbers of nodes, iterate over all skins until index found
+    repeat(i, skins.numInArray); var int i;
+        var int skin; skin = MEM_ReadIntArray(skins.array, i);
+
+        // Find matching node index in this soft skin
+        var zCArray nodeIndexList; nodeIndexList = _^(skin+zCMeshSoftSkin_nodeIndexList_offset); // zCArray<int>
+        repeat(nodeIdxS, nodeIndexList.numInArray); var int nodeIdxS;
+            if (MEM_ReadIntArray(nodeIndexList.array, nodeIdxS) == nodeIdx) {
+                break;
+            };
+        end;
+        if (nodeIdxS != nodeIndexList.numInArray) {
+            // Found the index
+            break;
+        };
+    end;
+    if (i == skins.numInArray) {
+        MEM_WriteString(debugInfoPtr, "Node index was not found in model soft skin");
+        return FALSE;
+    };
+
+    // Obtain matching oriented bounding box from oriented bounding box list
+    var zCArray nodeObbList; nodeObbList = _^(skin+zCMeshSoftSkin_nodeObbList_offset); // zCArray<zCOBBox3D*>
+    if (nodeObbList.numInArray <= nodeIdxS) {
+        MEM_WriteString(debugInfoPtr, "Node index exceeds soft skin OBBox list");
+        return FALSE;
+    };
+    var int obboxPtr; obboxPtr = MEM_ReadIntArray(nodeObbList.array, nodeIdxS);
+
+    // Copy OBBox to transform it and for debug visualization
+    MEM_CopyBytes(obboxPtr, _@(GFA_DebugWSOBBox), sizeof_zCOBBox3D);
+    obboxPtr = _@(GFA_DebugWSOBBox);
+
+    // Prevent debug drawing of bounding box
+    GFA_DebugWSBBox[0] = 0;
+
+    // Transform OBBox to world coordinates
+    var int trafoPtr; trafoPtr = nodeInst+zCModelNodeInst_trafoObjToCam_offset;
+    const int call3 = 0;
+    if (CALL_Begin(call3)) {
+        CALL_PtrParam(_@(trafoPtr)); // zMAT4*
+        CALL__thiscall(_@(obboxPtr), zCOBBox3D__Transform);
+        call3 = CALL_End();
+    };
+
+    // Detect collision
+    const int call4 = 0;
+    if (CALL_Begin(call4)) {
+        CALL_PtrParam(_@(dirPosPtr));      // Intersection vector (not needed)
+        CALL_PtrParam(_@(dirPosPtr));      // Trace ray direction
+        CALL_PtrParam(_@(fromPosPtr));     // Start vector
+        CALL_PutRetValTo(_@(criticalhit)); // Did the trace ray hit
+        CALL__thiscall(_@(obboxPtr), zCOBBox3D__TraceRay); // This is an oriented bounding box specific trace ray
+        call4 = CALL_End();
+    };
+    return +criticalhit;
+};
+
+
+/*
  * Detect critical hits and adjust base damage. This function hooks the engine function responsible for hit registration
  * and dealing of damage. By walking along the trajectory line of the projectile in space, it is checked whether it hit
  * a defined critical node/bone or weak spot, as defined in GFA_GetCriticalHitDefinitions(). If a critical hit is
@@ -155,118 +291,7 @@ func void GFA_CH_DetectCriticalHit() {
         debugInfo = "Auto aiming: critical hit by probability (critical hit chance)";
     } else {
         // When free aiming is enabled the critical hit is determined by the actual node/bone that the projectile hits
-
-        // Get model from target NPC
-        var zCVob targetVob; targetVob = _^(targetPtr);
-        var int model; model = targetVob.visual;
-        if (!objCheckInheritance(model, zCModel__classDef)) {
-            MEM_Warn("GFA_CH_DetectCriticalHit: NPC has no model visual!");
-            MEM_Free(weakspotPtr);
-            return;
-        };
-
-        // Retrieve model node from node name
-        var int node; // zCModelNodeInst*
-        var int nodeStrPtr; nodeStrPtr = _@s(weakspot.node);
-        const int call2 = 0;
-        if (CALL_Begin(call2)) {
-            CALL_PtrParam(_@(nodeStrPtr));
-            CALL_PutRetValTo(_@(node));
-            CALL__thiscall(_@(model), zCModel__SearchNode);
-            call2 = CALL_End();
-        };
-        if (!node) {
-            MEM_Warn("GFA_CH_DetectCriticalHit: Node not found!");
-            MEM_Free(weakspotPtr);
-            return;
-        };
-
-        // Calculate model node bounding boxes
-        const int call3 = 0;
-        if (CALL_Begin(call3)) {
-            CALL__thiscall(_@(model), zCModel__CalcNodeListBBoxWorld);
-            call3 = CALL_End();
-        };
-
-        // Retrieve/create bounding box from dimensions
-        if (weakspot.dimX == -1) && (weakspot.dimY == -1) {
-            // If the model node has a dedicated visual and hence its own bounding box, the dimensions may be retrieved
-            // automatically, by specifying dimensions of -1. (Only works for heads of humanoids.)
-            if (MEM_ReadInt(node+zCModelNodeInst_visual_offset)) {
-                // Copy the bounding box dimensions
-                MEM_CopyBytes(node+zCModelNodeInst_bbox3D_offset, _@(GFA_DebugWSBBox), sizeof_zTBBox3D);
-            } else {
-                // This is an error (instead of a warning), because it is a reckless design flaw if defining a weak spot
-                // with dimensions -1 for a model that does not have a designated node visual (this only works with the
-                // head node of humanoids). This error should thus only appear during development. If it does in the
-                // released mod, get some better beta testers
-                MEM_Error("GFA_CH_DetectCriticalHit: Node has no bounding box!");
-                MEM_Free(weakspotPtr);
-                return;
-            };
-
-        } else if (weakspot.dimX < 0) || (weakspot.dimY < 0) {
-            MEM_Error("GFA_CH_DetectCriticalHit: Bounding box dimensions invalid!");
-            MEM_Free(weakspotPtr);
-            return;
-
-        } else {
-            // Create bounding box by dimensions and offsets
-            var int dimX; dimX = mkf(weakspot.dimX/2); // Do not overwrite weak spot properties, needed for zSpy output
-            var int dimY; dimY = mkf(weakspot.dimY/2);
-            var int offX; offX = mkf(weakspot.offset[0]);
-            var int offY; offY = mkf(weakspot.offset[1]);
-            var int offZ; offZ = mkf(weakspot.offset[2]);
-
-            // Retrieve trafo from node
-            var zMAT4 nodeTrf; nodeTrf = _^(node+zCModelNodeInst_trafoObjToCam_offset);
-
-            // Get position with position offsets in local space
-            var int nodePos[3];
-            nodePos[0] = nodeTrf.v0[zMAT4_position];
-            nodePos[1] = nodeTrf.v1[zMAT4_position];
-            nodePos[2] = nodeTrf.v2[zMAT4_position];
-
-            // X offset (right vector)
-            nodePos[0] = addf(nodePos[0], mulf(nodeTrf.v0[zMAT4_rightVec], offX));
-            nodePos[1] = addf(nodePos[1], mulf(nodeTrf.v1[zMAT4_rightVec], offX));
-            nodePos[2] = addf(nodePos[2], mulf(nodeTrf.v2[zMAT4_rightVec], offX));
-            // Y offset (up vector)
-            nodePos[0] = addf(nodePos[0], mulf(nodeTrf.v0[zMAT4_upVec], offY));
-            nodePos[1] = addf(nodePos[1], mulf(nodeTrf.v1[zMAT4_upVec], offY));
-            nodePos[2] = addf(nodePos[2], mulf(nodeTrf.v2[zMAT4_upVec], offY));
-            // Z offset (out vector)
-            nodePos[0] = addf(nodePos[0], mulf(nodeTrf.v0[zMAT4_outVec], offZ));
-            nodePos[1] = addf(nodePos[1], mulf(nodeTrf.v1[zMAT4_outVec], offZ));
-            nodePos[2] = addf(nodePos[2], mulf(nodeTrf.v2[zMAT4_outVec], offZ));
-
-            // Build a bounding box by the passed node dimensions
-            GFA_DebugWSBBox[0] = subf(nodePos[0], dimX);
-            GFA_DebugWSBBox[1] = subf(nodePos[1], dimY);
-            GFA_DebugWSBBox[2] = subf(nodePos[2], dimX);
-            GFA_DebugWSBBox[3] = addf(nodePos[0], dimX);
-            GFA_DebugWSBBox[4] = addf(nodePos[1], dimY);
-            GFA_DebugWSBBox[5] = addf(nodePos[2], dimX);
-        };
-
-        // Detect if the shot goes through the bounding box
-        var int nodeBBoxPtr; nodeBBoxPtr = _@(GFA_DebugWSBBox);
-        var int fromPosPtr; fromPosPtr = _@(GFA_DebugCollTrj);
-        var int dir[3];
-        dir[0] = subf(GFA_DebugCollTrj[3], GFA_DebugCollTrj[0]);
-        dir[1] = subf(GFA_DebugCollTrj[4], GFA_DebugCollTrj[1]);
-        dir[2] = subf(GFA_DebugCollTrj[5], GFA_DebugCollTrj[2]);
-        var int dirPosPtr; dirPosPtr = _@(dir);
-
-        const int call4 = 0;
-        if (CALL_Begin(call4)) {
-            CALL_PtrParam(_@(dirPosPtr));      // Intersection vector (not needed)
-            CALL_PtrParam(_@(dirPosPtr));      // Trace ray direction
-            CALL_PtrParam(_@(fromPosPtr));     // Start vector
-            CALL_PutRetValTo(_@(criticalhit)); // Did the trace ray hit
-            CALL__thiscall(_@(nodeBBoxPtr), zTBBox3D__TraceRay); // This is a bounding box specific trace ray
-            call4 = CALL_End();
-        };
+        criticalHit = GFA_CH_DetectIntersectionWithNode(targetPtr, weakspot.node, _@s(debugInfo));
     };
 
     if (GFA_DEBUG_PRINT) {
@@ -329,11 +354,6 @@ func void GFA_CH_DetectCriticalHit() {
 
         SB("   weak spot:         '");
         SB(weakspot.node);
-        SB("' (");
-        SBi(weakspot.dimX);
-        SB("x");
-        SBi(weakspot.dimY);
-        SB(")");
         MEM_Info(SB_ToString());
         SB_Destroy();
 
