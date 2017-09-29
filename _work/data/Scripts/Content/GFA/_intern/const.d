@@ -121,9 +121,9 @@ const int    GFA_DRAWTIME_RELOAD    = 1250;                 // Time (ms) for rel
 var   int    GFA_BowDrawOnset;                              // Time onset of drawing the bow
 var   int    GFA_MouseMovedLast;                            // Time of last mouse movement
 
-const float  GFA_SCATTER_HIT        = 2.6;                  // (Visual angle)/2 within which everything is a hit
-const float  GFA_SCATTER_MISS       = 3.3;                  // (Visual angle)/2 outside which everything is a miss
-const float  GFA_SCATTER_MAX        = 5.0;                  // (Visual angle)/2 of maximum scatter (all in degrees)
+const float  GFA_SCATTER_HIT        = 2.5;                  // (Visual angle)/2 within which everything is a hit
+const float  GFA_SCATTER_MISS       = 4.2;                  // (Visual angle)/2 outside which everything is a miss
+const float  GFA_SCATTER_MAX        = 6.0;                  // (Visual angle)/2 of maximum scatter (all in degrees)
 
 var   int    GFA_LastHitCritical;                           // Was the last hit critical (will be reset immediately)
 
