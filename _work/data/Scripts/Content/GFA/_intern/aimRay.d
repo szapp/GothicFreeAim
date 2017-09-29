@@ -56,6 +56,55 @@ func void GFA_AllowSoftSkinTraceRay(var int on) {
 
 
 /*
+ * Cast a specific ray to detect intersection with the head node of NPCs. This is necessary, because for NPCs with
+ * dedicated head visuals (like all humans and some orcs), the model trace ray used in GFA_AimRay() does not include the
+ * head node. This function is thus supplementary to GFA_AimRay() but also called from
+ * GFA_RefinedProjectileCollisionCheck().
+ */
+func int GFA_AimRayHead(var int npcPtr, var int fromPosPtr, var int dirPosPtr, var int vecPtr) {
+    var int hit; hit = FALSE;
+    var oCNpc npc; npc = _^(npcPtr);
+    if (!Hlp_StrCmp(npc.head_visualName, "") && (npc.anictrl)) {
+        // Perform a lot of safety checks, to prevent crashes
+        var zCAIPlayer playerAI; playerAI = _^(npc.anictrl);
+        if (playerAI.modelHeadNode) {
+            // Check if head has indeed a dedicated visual
+            var int headNode; headNode = playerAI.modelHeadNode;
+            if (MEM_ReadInt(headNode+zCModelNodeInst_visual_offset))
+            && (objCheckInheritance(npc._zCVob_visual, zCModel__classDef)) {
+                // Calculate bounding boxes of model nodes
+                var int model; model = npc._zCVob_visual;
+                const int call = 0;
+                if (CALL_Begin(call)) {
+                    CALL__thiscall(_@(model), zCModel__CalcNodeListBBoxWorld);
+                    call = CALL_End();
+                };
+                var int headBBoxPtr; headBBoxPtr = headNode+zCModelNodeInst_bbox3D_offset;
+
+                // If information about the intersection is not requeted, create disposable vector
+                if (!vecPtr) {
+                    var int vec[3];
+                    vecPtr = _@(vec);
+                };
+
+                // Detect intersection with head bounding box
+                const int call2 = 0;
+                if (CALL_Begin(call2)) {
+                    CALL_PtrParam(_@(vecPtr));     // Intersection vector (not needed)
+                    CALL_PtrParam(_@(dirPosPtr));  // Trace ray direction
+                    CALL_PtrParam(_@(fromPosPtr)); // Start vector
+                    CALL_PutRetValTo(_@(hit));     // Did the trace ray hit
+                    CALL__thiscall(_@(headBBoxPtr), zTBBox3D__TraceRay); // This is a bounding box specific trace ray
+                    call2 = CALL_End();
+                };
+            };
+        };
+    };
+    return +hit;
+};
+
+
+/*
  * Shoot a trace ray to retrieve the point of intersection with the nearest object in the world and the distance, and to
  * overwrite the focus collection with a desired focus type. This function is customized for aiming and it is not
  * recommended to use for any other matter.
@@ -200,6 +249,15 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
                     } else if (her.fmode == FMODE_MAGIC) {
                         // Aiming is not the priority for spells, a rougher focus collection is desired
                         secondRay = TRUE;
+                    } else {
+                        // Ranged combat: Additionally detect head node (not included in model trace ray)
+                        var int headRay[3];
+                        if (GFA_AimRayHead(her.focus_vob, fromPosPtr, dirPosPtr, _@(headRay))) {
+                            foundVob = her.focus_vob;
+                            MEM_CopyBytes(_@(headRay), _@(intersection), sizeof_zVEC3);
+                            foundFocus = her.focus_vob;
+                        };
+                        secondRay = FALSE;
                     };
                 };
             } else if (focusType <= TARGET_TYPE_ITEMS) && (Hlp_Is_oCItem(her.focus_vob)) {

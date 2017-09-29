@@ -670,38 +670,8 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
     GFA_AllowSoftSkinTraceRay(0);
 
     // Also check dedicated head visual if present (not detected by model trace ray)
-    var oCNpc npc; npc = _^(vobPtr);
-    if (!hit) && (!Hlp_StrCmp(npc.head_visualName, "") && (npc.anictrl)) {
-        // Perform a lot of safety checks, to prevent crashes
-        var zCAIPlayer playerAI; playerAI = _^(npc.anictrl);
-        if (playerAI.modelHeadNode) {
-            // Check if head has indeed a dedicated visual
-            var int headNode; headNode = playerAI.modelHeadNode;
-            if (MEM_ReadInt(headNode+zCModelNodeInst_visual_offset))
-            && (objCheckInheritance(npc._zCVob_visual, zCModel__classDef)) {
-                // Calculate bounding boxes of model nodes
-                var int model; model = npc._zCVob_visual;
-                const int call3 = 0;
-                if (CALL_Begin(call3)) {
-                    CALL__thiscall(_@(model), zCModel__CalcNodeListBBoxWorld);
-                    call3 = CALL_End();
-                };
-                var int headBBoxPtr; headBBoxPtr = headNode+zCModelNodeInst_bbox3D_offset;
-
-                // Detect intersection with head bounding box
-                var int vecPtr; vecPtr = MEM_Alloc(sizeof_zVEC3);
-                const int call4 = 0;
-                if (CALL_Begin(call4)) {
-                    CALL_PtrParam(_@(vecPtr));     // Intersection vector (not needed)
-                    CALL_PtrParam(_@(dirPosPtr));  // Trace ray direction
-                    CALL_PtrParam(_@(fromPosPtr)); // Start vector
-                    CALL_PutRetValTo(_@(hit));     // Did the trace ray hit
-                    CALL__thiscall(_@(headBBoxPtr), zTBBox3D__TraceRay); // This is a bounding box specific trace ray
-                    call4 = CALL_End();
-                };
-                MEM_Free(vecPtr);
-            };
-        };
+    if (!hit) {
+        hit = GFA_AimRayHead(vobPtr, fromPosPtr, dirPosPtr, 0);
     };
 
     // Add direction vector to position vector to form a line (for debug visualization)
