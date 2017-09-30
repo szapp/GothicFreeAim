@@ -61,6 +61,7 @@ const int oCNpc__SetBodyState                        =  7045120; //0x6B8000
 const int oCNpc__GetInteractMob                      =  6973008; //0x6A6650
 const int oCNpc__EV_Strafe_magicCombat               =  0;                                 // Does not exist in Gothic 1
 const int oCNpc__Interrupt_stopAnisLayerA            =  6891985; //0x6929D1
+const int oCNpc__RefreshNpc_createAmmoIfNone         =  6940460; //0x69E72C
 const int oCNpcFocus__InitFocusModes                 =  6507760; //0x634CF0
 const int oCItem___CreateNewInstance                 =  6764320; //0x673720
 const int oCItem__InitByScript                       =  6755936; //0x671660

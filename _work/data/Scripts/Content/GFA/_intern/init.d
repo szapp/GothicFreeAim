@@ -213,6 +213,10 @@ func void GFA_InitFeatureReuseProjectiles() {
         HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitVob, 5, GFA_RP_RepositionProjectileInSurface);
         HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitWld, 5, GFA_RP_RepositionProjectileInSurface);
     };
+
+    // Reduce number of auto created munition items for NPCs (exploit on ransacking downed/killed NPCs)
+    MemoryProtectionOverride(oCNpc__RefreshNpc_createAmmoIfNone, 1);
+    MEM_WriteByte(oCNpc__RefreshNpc_createAmmoIfNone, 5); // Reduce to five projectiles (default 50)
 };
 
 

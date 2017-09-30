@@ -61,6 +61,7 @@ const int oCNpc__SetBodyState                        =  7727392; //0x75E920
 const int oCNpc__GetInteractMob                      =  7646368; //0x74ACA0
 const int oCNpc__EV_Strafe_magicCombat               =  6833595; //0x6845BB
 const int oCNpc__Interrupt_stopAnisLayerA            =  7560322; //0x735C82
+const int oCNpc__RefreshNpc_createAmmoIfNone         =  7611174; //0x742326
 const int oCNpcFocus__InitFocusModes                 =  7072384; //0x6BEA80
 const int oCItem___CreateNewInstance                 =  7423040; //0x714440
 const int oCItem__InitByScript                       =  7412688; //0x711BD0
