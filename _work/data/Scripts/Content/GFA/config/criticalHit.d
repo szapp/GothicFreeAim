@@ -99,9 +99,9 @@ func void GFA_GetCriticalHitDefinitions(var C_Npc target, var C_Item weapon, var
         // In Gothic 1, critical hits receive weapon damage x2 (this is the default)
         weakspot.bDmg = mulf(damage, castToIntf(2.0)); // This is a float
     } else {
-        // In Gothic 2, there are no critical hits for ranged combat by default. Here, x1.5 seems more reasonable,
+        // In Gothic 2, there are no critical hits for ranged combat by default. Here, x1.3 seems more reasonable,
         // because in Gothic 2, the dexterity is added to weapon damage.
-        weakspot.bDmg = mulf(damage, castToIntf(1.5)); // This is a float
+        weakspot.bDmg = mulf(damage, castToIntf(1.3)); // This is a float
     };
 
 

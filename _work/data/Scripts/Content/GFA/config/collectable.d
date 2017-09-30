@@ -4,7 +4,7 @@
  * Requires the feature GFA_REUSE_PROJECTILES (see config\settings.d).
  *
  * List of included functions:
- *  func int GFA_GetUsedProjectileInstance(int projectileInst, C_Npc inventoryNpc)
+ *  func int GFA_GetUsedProjectileInstance(int projectileInst, C_Npc shooter, C_Npc inventoryNpc)
  */
 
 
@@ -17,7 +17,7 @@
  * Ideas: exchange projectile for a 'used' or 'broken' one, retrieval talent or tool, ...
  * There are a lot of examples given below, they are all commented out and serve as inspiration of what is possible.
  */
-func int GFA_GetUsedProjectileInstance(var int projectileInst, var C_Npc inventoryNpc) {
+func int GFA_GetUsedProjectileInstance(var int projectileInst, var C_Npc shooter, var C_Npc inventoryNpc) {
     /*
     // Exchange the projectile with a 'used' one (e.g. arrow, that needs to be repaired)
     if (projectileInst == Hlp_GetInstanceID(ItRw_Arrow)) { // ItAmArrow in Gothic 1
@@ -42,6 +42,11 @@ func int GFA_GetUsedProjectileInstance(var int projectileInst, var C_Npc invento
 
         // Do not put projectiles into the inventory of the player
         if (Npc_IsPlayer(inventoryNpc)) {
+            return 0;
+        };
+
+        // Do not accumulate too many projectiles from NPC shooters to prevent exploit of getting projectiles for free
+        if (!Npc_IsPlayer(shooter) && (Npc_HasItems(inventoryNpc, projectileInst) >= 2)) {
             return 0;
         };
 
@@ -80,6 +85,12 @@ func int GFA_GetUsedProjectileInstance(var int projectileInst, var C_Npc invento
         if (PLAYER_TALENT_REUSE_ARROW == FALSE) {
             return 0;
         }; */
+
+        // Do not accumulate too many projectiles from NPC shooters to prevent exploit of getting projectiles for free
+        if (!Npc_IsPlayer(shooter)) && (Hlp_Random(100) < 80) {
+            // Remove projectile 80% of the time
+            return 0;
+        };
 
         // For now it is just preserved (leave it in the world as is)
         return projectileInst;

@@ -66,7 +66,8 @@ func void GFA_RP_KeepProjectileInWorld() {
 
         // Replace the projectile if desired, retrieve new projectile instance from config
         var C_Npc emptyNpc; emptyNpc = MEM_NullToInst(); // No NPC was hit, so pass an empty instance as argument
-        var int projInst; projInst = GFA_GetUsedProjectileInstance(projectile.instanz, emptyNpc);
+        var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
+        var int projInst; projInst = GFA_GetUsedProjectileInstance(projectile.instanz, shooter, emptyNpc);
 
         // Check if the new projectile instance is valid, -1 for invalid instance, 0 for empty
         if (projInst > 0) {
@@ -127,9 +128,10 @@ func void GFA_RP_PutProjectileIntoInventory() {
 
     if (positiveHit) {
         var C_Npc victim; victim = _^(MEMINT_SwitchG1G2(EBX, EDI));
+        var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
 
         // Replace the projectile if desired, retrieve new projectile instance from config
-        var int projInst; projInst = GFA_GetUsedProjectileInstance(projectile.instanz, victim);
+        var int projInst; projInst = GFA_GetUsedProjectileInstance(projectile.instanz, shooter, victim);
         if (projInst > 0) {
             CreateInvItem(victim, projInst); // Put respective instance in inventory
         };
