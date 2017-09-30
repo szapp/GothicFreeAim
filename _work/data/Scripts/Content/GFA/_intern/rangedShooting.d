@@ -691,7 +691,12 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
  */
 func void GFA_EnlargeHumanModelBBox() {
     // Prevent crash on startup
-    if (!Hlp_IsValidNpc(hero)) || (MEM_Timer.totalTime < 5000) { // Timer hack to draw player visual on loading
+    if (!Hlp_IsValidNpc(hero)) || (!_@(MEM_Timer)) {
+        return;
+    };
+
+    // Timer hack to draw player visual on loading
+    if (MEM_Timer.totalTime < 5000) {
         return;
     };
 
