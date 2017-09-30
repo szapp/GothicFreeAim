@@ -691,7 +691,7 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
  */
 func void GFA_EnlargeHumanModelBBox() {
     // Prevent crash on startup
-    if (!Hlp_IsValidNpc(hero)) {
+    if (!Hlp_IsValidNpc(hero)) || (MEM_Timer.totalTime < 5000) { // Timer hack to draw player visual on loading
         return;
     };
 
@@ -704,7 +704,7 @@ func void GFA_EnlargeHumanModelBBox() {
 
     // Exit if NPC is shrunk
     var oCNpc slf; slf = _^(vobPtr);
-    if (!Hlp_IsValidNpc(slf)) {
+    if (!Hlp_IsValidNpc(slf)) || (!slf._zCVob_homeWorld) {
         return;
     };
 
