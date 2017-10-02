@@ -40,7 +40,8 @@ func void GFA_GetCriticalHitDefinitions(var C_Npc target, var C_Item weapon, var
     // always. This is part of the fighting mechanics
     if (GOTHIC_BASE_VERSION == 2) {
         // Gothic 2: (damage + dexterity > protection of target)
-        if (roundf(damage)+hero.attribute[ATR_DEXTERITY] < target.protection[PROT_POINT]) { // G2 takes point protection
+        if (roundf(damage)+hero.attribute[ATR_DEXTERITY] < target.protection[PROT_POINT]) // G2 takes point protection
+        || (target.protection[PROT_POINT] == /*IMMUNE*/ -1) {
             weakspot.debugInfo = "Damage does not exceed protection"; // Debugging info for zSpy (see GFA_DEBUG_PRINT)
             return;
         };

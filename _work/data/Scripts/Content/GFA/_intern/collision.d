@@ -545,6 +545,12 @@ func void GFA_CC_SetDamageBehavior() {
     } else {
         // Gothic 2 always considers point protection
         protection = targetNpc.protection[PROT_POINT];
+        if (protection == /*IMMUNE*/ -1) { // Gothic 2 only
+            if (GFA_DEBUG_PRINT) {
+                MEM_Info("GFA_CC_SetDamageBehavior: Ignoring projectile, because target is immune to damage type.");
+            };
+            return;
+        };
     };
 
     // Calculate final damage (to be applied to the target) from base damage

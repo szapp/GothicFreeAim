@@ -344,7 +344,9 @@ func void GFA_CH_DetectCriticalHit() {
             SBi(NPC_MINIMAL_DAMAGE);
             SB(" ] = ");
             shotDamage = (shotDamage+hero.attribute[ATR_DEXTERITY])-protection;
-            if (shotDamage < NPC_MINIMAL_DAMAGE) {
+            if (protection == /*IMMUNE*/ -1) { // Gothic 2 only
+                shotDamage = 0;
+            } else if (shotDamage < NPC_MINIMAL_DAMAGE) {
                 shotDamage = NPC_MINIMAL_DAMAGE; // Minimum damage in Gothic 2 as defined in AI_Constants.d
             };
             SBi(shotDamage);
