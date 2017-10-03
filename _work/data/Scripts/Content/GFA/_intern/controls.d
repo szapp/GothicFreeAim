@@ -55,10 +55,18 @@ func void GFA_TurnPlayerModel() {
     };
 
     // Gothic 2 controls only need the rotation if currently shooting
+    var oCNpc her; her = Hlp_GetNpc(hero);
     if (GOTHIC_CONTROL_SCHEME == 2) {
-        if ((!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))))
-        || (GFA_ACTIVE == FMODE_FAR) {
-            return;
+        // Enabled turning when action key is down
+        if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) {
+            // Additional special case for spell combat: if action button already up, but spell is still being cast
+            if (her.fmode == FMODE_MAGIC) {
+                if (!GFA_InvestingOrCasting(hero)) && (GFA_SpellPostCastDelay <= MEM_Timer.totalTime) {
+                    return;
+                };
+            } else {
+                return;
+            };
         };
     };
 
@@ -85,7 +93,6 @@ func void GFA_TurnPlayerModel() {
     };
 
     // Turn player model
-    var oCNpc her; her = Hlp_GetNpc(hero);
     var int hAniCtrl; hAniCtrl = her.anictrl;
     const int call = 0; var int zero;
     if (CALL_Begin(call)) {

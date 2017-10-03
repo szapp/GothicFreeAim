@@ -368,6 +368,9 @@ func void GFA_InitAlways() {
 
         // For safety (player might strafe into level change trigger)
         GFA_IsStrafing = 0;
+
+        // Reset post casting delay (total time was most likely higher previously)
+        GFA_SpellPostCastDelay = 0;
     };
 
     // Register console commands

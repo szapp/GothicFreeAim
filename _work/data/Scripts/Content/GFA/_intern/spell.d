@@ -208,7 +208,6 @@ func void GFA_SpellLockMovement() {
             return;
         };
 
-        var int postDelay;
         var int spellInUse; spellInUse = GFA_InvestingOrCasting(hero);
         var int castKeyDownLastFrame; castKeyDownLastFrame = castKeyDown;
         var int castKeyDown; castKeyDown = (MEM_KeyPressed(MEM_GetKey("keyAction")))
@@ -231,7 +230,7 @@ func void GFA_SpellLockMovement() {
 
         // Aim movement while investing or casting and for a short period afterwards
         if (spellInUse)
-        || ((postDelay > MEM_Timer.totalTime) && (GFA_IsStrafing)) {
+        || ((GFA_SpellPostCastDelay > MEM_Timer.totalTime) && (GFA_IsStrafing)) {
             // Set return value to one: Do not call any other movement functions
             EAX = 1;
 
@@ -240,7 +239,7 @@ func void GFA_SpellLockMovement() {
 
             // Update post-casting delay to allow bridging consecutive casting without stopping aim movement in between
             if (spellInUse) {
-                postDelay = MEM_Timer.totalTime+GFA_STRAFE_POSTCAST;
+                GFA_SpellPostCastDelay = MEM_Timer.totalTime+GFA_STRAFE_POSTCAST;
             };
         } else {
             GFA_AimMovement(0, "");
