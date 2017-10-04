@@ -127,7 +127,7 @@ func void GFA_IsActive() {
     };
 
     // Before anything else, check if player is in magic or ranged fight mode
-    var oCNpc her; her = Hlp_GetNpc(hero);
+    var oCNpc her; her = getPlayerInst();
     if (her.fmode < FMODE_FAR) {
         GFA_SetCameraModes(0);
         GFA_AimMovement(0, "");

@@ -160,7 +160,7 @@ func int GFA_SetupAimVob(var int posPtr) {
     // Update position and rotation
     if (posPtr) {
         // Copy rotation from the player model (not necessary for free aiming, but might be important for some spells)
-        var oCNpc her; her = Hlp_GetNpc(hero);
+        var oCNpc her; her = getPlayerInst();
         MEM_CopyBytes(_@(her)+zCVob_trafoObjToWorld_offset, vobPtr+zCVob_trafoObjToWorld_offset, sizeof_zMAT4);
 
         // Additionally shift the vob (for certain spells, adjust in GFA_ShiftAimVob())

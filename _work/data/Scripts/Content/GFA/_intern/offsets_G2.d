@@ -53,6 +53,7 @@ const int oCAniCtrl_Human__Turn                      =  7005504; //0x6AE540
 const int oCAniCtrl_Human__CanToggleWalkModeTo       =  6995888; //0x6ABFB0
 const int oCAniCtrl_Human__ToggleWalkMode            =  7001344; //0x6AD500
 const int zCAIPlayer__CheckEnoughSpaceMoveDir        =  5313312; //0x511320
+const int oCNpc__player                              = 11216516; //0xAB2684
 const int oCNpc__TurnToEnemy_camCheck                =  7568757; //0x737D75
 const int oCNpc__GetAngles                           =  6820528; //0x6812B0
 const int oCNpc__SetFocusVob                         =  7547744; //0x732B60

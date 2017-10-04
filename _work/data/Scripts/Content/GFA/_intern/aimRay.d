@@ -128,7 +128,7 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
         // Get camera vob and player
         var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
         var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
-        var oCNpc her; her = Hlp_GetNpc(hero);
+        var oCNpc her; her = getPlayerInst();
         var int herPtr; herPtr = _@(her);
 
         // Shift the start point for the trace ray beyond the player model. This is necessary, because if zooming out

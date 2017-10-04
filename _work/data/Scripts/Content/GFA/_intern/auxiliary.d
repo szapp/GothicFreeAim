@@ -23,6 +23,20 @@
 
 
 /*
+ * Return the current NPC instance of the player. If the player is not initialized, return a null pointer. It is
+ * recommended to use Hlp_IsValidNpc() afterwards.
+ */
+func MEMINT_HelperClass getPlayerInst() {
+    if (!MEM_ReadInt(oCNpc__player)) {
+        var oCNpc ret; ret = MEM_NullToInst();
+        MEMINT_StackPushInst(ret);
+        return;
+    };
+    _^(MEM_ReadInt(oCNpc__player));
+};
+
+
+/*
  * Check the inheritance of a zCObject against a zCClassDef. Emulating zCObject::CheckInheritance() at 0x476E30 in G2.
  * This function is used in Wld_StopEffect_Ext().
  *
@@ -163,7 +177,7 @@ func int GFA_InvestingOrCasting(var C_Npc npc) {
  * focus and target can be set to empty, by passing zero as argument.
  */
 func void GFA_SetFocusAndTarget(var int focusPtr) {
-    var oCNpc her; her = Hlp_GetNpc(hero);
+    var oCNpc her; her = getPlayerInst();
     var int herPtr; herPtr = _@(her);
 
     // Update the focus vob (properly, mind the reference counter)

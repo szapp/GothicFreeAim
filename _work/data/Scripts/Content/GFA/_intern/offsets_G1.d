@@ -53,6 +53,7 @@ const int oCAniCtrl_Human__Turn                      =  6445616; //0x625A30
 const int oCAniCtrl_Human__CanToggleWalkModeTo       =  6437088; //0x6238E0
 const int oCAniCtrl_Human__ToggleWalkMode            =  6442544; //0x624E30
 const int zCAIPlayer__CheckEnoughSpaceMoveDir        =  5248960; //0x5017C0
+const int oCNpc__player                              =  9288624; //0x8DBBB0
 const int oCNpc__TurnToEnemy_camCheck                =  0;                                 // Does not exist in Gothic 1
 const int oCNpc__GetAngles                           =  7650560; //0x74BD00
 const int oCNpc__SetFocusVob                         =  6881136; //0x68FF70

@@ -31,7 +31,7 @@ func void GFA_AimMovement(var int movement, var string modifier) {
         return;
     };
 
-    var oCNpc her; her = Hlp_GetNpc(hero);
+    var oCNpc her; her = getPlayerInst();
 
     // Send perception before anything else (every 1500 ms)
     var int newBodystate; newBodystate = -1;
@@ -236,7 +236,7 @@ func void GFA_Strafe() {
         return;
     };
 
-    var oCNpc her; her = Hlp_GetNpc(hero);
+    var oCNpc her; her = getPlayerInst();
 
     // Check whether keys are pressed down (held)
     var int mFront;

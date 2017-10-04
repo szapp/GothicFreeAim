@@ -117,7 +117,7 @@ func void GFA_RangedAiming() {
     pos[2] = addf(camPos.v2[zMAT4_position], mulf(camPos.v2[zMAT4_outVec], distance));
 
     // Get aiming angles
-    var oCNpc her; her = Hlp_GetNpc(hero);
+    var oCNpc her; her = getPlayerInst();
     var int herPtr; herPtr = _@(her);
     var int angleX; var int angXptr; angXptr = _@(angleX);
     var int angleY; var int angYptr; angYptr = _@(angleY);
@@ -185,7 +185,7 @@ func void GFA_RangedLockMovement() {
  * Additionally, this function is used to detect the onset of aiming (so it is also used if GFA_STRAFING is disabled).
  */
 func void GFA_RangedAimingCondition() {
-    var oCNpc her; her = Hlp_GetNpc(hero);
+    var oCNpc her; her = getPlayerInst();
     var int herPtr; herPtr = _@(her);
     var int aniCtrlPtr; aniCtrlPtr = her.anictrl;
 

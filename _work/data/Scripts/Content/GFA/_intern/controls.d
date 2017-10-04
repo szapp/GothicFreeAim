@@ -55,7 +55,7 @@ func void GFA_TurnPlayerModel() {
     };
 
     // Gothic 2 controls only need the rotation if currently shooting
-    var oCNpc her; her = Hlp_GetNpc(hero);
+    var oCNpc her; her = getPlayerInst();
     if (GOTHIC_CONTROL_SCHEME == 2) {
         // Enabled turning when action key is down
         if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) {
@@ -356,7 +356,7 @@ func void GFA_PreventFocusCollectionBodyStates() {
         return;
     };
 
-    var oCNpc her; her = Hlp_GetNpc(hero);
+    var oCNpc her; her = getPlayerInst();
     if ((her.fmode == FMODE_FAR) || (her.fmode == FMODE_FAR+1)) && (GFA_Flags & GFA_RANGED) // Bow or crossbow
     || ((her.fmode == FMODE_MAGIC) && (GFA_Flags & GFA_SPELLS)) { // Spell
         GFA_SetFocusAndTarget(0);
