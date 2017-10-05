@@ -90,7 +90,7 @@ func int GFA_AimRayHead(var int npcPtr, var int fromPosPtr, var int dirPosPtr, v
                 // Detect intersection with head bounding box
                 const int call2 = 0;
                 if (CALL_Begin(call2)) {
-                    CALL_PtrParam(_@(vecPtr));     // Intersection vector (not needed)
+                    CALL_PtrParam(_@(vecPtr));     // Intersection vector
                     CALL_PtrParam(_@(dirPosPtr));  // Trace ray direction
                     CALL_PtrParam(_@(fromPosPtr)); // Start vector
                     CALL_PutRetValTo(_@(hit));     // Did the trace ray hit
@@ -225,9 +225,6 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
         if (her.focus_vob) && (focusType) {
             // Check if collected focus matches the desired focus type (see function parameter 'focusType')
 
-            // Perform another rougher trace ray (by bounding box)
-            var int secondRay;
-
             if (focusType != TARGET_TYPE_ITEMS) && (Hlp_Is_oCNpc(her.focus_vob)) {
                 // If an NPC focus is desired, more detailed checks are necessary
 
@@ -238,36 +235,22 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
                 var int npcIsUndead; npcIsUndead = MEM_PopIntResult();
 
                 // More detailed focus type tests
-                if (focusType == TARGET_TYPE_NPCS)                                         // Focus any NPC
-                || ((focusType == TARGET_TYPE_ORCS) && target.guild > GIL_SEPERATOR_ORC)   // Only focus orcs
-                || ((focusType == TARGET_TYPE_HUMANS) && target.guild < GIL_SEPERATOR_HUM) // Only focus humans
-                || ((focusType == TARGET_TYPE_UNDEAD) && npcIsUndead) {                    // Only focus undead NPCs
+                if (focusType == TARGET_TYPE_NPCS)                                           // Focus any NPC
+                || ((focusType == TARGET_TYPE_ORCS) && (target.guild > GIL_SEPERATOR_ORC))   // Only focus orcs
+                || ((focusType == TARGET_TYPE_HUMANS) && (target.guild < GIL_SEPERATOR_HUM)) // Only focus humans
+                || ((focusType == TARGET_TYPE_UNDEAD) && (npcIsUndead)) {                    // Only focus undead NPCs
                     // If focus was already found
                     if (her.focus_vob == foundVob) {
                         foundFocus = her.focus_vob;
-                        secondRay = FALSE;
-                    } else if (her.fmode == FMODE_MAGIC) {
-                        // Aiming is not the priority for spells, a rougher focus collection is desired
-                        secondRay = TRUE;
-                    } else {
-                        // Ranged combat: Additionally detect head node (not included in model trace ray)
-                        var int headRay[3];
-                        if (GFA_AimRayHead(her.focus_vob, fromPosPtr, dirPosPtr, _@(headRay))) {
-                            foundVob = her.focus_vob;
-                            MEM_CopyBytes(_@(headRay), _@(intersection), sizeof_zVEC3);
-                            foundFocus = her.focus_vob;
-                        };
-                        secondRay = FALSE;
+                    } else if (GFA_AimRayHead(her.focus_vob, fromPosPtr, dirPosPtr, _@(intersection))) {
+                        // Otherwise, additionally detect head node (not included in model trace ray)
+                        foundVob = her.focus_vob;
+                        foundFocus = her.focus_vob;
                     };
                 };
             } else if (focusType <= TARGET_TYPE_ITEMS) && (Hlp_Is_oCItem(her.focus_vob)) {
                 // If an item focus is desired, perform another rougher trace ray (by bounding box). This ensures a
                 // stable focus, because items might be rather small
-                secondRay = TRUE;
-            };
-
-            // Perform the optional second trace ray for a rougher detection
-            if (secondRay) {
                 flags = flags | zTRACERAY_vob_bbox;
                 var int focusVobPtr; focusVobPtr = her.focus_vob; // Write to variable, otherwise crash on new game
                 var int trRep; trRep = MEM_Alloc(sizeof_zTTraceRayReport);

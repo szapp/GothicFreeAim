@@ -57,6 +57,9 @@ func void GFA_SetupSpell() {
 
     // Overwrite target vob
     MEM_WriteInt(ESP+4, vobPtr);
+
+    // Ignore CFx_Base_Proto.emTrjOriginNode of target, by briefly removing the focus on casting
+    GFA_SetFocusAndTarget(0);
 };
 
 
