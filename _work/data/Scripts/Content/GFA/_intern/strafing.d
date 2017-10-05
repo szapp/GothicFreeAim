@@ -43,12 +43,12 @@ func void GFA_AimMovement(var int movement, var string modifier) {
             // Send perception depending on sneaking or walking
             if (MEM_ReadInt(her.anictrl+oCAniCtrl_Human_walkmode_offset) & NPC_SNEAK) {
                 // Only relevant for Gothic 1, this perception disabled in Gothic 2
-                Npc_SendPassivePerc(hero, PERC_OBSERVESUSPECT, NULL, hero);
+                Npc_SendPassivePerc(hero, PERC_OBSERVESUSPECT, hero, hero);
 
                 // For Gothic 2, set BS_SNEAK
                 newBodystate = BS_SNEAK;
             } else {
-                Npc_SendPassivePerc(hero, PERC_ASSESSQUIETSOUND, NULL, hero);
+                Npc_SendPassivePerc(hero, PERC_ASSESSQUIETSOUND, hero, hero);
             };
         };
     } else if (GFA_IsStrafing) && (MEM_ReadInt(her.anictrl+oCAniCtrl_Human_walkmode_offset) & NPC_SNEAK) {
@@ -99,7 +99,7 @@ func void GFA_AimMovement(var int movement, var string modifier) {
         // Send observe intruder perception (relevant for Gothic 1 only)
         if (bitfield & oCAIHuman_bitfield_startObserveIntruder) {
             MEM_WriteInt(aniCtrlPtr+oCAIHuman_bitfield_offset, bitfield & ~oCAIHuman_bitfield_startObserveIntruder);
-            Npc_SendPassivePerc(hero, PERC_OBSERVEINTRUDER, NULL, hero);
+            Npc_SendPassivePerc(hero, PERC_OBSERVEINTRUDER, hero, hero);
         };
 
         // For ranged combat, animations need to be actively blended back to standing (see below)
