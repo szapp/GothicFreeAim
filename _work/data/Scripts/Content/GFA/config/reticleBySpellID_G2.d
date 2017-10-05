@@ -18,7 +18,8 @@ func string reticleBySpellID(var int spellID) {
         // Ice spells
         return RETICLE_SPADES;
     }
-    else if (spellID == SPL_WaterFist)
+    else if (spellID == SPL_Whirlwind)
+    || (spellID == SPL_WaterFist)
     || (spellID == SPL_Inflate)
     || (spellID == SPL_Geyser)
     || (spellID == SPL_Waterwall) {
@@ -47,7 +48,10 @@ func string reticleBySpellID(var int spellID) {
     }
     else if (spellID == SPL_BreathOfDeath)
     || (spellID == SPL_MasterOfDisaster)
+    || (spellID == SPL_Swarm)
+    || (spellID == SPL_GreenTentacle)
     || (spellID == SPL_Energyball)
+    || (spellID == SPL_SuckEnergy)
     || (spellID == SPL_Skull) {
         // Evil spells
         return RETICLE_BOWL;

@@ -23,7 +23,8 @@ func string reticleBySpellID(var int spellID) {
     }
     else if (spellID == SPL_Firebolt)
     || (spellID == SPL_Fireball)
-    || (spellID == SPL_Firestorm) {
+    || (spellID == SPL_Firestorm)
+    || (spellID == SPL_Pyrokinesis) {
         // Fire spells
         return RETICLE_HORNS;
     }
@@ -31,14 +32,19 @@ func string reticleBySpellID(var int spellID) {
         // Electric spells
         return RETICLE_BOLTS;
     }
-    else if (spellID == SPL_Destroyundead) {
-        // Protection spells
-        return RETICLE_FRAME;
-    }
     else if (spellID == SPL_Breathofdeath)
+    || (spellID == SPL_Destroyundead)
     || (spellID == SPL_New1) {
         // Evil spells
         return RETICLE_BOWL;
+    }
+    else if (spellID == SPL_Charm)
+    || (spellID == SPL_Sleep)
+    || (spellID == SPL_Control)
+    || (spellID == SPL_Berzerk)
+    || (spellID == SPL_Shrink) {
+        // Psyonic spells
+        return RETICLE_EDGES;
     } else {
         // Set this as 'default' texture here (if none of the conditions above is met)
         return RETICLE_EDGES;

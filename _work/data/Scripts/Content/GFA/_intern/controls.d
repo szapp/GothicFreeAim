@@ -42,7 +42,7 @@
 func void GFA_TurnPlayerModel() {
     // Retrieve free aim state and exit if player is not currently aiming
     MEM_Call(GFA_IsActive);
-    if (!(GFA_ACTIVE & GFA_MOVEMENT)) {
+    if (!(GFA_ACTIVE & GFA_ACT_MOVEMENT)) {
         return;
     };
 
@@ -494,7 +494,8 @@ func void GFA_CancelOUsDontClearKeyBuffer() {
  * if the player is aiming. Also the draw force and steady aim are reset.
  */
 func void GFA_AdjustDamageAnimation() {
-    var C_Npc victim; victim = _^(MEM_ReadInt(ESP+204)); // G1: esp+200h-134h, G2: esp+1FCh-130h
+    var int victimPtr; victimPtr = MEM_ReadInt(ESP+204); // G1: esp+200h-134h, G2: esp+1FCh-130h
+    var C_Npc victim; victim = _^(victimPtr);
     if (!Npc_IsPlayer(victim)) || (GFA_ACTIVE < FMODE_FAR) {
         return;
     };
@@ -509,7 +510,7 @@ func void GFA_AdjustDamageAnimation() {
     var string modifier;
 
     // Retrieve animation name modifier by fight mode
-    var oCNpc npc; npc = Hlp_GetNpc(victim);
+    var oCNpc npc; npc = _^(victimPtr);
     if (npc.fmode == FMODE_MAGIC) {
         modifier = "MAG";
 

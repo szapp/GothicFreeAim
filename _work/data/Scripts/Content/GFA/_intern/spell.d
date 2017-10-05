@@ -33,16 +33,16 @@ func void GFA_SetupSpell() {
         return;
     };
 
-    // Only if caster is player and if free aiming is enabled
+    // Only if caster is player and if free aiming is enabled for that spell
     var C_Npc caster; caster = _^(casterPtr);
-    if (!(GFA_ACTIVE & GFA_MOVEMENT)) || (!Npc_IsPlayer(caster)) {
+    if (!(GFA_ACTIVE & GFA_ACT_FREEAIM)) || (!Npc_IsPlayer(caster)) {
         return;
     };
 
-    // Determine focus type. If focusType == 0, then no focus will be collect, but only an intersection with the world
+    // Determine focus type. For TARGET_COLLECT_NONE no focus will be collect, but only an intersection with the world
     var C_Spell spell; spell = _^(spellOC+oCSpell_C_Spell_offset);
     var int focusType;
-    if (!spell.targetCollectAlgo) {
+    if (spell.targetCollectAlgo == TARGET_COLLECT_NONE) {
         focusType = 0;
     } else {
         focusType = spell.targetCollectType;
@@ -57,9 +57,6 @@ func void GFA_SetupSpell() {
 
     // Overwrite target vob
     MEM_WriteInt(ESP+4, vobPtr);
-
-    // Ignore CFx_Base_Proto.emTrjOriginNode of target, by briefly removing the focus on casting
-    GFA_SetFocusAndTarget(0);
 };
 
 
@@ -72,25 +69,25 @@ func void GFA_SpellAiming() {
     var int aniCtrlPtr; aniCtrlPtr = ECX;
 
     // Only show reticle for spells that support free aiming and during aiming (Gothic 1 controls)
-    if (GFA_ACTIVE != FMODE_MAGIC) {
+    if (!(GFA_ACTIVE & GFA_ACT_FREEAIM)) {
         GFA_RemoveReticle();
 
         // Additional settings if free aiming is enabled
         if (GFA_ACTIVE) {
-            if (!(GFA_ACTIVE & GFA_MOVEMENT)) {
+            if (!(GFA_ACTIVE & GFA_ACT_MOVEMENT)) {
                 // Remove movement animations when not aiming
                 GFA_AimMovement(0, "");
             };
 
-            if (GFA_IsSpellEligible(spell) & GFA_SPL_FREEAIM) {
-                // Remove FX from aim vob when casting is complete
-                if (GFA_InvestingOrCasting(hero) <= 0) {
-                    GFA_AimVobDetachFX();
-                };
-
+            if (GFA_IsSpellEligible(spell) & GFA_ACT_FREEAIM) {
                 // Remove focus and target
                 if (GFA_NO_AIM_NO_FOCUS) {
                     GFA_SetFocusAndTarget(0);
+                };
+
+                // Do not remove FX from aim vob when casting is not yet completed
+                if (GFA_InvestingOrCasting(hero) > 0) {
+                    return;
                 };
 
             } else {
@@ -99,11 +96,11 @@ func void GFA_SpellAiming() {
                 || (spell.targetCollectAlgo == TARGET_COLLECT_CASTER) {
                     GFA_SetFocusAndTarget(0);
                 };
-                GFA_AimVobDetachFX();
             };
-        } else {
-            GFA_AimVobDetachFX();
         };
+
+        // Remove FX from aim vob
+        GFA_AimVobDetachFX();
         return;
     };
 
@@ -116,11 +113,13 @@ func void GFA_SpellAiming() {
     var int target;
 
     if (spell.targetCollectRange > 0) {
-        // Determine the focus type. If focusType == 0, then no focus will be collected, but only an intersection with
-        // the world; same for TARGET_COLLECT_NONE. The latter is good for spells like Blink, that are not concerned
-        // with targeting but only with aiming distance
+        // Determine the focus type. For TARGET_COLLECT_NONE no focus will be collected, but only an intersection with
+        // the world. This is good for spells like Blink, that are not concerned with targeting but only with aiming
+        // distance
         var int focusType;
-        if (!spell.targetCollectAlgo) || (spell.targetCollectAzi <= 0) || (spell.targetCollectElev <= 0) {
+        if (spell.targetCollectAlgo == TARGET_COLLECT_NONE)
+        || (spell.targetCollectAzi <= 0)
+        || (spell.targetCollectElev <= 0) {
             focusType = 0;
         } else {
             focusType = spell.targetCollectType;
@@ -131,7 +130,7 @@ func void GFA_SpellAiming() {
         distance = roundf(divf(mulf(distance, FLOAT1C), mkf(spell.targetCollectRange))); // Distance scaled to [0, 100]
 
     } else {
-        // No focus collection (this condition is necessary for light and teleport spells)
+        // No focus collection
         GFA_SetFocusAndTarget(0);
 
         // No distance check ever. Set it to medium distance
@@ -160,7 +159,7 @@ func void GFA_SpellAiming() {
  */
 func void GFA_SpellLockMovement() {
     // Only lock movement for eligible spells
-    if (!(GFA_ACTIVE & GFA_MOVEMENT)) {
+    if (!(GFA_ACTIVE & GFA_ACT_MOVEMENT)) {
         return;
     };
 

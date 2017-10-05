@@ -69,8 +69,10 @@ func MEMINT_HelperClass GFA_GetActiveSpellInst(var C_Npc npc) {
         return;
     };
 
+    var int npcPtr; npcPtr = _@(npc);
+    var oCNpc npcOC; npcOC = _^(npcPtr);
+
     // Get the magic book to retrieve the active spell
-    var oCNpc npcOC; npcOC = Hlp_GetNpc(npc);
     var int magBookPtr; magBookPtr = npcOC.mag_book;
     const int call = 0;
     if (CALL_Begin(call)) {
@@ -85,9 +87,9 @@ func MEMINT_HelperClass GFA_GetActiveSpellInst(var C_Npc npc) {
 
 /*
  * Retrieve whether a spell is eligible for free aiming (GFA_SPL_FREEAIM), that is, it supports free aiming by its
- * properties, or eligible for movement (GFA_MOVEMENT). This function is called to determine whether to activate free
- * aiming or aim movement, since not all spells need to have these features, e.g. summoning spells (no free aiming),
- * heal (no movement).
+ * properties, or eligible for movement (GFA_ACT_MOVEMENT). This function is called to determine whether to activate
+ * free aiming or aim movement, since not all spells need to have these features, e.g. summoning spells (no free
+ * aiming), heal (no movement).
  * Do not change the properties that make a spell eligible! This is very well thought through and works for ALL Gothic 1
  * and Gothic 2 spells. For new spells, adjust THEIR properties accordingly.
  */
@@ -97,19 +99,21 @@ func int GFA_IsSpellEligible(var C_Spell spell) {
         return FALSE;
     };
 
-    // Check if the target collection is not done by focus collection with fall back 'none' or if turning is disabled.
-    if (spell.targetCollectAlgo == TARGET_COLLECT_FOCUS_FALLBACK_NONE) // Do not change this property!
-    && (spell.canTurnDuringInvest) && (spell.canChangeTargetDuringInvest) {
-        // It might be tempting to change TARGET_COLLECT_FOCUS_FALLBACK_NONE into something else, but free aiming will
-        // break this way, as a focus NEEDS to be enabled, but not fixed. No other target collection algorithm suffices.
-        return GFA_SPL_FREEAIM | GFA_MOVEMENT; // == FMODE_MAGIC
-    } else if (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS) && (spell.canTurnDuringInvest) {
-        // Spell supports aim movement
-        return GFA_MOVEMENT;
+    var int eligibleFor; eligibleFor = 0;
+    if (spell.canTurnDuringInvest) {
+        // If turning is allowed, the spell supports aim movement
+        eligibleFor = GFA_ACT_MOVEMENT;
+
+        // Targeting spells support free aiming
+        if (spell.canChangeTargetDuringInvest)
+        && ((spell.targetCollectAlgo == TARGET_COLLECT_FOCUS)                     // Focus spells with reticle
+        ||  (spell.targetCollectAlgo == TARGET_COLLECT_FOCUS_FALLBACK_NONE)       // Actual free aiming spells
+        ||  (spell.targetCollectAlgo == TARGET_COLLECT_FOCUS_FALLBACK_CASTER)) {  // No known spell instance uses this
+            eligibleFor = eligibleFor | GFA_SPL_FREEAIM; // == FMODE_MAGIC
+        };
     };
 
-    // All other cases
-    return FALSE;
+    return eligibleFor;
 };
 
 
@@ -117,8 +121,10 @@ func int GFA_IsSpellEligible(var C_Spell spell) {
  * Returns whether an NPC is currently investing (1), casting (2) or failing (-1) a spell, otherwise 0.
  */
 func int GFA_InvestingOrCasting(var C_Npc npc) {
+    var int npcPtr; npcPtr = _@(npc);
+    var oCNpc npcOC; npcOC = _^(npcPtr);
+
     // Investing (when the cast fails, the release status is stuck, so also check dontKnowAniPlayed)
-    var oCNpc npcOC; npcOC = Hlp_GetNpc(npc);
     if (!(MEM_ReadInt(npcOC.anictrl+oCAIHuman_bitfield_offset) & oCAIHuman_bitfield_spellReleased))
     && (!(MEM_ReadInt(npcOC.anictrl+oCAIHuman_bitfield_offset) & oCAIHuman_bitfield_dontKnowAniPlayed)) {
         return 1;
@@ -251,7 +257,8 @@ func int GFA_GetWeaponAndTalent(var C_Npc slf, var int weaponPtr, var int talent
                 } else {
                     // In Gothic 2 the hit chance is the skill level
                     // talent = slf.hitChance[NPC_TALENT_BOW]; // Cannot write this, because of Gothic 1 compatibility
-                    var oCNpc slfOC; slfOC = Hlp_GetNpc(slf);
+                    var int slfPtr; slfPtr = _@(slf);
+                    var oCNpc slfOC; slfOC = _^(slfPtr);
                     talent = MEM_ReadStatArr(_@(slfOC)+oCNpc_hitChance_offset, talent);
                 };
             };

@@ -102,6 +102,7 @@ func void GFA_UpdateStatus() {
  * whether free aiming is active (player in either magic or ranged combat). It sets the constant GFA_ACTIVE
  * accordingly:
  *  1 if not active (not currently aiming)
+ *  4 if currently using a spell that supports aim movement (GFA_ACT_MOVEMENT)
  *  5 if currently aiming in ranged fight mode (FMODE_FAR)
  *  7 if currently aiming in magic fight mode with free aiming supported spell (FMODE_MAGIC)
  *
@@ -132,6 +133,7 @@ func void GFA_IsActive() {
         GFA_SetCameraModes(0);
         GFA_AimMovement(0, "");
         GFA_DisableAutoTurning(0);
+        GFA_RemoveReticle(); // Necessary for SPL_Control
         GFA_ACTIVE = 1;
         return;
     };
@@ -181,13 +183,13 @@ func void GFA_IsActive() {
         // Check if active spell supports free aiming
         var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
         var int eligible; eligible = GFA_IsSpellEligible(spell);
-        if (!(eligible & GFA_SPL_FREEAIM)) {
+        if (!(eligible & GFA_ACT_FREEAIM)) {
             // Reset spell focus collection
             Focus_Magic.npc_azi = castFromIntf(GFA_FOCUS_SPL_NPC_DFT);
             Focus_Magic.item_prio = GFA_FOCUS_SPL_ITM_DFT;
 
             // Basic spells, that use neither free aiming nor movement
-            if (!(eligible & GFA_MOVEMENT)) {
+            if (!(eligible & GFA_ACT_MOVEMENT)) {
                 GFA_DisableAutoTurning(0);
                 GFA_DisableToggleFocusSpells(0);
                 GFA_AimMovement(0, ""); // Might have switched directly from other spell while still in movement
@@ -201,7 +203,7 @@ func void GFA_IsActive() {
         };
 
         // Movement spells disable auto turning
-        if (eligible & GFA_MOVEMENT) {
+        if (eligible & GFA_ACT_MOVEMENT) {
             GFA_DisableToggleFocusSpells(1);
             GFA_DisableAutoTurning(1);
         };

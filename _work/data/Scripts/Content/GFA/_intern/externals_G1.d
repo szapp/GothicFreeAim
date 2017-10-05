@@ -36,12 +36,14 @@ const int   ITEM_NFOCUS              = 1<<23;                 // Same as in Goth
  * Gothic 2: oCNpc::GetActiveSpellIsScroll() 0x73D020
  */
 func int Npc_GetActiveSpellIsScroll(var C_Npc slf) {
-    if (!Npc_IsInFightMode(slf, FMODE_MAGIC)) {
+    var int slfPtr; slfPtr = _@(slf);
+    var oCNpc slfOC; slfOC = _^(slfPtr);
+
+    if (slfOC.fmode != FMODE_MAGIC) {
         return 0;
     };
 
     // Get magic book
-    var oCNpc slfOC; slfOC = Hlp_GetNpc(slf);
     if (!slfOC.mag_book) {
         return 0;
     };

@@ -231,7 +231,7 @@ func void GFA_AimMovement(var int movement, var string modifier) {
  * function is called from GFA_RangedIdle(), GFA_RangedAiming() and GFA_SpellAiming().
  */
 func void GFA_Strafe() {
-    if (!(GFA_ACTIVE & GFA_MOVEMENT)) {
+    if (!(GFA_ACTIVE & GFA_ACT_MOVEMENT)) {
         GFA_AimMovement(0, "");
         return;
     };

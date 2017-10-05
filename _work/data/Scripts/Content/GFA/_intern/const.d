@@ -51,9 +51,10 @@ const int    GFA_INIT_COLL_CHECK    = 0;                    // Initialize extend
 /* Free aiming and free movement */
 
 const int    GFA_ACTIVE             = 0;                    // Status indicator of free aiming/free movement
-const int    GFA_MOVEMENT           = 1<<2;                 // Free movement status
+const int    GFA_ACT_FREEAIM        = 1<<1;                 // Free aiming status (for spells only)
+const int    GFA_ACT_MOVEMENT       = 1<<2;                 // Free movement status
 const int    GFA_SPL_FREEAIM        = (FMODE_MAGIC          // Free aiming modifier for spells
-                                       & ~GFA_MOVEMENT);
+                                       & ~GFA_ACT_MOVEMENT);
 
 const int    GOTHIC_CONTROL_SCHEME  = 1;                    // Active control scheme (for Gothic 1 always 1)
 const float  GFA_MAX_TURN_RATE_G1   = 2.0;                  // Gothic 1 has a maximum turn rate (engine default: 2.0)
