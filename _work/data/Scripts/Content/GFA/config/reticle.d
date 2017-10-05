@@ -32,13 +32,12 @@ func void GFA_GetRangedReticle(var C_Npc target, var C_Item weapon, var int tale
     if (Hlp_IsValidNpc(target)) {
         // The argument 'target' might be empty!
 
+        /*
+        // For now, do not color friendly/angry NPCs color. The reticle stays white (design choice)
         var int att; att = Npc_GetAttitude(target, hero);
         if (att == ATT_HOSTILE) || (att == ATT_ANGRY) {
             reticle.color = Focusnames_Color_Hostile();
-        };
-        /*
-        // For now, do not color friendly NPCs green. The reticle stays white (design choice)
-        if (att == ATT_FRIENDLY) {
+        } else if (att == ATT_FRIENDLY) {
             reticle.color = Focusnames_Color_Friendly();
         }; */
 
@@ -110,13 +109,12 @@ func void GFA_GetSpellReticle(var C_Npc target, var int spellID, var C_Spell spe
     if (Hlp_IsValidNpc(target)) {
         // The argument 'target' might be empty!
 
+        /*
+        // For now, do not color friendly/angry NPCs color. The reticle stays white (design choice)
         var int att; att = Npc_GetAttitude(target, hero);
         if (att == ATT_HOSTILE) || (att == ATT_ANGRY) {
             reticle.color = Focusnames_Color_Hostile();
-        };
-        /*
-        // For now, do not color friendly NPCs green (reticle stays white)
-        if (att == ATT_FRIENDLY) {
+        } else if (att == ATT_FRIENDLY) {
             reticle.color = Focusnames_Color_Friendly();
         }; */
 
