@@ -417,7 +417,7 @@ func void GFA_FixOpenInventory() {
     const int call = 0;
     if (CALL_Begin(call)) {
         CALL_PutRetValTo(_@(EAX));
-        CALL__stdcall(oCNpc__GetInteractMob); // ECX is already in place
+        CALL__thiscall(_@(ECX), oCNpc__GetInteractMob);
         call = CALL_End();
     };
 
