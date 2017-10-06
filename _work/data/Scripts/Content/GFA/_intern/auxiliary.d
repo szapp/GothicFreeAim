@@ -87,9 +87,9 @@ func MEMINT_HelperClass GFA_GetActiveSpellInst(var C_Npc npc) {
 
 /*
  * Retrieve whether a spell is eligible for free aiming (GFA_SPL_FREEAIM), that is, it supports free aiming by its
- * properties, or eligible for movement (GFA_ACT_MOVEMENT). This function is called to determine whether to activate
- * free aiming or aim movement, since not all spells need to have these features, e.g. summoning spells (no free
- * aiming), heal (no movement).
+ * properties, or eligible for free movement (GFA_ACT_MOVEMENT). This function is called to determine whether to
+ * activate free aiming or free movement, since not all spells need to have these features, e.g. summoning spells (no
+ * free aiming), heal (no free movement).
  * Do not change the properties that make a spell eligible! This is very well thought through and works for ALL Gothic 1
  * and Gothic 2 spells. For new spells, adjust THEIR properties accordingly.
  */
@@ -100,15 +100,12 @@ func int GFA_IsSpellEligible(var C_Spell spell) {
     };
 
     var int eligibleFor; eligibleFor = 0;
-    if (spell.canTurnDuringInvest) {
-        // If turning is allowed, the spell supports aim movement
+    if (spell.canTurnDuringInvest) && (spell.targetCollectAlgo != TARGET_COLLECT_FOCUS) { // Focus spells face the focus
+        // If turning is allowed, the spell supports free movement
         eligibleFor = GFA_ACT_MOVEMENT;
 
         // Targeting spells support free aiming
-        if (spell.canChangeTargetDuringInvest)
-        && ((spell.targetCollectAlgo == TARGET_COLLECT_FOCUS)                     // Focus spells with reticle
-        ||  (spell.targetCollectAlgo == TARGET_COLLECT_FOCUS_FALLBACK_NONE)       // Actual free aiming spells
-        ||  (spell.targetCollectAlgo == TARGET_COLLECT_FOCUS_FALLBACK_CASTER)) {  // No known spell instance uses this
+        if (spell.canChangeTargetDuringInvest) && (spell.targetCollectAlgo == TARGET_COLLECT_FOCUS_FALLBACK_NONE) {
             eligibleFor = eligibleFor | GFA_SPL_FREEAIM; // == FMODE_MAGIC
         };
     };
