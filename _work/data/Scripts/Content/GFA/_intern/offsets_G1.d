@@ -78,6 +78,7 @@ const int zCProgMeshProto__classDef                  =  9198408; //0x8C5B48
 const int zCMaterial__classDef                       =  8861992; //0x873928
 const int oCVisualFX__classDef                       =  8822272; //0x869E00
 const int oCVisualFX__Stop                           =  4766512; //0x48BB30
+const int oCVisualFX__SetTarget                      =  4756368; //0x489390                // Not used for Gothic 1
 const int zCModel__classDef                          =  8862480; //0x873B10
 const int zCModel__TraceRay_softSkinCheck            =  5669743; //0x56836F
 const int zCModel__CalcNodeListBBoxWorld             =  5633856; //0x55F740
@@ -144,6 +145,7 @@ const int oCNpc__EV_Strafe_commonOffset              =  7661795; //0x74E8E3 // H
 const int oCNpc__EV_Strafe_g2ctrl                    =  0;                                 // Does not exist in Gothic 1
 const int oCNpc__Interrupt_stopAnis                  =  6891924; //0x692994 // Hook len 5
 const int oCSpell__Setup_initFallbackNone            =  4704143; //0x47C78F // Hook len 6
+const int oCVisualFX__ProcessCollision_checkTarget   =  0;                                 // Does not exist in Gothic 1
 const int mouseUpdate                                =  5013602; //0x4C8062 // Hook len 5
 
 

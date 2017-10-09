@@ -284,6 +284,40 @@ func void GFA_SpellStrafeReticle() {
 
 
 /*
+ * If a spell is cast with no focus, the collision vob will not match the spell target and the script function
+ * C_CanNpcCollideWithSpell() is not consulted, causing unintended behaviors. This function sets the collision vob
+ * to be the spell target under certain conditions. The function hooks oCVisualFX::ProcessCollision() at an offset
+ * before the spell target is checked.
+ * Since C_CanNpcCollideWithSpell() only exists in Gothic 2, this function is not called for Gothic 1.
+ */
+func void GFA_SpellFixTarget() {
+    var int visualFX; visualFX = EBP;
+
+    // Only if player is caster and free aiming is enabled
+    if (!GFA_ACTIVE) || (MEM_ReadInt(visualFX+oCVisualFX_originVob_offset) != MEM_ReadInt(oCNpc__player)) {
+        return;
+    };
+
+    // Get collision vob and target vob
+    var int collisionVob; collisionVob = MEM_ReadInt(MEM_ReadInt(ESP+360)); // esp+164h+4h
+    var int target; target = MEM_ReadInt(visualFX+oCVisualFX_targetVob_offset);
+
+    // Update target (increase/decrease reference counters properly)
+    if (Hlp_Is_oCNpc(collisionVob)) && (collisionVob != target) {
+        const int call = 0; var int zero;
+        if (CALL_Begin(call)) {
+            if (GOTHIC_BASE_VERSION == 2) {
+                CALL_IntParam(_@(zero)); // Do not re-calculate new trajectory
+            };
+            CALL_PtrParam(_@(collisionVob));
+            CALL__thiscall(_@(visualFX), oCVisualFX__SetTarget);
+            call = CALL_End();
+        };
+    };
+};
+
+
+/*
  * Reset the FX of the spell for invested spells. This function is necessary to reset the spell to its initial state if
  * the casting/investing is interrupted by strafing, falling, lying or sliding. This function is called from various
  * functions. The engine functions called here are the same the engine uses to reset the spell FX.

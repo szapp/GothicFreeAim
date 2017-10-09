@@ -78,6 +78,7 @@ const int zCProgMeshProto__classDef                  =  9972552; //0x982B48
 const int zCMaterial__classDef                       =  9275144; //0x8D8708
 const int oCVisualFX__classDef                       =  9234008; //0x8CE658
 const int oCVisualFX__Stop                           =  4799456; //0x493BE0
+const int oCVisualFX__SetTarget                      =  4788960; //0x4912E0
 const int zCModel__classDef                          =  9275680; //0x8D8920
 const int zCModel__TraceRay_softSkinCheck            =  5777440; //0x582820
 const int zCModel__CalcNodeListBBoxWorld             =  5738432; //0x578FC0
@@ -144,6 +145,7 @@ const int oCNpc__EV_Strafe_commonOffset              =  6831608; //0x683DF8 // H
 const int oCNpc__EV_Strafe_g2ctrl                    =  6832857; //0x6842D9 // Hook len 6
 const int oCNpc__Interrupt_stopAnis                  =  7560261; //0x735C45 // Hook len 5
 const int oCSpell__Setup_initFallbackNone            =  4737961; //0x484BA9 // Hook len 6
+const int oCVisualFX__ProcessCollision_checkTarget   =  4807578; //0x495B9A // Hook len 6
 const int mouseUpdate                                =  5062907; //0x4D40FB // Hook len 5
 
 
