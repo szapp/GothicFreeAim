@@ -666,13 +666,43 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
         CALL__thiscall(_@(vobPtr), zCVob__TraceRay); // This is a vob specific trace ray
         call2 = CALL_End();
     };
-    MEM_Free(trRep); // Free the report
     GFA_AllowSoftSkinTraceRay(0);
 
     // Also check dedicated head visual if present (not detected by model trace ray)
     if (!hit) {
-        hit = GFA_AimRayHead(vobPtr, fromPosPtr, dirPosPtr, 0);
+        hit = GFA_AimRayHead(vobPtr, fromPosPtr, dirPosPtr, trRep+zTTraceRayReport_foundIntersection_offset);
     };
+
+    // If the same positive hit has been determined before, Gothic has trouble reporting the collision: Do it manually
+    if (hit) {
+        if (lastVob == vobPtr) && (lastProj == projectilePtr) {
+            var zCVob vob; vob = _^(vobPtr);
+
+            // Create a minimal collision report
+            var int report; report = MEM_Alloc(sizeof_zCCollisionReport);
+            MEM_WriteInt(report, zCCollisionReport__vtbl);
+            MEM_CopyBytes(trRep+zTTraceRayReport_foundIntersection_offset, report+zCCollisionReport_pos_offset,
+                sizeof_zVEC3);
+            MEM_WriteInt(report+zCCollisionReport_thisCollObj_offset, projectile._zCVob_m_poCollisionObject);
+            MEM_WriteInt(report+zCCollisionReport_hitCollObj_offset, vob.m_poCollisionObject);
+
+            // Manually report the collision
+            const int call3 = 0;
+            if (CALL_Begin(call3)) {
+                CALL_PtrParam(_@(report));
+                CALL__thiscall(_@(arrowAI), oCAIArrow__ReportCollisionToAI);
+                call3 = CALL_End();
+            };
+            MEM_Free(report);
+        } else {
+            // Record the latest hit
+            var int lastVob; lastVob = vobPtr;
+            var int lastProj; lastProj = projectilePtr;
+        };
+    };
+
+    // Free the trace ray report
+    MEM_Free(trRep);
 
     // Add direction vector to position vector to form a line (for debug visualization)
     GFA_DebugCollTrj[3] = addf(GFA_DebugCollTrj[0], GFA_DebugCollTrj[3]);

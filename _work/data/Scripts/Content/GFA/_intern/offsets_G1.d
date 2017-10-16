@@ -34,6 +34,7 @@ const int zCVob__SetSleeping                         =  6124112; //0x5D7250
 const int zCVob__RotateWorld                         =  6217744; //0x5EE010
 const int zCArray_zCVob__IsInList                    =  6590128; //0x648EB0
 const int zCRigidBody__SetVelocity                   =  5854080; //0x595380
+const int zCCollisionReport__vtbl                    =  8207088; //0x7D3AF0
 const int zCWorld__TraceRayNearestHit_Vob            =  6244064; //0x5F46E0
 const int oCWorld__AddVobAsChild                     =  7171232; //0x6D6CA0
 const int zCWorld__SearchVobListByClass              =  6249792; //0x5F5D40
@@ -98,6 +99,7 @@ const int zlineCache                                 =  8844672; //0x86F580
 const int ztimer                                     =  9236968; //0x8CF1E8
 const int oCGame__s_bUseOldControls                  =  0;                                 // Does not exist in Gothic 1
 const int zCInput_Win32__s_mouseEnabled              =  8835836; //0x86D2FC
+const int oCAIArrow__ReportCollisionToAI             =  6395360; //0x6195E0
 const int oCAIArrowBase__ReportCollisionToAI_PFXon1  =  0;                                 // Does not exist in Gothic 1
 const int oCAIArrowBase__ReportCollisionToAI_PFXon2  =  0;                                 // Does not exist in Gothic 1
 const int oCAIArrowBase__ReportCollisionToAI_collNpc =  0;                                 // Does not exist in Gothic 1
@@ -235,6 +237,8 @@ const int zCPolygon_material_offset                  = 24;  //0x0018
 const int zCMaterial_texture_offset                  = 52; //0x0034
 const int zCMaterial_matGroup_offset                 = 64; //0x0040
 
+const int zCCollisionReport_pos_offset               = 8;   //0x0008
+const int zCCollisionReport_thisCollObj_offset       = 44;  //0x002C
 const int zCCollisionReport_hitCollObj_offset        = 48;  //0x0030
 
 const int zCCollisionObject_parent_offset            = 132; //0x0084
@@ -253,6 +257,7 @@ const int sizeof_zVEC3                               = 12;  //0x000C
 const int sizeof_zTBBox3D                            = 24;  //0x0018
 const int sizeof_zCOBBox3D                           = 68;  //0x0044
 const int sizeof_zTTraceRayReport                    = 40;  //0x0028
+const int sizeof_zCCollisionReport                   = 52;  //0x0034
 const int sizeof_zMAT4                               = 64;  //0x0040
 
 // Trafo matrix as zMAT4 is divided column wise
