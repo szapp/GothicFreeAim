@@ -77,7 +77,9 @@ func void GFA_RangedIdle() {
  * collection is overwritten and the reticle is displayed.
  */
 func void GFA_RangedAiming() {
-    if (GFA_ACTIVE < FMODE_FAR) {
+    if (!GFA_ACTIVE) {
+        return;
+    } else if (GFA_ACTIVE < FMODE_FAR) {
         GFA_RemoveReticle();
         if (GFA_NO_AIM_NO_FOCUS) {
             GFA_SetFocusAndTarget(0);
