@@ -56,7 +56,10 @@ const int    GFA_ACT_MOVEMENT       = 1<<2;                 // Free movement sta
 const int    GFA_SPL_FREEAIM        = (FMODE_MAGIC          // Free aiming modifier for spells
                                        & ~GFA_ACT_MOVEMENT);
 
-const int    GOTHIC_CONTROL_SCHEME  = 1;                    // Active control scheme (for Gothic 1 always 1)
+const int    GFA_ACTIVE_CTRL_SCHEME = 1;                    // Control scheme of active FMODE (for Gothic 1 always 1)
+const int    GFA_CTRL_SCHEME_RANGED = 0;                    // Control scheme ranged
+const int    GFA_CTRL_SCHEME_SPELLS = 0;                    // Control scheme spells
+const int    GFA_SPELLS_G1_CTRL     = 1;                    // Internal reference for engine
 const float  GFA_MAX_TURN_RATE_G1   = 2.0;                  // Gothic 1 has a maximum turn rate (engine default: 2.0)
 
 const int    GFA_MIN_AIM_DIST       = 140;                  // Minimum targeting distance. Fixes vertical shooting bug

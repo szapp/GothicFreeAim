@@ -56,7 +56,7 @@ func void GFA_TurnPlayerModel() {
 
     // Gothic 2 controls only need the rotation if currently shooting
     var oCNpc her; her = getPlayerInst();
-    if (GOTHIC_CONTROL_SCHEME == 2) {
+    if (GFA_ACTIVE_CTRL_SCHEME == 2) {
         // Enabled turning when action key is down
         if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) {
             // Additional special case for spell combat: if action button already up, but spell is still being cast
@@ -152,55 +152,100 @@ func void GFA_DisableAutoTurning(var int on) {
 
 
 /*
- * Update internal settings for Gothic 2 controls.
+ * Set internal changes for Gothic controls for ranged combat. Gothic 2 relevant only.
  * The support for the Gothic 2 controls is accomplished by emulating the Gothic 1 controls with different sets of
  * aiming and shooting keys. To do this, the condition to differentiate between the control schemes is skipped and the
  * keys are overwritten (all on the level of opcode and only affecting ranged combat).
- *  on == 0: Gothic 1 controls (GOTHIC_CONTROL_SCHEME == 1)
- *  on == 1: Gothic 2 controls (GOTHIC_CONTROL_SCHEME == 2)
+ *  scheme == 0: Revert to default (control scheme check by options)
+ *  scheme == 1: Override with Gothic 1 controls
+ *  scheme == 2: Override with Gothic 2 controls
  * This function is called from GFA_UpdateStatus() if the menu settings change.
  */
-func void GFA_UpdateSettingsG2Ctrl(var int on) {
+func void GFA_SetControlSchemeRanged(var int scheme) {
     if (GOTHIC_BASE_VERSION != 2) || (!(GFA_Flags & GFA_RANGED)) {
         return;
     };
 
-    if (GOTHIC_CONTROL_SCHEME == on+1) {
+    if (GFA_CTRL_SCHEME_RANGED == scheme) {
         return; // No change necessary
     };
 
-    MEM_Info(ConcatStrings("  OPT: GFA: G2-controls=", IntToString(on))); // Print to zSpy, same style as options
-    if (on) {
-        // Gothic 2 controls enabled: Mimic the Gothic 1 controls but change the keys
-        MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck, ASMINT_OP_nop); // Skip jump to Gothic 2 controls
+    MEM_Info(ConcatStrings("  OPT: GFA: Ranged-ctrl-scheme=", IntToString(scheme))); // To zSpy in style as options
+    if (scheme > 0) {
+        // Control scheme override: Skip jump to Gothic 2 controls
+        MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck, ASMINT_OP_nop);
         MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+1, ASMINT_OP_nop);
         MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+2, ASMINT_OP_nop);
         MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+3, ASMINT_OP_nop);
         MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+4, ASMINT_OP_nop);
         MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+5, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__BowMode_shootingKey+1, 5); // Overwrite shooting key to action button
-        MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+1, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+2, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+3, /*6A*/ 106); // push 0
-        MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+4, 0); // Will be set to 0 or 1 depending on key press
-        GOTHIC_CONTROL_SCHEME = 2;
+
+        if (scheme == 2) {
+            // Gothic 2 controls enabled: Mimic the Gothic 1 controls but change the keys
+            MEM_WriteByte(oCAIHuman__BowMode_shootingKey+1, 5); // Overwrite shooting key to action button
+            MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey, ASMINT_OP_nop);
+            MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+1, ASMINT_OP_nop);
+            MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+2, ASMINT_OP_nop);
+            MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+3, /*6A*/ 106); // push 0
+            MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+4, 0); // Will be set to 0 or 1 depending on key press
+        } else {
+            // Revert keys to Gothic 1 controls
+            MEM_WriteByte(oCAIHuman__BowMode_shootingKey+1, 3); // Revert to default: push 3
+            MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey, /*8B*/ 139); // Revert to default: mov eax, [esp+8h+a3h]
+            MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+1, /*44*/ 68);
+            MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+2, /*24*/ 36);
+            MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+3, /*0C*/ 12);
+            MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+4, /*50*/ 80); // Revert action key to default: push eax
+        };
     } else {
-        // Gothic 2 controls disabled: Revert to original Gothic 2 controls
+        // Revert to original Gothic controls
         MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck, /*0F*/ 15); // Revert G2 controls to default: jz to 0x696391
         MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+1, /*84*/ 132);
         MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+2, /*60*/ 96);
         MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+3, /*04*/ 4);
         MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+4, /*00*/ 0);
         MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+5, /*00*/ 0);
+
+        // Revert key changes
         MEM_WriteByte(oCAIHuman__BowMode_shootingKey+1, 3); // Revert to default: push 3
         MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey, /*8B*/ 139); // Revert to default: mov eax, [esp+8h+a3h]
         MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+1, /*44*/ 68);
         MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+2, /*24*/ 36);
-        MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+3, /*0C*/ 12); // Revert action key to default: push eax
-        MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+4, /*50*/ 80);
-        GOTHIC_CONTROL_SCHEME = 1;
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+3, /*0C*/ 12);
+        MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+4, /*50*/ 80); // Revert action key to default: push eax
     };
+    GFA_CTRL_SCHEME_RANGED = scheme;
+};
+
+
+/*
+ * Set internal changes for Gothic controls for spell combat. Gothic 2 relevant only.
+ * Gothic 1 and Gothic 2 control schemes are left untouched in this function. What is changed is the dependency on the
+ * general (across) control scheme set in the game menu.
+ *  scheme == 0: Revert to default (control scheme check by options)
+ *  scheme == 1: Override with Gothic 1 controls
+ *  scheme == 2: Override with Gothic 2 controls
+ * This function is called from GFA_UpdateStatus() if the menu settings change.
+ */
+func void GFA_SetControlSchemeSpells(var int scheme) {
+    if (GOTHIC_BASE_VERSION != 2) || (!(GFA_Flags & GFA_SPELLS)) {
+        return;
+    };
+
+    if (GFA_CTRL_SCHEME_SPELLS == scheme) {
+        return; // No change necessary
+    };
+
+    MEM_Info(ConcatStrings("  OPT: GFA: Spell-ctrl-scheme=", IntToString(scheme))); // To zSpy in style as options
+    if (scheme > 0) {
+        // Control scheme override: Replace general (across) control scheme with local setting
+        GFA_SPELLS_G1_CTRL = (scheme == 1);
+        MEM_WriteInt(oCAIHuman__MagicMode_g2ctrlCheck, _@(GFA_SPELLS_G1_CTRL));
+    } else {
+        // Revert to original Gothic controls
+        MEM_WriteInt(oCAIHuman__MagicMode_g2ctrlCheck, oCGame__s_bUseOldControls);
+    };
+    GFA_CTRL_SCHEME_SPELLS = scheme;
 };
 
 
@@ -362,7 +407,7 @@ func void GFA_PreventFocusCollectionBodyStates() {
         GFA_SetFocusAndTarget(0);
 
         // With Gothic 2 controls, the reticle is still visible
-        if (GOTHIC_CONTROL_SCHEME == 2) {
+        if (GFA_ACTIVE_CTRL_SCHEME == 2) {
             GFA_RemoveReticle();
             GFA_AimVobDetachFX();
         };
@@ -483,7 +528,7 @@ func void GFA_DontInterruptStrafing() {
  * CGameManager::HandleEvent() at an offset where the key buffer is cleared after canceling OUs.
  */
 func void GFA_CancelOUsDontClearKeyBuffer() {
-    if (GOTHIC_CONTROL_SCHEME == 2) && (GFA_ACTIVE == FMODE_FAR) {
+    if (GFA_ACTIVE_CTRL_SCHEME == 2) && (GFA_ACTIVE == FMODE_FAR) {
         EAX = 0;
     };
 };

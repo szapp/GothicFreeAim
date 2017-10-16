@@ -170,7 +170,7 @@ func void GFA_SpellLockMovement() {
     };
 
     // For Gothic 1 controls, lock movement always for all eligible spells
-    if (GOTHIC_CONTROL_SCHEME == 1) {
+    if (GFA_ACTIVE_CTRL_SCHEME == 1) {
         var int aniCtrlPtr; aniCtrlPtr = her.anictrl;
         // Disallow sneaking (messes up the perception and the animations)
         if (MEM_ReadInt(aniCtrlPtr+oCAniCtrl_Human_walkmode_offset) & NPC_SNEAK) {
@@ -270,7 +270,7 @@ func void GFA_SpellLockMovement() {
  * offset where the Gothic 2 controls are used.
  */
 func void GFA_SpellStrafeReticle() {
-    if (GOTHIC_CONTROL_SCHEME == 2) && (GFA_ACTIVE == FMODE_MAGIC) {
+    if (GFA_ACTIVE_CTRL_SCHEME == 2) && (GFA_ACTIVE == FMODE_MAGIC) {
         // Use existing function to update reticle. Set ECX and back it up first
         var int ecxBak; ecxBak = ECX;
         var oCNpc her; her = getPlayerInst();

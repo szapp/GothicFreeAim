@@ -250,7 +250,7 @@ func void GFA_Strafe() {
     mRight = (MEM_KeyPressed(MEM_GetKey("keyStrafeRight"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyStrafeRight")));
 
     // Allow forward movement only when using Gothic 2 controls while investing or casting a spell (or ranged combat)
-    if (GOTHIC_CONTROL_SCHEME == 2) {
+    if (GFA_ACTIVE_CTRL_SCHEME == 2) {
         mFront = (MEM_KeyPressed(MEM_GetKey("keyUp"))) || (MEM_KeyPressed(MEM_GetSecondaryKey("keyUp")));
     };
 

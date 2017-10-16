@@ -79,7 +79,8 @@ func void GFA_UpdateStatus() {
         GFA_DisableToggleFocusRanged(0);
         GFA_DisableToggleFocusSpells(0);
         GFA_DisableMagicDuringStrafing(0);
-        GFA_UpdateSettingsG2Ctrl(0);
+        GFA_SetControlSchemeRanged(0);
+        GFA_SetControlSchemeSpells(0);
 
         // Clean up
         GFA_RemoveReticle();
@@ -90,8 +91,27 @@ func void GFA_UpdateStatus() {
         GFA_DisableToggleFocusRanged(GFA_Flags & GFA_RANGED);
         GFA_DisableMagicDuringStrafing(GFA_Flags & GFA_SPELLS);
 
+        // Apply control schemes for ranged and spell combat free aiming
         if (GOTHIC_BASE_VERSION == 2) {
-            GFA_UpdateSettingsG2Ctrl(!MEM_ReadInt(oCGame__s_bUseOldControls)); // G1 controls = 0, G2 controls = 1
+            // Get control scheme and overrides
+            var int schemeAcross; schemeAcross = -(MEM_ReadInt(oCGame__s_bUseOldControls))+2; // G1 == 1, G2 == 2
+            var int schemeRanged; schemeRanged = STR_ToInt(MEM_GetGothOpt("GFA", "overwriteControlSchemeRanged"));
+            var int schemeSpells; schemeSpells = STR_ToInt(MEM_GetGothOpt("GFA", "overwriteControlSchemeSpells"));
+
+            // If override is disabled, use general (across) control scheme (as from the game menu settings)
+            if (schemeRanged < 1) || (schemeRanged > 2) {
+                schemeRanged = schemeAcross;
+            };
+            if (schemeSpells < 1) || (schemeSpells > 2) {
+                schemeSpells = schemeAcross;
+            };
+
+            GFA_SetControlSchemeRanged(schemeRanged);
+            GFA_SetControlSchemeSpells(schemeSpells);
+        } else {
+            // Gothic 1 has always G1 controls
+            GFA_CTRL_SCHEME_RANGED = 1;
+            GFA_CTRL_SCHEME_SPELLS = 1;
         };
     };
 };
@@ -149,9 +169,16 @@ func void GFA_IsActive() {
         return;
     };
 
+    // Set active control scheme for current fight mode
+    if (her.fmode == FMODE_MAGIC) {
+        GFA_ACTIVE_CTRL_SCHEME = GFA_CTRL_SCHEME_SPELLS;
+    } else {
+        GFA_ACTIVE_CTRL_SCHEME = GFA_CTRL_SCHEME_RANGED;
+    };
+
     // Set aiming key depending on control scheme to either action or blocking key
     var String keyAiming;
-    if (GOTHIC_CONTROL_SCHEME == 1) {
+    if (GFA_ACTIVE_CTRL_SCHEME == 1) {
         keyAiming = "keyAction";
     } else {
         keyAiming = "keyParade";
@@ -209,7 +236,7 @@ func void GFA_IsActive() {
         };
 
         // Disable reticle when holding the action key while running (will also disable turning!)
-        if (GOTHIC_CONTROL_SCHEME == 1) {
+        if (GFA_ACTIVE_CTRL_SCHEME == 1) {
             if (!keyPressed) {
                 GFA_ACTIVE = 1;
                 return;
@@ -250,7 +277,7 @@ func void GFA_IsActive() {
         GFA_DisableAutoTurning(1);
 
         // Set internally whether the aiming key is held or not (only if using Gothic 2 controls)
-        if (GOTHIC_CONTROL_SCHEME == 2) {
+        if (GFA_ACTIVE_CTRL_SCHEME == 2) {
             MEM_WriteByte(oCAIHuman__PC_ActionMove_aimingKey+4, keyPressed);
         };
 
@@ -261,7 +288,7 @@ func void GFA_IsActive() {
         };
 
         // Disable focus collection while running
-        if (GOTHIC_CONTROL_SCHEME == 1) || (!GFA_STRAFING) {
+        if (GFA_ACTIVE_CTRL_SCHEME == 1) || (!GFA_STRAFING) {
             // Check if standing
             MEM_PushInstParam(hero);
             MEM_PushIntParam(BS_STAND);

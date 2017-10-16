@@ -136,6 +136,22 @@ func void GFA_InitFeatureFreeAiming() {
         // Add INI-entry, if not set (set to instantaneous=0ms by default)
         MEM_SetGothOpt("GFA", "focusUpdateIntervalMS", "0");
     };
+
+    if (GOTHIC_BASE_VERSION == 2) {
+        if (GFA_Flags & GFA_RANGED) {
+            if (!MEM_GothOptExists("GFA", "overwriteControlSchemeRanged")) {
+                // Add INI-entry, if not set (disable override by default)
+                MEM_SetGothOpt("GFA", "overwriteControlSchemeRanged", "0");
+            };
+        };
+
+        if (GFA_Flags & GFA_SPELLS) {
+            if (!MEM_GothOptExists("GFA", "overwriteControlSchemeSpells")) {
+                // Add INI-entry, if not set (disable override by default)
+                MEM_SetGothOpt("GFA", "overwriteControlSchemeSpells", "0");
+            };
+        };
+    };
 };
 
 
@@ -335,6 +351,7 @@ func void GFA_InitAlways() {
     GFA_AimRayInterval = STR_ToInt(MEM_GetGothOpt("GFA", "focusUpdateIntervalMS"));
     if (GFA_AimRayInterval > 500) {
         GFA_AimRayInterval = 500;
+        MEM_SetGothOpt("GFA", "focusUpdateIntervalMS", IntToString(GFA_AimRayInterval));
     };
 
     // Reset/reinitialize free aiming settings every time to prevent crashes
