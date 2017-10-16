@@ -110,6 +110,7 @@ const int oCAIHuman__BowMode_g2ctrlCheck             =  6905643; //0x695F2B
 const int oCAIHuman__BowMode_shootingKey             =  6906610; //0x6962F2
 const int oCAIHuman__MagicMode_turnToTarget          =  0;                                 // Does not exist in Gothic 2
 const int oCAIHuman__PC_ActionMove_aimingKey         =  6922427; //0x69A0BB
+const int oCAIHuman__PC_Turnings                     =  6924608; //0x69A940
 const int zCCollObjectLevelPolys__s_oCollObjClass    =  9274192; //0x8D8350
 
 const int zCWorld__AdvanceClock                      =  6447328; //0x6260E0 // Hook len 10
@@ -144,6 +145,7 @@ const int oCNpc__OnDamage_Anim_stumbleAniName        =  6784975; //0x6787CF // H
 const int oCNpc__OnDamage_Anim_gotHitAniName         =  6785116; //0x67885C // Hook len 5
 const int oCNpc__SetWeaponMode_player                =  7575921; //0x739971 // Hook len 6
 const int oCNpc__SetWeaponMode2_walkmode             =  7574116; //0x739264 // Hook len 6
+const int oCNpc__EV_AttackRun_playerTurn             =  7674197; //0x751955 // Hook len 7
 const int oCNpc__EV_Strafe_commonOffset              =  6831608; //0x683DF8 // Hook len 5
 const int oCNpc__EV_Strafe_g2ctrl                    =  6832857; //0x6842D9 // Hook len 6
 const int oCNpc__Interrupt_stopAnis                  =  7560261; //0x735C45 // Hook len 5

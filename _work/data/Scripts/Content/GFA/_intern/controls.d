@@ -173,12 +173,9 @@ func void GFA_SetControlSchemeRanged(var int scheme) {
     MEM_Info(ConcatStrings("  OPT: GFA: Ranged-ctrl-scheme=", IntToString(scheme))); // To zSpy in style as options
     if (scheme > 0) {
         // Control scheme override: Skip jump to Gothic 2 controls
-        MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+1, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+2, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+3, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+4, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+5, ASMINT_OP_nop);
+        repeat(i, 6); var int i;
+            MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+i, ASMINT_OP_nop);
+        end;
 
         if (scheme == 2) {
             // Gothic 2 controls enabled: Mimic the Gothic 1 controls but change the keys
@@ -352,11 +349,9 @@ func void GFA_DisableMagicDuringStrafing(var int on) {
 
     if (on) {
         // Disable magic combat during default strafing
-        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat, ASMINT_OP_nop); // Remove call to oCNpc::FightAttackMagic()
-        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+1, ASMINT_OP_nop);
-        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+2, ASMINT_OP_nop);
-        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+3, ASMINT_OP_nop);
-        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+4, ASMINT_OP_nop);
+        repeat(i, 5); var int i;
+            MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+i, ASMINT_OP_nop); // Remove call to oCNpc::FightAttackMagic()
+        end;
     } else {
         MEM_WriteByte(oCNpc__EV_Strafe_magicCombat, /*E8*/ 232); // Revert to default call
         MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+1, /*A0*/ 160);
@@ -482,6 +477,23 @@ func void GFA_FixOpenInventory() {
                 };
                 EAX = !EAX;
             };
+        };
+    };
+};
+
+
+/*
+ * Modify the attack run turning to only allow it for the player. This function hooks oCNpc::EV_AttackRun() at an offset
+ * where the player can turn while performing an attack run. This function is only called for Gothic 2.
+ */
+func void GFA_FixNpcAttackRun() {
+    var C_Npc slf; slf = _^(ESI);
+    if (Npc_IsPlayer(slf)) {
+        const int call = 0; var int zero;
+        if (CALL_Begin(call)) {
+            CALL_IntParam(_@(zero));
+            CALL__thiscall(_@(ECX), oCAIHuman__PC_Turnings);
+            call = CALL_End();
         };
     };
 };

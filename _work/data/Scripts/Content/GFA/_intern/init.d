@@ -62,11 +62,9 @@ func void GFA_InitFeatureFreeAiming() {
 
         // Aiming condition (detect aiming onset and overwrite aiming condition if GFA_STRAFING)
         MemoryProtectionOverride(oCAIHuman__BowMode_aimCondition, 5);
-        MEM_WriteByte(oCAIHuman__BowMode_aimCondition, ASMINT_OP_nop); // Erase standing condition to make room for hook
-        MEM_WriteByte(oCAIHuman__BowMode_aimCondition+1, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__BowMode_aimCondition+2, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__BowMode_aimCondition+3, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIHuman__BowMode_aimCondition+4, ASMINT_OP_nop);
+        repeat(i, 5); var int i;
+            MEM_WriteByte(oCAIHuman__BowMode_aimCondition+i, ASMINT_OP_nop); // Erase condition to make room for hook
+        end;
         HookEngineF(oCAIHuman__BowMode_aimCondition, 5, GFA_RangedAimingCondition); // Replace condition with own
 
         // Gothic 2 controls
@@ -163,13 +161,9 @@ func void GFA_InitFeatureCustomCollisions() {
     HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_CC_ProjectileCollisionWithNpc); // Hit reg/coll on NPCs
     if (GOTHIC_BASE_VERSION == 1) {
         MemoryProtectionOverride(oCAIArrow__ReportCollisionToAI_destroyPrj, 7); // Disable destroying of projectiles
-        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj, ASMINT_OP_nop); // Disable fixed destruction
-        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+1, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+2, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+3, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+4, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+5, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+6, ASMINT_OP_nop);
+        repeat(i, 7); var int i;
+            MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+i, ASMINT_OP_nop); // Disable fixed destruction
+        end;
         HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_CC_ProjectileCollisionWithWorld); // Collision world
         MemoryProtectionOverride(oCAIArrow__ReportCollisionToAI_keepPlyStrp, 2); // Keep poly strip after coll
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_keepPlyStrp, /*EB*/ 235); // jmp
@@ -178,20 +172,12 @@ func void GFA_InitFeatureCustomCollisions() {
         // Gothic 2
         MemoryProtectionOverride(oCAIArrowBase__ReportCollisionToAI_PFXon1, 7); // Prevent too early setting of dust PFX
         MemoryProtectionOverride(oCAIArrowBase__ReportCollisionToAI_PFXon2, 7);
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon1, ASMINT_OP_nop); // First occurrence
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon1+1, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon1+2, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon1+3, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon1+4, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon1+5, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon1+6, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon2, ASMINT_OP_nop); // Second occurrence
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon2+1, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon2+2, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon2+3, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon2+4, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon2+5, ASMINT_OP_nop);
-        MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon2+6, ASMINT_OP_nop);
+        repeat(i, 7);
+            MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon1+i, ASMINT_OP_nop); // First occurrence
+        end;
+        repeat(i, 7);
+            MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon2+i, ASMINT_OP_nop); // Second occurrence
+        end;
         HookEngineF(oCAIArrowBase__ReportCollisionToAI_collVob, 5, GFA_CC_ProjectileCollisionWithWorld); // Vobs
         HookEngineF(oCAIArrowBase__ReportCollisionToAI_collWld, 5, GFA_CC_ProjectileCollisionWithWorld); // Static world
         MemoryProtectionOverride(oCAIArrowBase__ReportCollisionToAI_collNpc, 2); // Set collision behavior on NPCs
@@ -252,13 +238,9 @@ func void GFA_InitDamageBehavior() {
 func void GFA_InitFixDroppedProjectileAI() {
     MEM_Info("Initializing dropped projectiles AI bug fix.");
     MemoryProtectionOverride(oCAIVobMove__DoAI_stopMovement, 7); // First erase a call, to make room for hook
-    MEM_WriteByte(oCAIVobMove__DoAI_stopMovement, ASMINT_OP_nop);
-    MEM_WriteByte(oCAIVobMove__DoAI_stopMovement+1, ASMINT_OP_nop);
-    MEM_WriteByte(oCAIVobMove__DoAI_stopMovement+2, ASMINT_OP_nop);
-    MEM_WriteByte(oCAIVobMove__DoAI_stopMovement+3, ASMINT_OP_nop);
-    MEM_WriteByte(oCAIVobMove__DoAI_stopMovement+4, ASMINT_OP_nop);
-    MEM_WriteByte(oCAIVobMove__DoAI_stopMovement+5, ASMINT_OP_nop);
-    MEM_WriteByte(oCAIVobMove__DoAI_stopMovement+6, ASMINT_OP_nop);
+    repeat(i, 7); var int i;
+        MEM_WriteByte(oCAIVobMove__DoAI_stopMovement+i, ASMINT_OP_nop);
+    end;
     HookEngineF(oCAIVobMove__DoAI_stopMovement, 7, GFA_FixDroppedProjectileAI); // Re-write what has been overwritten
 };
 
@@ -269,12 +251,32 @@ func void GFA_InitFixDroppedProjectileAI() {
 func void GFA_InitFixOpenInventory() {
     MEM_Info("Initializing open inventory bug fix.");
     MemoryProtectionOverride(oCGame__HandleEvent_openInvCheck, 5); // First erase a call, to make room for hook
-    MEM_WriteByte(oCGame__HandleEvent_openInvCheck, ASMINT_OP_nop);
-    MEM_WriteByte(oCGame__HandleEvent_openInvCheck+1, ASMINT_OP_nop);
-    MEM_WriteByte(oCGame__HandleEvent_openInvCheck+2, ASMINT_OP_nop);
-    MEM_WriteByte(oCGame__HandleEvent_openInvCheck+3, ASMINT_OP_nop);
-    MEM_WriteByte(oCGame__HandleEvent_openInvCheck+4, ASMINT_OP_nop);
+    repeat(i, 5); var int i;
+        MEM_WriteByte(oCGame__HandleEvent_openInvCheck+i, ASMINT_OP_nop);
+    end;
     HookEngineF(oCGame__HandleEvent_openInvCheck, 5, GFA_FixOpenInventory); // Re-write what has been overwritten
+};
+
+
+/*
+ * Prevent the player from controlling the turning of NPCs that are performing an attack run. This inherent Gothic 2 bug
+ * becomes very obvious with free aiming and thus needs to be fixed.
+ * To still allow the player to turn while performing an attack run, the solution from the link below is extended, to
+ * squeeze in a check whether the character in question is the player.
+ *
+ * Inspired by: http://forum.worldofplayers.de/forum/threads/879891?p=14886885
+ */
+func void GFA_InitFixNpcAttackRun() {
+    if (GOTHIC_BASE_VERSION != 2) {
+        return;
+    };
+
+    MEM_Info("Initializing NPC attack-run turning bug fix.");
+    MemoryProtectionOverride(oCNpc__EV_AttackRun_playerTurn, 7); // Erase call to oCAIHuman::PC_Turnings()
+    repeat(i, 7); var int i;
+        MEM_WriteByte(oCNpc__EV_AttackRun_playerTurn+i, ASMINT_OP_nop);
+    end;
+    HookEngineF(oCNpc__EV_AttackRun_playerTurn, 7, GFA_FixNpcAttackRun); // Re-write what has been overwritten
 };
 
 
@@ -331,6 +333,9 @@ func int GFA_InitOnce() {
 
         // Fix open inventory bug
         GFA_InitFixOpenInventory();
+
+        // Fix player turning NPCs on attack run
+        GFA_InitFixNpcAttackRun();
 
     // };
 
