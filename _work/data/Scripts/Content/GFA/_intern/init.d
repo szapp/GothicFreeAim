@@ -339,6 +339,21 @@ func int GFA_InitOnce() {
 
     // };
 
+    // Register console commands
+    MEM_Info("Initializing console commands.");
+    CC_Register(GFA_GetVersion, "GFA version", "print GFA version info");
+    CC_Register(GFA_GetLicense, "GFA license", "print GFA license info");
+    CC_Register(GFA_GetInfo, "GFA info", "print GFA config info");
+    CC_Register(GFA_GetShootingStats, "GFA stats", "print shooting statistics");
+    CC_Register(GFA_ResetShootingStats, "GFA stats reset", "reset shooting statistics");
+    if (GFA_DEBUG_CONSOLE) {
+        // Enable console commands for debugging
+        CC_Register(GFA_DebugPrint, "debug GFA zSpy", "turn on GFA debug information in zSpy");
+        CC_Register(GFA_DebugTraceRay, "debug GFA traceray", "turn debug visualization on/off");
+        CC_Register(GFA_DebugTrajectory, "debug GFA trajectory", "turn debug visualization on/off");
+        CC_Register(GFA_DebugWeakspot, "debug GFA weakspot", "turn debug visualization on/off");
+    };
+
     // Successfully initialized
     return TRUE;
 };
@@ -394,21 +409,6 @@ func void GFA_InitAlways() {
 
         // Reset post casting delay (total time was most likely higher previously)
         GFA_SpellPostCastDelay = 0;
-    };
-
-    // Register console commands
-    MEM_Info("Initializing console commands.");
-    CC_Register(GFA_GetVersion, "GFA version", "print GFA version info");
-    CC_Register(GFA_GetLicense, "GFA license", "print GFA license info");
-    CC_Register(GFA_GetInfo, "GFA info", "print GFA config info");
-    CC_Register(GFA_GetShootingStats, "GFA stats", "print shooting statistics");
-    CC_Register(GFA_ResetShootingStats, "GFA stats reset", "reset shooting statistics");
-    if (GFA_DEBUG_CONSOLE) {
-        // Enable console commands for debugging
-        CC_Register(GFA_DebugPrint, "debug GFA zSpy", "turn on GFA debug information in zSpy");
-        CC_Register(GFA_DebugTraceRay, "debug GFA traceray", "turn debug visualization on/off");
-        CC_Register(GFA_DebugTrajectory, "debug GFA trajectory", "turn debug visualization on/off");
-        CC_Register(GFA_DebugWeakspot, "debug GFA weakspot", "turn debug visualization on/off");
     };
 };
 
