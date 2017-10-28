@@ -14,7 +14,6 @@ config\collectable.d
 config\criticalHit.d
 
 _intern\ccommands.d
-_intern\debug.d
 _intern\aimVob.d
 _intern\aimRay.d
 _intern\reticle.d

@@ -117,13 +117,9 @@ func int GFA_CH_DetectIntersectionWithNode(var int npcPtr, var string nodeName, 
         return FALSE;
     };
 
-    // Set up vectors from projectile trajectory for detection trace rays
-    var int fromPosPtr; fromPosPtr = _@(GFA_DebugCollTrj);
-    var int dir[3];
-    dir[0] = subf(GFA_DebugCollTrj[3], GFA_DebugCollTrj[0]);
-    dir[1] = subf(GFA_DebugCollTrj[4], GFA_DebugCollTrj[1]);
-    dir[2] = subf(GFA_DebugCollTrj[5], GFA_DebugCollTrj[2]);
-    var int dirPosPtr; dirPosPtr = _@(dir);
+    // Set up vectors from previously calculated projectile trajectory for detection trace rays
+    var int fromPosPtr; fromPosPtr = _@(GFA_CollTrj);
+    var int dirPosPtr; dirPosPtr = _@(GFA_CollTrj)+sizeof_zVEC3;
     var int criticalhit;
 
     // Calculate node bounding boxes and world coordinates
@@ -135,12 +131,19 @@ func int GFA_CH_DetectIntersectionWithNode(var int npcPtr, var string nodeName, 
 
     // Use node visual directly if it exists
     if (MEM_ReadInt(nodeInst+zCModelNodeInst_visual_offset)) { // zCVisual*
-        // Copy node bounding box
-        MEM_CopyBytes(nodeInst+zCModelNodeInst_bbox3D_offset, _@(GFA_DebugWSBBox), sizeof_zTBBox3D);
-        var int bboxPtr; bboxPtr = _@(GFA_DebugWSBBox);
+        var int bboxPtr; bboxPtr = nodeInst+zCModelNodeInst_bbox3D_offset;
+
+        // Debug visualization
+        if (BBoxVisible(GFA_DebugWSBBox)) {
+            UpdateBBoxAddr(GFA_DebugWSBBox, bboxPtr, -1);
+        };
 
         // Prevent debug drawing of oriented bounding box
-        GFA_DebugWSOBBox[0] = 0;
+        if (OBBoxVisible(GFA_DebugWSOBBox)) {
+            const int QUARTER_BBOX_SIZE = sizeof_zTBBox3D/4;
+            var int emptyBBox[QUARTER_BBOX_SIZE];
+            UpdateOBBoxAddr(GFA_DebugWSOBBox, _@(emptyBBox), -1);
+        };
 
         // Detect collision
         const int call2 = 0;
@@ -191,12 +194,10 @@ func int GFA_CH_DetectIntersectionWithNode(var int npcPtr, var string nodeName, 
     };
     var int obboxPtr; obboxPtr = MEM_ReadIntArray(nodeObbList.array, nodeIdxS);
 
-    // Copy OBBox to transform it and for debug visualization
-    MEM_CopyBytes(obboxPtr, _@(GFA_DebugWSOBBox), sizeof_zCOBBox3D);
-    obboxPtr = _@(GFA_DebugWSOBBox);
-
-    // Prevent debug drawing of bounding box
-    GFA_DebugWSBBox[0] = 0;
+    // Copy OBBox to transform it
+    var int obboxTrf; obboxTrf = MEM_Alloc(sizeof_zCOBBox3D);
+    MEM_CopyBytes(obboxPtr, obboxTrf, sizeof_zCOBBox3D);
+    obboxPtr = obboxTrf;
 
     // Transform OBBox to world coordinates
     var int trafoPtr; trafoPtr = nodeInst+zCModelNodeInst_trafoObjToCam_offset;
@@ -205,6 +206,18 @@ func int GFA_CH_DetectIntersectionWithNode(var int npcPtr, var string nodeName, 
         CALL_PtrParam(_@(trafoPtr)); // zMAT4*
         CALL__thiscall(_@(obboxPtr), zCOBBox3D__Transform);
         call3 = CALL_End();
+    };
+
+    // Debug visualization
+    if (OBBoxVisible(GFA_DebugWSOBBox)) {
+        UpdateOBBoxAddr(GFA_DebugWSOBBox, obboxPtr, -1);
+    };
+
+    // Prevent debug drawing of bounding box
+    if (BBoxVisible(GFA_DebugWSBBox)) {
+        const int QUARTER_OBBOX_SIZE = sizeof_zCOBBox3D/4;
+        var int emptyOBBox[QUARTER_OBBOX_SIZE];
+        UpdateBBoxAddr(GFA_DebugWSBBox, _@(emptyOBBox), -1);
     };
 
     // Detect collision
@@ -217,6 +230,9 @@ func int GFA_CH_DetectIntersectionWithNode(var int npcPtr, var string nodeName, 
         CALL__thiscall(_@(obboxPtr), zCOBBox3D__TraceRay); // This is an oriented bounding box specific trace ray
         call4 = CALL_End();
     };
+
+    MEM_Free(obboxPtr);
+
     return +criticalhit;
 };
 

@@ -116,12 +116,6 @@ func void GFA_InitFeatureFreeAiming() {
     MEM_Info("Initializing reticle.");
     HookEngineF(oCNpc__SetWeaponMode_player, 6, GFA_ResetOnWeaponSwitch); // Hide reticle, hide aim FX, reset draw force
 
-    // Debugging
-    if (GFA_DEBUG_CONSOLE) || (GFA_DEBUG_WEAKSPOT) || (GFA_DEBUG_TRACERAY) || (GFA_DEBUG_COLLISION) {
-        MEM_Info("Initializing debug visualizations.");
-        HookEngineF(zCWorld__AdvanceClock, 10, GFA_DebugVisualization); // FrameFunctions hook too late for rendering
-    };
-
     // Read INI Settings
     MEM_Info("Initializing entries in Gothic.ini.");
 
@@ -400,9 +394,6 @@ func void GFA_InitAlways() {
 
         // Reset aim ray calculation time. Would otherwise result in an invalid vob pointer on loading a game (crash)
         GFA_AimRayPrevCalcTime = 0;
-
-        // Reset debug vob pointer. Would otherwise result in an invalid vob pointer on loading a game (crash)
-        GFA_DebugTRPrevVob = 0;
 
         // For safety (player might strafe into level change trigger)
         GFA_IsStrafing = 0;

@@ -25,7 +25,7 @@
 /*
  * Console function to enable/disable debug output to zSpy. This function is registered as console command.
  */
-func string GFA_DebugPrint(var string command) {
+func string GFA_DebugPrint(var string _) {
     GFA_DEBUG_PRINT = !GFA_DEBUG_PRINT;
     if (GFA_DEBUG_PRINT) {
         return "Debug outputs on.";
@@ -39,11 +39,31 @@ func string GFA_DebugPrint(var string command) {
  * Console function to enable/disable trace ray debug output. This function is registered as console command.
  * When enabled, the trace ray is continuously drawn, as well as the nearest intersection with it.
  */
-func string GFA_DebugTraceRay(var string command) {
-    GFA_DEBUG_TRACERAY = !GFA_DEBUG_TRACERAY;
-    if (GFA_DEBUG_TRACERAY) {
+func string GFA_DebugTraceRay(var string _) {
+    if (!Hlp_IsValidHandle(GFA_DebugTRTrj)) {
+        GFA_DebugTRTrj = DrawLineAddr(0, zCOLOR_GREEN);
+        HideLine(GFA_DebugTRTrj);
+    };
+
+    if (!Hlp_IsValidHandle(GFA_DebugTRBBox)) {
+        GFA_DebugTRBBox = DrawBBoxAddr(0, zCOLOR_GREEN);
+        HideBBox(GFA_DebugTRBBox);
+    };
+
+    if (!Hlp_IsValidHandle(GFA_DebugTRBBoxVob)) {
+        GFA_DebugTRBBoxVob = DrawBBoxAddr(0, zCOLOR_GREEN);
+        HideBBox(GFA_DebugTRBBoxVob);
+    };
+
+    if (!LineVisible(GFA_DebugTRTrj)) && (!BBoxVisible(GFA_DebugTRBBox)) && (!BBoxVisible(GFA_DebugTRBBoxVob)) {
+        ShowBBox(GFA_DebugTRTrj);
+        ShowBBox(GFA_DebugTRBBox);
+        ShowBBox(GFA_DebugTRBBoxVob);
         return "Debug trace ray on.";
     } else {
+        HideBBox(GFA_DebugTRTrj);
+        HideBBox(GFA_DebugTRBBox);
+        HideBBox(GFA_DebugTRBBoxVob);
         return "Debug trace ray off.";
     };
 };
@@ -53,9 +73,14 @@ func string GFA_DebugTraceRay(var string command) {
  * Console function to enable/disable trace ray debug output. This function is registered as console command.
  * When enabled, the trajectory of the projectile is continuously drawn.
  */
-func string GFA_DebugTrajectory(var string command) {
-    GFA_DEBUG_COLLISION = !GFA_DEBUG_COLLISION;
-    if (GFA_DEBUG_COLLISION) {
+func string GFA_DebugTrajectory(var string _) {
+    if (!Hlp_IsValidHandle(GFA_DebugCollTrj)) {
+        GFA_DebugCollTrj = DrawLineAddr(_@(GFA_CollTrj), zCOLOR_RED);
+    } else {
+        ToggleLine(GFA_DebugCollTrj);
+    };
+
+    if (LineVisible(GFA_DebugCollTrj)) {
         return "Debug projectile trajectory on.";
     } else {
         return "Debug projectile trajectory off.";
@@ -65,13 +90,29 @@ func string GFA_DebugTrajectory(var string command) {
 
 /*
  * Console function to enable/disable weak spot debug output. This function is registered as console command.
- * When enabled, the defined weak spot of the last shot NPC is visualized by a bounding boxe.
+ * When enabled, the defined weak spot of the last shot NPC is visualized by a bounding box or oriented bounding box.
  */
-func string GFA_DebugWeakspot(var string command) {
-    GFA_DEBUG_WEAKSPOT = !GFA_DEBUG_WEAKSPOT;
-    if (GFA_DEBUG_WEAKSPOT) {
+func string GFA_DebugWeakspot(var string _) {
+    if (!Hlp_IsValidHandle(GFA_DebugWSBBox)) {
+        GFA_DebugWSBBox = DrawBBoxAddr(0, zCOLOR_RED);
+        HideBBox(GFA_DebugWSBBox);
+    };
+
+    if (!Hlp_IsValidHandle(GFA_DebugWSOBBox)) {
+        GFA_DebugWSOBBox = DrawOBBoxAddr(0, zCOLOR_RED);
+        HideOBBox(GFA_DebugWSOBBox);
+    };
+
+    if (!BBoxVisible(GFA_DebugWSBBox) && (!OBBoxVisible(GFA_DebugWSOBBox))) {
+        ShowBBox(GFA_DebugWSBBox);
+        ShowOBBox(GFA_DebugWSOBBox);
+        if (!LineVisible(GFA_DebugCollTrj)) {
+            var string s; s = GFA_DebugTrajectory("");
+        };
         return "Debug weak spot on.";
     } else {
+        HideBBox(GFA_DebugWSBBox);
+        HideOBBox(GFA_DebugWSOBBox);
         return "Debug weak spot off.";
     };
 };
@@ -81,13 +122,13 @@ func string GFA_DebugWeakspot(var string command) {
  * Console function to show free aiming shooting statistics. This function is registered as console command.
  * When entered in the console, the current shooting statistics are displayed as the console output.
  */
-func string GFA_GetShootingStats(var string command) {
+func string GFA_GetShootingStats(var string args) {
     if (!GFA_ACTIVE) || (!(GFA_Flags & GFA_RANGED)) {
         return "Shooting statistics not available. (Requires free aiming for ranged weapons)";
     };
 
     // Prevent execution if 'reset' command is called
-    if (!Hlp_StrCmp(command, "")) && (!Hlp_StrCmp(command, " ")) {
+    if (!Hlp_StrCmp(args, "")) && (!Hlp_StrCmp(args, " ")) {
         return "";
     };
 
@@ -128,7 +169,7 @@ func string GFA_GetShootingStats(var string command) {
  * Console function to reset free aiming shooting statistics. This function is registered as console command.
  * When entered in the console, the current shooting statistics are reset to zero.
  */
-func string GFA_ResetShootingStats(var string command) {
+func string GFA_ResetShootingStats(var string _) {
     GFA_StatsShots = 0;
     GFA_StatsHits = 0;
     GFA_StatsCriticalHits = 0;
@@ -140,7 +181,7 @@ func string GFA_ResetShootingStats(var string command) {
  * Console function to show GFA version. This function is registered as console command.
  * When entered in the console, the current GFA version is displayed as the console output.
  */
-func string GFA_GetVersion(var string command) {
+func string GFA_GetVersion(var string _) {
     return GFA_VERSION;
 };
 
@@ -149,7 +190,7 @@ func string GFA_GetVersion(var string command) {
  * Console function to show GFA license. This function is registered as console command.
  * When entered in the console, the GFA license information is displayed as the console output.
  */
-func string GFA_GetLicense(var string command) {
+func string GFA_GetLicense(var string _) {
     var int s; s = SB_New();
     SB(GFA_VERSION);
     SB(", Copyright ");
@@ -176,7 +217,7 @@ func string GFA_GetLicense(var string command) {
  * Console function to show GFA info. This function is registered as console command.
  * When entered in the console, the GFA config is displayed as the console output.
  */
-func string GFA_GetInfo(var string command) {
+func string GFA_GetInfo(var string _) {
     const string onOff[2] = {"OFF", "ON"};
 
     var int s; s = SB_New();

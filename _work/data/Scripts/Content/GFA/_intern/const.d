@@ -34,6 +34,7 @@ const int    GFA_LEGO_FLAGS         = LeGo_HookEngine       // For initializing 
                                     | LeGo_FrameFunctions   // For projectile gravity
                                     | LeGo_ConsoleCommands  // For console commands and debugging
                                     | LeGo_Random           // For scattering and other uses of random numbers
+                                    | LeGo_Draw3D           // For debug visualizations
                                     | LeGo_PrintS;          // To be safe (in case it is used in critical hit event)
 
 var   int    GFA_Flags;                                     // Flags for initialization of GFA
@@ -130,6 +131,7 @@ const float  GFA_SCATTER_HIT        = 2.5;                  // (Visual angle)/2 
 const float  GFA_SCATTER_MISS       = 4.2;                  // (Visual angle)/2 outside which everything is a miss
 const float  GFA_SCATTER_MAX        = 6.0;                  // (Visual angle)/2 of maximum scatter (all in degrees)
 
+var   int    GFA_CollTrj[6];                                // Projectile trajectory of last collision candidate
 var   int    GFA_LastHitCritical;                           // Was the last hit critical (will be reset immediately)
 
 
@@ -139,12 +141,12 @@ var   int    GFA_StatsShots;                                // Shooting statisti
 var   int    GFA_StatsHits;                                 // Shooting statistics: Count positive hits on target
 var   int    GFA_StatsCriticalHits;                         // Shooting statistics: Count number of critical hits
 
-var   int    GFA_DebugTRTrj[6];                             // Trace ray trajectory for debug visualization
-var   int    GFA_DebugTRBBox[6];                            // Trace ray intersection for debug visualization
-var   int    GFA_DebugTRPrevVob;                            // Trace ray detected vob bounding box pointer for debugging
-var   int    GFA_DebugCollTrj[6];                           // Projectile trajectory for debug visualization
-var   int    GFA_DebugWSBBox[6];                            // Weak spot bounding box for debug visualization
-var   int    GFA_DebugWSOBBox[17];                          // Weak spot oriented bounding box for debug visualization
+var   int    GFA_DebugTRTrj;                                // Handle of trace ray trajectory
+var   int    GFA_DebugTRBBox;                               // Handle of trace ray intersection
+var   int    GFA_DebugTRBBoxVob;                            // Handle of trace ray detected vob bounding box
+var   int    GFA_DebugCollTrj;                              // Handle of projectile trajectory
+var   int    GFA_DebugWSBBox;                               // Handle of weak spot bounding box
+var   int    GFA_DebugWSOBBox;                              // Handle of weak spot oriented bounding box
 
 
 /* Numerical constants */

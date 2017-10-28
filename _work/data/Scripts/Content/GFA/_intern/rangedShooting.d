@@ -619,14 +619,14 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
     };
 
     // Direction of collision line: projectile position subtracted from the last predicted position of the rigid body
-    GFA_DebugCollTrj[0] = projectile._zCVob_trafoObjToWorld[ 3];
-    GFA_DebugCollTrj[1] = projectile._zCVob_trafoObjToWorld[ 7];
-    GFA_DebugCollTrj[2] = projectile._zCVob_trafoObjToWorld[11];
-    GFA_DebugCollTrj[3] = subf(MEM_ReadInt(rBody+zCRigidBody_xPos_offset), GFA_DebugCollTrj[0]);
-    GFA_DebugCollTrj[4] = subf(MEM_ReadInt(rBody+zCRigidBody_xPos_offset+4), GFA_DebugCollTrj[1]);
-    GFA_DebugCollTrj[5] = subf(MEM_ReadInt(rBody+zCRigidBody_xPos_offset+8), GFA_DebugCollTrj[2]);
-    var int fromPosPtr; fromPosPtr = _@(GFA_DebugCollTrj);
-    var int dirPosPtr; dirPosPtr = _@(GFA_DebugCollTrj)+sizeof_zVEC3;
+    GFA_CollTrj[0] = projectile._zCVob_trafoObjToWorld[ 3];
+    GFA_CollTrj[1] = projectile._zCVob_trafoObjToWorld[ 7];
+    GFA_CollTrj[2] = projectile._zCVob_trafoObjToWorld[11];
+    GFA_CollTrj[3] = subf(MEM_ReadInt(rBody+zCRigidBody_xPos_offset), GFA_CollTrj[0]);
+    GFA_CollTrj[4] = subf(MEM_ReadInt(rBody+zCRigidBody_xPos_offset+4), GFA_CollTrj[1]);
+    GFA_CollTrj[5] = subf(MEM_ReadInt(rBody+zCRigidBody_xPos_offset+8), GFA_CollTrj[2]);
+    var int fromPosPtr; fromPosPtr = _@(GFA_CollTrj);
+    var int dirPosPtr; dirPosPtr = _@(GFA_CollTrj)+sizeof_zVEC3;
 
     // Direction vector needs to be normalized
     const int call = 0;
@@ -644,12 +644,12 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
     dist = addf(dist, FLOAT3C); // Add the 3m-shift of the start (see below)
 
     // Adjust length of ray (large models have huge bounding boxes)
-    GFA_DebugCollTrj[0] = subf(GFA_DebugCollTrj[0], mulf(GFA_DebugCollTrj[3], FLOAT3C)); // Start 3m behind projectile
-    GFA_DebugCollTrj[1] = subf(GFA_DebugCollTrj[1], mulf(GFA_DebugCollTrj[4], FLOAT3C));
-    GFA_DebugCollTrj[2] = subf(GFA_DebugCollTrj[2], mulf(GFA_DebugCollTrj[5], FLOAT3C));
-    GFA_DebugCollTrj[3] = mulf(GFA_DebugCollTrj[3], dist); // Trace trajectory from the edge through the bounding box
-    GFA_DebugCollTrj[4] = mulf(GFA_DebugCollTrj[4], dist);
-    GFA_DebugCollTrj[5] = mulf(GFA_DebugCollTrj[5], dist);
+    GFA_CollTrj[0] = subf(GFA_CollTrj[0], mulf(GFA_CollTrj[3], FLOAT3C)); // Start 3m behind projectile
+    GFA_CollTrj[1] = subf(GFA_CollTrj[1], mulf(GFA_CollTrj[4], FLOAT3C));
+    GFA_CollTrj[2] = subf(GFA_CollTrj[2], mulf(GFA_CollTrj[5], FLOAT3C));
+    GFA_CollTrj[3] = mulf(GFA_CollTrj[3], dist); // Trace trajectory from the edge through the bounding box
+    GFA_CollTrj[4] = mulf(GFA_CollTrj[4], dist);
+    GFA_CollTrj[5] = mulf(GFA_CollTrj[5], dist);
 
     // Perform refined collision check
     GFA_AllowSoftSkinTraceRay(1);
@@ -705,9 +705,15 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
     MEM_Free(trRep);
 
     // Add direction vector to position vector to form a line (for debug visualization)
-    GFA_DebugCollTrj[3] = addf(GFA_DebugCollTrj[0], GFA_DebugCollTrj[3]);
-    GFA_DebugCollTrj[4] = addf(GFA_DebugCollTrj[1], GFA_DebugCollTrj[4]);
-    GFA_DebugCollTrj[5] = addf(GFA_DebugCollTrj[2], GFA_DebugCollTrj[5]);
+    if (LineVisible(GFA_DebugCollTrj)) {
+        UpdateLine3(GFA_DebugCollTrj,
+                    GFA_CollTrj[0],
+                    GFA_CollTrj[1],
+                    GFA_CollTrj[2],
+                    addf(GFA_CollTrj[0], GFA_CollTrj[3]),
+                    addf(GFA_CollTrj[1], GFA_CollTrj[4]),
+                    addf(GFA_CollTrj[2], GFA_CollTrj[5]), -1);
+    };
 
     return +hit;
 };

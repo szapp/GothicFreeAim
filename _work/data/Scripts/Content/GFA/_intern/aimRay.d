@@ -293,26 +293,33 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
         var int distHitToCam; distHitToCam = addf(distHitToPlayer, distCamToPlayer);
 
         // Debug visualization
-        if (GFA_DEBUG_TRACERAY) {
+        if (LineVisible(GFA_DebugTRTrj)) {
             // Trace ray intersection
-            GFA_DebugTRBBox[0] = subf(intersection[0], mkf(5));
-            GFA_DebugTRBBox[1] = subf(intersection[1], mkf(5));
-            GFA_DebugTRBBox[2] = subf(intersection[2], mkf(5));
-            GFA_DebugTRBBox[3] = addf(GFA_DebugTRBBox[0], mkf(10));
-            GFA_DebugTRBBox[4] = addf(GFA_DebugTRBBox[1], mkf(10));
-            GFA_DebugTRBBox[5] = addf(GFA_DebugTRBBox[2], mkf(10));
+            var int f5; f5 = mkf(5); // Margin
+            UpdateBBox3(GFA_DebugTRBBox,
+                        subf(intersection[0], f5),
+                        subf(intersection[1], f5),
+                        subf(intersection[2], f5),
+                        addf(intersection[0], f5),
+                        addf(intersection[1], f5),
+                        addf(intersection[2], f5), -1);
 
             // Trace ray trajectory
-            MEM_CopyBytes(_@(traceRayVec), _@(GFA_DebugTRTrj), sizeof_zVEC3);
-            GFA_DebugTRTrj[3] = addf(traceRayVec[0], traceRayVec[3]);
-            GFA_DebugTRTrj[4] = addf(traceRayVec[1], traceRayVec[4]);
-            GFA_DebugTRTrj[5] = addf(traceRayVec[2], traceRayVec[5]);
+            UpdateLine3(GFA_DebugTRTrj,
+                        traceRayVec[0],
+                        traceRayVec[1],
+                        traceRayVec[2],
+                        addf(traceRayVec[0], traceRayVec[3]),
+                        addf(traceRayVec[1], traceRayVec[4]),
+                        addf(traceRayVec[2], traceRayVec[5]), -1);
 
             // Focus vob bounding box
             if (foundVob) {
-                GFA_DebugTRPrevVob = foundVob+zCVob_bbox3D_offset;
+                UpdateBBoxAddr(GFA_DebugTRBBoxVob, foundVob+zCVob_bbox3D_offset, -1);
             } else {
-                GFA_DebugTRPrevVob = 0;
+                const int QUARTER_BBOX_SIZE = sizeof_zTBBox3D/4;
+                var int empty[QUARTER_BBOX_SIZE];
+                UpdateBBoxAddr(GFA_DebugTRBBoxVob, _@(empty), -1);
             };
         };
     };
