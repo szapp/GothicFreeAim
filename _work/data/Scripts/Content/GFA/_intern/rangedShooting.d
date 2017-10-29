@@ -712,7 +712,7 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
                     GFA_CollTrj[2],
                     addf(GFA_CollTrj[0], GFA_CollTrj[3]),
                     addf(GFA_CollTrj[1], GFA_CollTrj[4]),
-                    addf(GFA_CollTrj[2], GFA_CollTrj[5]), -1);
+                    addf(GFA_CollTrj[2], GFA_CollTrj[5]));
     };
 
     return +hit;

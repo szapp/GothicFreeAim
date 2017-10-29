@@ -302,7 +302,7 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
                         subf(intersection[2], f5),
                         addf(intersection[0], f5),
                         addf(intersection[1], f5),
-                        addf(intersection[2], f5), -1);
+                        addf(intersection[2], f5));
 
             // Trace ray trajectory
             UpdateLine3(GFA_DebugTRTrj,
@@ -311,15 +311,15 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
                         traceRayVec[2],
                         addf(traceRayVec[0], traceRayVec[3]),
                         addf(traceRayVec[1], traceRayVec[4]),
-                        addf(traceRayVec[2], traceRayVec[5]), -1);
+                        addf(traceRayVec[2], traceRayVec[5]));
 
             // Focus vob bounding box
             if (foundVob) {
-                UpdateBBoxAddr(GFA_DebugTRBBoxVob, foundVob+zCVob_bbox3D_offset, -1);
+                UpdateBBoxAddr(GFA_DebugTRBBoxVob, foundVob+zCVob_bbox3D_offset);
             } else {
                 const int QUARTER_BBOX_SIZE = sizeof_zTBBox3D/4;
                 var int empty[QUARTER_BBOX_SIZE];
-                UpdateBBoxAddr(GFA_DebugTRBBoxVob, _@(empty), -1);
+                UpdateBBoxAddr(GFA_DebugTRBBoxVob, _@(empty));
             };
         };
     };

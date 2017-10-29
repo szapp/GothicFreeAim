@@ -135,14 +135,14 @@ func int GFA_CH_DetectIntersectionWithNode(var int npcPtr, var string nodeName, 
 
         // Debug visualization
         if (BBoxVisible(GFA_DebugWSBBox)) {
-            UpdateBBoxAddr(GFA_DebugWSBBox, bboxPtr, -1);
+            UpdateBBoxAddr(GFA_DebugWSBBox, bboxPtr);
         };
 
         // Prevent debug drawing of oriented bounding box
         if (OBBoxVisible(GFA_DebugWSOBBox)) {
             const int QUARTER_BBOX_SIZE = sizeof_zTBBox3D/4;
             var int emptyBBox[QUARTER_BBOX_SIZE];
-            UpdateOBBoxAddr(GFA_DebugWSOBBox, _@(emptyBBox), -1);
+            UpdateOBBoxAddr(GFA_DebugWSOBBox, _@(emptyBBox));
         };
 
         // Detect collision
@@ -210,14 +210,14 @@ func int GFA_CH_DetectIntersectionWithNode(var int npcPtr, var string nodeName, 
 
     // Debug visualization
     if (OBBoxVisible(GFA_DebugWSOBBox)) {
-        UpdateOBBoxAddr(GFA_DebugWSOBBox, obboxPtr, -1);
+        UpdateOBBoxAddr(GFA_DebugWSOBBox, obboxPtr);
     };
 
     // Prevent debug drawing of bounding box
     if (BBoxVisible(GFA_DebugWSBBox)) {
         const int QUARTER_OBBOX_SIZE = sizeof_zCOBBox3D/4;
         var int emptyOBBox[QUARTER_OBBOX_SIZE];
-        UpdateBBoxAddr(GFA_DebugWSBBox, _@(emptyOBBox), -1);
+        UpdateBBoxAddr(GFA_DebugWSBBox, _@(emptyOBBox));
     };
 
     // Detect collision
