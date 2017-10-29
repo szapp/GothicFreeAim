@@ -26,12 +26,129 @@
  * Initialize all hooks for the free aiming feature. This function is called from GFA_InitOnce().
  */
 func void GFA_InitFeatureFreeAiming() {
+    var int i;
+
     // Menu update
     HookEngineF(cGameManager__ApplySomeSettings_rtn, 6, GFA_UpdateStatus); // Update settings when leaving menu
 
-    // The hook initializations for free aiming have been moved into a dedicated function GFA_AddFreeAimingHooks(). This
-    // was done to allow removing the hooks dynamically by changing the game menu setting of free aiming, with the
-    // complementary funciton GFA_RemoveFreeAimingHooks().
+    // Controls
+    MEM_Info("Initializing free aiming mouse controls.");
+    HookEngineF(mouseUpdate, 5, GFA_TurnPlayerModel); // Rotate the player model by mouse input
+    if (GOTHIC_BASE_VERSION == 1) {
+        MemoryProtectionOverride(oCAIHuman__MagicMode_turnToTarget, 5); // G1: Prevent auto turning in spell combat
+        HookEngineF(oCNpc__OnDamage_Anim_stumbleAniName, 5, GFA_AdjustDamageAnimation); // Additional hurt animation
+    } else {
+        MemoryProtectionOverride(oCNpc__TurnToEnemy_camCheck, 6); // G2: Prevent auto turning (target lock)
+    };
+    HookEngineF(oCNpc__OnDamage_Anim_gotHitAniName, 5, GFA_AdjustDamageAnimation); // Adjust hurt animation while aiming
+    MemoryProtectionOverride(zCModel__TraceRay_softSkinCheck, 3); // Prepare allowing soft skin model trace ray
+
+    // Free aiming for ranged combat (aiming and shooting)
+    if (GFA_Flags & GFA_RANGED) {
+        MEM_Info("Initializing free aiming for ranged combat.");
+        HookEngineF(oCAIHuman__BowMode_notAiming, 6, GFA_RangedIdle); // Fix focus collection while not aiming
+        HookEngineF(oCAIHuman__BowMode_interpolateAim, 5, GFA_RangedAiming); // Interpolate aiming animation
+        HookEngineF(oCAIArrow__SetupAIVob, 6, GFA_SetupProjectile); // Setup projectile trajectory (shooting)
+        HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_ResetProjectileGravity); // Reset gravity on impact
+        HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_OverwriteHitChance); // Manipulate hit chance
+        MemoryProtectionOverride(oCAIHuman__CheckFocusVob_ranged, 1); // Prevent toggling focus in ranged combat
+        HookEngineF(zCModel__CalcModelBBox3DWorld, 6, GFA_EnlargeHumanModelBBox); // Include head in model bounding box
+        HookEngineF(oCAIArrow__CanThisCollideWith_positive, MEMINT_SwitchG1G2(6, 7), GFA_ExtendCollisionCheck);
+        if (GFA_STRAFING) {
+            HookEngineF(oCAIHuman__BowMode_rtn, 7, GFA_RangedLockMovement); // Allow strafing or not when falling
+        };
+
+        // Aiming condition (detect aiming onset and overwrite aiming condition if GFA_STRAFING)
+        MemoryProtectionOverride(oCAIHuman__BowMode_aimCondition, 5);
+        repeat(i, 5);
+            MEM_WriteByte(oCAIHuman__BowMode_aimCondition+i, ASMINT_OP_nop); // Erase condition to make room for hook
+        end;
+        HookEngineF(oCAIHuman__BowMode_aimCondition, 5, GFA_RangedAimingCondition); // Replace condition with own
+
+        // Gothic 2 controls
+        if (GOTHIC_BASE_VERSION == 2) {
+            MEM_Info("Initializing free aiming Gothic 2 controls.");
+            MemoryProtectionOverride(oCAIHuman__BowMode_g2ctrlCheck, 6); // Skip jump to G2 controls: jz to 0x696391
+            MemoryProtectionOverride(oCAIHuman__BowMode_shootingKey, 2); // Shooting key: push 3
+            MemoryProtectionOverride(oCAIHuman__PC_ActionMove_aimingKey, 5); // Aim key: mov eax [esp+8+4], push eax
+            HookEngineF(cGameManager__HandleEvent_clearKeyBuffer, 6, GFA_CancelOUsDontClearKeyBuffer); // Fix key buffer
+        };
+
+        // Fix knockout by ranged weapon bug (also allow customization with GFA_CUSTOM_COLLISIONS)
+        MEM_Info("Initializing fixed damage behavior for ranged weapons.");
+        HookEngineF(oCAIArrow__ReportCollisionToAI_damage, 5, GFA_CC_SetDamageBehavior);
+
+        // Fix dropped projectile AI bug
+        MEM_Info("Initializing dropped projectiles AI bug fix.");
+        MemoryProtectionOverride(oCAIVobMove__DoAI_stopMovement, 7); // First erase a call, to make room for hook
+        repeat(i, 7);
+            MEM_WriteByte(oCAIVobMove__DoAI_stopMovement+i, ASMINT_OP_nop);
+        end;
+        HookEngineF(oCAIVobMove__DoAI_stopMovement, 7, GFA_FixDroppedProjectileAI); // Rewrite what has been overwritten
+    };
+
+    // Free aiming for spells
+    if (GFA_Flags & GFA_SPELLS) {
+        MEM_Info("Initializing free aiming for spell combat.");
+        HookEngineF(oCAIHuman__MagicMode, 7, GFA_SpellAiming); // Manage focus collection and reticle
+        HookEngineF(oCSpell__Setup_initFallbackNone, 6, GFA_SetupSpell); // Set spell FX trajectory (shooting)
+        HookEngineF(oCNpc__EV_Strafe_commonOffset, 5, GFA_FixSpellOnStrafe); // Fix spell FX after interrupted casting
+        MemoryProtectionOverride(oCAIHuman__CheckFocusVob_spells, 1); // Prevent toggling focus in spell combat
+        if (GFA_STRAFING) {
+            HookEngineF(oCAIHuman__MagicMode_rtn, 7, GFA_SpellLockMovement); // Lock movement while aiming
+        };
+
+        // Fixes for Gothic 2
+        if (GOTHIC_BASE_VERSION == 2) {
+            HookEngineF(oCVisualFX__ProcessCollision_checkTarget, 6, GFA_SpellFixTarget); // Match target with collision
+            MemoryProtectionOverride(oCNpc__EV_Strafe_magicCombat, 5); // Disable magic during default strafing
+            HookEngineF(oCNpc__EV_Strafe_g2ctrl, 6, GFA_SpellStrafeReticle); // Update reticle while default strafing
+        };
+
+        // Fix open inventory bug
+        MEM_Info("Initializing open inventory bug fix.");
+        MemoryProtectionOverride(oCGame__HandleEvent_openInvCheck, 5); // First erase a call, to make room for hook
+        repeat(i, 5);
+            MEM_WriteByte(oCGame__HandleEvent_openInvCheck+i, ASMINT_OP_nop);
+        end;
+        HookEngineF(oCGame__HandleEvent_openInvCheck, 5, GFA_FixOpenInventory); // Rewrite what has been overwritten
+    };
+
+    // Treat special body states (lying or sliding)
+    HookEngineF(zCAIPlayer__IsSliding_true, 5, GFA_TreatBodyStates); // Called during sliding
+    HookEngineF(oCAIHuman__PC_CheckSpecialStates_lie, 5, GFA_TreatBodyStates); // Called when lying after a fall
+    HookEngineF(oCAniCtrl_Human__SearchStandAni_walkmode, 6, GFA_FixStandingBodyState); // Fix bug with wrong body state
+    HookEngineF(oCNpc__SetWeaponMode2_walkmode, 6, GFA_FixStandingBodyState); // Fix bug with wrong body state
+    // Prevent focus collection during jumping and falling (necessary for Gothic 2 only)
+    if (GOTHIC_BASE_VERSION == 2) && (GFA_NO_AIM_NO_FOCUS) {
+        HookEngineF(oCAIHuman__PC_ActionMove_bodyState, 6, GFA_PreventFocusCollectionBodyStates);
+    };
+
+    // Do not interrupt strafing by oCNpc::Interrupt()
+    if (GFA_STRAFING) {
+        HookEngineF(oCNpc__Interrupt_stopAnis, 5, GFA_DontInterruptStrafing);
+        MemoryProtectionOverride(oCNpc__Interrupt_stopAnisLayerA, 1);
+    };
+
+    // Reticle
+    MEM_Info("Initializing reticle.");
+    HookEngineF(oCNpc__SetWeaponMode_player, 6, GFA_ResetOnWeaponSwitch); // Hide reticle, hide aim FX, reset draw force
+
+    // Fix player turning NPCs on attack run
+    // Prevent the player from controlling the turning of NPCs that are performing an attack run. This inherent Gothic 2
+    // bug becomes very obvious with free aiming and thus needs to be fixed.
+    // To still allow the player to turn while performing an attack run, the solution from the link below is extended,
+    // to squeeze in a check whether the character in question is the player.
+    //
+    // Inspired by: http://forum.worldofplayers.de/forum/threads/879891?p=14886885
+    if (GOTHIC_BASE_VERSION == 2) {
+        MEM_Info("Initializing NPC attack-run turning bug fix.");
+        MemoryProtectionOverride(oCNpc__EV_AttackRun_playerTurn, 7); // Erase call to oCAIHuman::PC_Turnings()
+        repeat(i, 7);
+            MEM_WriteByte(oCNpc__EV_AttackRun_playerTurn+i, ASMINT_OP_nop);
+        end;
+        HookEngineF(oCNpc__EV_AttackRun_playerTurn, 7, GFA_FixNpcAttackRun); // Re-write what has been overwritten
+    };
 
     // Read INI Settings
     MEM_Info("Initializing entries in Gothic.ini.");
@@ -98,7 +215,6 @@ func void GFA_InitFeatureCustomCollisions() {
     // Extend and refine collision detection on vobs
     if ((GFA_COLL_PRIOR_NPC == -1) || ((GFA_TRIGGER_COLL_FIX) && (GOTHIC_BASE_VERSION == 2))) {
         HookEngineF(oCAIArrow__CanThisCollideWith_positive, MEMINT_SwitchG1G2(6, 7), GFA_ExtendCollisionCheck);
-        GFA_INIT_COLL_CHECK = TRUE;
     };
 };
 
