@@ -23,6 +23,21 @@
 
 
 /*
+ * Overwrite opcode with nop at a span of addresses
+ */
+func void writeNOP(var int addr, var int len) {
+    if (IsHooked(addr)) {
+        MEM_Error("Trying to overwrite hook");
+        return;
+    };
+    MemoryProtectionOverride(addr, len);
+    repeat(i, len); var int i;
+        MEM_WriteByte(addr+i, ASMINT_OP_nop);
+    end;
+};
+
+
+/*
  * Return the current NPC instance of the player. If the player is not initialized, return a null pointer. It is
  * recommended to use Hlp_IsValidNpc() afterwards.
  */

@@ -45,6 +45,8 @@ const int    GFA_CUSTOM_COLLISIONS  = 1<<3;                 // Custom collision/
 const int    GFA_CRITICALHITS       = 1<<4;                 // Critical hits for ranged combat (e.g. head shots)
 const int    GFA_ALL                = (1<<5) - 1;           // Initialize all features
 
+const int    GFA_INITIALIZED        = 0;                    // Indicator whether GFA was initialized
+
 
 /* Free aiming and free movement */
 

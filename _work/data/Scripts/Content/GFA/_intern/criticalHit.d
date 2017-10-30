@@ -92,7 +92,8 @@ func int GFA_CH_GetCriticalHitAutoAim_(var C_Npc target) {
 func int GFA_CH_DetectIntersectionWithNode(var int npcPtr, var string nodeName, var int debugInfoPtr) {
     // Allow empty string pointer
     if (!debugInfoPtr) {
-        debugInfoPtr = _@s("");
+        var string str;
+        debugInfoPtr = _@s(str);
     };
 
     // Retrieve model of the NPC

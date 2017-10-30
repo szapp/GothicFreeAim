@@ -26,8 +26,6 @@
  * Initialize all hooks for the free aiming feature. This function is called from GFA_InitOnce().
  */
 func void GFA_InitFeatureFreeAiming() {
-    var int i;
-
     // Menu update
     HookEngineF(cGameManager__ApplySomeSettings_rtn, 6, GFA_UpdateStatus); // Update settings when leaving menu
 
@@ -52,17 +50,14 @@ func void GFA_InitFeatureFreeAiming() {
         HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_ResetProjectileGravity); // Reset gravity on impact
         HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_OverwriteHitChance); // Manipulate hit chance
         MemoryProtectionOverride(oCAIHuman__CheckFocusVob_ranged, 1); // Prevent toggling focus in ranged combat
-        HookEngineF(zCModel__CalcModelBBox3DWorld, 6, GFA_EnlargeHumanModelBBox); // Include head in model bounding box
+        HookEngineF(zCModel__CalcModelBBox3DWorld_rtn, 6, GFA_EnlargeHumanModelBBox); // Include head in model bbox
         HookEngineF(oCAIArrow__CanThisCollideWith_positive, MEMINT_SwitchG1G2(6, 7), GFA_ExtendCollisionCheck);
         if (GFA_STRAFING) {
             HookEngineF(oCAIHuman__BowMode_rtn, 7, GFA_RangedLockMovement); // Allow strafing or not when falling
         };
 
         // Aiming condition (detect aiming onset and overwrite aiming condition if GFA_STRAFING)
-        MemoryProtectionOverride(oCAIHuman__BowMode_aimCondition, 5);
-        repeat(i, 5);
-            MEM_WriteByte(oCAIHuman__BowMode_aimCondition+i, ASMINT_OP_nop); // Erase condition to make room for hook
-        end;
+        writeNOP(oCAIHuman__BowMode_aimCondition, 5);
         HookEngineF(oCAIHuman__BowMode_aimCondition, 5, GFA_RangedAimingCondition); // Replace condition with own
 
         // Gothic 2 controls
@@ -80,10 +75,7 @@ func void GFA_InitFeatureFreeAiming() {
 
         // Fix dropped projectile AI bug
         MEM_Info("Initializing dropped projectiles AI bug fix.");
-        MemoryProtectionOverride(oCAIVobMove__DoAI_stopMovement, 7); // First erase a call, to make room for hook
-        repeat(i, 7);
-            MEM_WriteByte(oCAIVobMove__DoAI_stopMovement+i, ASMINT_OP_nop);
-        end;
+        writeNOP(oCAIVobMove__DoAI_stopMovement, 7); // First erase a call, to make room for hook
         HookEngineF(oCAIVobMove__DoAI_stopMovement, 7, GFA_FixDroppedProjectileAI); // Rewrite what has been overwritten
     };
 
@@ -104,13 +96,12 @@ func void GFA_InitFeatureFreeAiming() {
             MemoryProtectionOverride(oCNpc__EV_Strafe_magicCombat, 5); // Disable magic during default strafing
             HookEngineF(oCNpc__EV_Strafe_g2ctrl, 6, GFA_SpellStrafeReticle); // Update reticle while default strafing
         };
+    };
 
-        // Fix open inventory bug
+    // Fix open inventory bug
+    if (GFA_Flags & GFA_SPELLS) || (GFA_STRAFING) {
         MEM_Info("Initializing open inventory bug fix.");
-        MemoryProtectionOverride(oCGame__HandleEvent_openInvCheck, 5); // First erase a call, to make room for hook
-        repeat(i, 5);
-            MEM_WriteByte(oCGame__HandleEvent_openInvCheck+i, ASMINT_OP_nop);
-        end;
+        writeNOP(oCGame__HandleEvent_openInvCheck, 5); // First erase a call, to make room for hook
         HookEngineF(oCGame__HandleEvent_openInvCheck, 5, GFA_FixOpenInventory); // Rewrite what has been overwritten
     };
 
@@ -143,10 +134,7 @@ func void GFA_InitFeatureFreeAiming() {
     // Inspired by: http://forum.worldofplayers.de/forum/threads/879891?p=14886885
     if (GOTHIC_BASE_VERSION == 2) {
         MEM_Info("Initializing NPC attack-run turning bug fix.");
-        MemoryProtectionOverride(oCNpc__EV_AttackRun_playerTurn, 7); // Erase call to oCAIHuman::PC_Turnings()
-        repeat(i, 7);
-            MEM_WriteByte(oCNpc__EV_AttackRun_playerTurn+i, ASMINT_OP_nop);
-        end;
+        writeNOP(oCNpc__EV_AttackRun_playerTurn, 7); // Erase call to oCAIHuman::PC_Turnings()
         HookEngineF(oCNpc__EV_AttackRun_playerTurn, 7, GFA_FixNpcAttackRun); // Re-write what has been overwritten
     };
 
@@ -189,24 +177,15 @@ func void GFA_InitFeatureCustomCollisions() {
     HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_CC_ProjectileCollisionWithNpc); // Hit reg/coll on NPCs
     HookEngineF(oCAIArrow__ReportCollisionToAI_damage, 5, GFA_CC_SetDamageBehavior); // Change knockout behavior
     if (GOTHIC_BASE_VERSION == 1) {
-        MemoryProtectionOverride(oCAIArrow__ReportCollisionToAI_destroyPrj, 7); // Disable destroying of projectiles
-        repeat(i, 7); var int i;
-            MEM_WriteByte(oCAIArrow__ReportCollisionToAI_destroyPrj+i, ASMINT_OP_nop); // Disable fixed destruction
-        end;
+        writeNOP(oCAIArrow__ReportCollisionToAI_destroyPrj, 7); // Disable destroying of projectiles
         HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_CC_ProjectileCollisionWithWorld); // Collision world
         MemoryProtectionOverride(oCAIArrow__ReportCollisionToAI_keepPlyStrp, 2); // Keep poly strip after coll
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_keepPlyStrp, /*EB*/ 235); // jmp
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_keepPlyStrp+1, /*3D*/ 61); // to 0x619648
     } else {
         // Gothic 2
-        MemoryProtectionOverride(oCAIArrowBase__ReportCollisionToAI_PFXon1, 7); // Prevent too early setting of dust PFX
-        MemoryProtectionOverride(oCAIArrowBase__ReportCollisionToAI_PFXon2, 7);
-        repeat(i, 7);
-            MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon1+i, ASMINT_OP_nop); // First occurrence
-        end;
-        repeat(i, 7);
-            MEM_WriteByte(oCAIArrowBase__ReportCollisionToAI_PFXon2+i, ASMINT_OP_nop); // Second occurrence
-        end;
+        writeNOP(oCAIArrowBase__ReportCollisionToAI_PFXon1, 7); // Prevent too early setting of dust PFX
+        writeNOP(oCAIArrowBase__ReportCollisionToAI_PFXon2, 7);
         HookEngineF(oCAIArrowBase__ReportCollisionToAI_collVob, 5, GFA_CC_ProjectileCollisionWithWorld); // Vobs
         HookEngineF(oCAIArrowBase__ReportCollisionToAI_collWld, 5, GFA_CC_ProjectileCollisionWithWorld); // Static world
         MemoryProtectionOverride(oCAIArrowBase__ReportCollisionToAI_collNpc, 2); // Set collision behavior on NPCs
@@ -247,6 +226,13 @@ func void GFA_InitFeatureReuseProjectiles() {
     // Reduce number of auto created munition items for NPCs (exploit on ransacking downed/killed NPCs)
     MemoryProtectionOverride(oCNpc__RefreshNpc_createAmmoIfNone, 1);
     MEM_WriteByte(oCNpc__RefreshNpc_createAmmoIfNone, 5); // Reduce to five projectiles (default 50)
+
+    // Fix dropped projectile AI bug
+    if (!IsHookF(oCAIVobMove__DoAI_stopMovement, GFA_FixDroppedProjectileAI)) {
+        MEM_Info("Initializing dropped projectiles AI bug fix.");
+        writeNOP(oCAIVobMove__DoAI_stopMovement, 7); // First erase a call, to make room for hook
+        HookEngineF(oCAIVobMove__DoAI_stopMovement, 7, GFA_FixDroppedProjectileAI); // Rewrite what has been overwritten
+    };
 };
 
 
@@ -273,8 +259,7 @@ func int GFA_InitOnce() {
     MEM_Info("");
 
     // Add emergency-lock, in case a mod-project is released with a critical bug related to GFA
-    if (MEM_GothOptExists("GFA", "emergencyLock"))
-    || (MEM_ModOptExists("OVERRIDES", "GFA.emergencyLock")) {
+    if (MEM_ModOptExists("OVERRIDES", "GFA.emergencyLock")) {
         MEM_SendToSpy(zERR_TYPE_WARN, "GFA emergency lock active");
         MEM_Info("Remove GFA.emergencyLock from Gothic.INI or override in Mod-INI to enable GFA.");
         return FALSE;
@@ -397,13 +382,12 @@ func void GFA_Init(var int flags) {
     GFA_Flags = flags;
 
     // Perform only once per session
-    const int INITIALIZED = 0;
-    if (!INITIALIZED) {
+    if (!GFA_INITIALIZED) {
         if (!GFA_InitOnce()) {
             MEM_Info(ConcatStrings(GFA_VERSION, " failed to initialize."));
             return;
         };
-        INITIALIZED = 1;
+        GFA_INITIALIZED = 1;
     };
 
     // Perform for every new session and on every load and level change
