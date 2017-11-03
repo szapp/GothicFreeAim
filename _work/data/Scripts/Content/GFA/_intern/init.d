@@ -261,7 +261,7 @@ func int GFA_InitOnce() {
     // Add emergency-lock, in case a mod-project is released with a critical bug related to GFA
     if (MEM_ModOptExists("OVERRIDES", "GFA.emergencyLock")) {
         MEM_SendToSpy(zERR_TYPE_WARN, "GFA emergency lock active");
-        MEM_Info("Remove GFA.emergencyLock from Gothic.INI or override in Mod-INI to enable GFA.");
+        MEM_Info("Remove GFA.emergencyLock override in Mod-INI to enable GFA.");
         return FALSE;
     };
 

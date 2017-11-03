@@ -663,7 +663,7 @@ func int GFA_CC_DisableProjectileCollisionOnRebound(var int vobPtr, var int arro
 
 /*
  * Fix trigger collision bug. When shooting a projectile inside a trigger with certain properties, the projectile
- * collides continuously and causes a nerve recking sound. Any trigger collising with a projectile is checked for
+ * collides continuously and causes a nerve wrecking sound. Any trigger colliding with a projectile is checked for
  * certain properties to prevent the collision. This function is called from GFA_ExtendCollisionCheck() if
  * GFA_TRIGGER_COLL_FIX == true.
  */

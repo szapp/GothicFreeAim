@@ -15,8 +15,8 @@
  * a critical hit occurred; but only if free aiming is enabled and GFA_TRUE_HITCHANCE == true. For critical hits without
  * free aiming (or scattering) see GFA_GetCriticalHitAutoAim() below.
  *
- * This function here returns a definition of the critical hit zone (weak spot) based on the NPC that it hit or the
- * weapon used. A weak spot is defined by the name of a bone of the model, dimensions and modified damage.
+ * This function here defines the critical hit zone (weak spot) based on the NPC that it hit or the weapon used. A weak
+ * spot is defined by the name of a bone of the model and the modified damage.
  * This function is dynamic: It is called on every hit and the weak spot and damage can be calculated individually.
  * The damage is a float and represents the new base damage (damage of weapon), not the final damage!
  *

@@ -21,5 +21,5 @@ const int   GFA_DEBUG_CONSOLE      = TRUE;  // Enable console commands (debuggin
 const int   GFA_DEBUG_PRINT        = FALSE; // Output information to zSpy by default (can be enabled via console)
 
 // GFA_CUSTOM_COLLISIONS
-const int   GFA_COLL_PRIOR_NPC     = -1;    // When bouncing off: ignore(-1), destory(0), coll(1) or deflect(2) off NPC
+const int   GFA_COLL_PRIOR_NPC     = -1;    // When bouncing off: ignore(-1), destroy(0), coll(1) or deflect(2) off NPC
 const int   GFA_TRIGGER_COLL_FIX   = TRUE;  // Trigger collision fix (disable collision), necessary for Gothic 2 only
