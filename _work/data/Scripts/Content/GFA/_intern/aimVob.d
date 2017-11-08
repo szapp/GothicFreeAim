@@ -107,7 +107,7 @@ func void GFA_AimVobManipulatePos(var int posPtr) {
     };
 
     // Check whether aim vob should be shifted
-    var int shifted; shifted = GFA_ShiftAimVob(spell);
+    var int shifted; shifted = GFA_ShiftAimVob(spell, posPtr);
 
     if (shifted) {
         shifted = mkf(shifted); // Amount to shift the aim vob along the out vector of the camera

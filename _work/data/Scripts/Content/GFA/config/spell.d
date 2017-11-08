@@ -20,7 +20,7 @@
  * the aim vob to be shifted. Exceptions are spells that utilize the aim vob as target to spawn VFX on it with the
  * functions GFA_AimVobAttachFX() and GFA_AimVobDetachFX().
  */
-func int GFA_ShiftAimVob(var int spellID) {
+func int GFA_ShiftAimVob(var int spellID, var int posPtr) {
     // if (spellID == ...) { return -100; }; // Push the aim vob 100 cm away from any wall towards the player
 
     // Usually none
