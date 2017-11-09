@@ -69,10 +69,6 @@ func void GFA_InitFeatureFreeAiming() {
             HookEngineF(cGameManager__HandleEvent_clearKeyBuffer, 6, GFA_CancelOUsDontClearKeyBuffer); // Fix key buffer
         };
 
-        // Fix knockout by ranged weapon bug (also allow customization with GFA_CUSTOM_COLLISIONS)
-        MEM_Info("Initializing fixed damage behavior for ranged weapons.");
-        HookEngineF(oCAIArrow__ReportCollisionToAI_damage, 5, GFA_CC_SetDamageBehavior);
-
         // Fix dropped projectile AI bug
         MEM_Info("Initializing dropped projectiles AI bug fix.");
         writeNOP(oCAIVobMove__DoAI_stopMovement, 7); // First erase a call, to make room for hook

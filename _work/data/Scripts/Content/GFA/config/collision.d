@@ -86,10 +86,11 @@ func int GFA_GetCollisionWithNpc(var C_Npc shooter, var C_Npc target, var C_Item
  */
 func int GFA_GetDamageBehavior(var C_Npc target, var C_Item weapon, var int talent, var int isCritialHit) {
     // Valid return values are:
-    const int DO_NOT_KNOCKOUT  = 0; // Gothic default: Normal damage, projectiles kill and never knockout (HP != 1)
-    const int DO_NOT_KILL      = 1; // Normal damage, projectiles knockout and never kill (HP > 0)
-    const int INSTANT_KNOCKOUT = 2; // One shot knockout (1 HP)
-    const int INSTANT_KILL     = 3; // One shot kill (0 HP)
+    const int NO_CHANGE        = -1; // Do not change anything
+    const int DO_NOT_KNOCKOUT  =  0; // Gothic default: Normal damage, projectiles kill and never knockout (HP != 1)
+    const int DO_NOT_KILL      =  1; // Normal damage, projectiles knockout and never kill (HP > 0)
+    const int INSTANT_KNOCKOUT =  2; // One shot knockout (1 HP)
+    const int INSTANT_KILL     =  3; // One shot kill (0 HP)
 
     /*
     // Create knockout arrows: Retrieve munition item from weapon. Make use of 'weapon' for that

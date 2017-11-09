@@ -485,16 +485,17 @@ func int GFA_CC_GetDamageBehavior_(var C_Npc target) {
     GFA_LastHitCritical = FALSE;
 
     // Behaviors
-    const int DO_NOT_KNOCKOUT  = 0; // Gothic default: Normal damage, projectiles kill and never knockout (HP != 1)
-    const int DO_NOT_KILL      = 1; // Normal damage, projectiles knockout and never kill (HP > 0)
-    const int INSTANT_KNOCKOUT = 2; // One shot knockout (1 HP)
-    const int INSTANT_KILL     = 3; // One shot kill (0 HP)
-    const int MAX_BEHAVIOR     = 4;
+    const int NO_CHANGE        = -1; // Do not change anything
+    const int DO_NOT_KNOCKOUT  =  0; // Gothic default: Normal damage, projectiles kill and never knockout (HP != 1)
+    const int DO_NOT_KILL      =  1; // Normal damage, projectiles knockout and never kill (HP > 0)
+    const int INSTANT_KNOCKOUT =  2; // One shot knockout (1 HP)
+    const int INSTANT_KILL     =  3; // One shot kill (0 HP)
+    const int MAX_BEHAVIOR     =  4;
 
     // Must be a valid behavior
-    if (dmgBehavior < 0) || (dmgBehavior >= MAX_BEHAVIOR) {
+    if (dmgBehavior < NO_CHANGE) || (dmgBehavior >= MAX_BEHAVIOR) {
         MEM_Warn("GFA_CC_GetDamageBehavior_: Invalid damage behavior!");
-        dmgBehavior = DO_NOT_KNOCKOUT; // Gothic default
+        dmgBehavior = NO_CHANGE;
     };
     return dmgBehavior;
 };
@@ -567,15 +568,16 @@ func void GFA_CC_SetDamageBehavior() {
         };
     };
 
-    const int DO_NOT_KNOCKOUT  = 0; // Gothic default: Normal damage, projectiles kill and never knockout (HP != 1)
-    const int DO_NOT_KILL      = 1; // Normal damage, projectiles knockout and never kill (HP > 0)
-    const int INSTANT_KNOCKOUT = 2; // One shot knockout (HP = 1)
-    const int INSTANT_KILL     = 3; // One shot kill (HP = 0)
-    var int dmgBehavior;
-    if (GFA_Flags & GFA_CUSTOM_COLLISIONS) {
-        dmgBehavior = GFA_CC_GetDamageBehavior_(targetNpc);
-    } else {
-        dmgBehavior = DO_NOT_KNOCKOUT;
+    const int NO_CHANGE        = -1; // Do not change anything
+    const int DO_NOT_KNOCKOUT  =  0; // Gothic default: Normal damage, projectiles kill and never knockout (HP != 1)
+    const int DO_NOT_KILL      =  1; // Normal damage, projectiles knockout and never kill (HP > 0)
+    const int INSTANT_KNOCKOUT =  2; // One shot knockout (HP = 1)
+    const int INSTANT_KILL     =  3; // One shot kill (HP = 0)
+    var int dmgBehavior; dmgBehavior = GFA_CC_GetDamageBehavior_(targetNpc);
+
+    // Skip any modification
+    if (dmgBehavior == NO_CHANGE) {
+        return;
     };
 
     // Store behavior for debug output on zSpy

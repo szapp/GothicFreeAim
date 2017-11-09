@@ -373,6 +373,7 @@ func void GFA_CH_DetectCriticalHit() {
 
         SB("   weak spot:         '");
         SB(weakspot.node);
+        SB("'");
         MEM_Info(SB_ToString());
         SB_Destroy();
 
@@ -405,7 +406,7 @@ func void GFA_CH_DetectCriticalHit() {
  * This function is only called for Gothic 1, as there are no internal critical hits in Gothic 2 for ranged weapons.
  */
 func void GFA_CH_DisableDefaultCriticalHits() {
-    // Check if shooter is player or if not in ranged combat
+    // Check if shooter is player and if in ranged combat
     var int dmgDescriptor; dmgDescriptor = MEM_ReadInt(ESP+548); // esp+220h+4h // oCNpc::oSDamageDescriptor*
     var C_Npc shooter; shooter = _^(MEM_ReadInt(dmgDescriptor+oSDamageDescriptor_origin_offset)); // oCNpc*
     if (Npc_IsPlayer(shooter)) && (Npc_IsInFightMode(shooter, FMODE_FAR)) {
