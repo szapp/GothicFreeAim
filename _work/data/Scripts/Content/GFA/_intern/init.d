@@ -266,14 +266,14 @@ func int GFA_InitOnce() {
         GFA_InitFeatureFreeAiming();
     };
 
-    // FEATURE: Custom collision behaviors
-    if (GFA_Flags & GFA_CUSTOM_COLLISIONS) {
-        GFA_InitFeatureCustomCollisions();
-    };
-
     // FEATURE: Critical hits
     if (GFA_Flags & GFA_CRITICALHITS) {
         GFA_InitFeatureCriticalHits();
+    };
+
+    // FEATURE: Custom collision behaviors
+    if (GFA_Flags & GFA_CUSTOM_COLLISIONS) {
+        GFA_InitFeatureCustomCollisions();
     };
 
     // FEATURE: Reusable projectiles

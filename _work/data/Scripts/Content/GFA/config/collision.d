@@ -96,8 +96,8 @@ func int GFA_GetDamageBehavior(var C_Npc target, var C_Item weapon, var int tale
     // Create knockout arrows: Retrieve munition item from weapon. Make use of 'weapon' for that
     // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
     if (Hlp_IsValidItem(weapon)) {
-        if (weapon.munition == Hlp_GetInstanceID(ItRw_KnockOutArrow)) { // Special arrow
-            if (isCritialHit) {                                         // Only if it was a critical hit
+        if (weapon.munition == ItRw_KnockOutArrow) { // Special arrow
+            if (isCritialHit) {                      // Only if it was a critical hit
                 // Knockout on critical hit
                 return INSTANT_KNOCKOUT;
             } else {

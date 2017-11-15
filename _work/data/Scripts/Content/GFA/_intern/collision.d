@@ -506,10 +506,6 @@ func int GFA_CC_GetDamageBehavior_(var C_Npc target) {
  * knockout. This function hooks oCAIArrow::ReportCollisionToAI() at an offset where the base damage is determined,
  * which this function overwrites.
  * The behavior can be defined with the config function GFA_GetDamageBehavior() of the custom collisions feature.
- *
- * This function will be called irrespective of all enabled or disabled features, because it fixes the "bug",
- * that under certain circumstances NPCs can get knocked out by projectiles (instead of dying) in the original Gothic.
- * In this case always the behavior DO_NOT_KNOCKOUT is the default setting of this function.
  */
 func void GFA_CC_SetDamageBehavior() {
     // First check if shooter is player
@@ -552,6 +548,13 @@ func void GFA_CC_SetDamageBehavior() {
             };
             return;
         };
+    };
+
+    // Check if NPC is down, function is not yet defined at time of parsing
+    MEM_PushInstParam(targetNpc);
+    MEM_Call(C_NpcIsDown); // C_NpcIsDown(targetNpc);
+    if (MEM_PopIntResult()) {
+        return;
     };
 
     // Calculate final damage (to be applied to the target) from base damage
@@ -606,7 +609,7 @@ func void GFA_CC_SetDamageBehavior() {
     // Adjustment for minimal damage in Gothic 2
     if (GOTHIC_BASE_VERSION == 2) && (newFinalDamage < NPC_MINIMAL_DAMAGE) {
         targetNpc.attribute[ATR_HITPOINTS] += NPC_MINIMAL_DAMAGE;
-        newFinalDamage = NPC_MINIMAL_DAMAGE;
+        newFinalDamage += NPC_MINIMAL_DAMAGE;
     };
 
     // Calculate new base damage from adjusted newFinalDamage
