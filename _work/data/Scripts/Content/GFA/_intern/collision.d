@@ -620,6 +620,7 @@ func void GFA_CC_SetDamageBehavior() {
         newBaseDamage = (newFinalDamage+protection)-hero.attribute[ATR_DEXTERITY];
     };
     if (newBaseDamage < 0) {
+        targetNpc.attribute[ATR_HITPOINTS] += -newBaseDamage;
         newBaseDamage = 0;
     };
 
