@@ -113,6 +113,7 @@ const int oCGame__HandleEvent_openInvCheck           =  7325123; //0x6FC5C3 // H
 const int cGameManager__ApplySomeSettings_rtn        =  4362866; //0x429272 // Hook len 6
 const int cGameManager__HandleEvent_clearKeyBuffer   =  4370800; //0x42B170 // Hook len 6
 const int zCModel__CalcModelBBox3DWorld_rtn          =  5739160; //0x579298 // Hook len 6
+const int zCModel__TraceRay_positiveNodeHit          =  5779884; //0x5831AC // Hook len 7
 const int zCAIPlayer__IsSliding_true                 =  5297341; //0x50D4BD // Hook len 5
 const int oCAniCtrl_Human__SearchStandAni_walkmode   =  6967211; //0x6A4FAB // Hook len 6
 const int oCAIVobMove__DoAI_stopMovement             =  6945300; //0x69FA14 // Hook len 7

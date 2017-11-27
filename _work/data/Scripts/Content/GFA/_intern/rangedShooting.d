@@ -651,6 +651,10 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
     GFA_CollTrj[4] = mulf(GFA_CollTrj[4], dist);
     GFA_CollTrj[5] = mulf(GFA_CollTrj[5], dist);
 
+    // Record the model node that was hit
+    GFA_HitModelNode = ""; // Reset detected node name
+    HookEngineF(zCModel__TraceRay_positiveNodeHit, 7, GFA_RecordHitNode);
+
     // Perform refined collision check
     GFA_AllowSoftSkinTraceRay(1);
     var int hit;
@@ -668,9 +672,19 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
     };
     GFA_AllowSoftSkinTraceRay(0);
 
+    // Remove checking for model node (remove hook completely from opcode)
+    RemoveHookF(zCModel__TraceRay_positiveNodeHit, 7, GFA_RecordHitNode);
+
     // Also check dedicated head visual if present (not detected by model trace ray)
-    if (!hit) {
-        hit = GFA_AimRayHead(vobPtr, fromPosPtr, dirPosPtr, trRep+zTTraceRayReport_foundIntersection_offset);
+    if (GFA_AimRayHead(vobPtr, fromPosPtr, dirPosPtr, trRep+zTTraceRayReport_foundIntersection_offset)) {
+        hit = TRUE;
+
+        // Get head node name (should always be "BIP01 HEAD")
+        var oCNpc npc; npc = _^(vobPtr);
+        var zCAIPlayer playerAI; playerAI = _^(npc.anictrl);
+        var int headNode; headNode = playerAI.modelHeadNode;
+        var int node; node = MEM_ReadInt(headNode+zCModelNodeInst_protoNode_offset);
+        GFA_HitModelNode = MEM_ReadString(node+zCModelNode_nodeName_offset);
     };
 
     // If the same positive hit has been determined before, Gothic has trouble reporting the collision: Do it manually
@@ -716,6 +730,17 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
     };
 
     return +hit;
+};
+
+
+/*
+ * Store the name of the model node that was hit into a variable for later critical hit detection. This function hooks
+ * at an address where zCModel::TraceRay() returns a positive intersection.
+ */
+func void GFA_RecordHitNode() {
+    var int nodeInst; nodeInst = MEM_ReadInt(MEMINT_SwitchG1G2(/*esp+18Ch-16Ch*/ ESP+32, /*esp+260h-248h*/ ESP+24));
+    var int node; node = MEM_ReadInt(nodeInst+zCModelNodeInst_protoNode_offset);
+    GFA_HitModelNode = MEM_ReadString(node+zCModelNode_nodeName_offset);
 };
 
 

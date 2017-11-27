@@ -113,6 +113,7 @@ const int oCGame__HandleEvent_openInvCheck           =  6680765; //0x65F0BD // H
 const int cGameManager__ApplySomeSettings_rtn        =  4356499; //0x427993 // Hook len 6
 const int cGameManager__HandleEvent_clearKeyBuffer   =  0;                                 // Does not exist in Gothic 1
 const int zCModel__CalcModelBBox3DWorld_rtn          =  5634548; //0x55F9F4 // Hook len 6
+const int zCModel__TraceRay_positiveNodeHit          =  5670981; //0x568845 // Hook len 7
 const int zCAIPlayer__IsSliding_true                 =  5233245; //0x4FDA5D // Hook len 5
 const int oCAniCtrl_Human__SearchStandAni_walkmode   =  6408587; //0x61C98B // Hook len 6
 const int oCAIVobMove__DoAI_stopMovement             =  6389348; //0x617E64 // Hook len 7

@@ -131,6 +131,7 @@ const float  GFA_SCATTER_MISS       = 4.2;                  // (Visual angle)/2 
 const float  GFA_SCATTER_MAX        = 6.0;                  // (Visual angle)/2 of maximum scatter (all in degrees)
 
 var   int    GFA_CollTrj[6];                                // Projectile trajectory of last collision candidate
+var   string GFA_HitModelNode;                              // Name of model node that was hit
 var   int    GFA_LastHitCritical;                           // Was the last hit critical (will be reset immediately)
 
 
