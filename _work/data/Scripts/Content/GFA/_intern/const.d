@@ -93,7 +93,7 @@ const int    GFA_MOVE_FORWARD       = 1<<0;                 // ID (first bit) fo
 const int    GFA_MOVE_BACKWARD      = 1<<1;                 // ID (second bit) for moving backward while aiming
 const int    GFA_MOVE_LEFT          = 1<<2;                 // ID (third bit) for moving left while aiming
 const int    GFA_MOVE_RIGHT         = 1<<3;                 // ID (fourth bit) for moving right while aiming
-const int    GFA_MOVE_TRANS         = 11;                   // Transistion ID
+const int    GFA_MOVE_TRANS         = 11;                   // Transition ID
 const int    GFA_HURT_ANI           = 12;                   // Hurt animation ID
 
 const string GFA_AIM_ANIS[13]       = {                     // Names of aiming movement animations (upper case!)
@@ -108,7 +108,7 @@ const string GFA_AIM_ANIS[13]       = {                     // Names of aiming m
     "_AIM_MOVER",                                           //  8  1000  GFA_MOVE_RIGHT
     "_AIM_MOVERF",                                          //  9  1001  GFA_MOVE_RIGHT | GFA_MOVE_FORWARD
     "_AIM_MOVERB",                                          // 10  1010  GFA_MOVE_RIGHT | GFA_MOVE_BACKWARD
-    "_AIM_MOVE_2",                                          // 11        Transistion prefix
+    "_AIM_MOVE_2",                                          // 11        Transition prefix
     "_AIM_HURT"                                             // 12        Hurting animation: Caution, different layer
 };
 
@@ -132,6 +132,14 @@ const float  GFA_SCATTER_MAX        = 6.0;                  // (Visual angle)/2 
 
 var   int    GFA_CollTrj[6];                                // Projectile trajectory of last collision candidate
 var   string GFA_HitModelNode;                              // Name of model node that was hit
+
+const int    DMG_NO_CHANGE          = 0;                    // Do not adjust the damage
+const int    DMG_DO_NOT_KNOCKOUT    = 1;                    // Normal damage, shot may kill but never knockout (HP != 1)
+const int    DMG_DO_NOT_KILL        = 2;                    // Normal damage, shot may knockout but never kill (HP > 0)
+const int    DMG_INSTANT_KNOCKOUT   = 3;                    // One shot knockout (HP = 1)
+const int    DMG_INSTANT_KILL       = 4;                    // One shot kill (HP = 0)
+
+const int    DMG_BEHAVIOR_MAX       = 4;
 
 
 /* Debugging */

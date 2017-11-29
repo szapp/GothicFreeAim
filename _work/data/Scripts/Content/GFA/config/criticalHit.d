@@ -5,23 +5,26 @@
  *
  * List of included functions:
  *  func void GFA_GetCriticalHit(C_Npc target, string bone, C_Item weapon, int talent, int dmgMsgPtr)
- *  func void GFA_GetCriticalHitAutoAim(C_Npc target, int rand, C_Item weapon, int talent, int dmgMsgPtr)
+ *  func void GFA_GetCriticalHitAutoAim(C_Npc target, C_Item weapon, int talent, int dmgMsgPtr)
  */
 
 
 /*
  * This function is called every time (any kind of) NPC is hit by a projectile (arrows and bolts). Originally it was
  * meant to design critical hits based on a specific bone of the model, but it can also be used to change the damage
- * (or to trigger any other kind of special events) based on any bone of the model that was hit.
+ * (or to trigger any other kind of special events) based on any bone of the model that was hit. Additionally, it allows
+ * to specify a "damage behavior". The damage behavior defines how much damage is eventually applied to the victim. This
+ * allows, e.g. to prevent a victim from dying, and instead knock it out with one shot (see examples in function).
  * This function is only called if free aiming is enabled. For critical hits without free aiming see
  * GFA_GetCriticalHitAutoAim() below.
  *
  * The damage value is a float and represents the new base damage (damage of weapon), not the final damage!
+ * All possible damage behaviors are defined in _intern/const.d (DMG_*).
  *
  * Note: This function is specific to free aiming. For critical hits without free aiming see GFA_GetCriticalHitAutoAim()
  *       below.
  *
- * Ideas: incorporate weapon-specific stats, head shot talent, dependency on target, ...
+ * Ideas: incorporate weapon-specific stats, head shot talent, special knockout munition, dependency on target, ...
  * Examples are written below and commented out and serve as inspiration of what is possible.
  *
  * Here, preliminary critical hits for almost all Gothic 1 and Gothic 2 monsters are defined (all head shots).
@@ -40,20 +43,35 @@ func void GFA_GetCriticalHit(var C_Npc target, var string bone, var C_Item weapo
     }; */
 
     /*
-    // The weapon can also be considered (e.g. weapon specific damage). Make use of 'weapon' for that
+    // Create knockout arrows: Retrieve munition item from weapon. Make use of 'weapon' for that
     // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
     if (Hlp_IsValidItem(weapon)) {
-        if (weapon.certainProperty > 10) { // E.g. special case for weapon property
-            // ...
+        if (weapon.munition == ItRw_KnockOutArrow) { // Special arrow
+            if (Hlp_StrCmp(bone, "BIP01 HEAD")) {    // Only if it was a head shot
+                // Knockout on critical hit
+                damage.behavior = INSTANT_KNOCKOUT;
+                return;
+            } else {
+                // Normal damage otherwise (but prevent killing the victim)
+                damage.behavior = DO_NOT_KILL;
+                return;
+            };
         };
     }; */
 
     /*
-    // Availability of animal trophies only if the arrow did not hit certain body parts
-    if (Hlp_StrCmp(bone, "BIP01 SPINE"))
+    // Instant kill on head shot
+    if (Hlp_StrCmp(bone, "BIP01 HEAD")) {
+        damage.behavior = DMG_INSTANT_KILL;
+        return;
+    };*/
+
+    /*
+    // Shots may destroy animal trophies if the arrow hits certain body parts
+    if (Hlp_StrCmp(bone, "BIP01 SPINE")) // Add more bones if necessary
     && (Hlp_StrCmp(instName, "WOLF") {
         // When hitting a wolf in the torso, it is not possible to get its fur
-        target.aivar[AIV_Fur] = FALSE;
+        target.aivar[AIV_Fur] = FALSE; // Check this AI variable in B_GiveDeathInv()
         damage.info = "Torso hit: Fur is damaged and cannot be retrieved";
         return;
     };

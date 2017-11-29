@@ -240,7 +240,7 @@ func int GFA_GetWeaponAndTalent(var C_Npc slf, var int weaponPtr, var int talent
     } else if (Npc_HasEquippedRangedWeapon(slf)) {
         weapon = Npc_GetEquippedRangedWeapon(slf);
     } else {
-        MEM_Warn("GFA_GetWeaponAndTalent: No valid weapon equipped/readied!");
+        MEM_SendToSpy(zERR_TYPE_WARN, "GFA_GetWeaponAndTalent: No valid weapon equipped/readied!");
         weapon = MEM_NullToInst();
         error = 1;
     };
@@ -257,7 +257,7 @@ func int GFA_GetWeaponAndTalent(var C_Npc slf, var int weaponPtr, var int talent
             } else if (weapon.flags & ITEM_CROSSBOW) {
                 talent = NPC_TALENT_CROSSBOW;
             } else {
-                MEM_Warn("GFA_GetWeaponAndTalent: No valid weapon equipped/readied!");
+                MEM_SendToSpy(zERR_TYPE_WARN, "GFA_GetWeaponAndTalent: No valid weapon equipped/readied!");
                 error = 1;
             };
 

@@ -171,7 +171,6 @@ func void GFA_InitFeatureFreeAiming() {
 func void GFA_InitFeatureCustomCollisions() {
     MEM_Info("Initializing custom collision behaviors.");
     HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_CC_ProjectileCollisionWithNpc); // Hit reg/coll on NPCs
-    HookEngineF(oCAIArrow__ReportCollisionToAI_damage, 5, GFA_CC_SetDamageBehavior); // Change knockout behavior
     if (GOTHIC_BASE_VERSION == 1) {
         writeNOP(oCAIArrow__ReportCollisionToAI_destroyPrj, 7); // Disable destroying of projectiles
         HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_CC_ProjectileCollisionWithWorld); // Collision world

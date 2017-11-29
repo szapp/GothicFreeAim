@@ -29,9 +29,12 @@
  */
 func void GFA_CH_GetCriticalHit_(var C_Npc target, var int dmgMsgPtr) {
     // Get readied/equipped ranged weapon
-    var int talent; var int weaponPtr;
-    GFA_GetWeaponAndTalent(hero, _@(weaponPtr), _@(talent));
-    var C_Item weapon; weapon = _^(weaponPtr);
+    var int talent; var int weaponPtr; var C_Item weapon;
+    if (GFA_GetWeaponAndTalent(hero, _@(weaponPtr), _@(talent))) {
+        weapon = _^(weaponPtr);
+    } else {
+        weapon = MEM_NullToInst();
+    };
 
     // Define new damage in config
     if (GFA_ACTIVE) && (GFA_Flags & GFA_RANGED) {
@@ -48,6 +51,12 @@ func void GFA_CH_GetCriticalHit_(var C_Npc target, var int dmgMsgPtr) {
     var DmgMsg damage; damage = _^(dmgMsgPtr);
     if (lf(damage.value, FLOATNULL)) {
         damage.value = FLOATNULL;
+    };
+
+    // Verify damage behavior
+    if (damage.behavior < DMG_NO_CHANGE) || (damage.behavior > DMG_BEHAVIOR_MAX) {
+        MEM_SendToSpy(zERR_TYPE_WARN, "GFA_CH_GetCriticalHit_: Invalid damage behavior!");
+        damage.behavior = DMG_NO_CHANGE;
     };
 
     return;
@@ -184,7 +193,8 @@ func void GFA_CH_VisualizeModelNode(var int npcPtr, var string nodeName) {
 /*
  * Detect critical hits and adjust base damage. This function hooks the engine function responsible for hit registration
  * and dealing of damage. The model node that was hit with the shot is passed to the config-function
- * GFA_GetCriticalHit() to alter the damage.
+ * GFA_GetCriticalHit() to alter the damage. Additionally, the damage behavior can be adjusted: Normal damage (kill or
+ * knockout), instant kill or instant knockout.
  */
 func void GFA_CH_DetectCriticalHit() {
     // First check if shooter is player
@@ -227,13 +237,93 @@ func void GFA_CH_DetectCriticalHit() {
     // Create damage message
     var int dmgMsgPtr; dmgMsgPtr = MEM_Alloc(sizeof_DmgMsg);
     var DmgMsg damage; damage = _^(dmgMsgPtr);
-    damage.value = MEM_ReadInt(damagePtr);
-    damage.type = damageIndex;
-    damage.protection = protection;
-    damage.info = "";
+    damage.value      = MEM_ReadInt(damagePtr);
+    damage.type       = damageIndex;
+    damage.protection = protection; // G1: depends on damage type, G2: always point protection
+    damage.behavior   = DMG_NO_CHANGE;
+    damage.info       = "";
 
     // Update damage message in config
     GFA_CH_GetCriticalHit_(targetNpc, dmgMsgPtr);
+
+    // Adjust damage for damage behavior
+    var string damageBehaviorStr; // Debug output on zSpy
+    if (damage.behavior) && (protection == /*IMMUNE*/ -1) { // Gothic 2 only
+        damageBehaviorStr = "Target immune: Damage behavior not applied";
+    } else if (damage.behavior) {
+        var int baseDamage; baseDamage = roundf(damage.value);
+
+        // Calculate final damage (to be applied to the target) from base damage
+        var int finalDamage;
+        if (GOTHIC_BASE_VERSION == 1) {
+            finalDamage = baseDamage-protection;
+            if (finalDamage < 0) {
+                finalDamage = 0;
+            };
+        } else {
+            finalDamage = (baseDamage+hero.attribute[ATR_DEXTERITY])-protection;
+            if (finalDamage < NPC_MINIMAL_DAMAGE) {
+                finalDamage = NPC_MINIMAL_DAMAGE;
+            };
+        };
+
+        // Manipulate final damage
+        var int newFinalDamage; newFinalDamage = finalDamage;
+        if (damage.behavior == DMG_DO_NOT_KNOCKOUT) {
+            damageBehaviorStr = "Normal damage, prevent knockout (HP != 1)";
+            if (finalDamage == targetNpc.attribute[ATR_HITPOINTS]-1) {
+                newFinalDamage = targetNpc.attribute[ATR_HITPOINTS]; // Never 1 HP
+            };
+        } else if (damage.behavior == DMG_DO_NOT_KILL) {
+            damageBehaviorStr = "Normal damage, prevent kill (HP > 0)";
+            if (finalDamage >= targetNpc.attribute[ATR_HITPOINTS]) {
+                newFinalDamage = targetNpc.attribute[ATR_HITPOINTS]-1; // Never 0 HP
+            };
+        } else if (damage.behavior == DMG_INSTANT_KNOCKOUT) {
+            damageBehaviorStr = "Instant knockout (1 HP)";
+            newFinalDamage = targetNpc.attribute[ATR_HITPOINTS]-1; // 1 HP
+        } else if (damage.behavior == DMG_INSTANT_KILL) {
+            damageBehaviorStr = "Instant kill (0 HP)";
+            newFinalDamage = targetNpc.attribute[ATR_HITPOINTS]; // 0 HP
+        };
+
+        // Adjustment for minimal damage in Gothic 2
+        if (GOTHIC_BASE_VERSION == 2) && (newFinalDamage < NPC_MINIMAL_DAMAGE) {
+            targetNpc.attribute[ATR_HITPOINTS] += NPC_MINIMAL_DAMAGE;
+            newFinalDamage += NPC_MINIMAL_DAMAGE;
+        };
+
+        // Calculate new base damage from adjusted newFinalDamage
+        var int newBaseDamage;
+        if (GOTHIC_BASE_VERSION == 1) {
+            // If new final damage is zero, the new base damage is also
+            if (newFinalDamage) {
+                newBaseDamage = newFinalDamage+protection;
+            } else if (baseDamage-protection <= 0) {
+                newBaseDamage = baseDamage;
+            } else {
+                newBaseDamage = 0;
+            };
+        } else {
+            // If new final damage is less that NPC_MINIMAL_DAMAGE, the new base damage stays zero
+            if (newFinalDamage > NPC_MINIMAL_DAMAGE) {
+                newBaseDamage = (newFinalDamage+protection)-hero.attribute[ATR_DEXTERITY];
+            } else if ((baseDamage+hero.attribute[ATR_DEXTERITY])-protection <= NPC_MINIMAL_DAMAGE) {
+                newBaseDamage = baseDamage;
+            } else {
+                newBaseDamage = 0;
+            };
+        };
+
+        // If the new base damage is below zero, increase the hit points to balance out the final damage
+        if (newBaseDamage < 0) {
+            targetNpc.attribute[ATR_HITPOINTS] += -newBaseDamage;
+            newBaseDamage = 0;
+        };
+
+        // Overwrite base damage to yield damage behavior
+        damage.value = mkf(newBaseDamage);
+    };
 
     // Debug visualization
     if (BBoxVisible(GFA_DebugBoneBBox)) || (OBBoxVisible(GFA_DebugBoneOBBox)) {
@@ -243,6 +333,13 @@ func void GFA_CH_DetectCriticalHit() {
     if (GFA_DEBUG_PRINT) {
         MEM_Info("GFA_CH_DetectCriticalHit:");
         var int s; s = SB_New();
+
+        if (damage.behavior) {
+            SB("   damage behavior:   ");
+            SB(damageBehaviorStr);
+            MEM_Info(SB_ToString());
+            SB_Clear();
+        };
 
         var int newDamageInt; newDamageInt = roundf(damage.value);
         SB("   base damage (n/o): ");

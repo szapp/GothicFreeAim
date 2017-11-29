@@ -5,7 +5,6 @@
  *
  * List of included functions:
  *  func int GFA_GetCollisionWithNpc(C_Npc shooter, C_Npc target, C_Item weapon, int material)
- *  func int GFA_GetDamageBehavior(C_Npc target, C_Item weapon, int talent)
  *  func int GFA_GetCollisionWithWorld(C_Npc shooter, C_Item weapon, int materials, string textures)
  */
 
@@ -69,44 +68,6 @@ func int GFA_GetCollisionWithNpc(var C_Npc shooter, var C_Npc target, var C_Item
 
     // Usually all shots on NPCs should be registered. For defining the hit chances see GFA_GetAccuracy()
     return DAMAGE;
-};
-
-
-/*
- * This function is called every time an NPC is hit by a projectile (arrows and bolts). It can be used to define the
- * damage behavior on NPCs based on different criteria. Damage behavior defines how much damage is eventually applied to
- * the victim. This allows, e.g. to prevent a victim from dying, and instead knock it out with one shot (see examples).
- *
- * Note: This function is only called if the player is the shooter.
- *
- * Ideas: special knockout munition, NPCs that cannot be killed by ranged weapons, instant kill weapons, ...
- * Examples are written below and commented out and serve as inspiration of what is possible.
- */
-func int GFA_GetDamageBehavior(var C_Npc target, var C_Item weapon, var int talent) {
-    // Valid return values are:
-    const int NO_CHANGE        = -1; // Do not change anything
-    const int DO_NOT_KNOCKOUT  =  0; // Gothic default: Normal damage, projectiles kill and never knockout (HP != 1)
-    const int DO_NOT_KILL      =  1; // Normal damage, projectiles knockout and never kill (HP > 0)
-    const int INSTANT_KNOCKOUT =  2; // One shot knockout (1 HP)
-    const int INSTANT_KILL     =  3; // One shot kill (0 HP)
-
-    /*
-    // Create knockout arrows: Retrieve munition item from weapon. Make use of 'weapon' for that
-    // Caution: Weapon may have been unequipped already at this time (unlikely)! Use Hlp_IsValidItem(weapon)
-    if (Hlp_IsValidItem(weapon)) {
-        if (weapon.munition == ItRw_KnockOutArrow) { // Special arrow
-            return INSTANT_KNOCKOUT;
-        };
-    }; */
-
-    /*
-    // Enemies that cannot be killed (at most knocked out) with ranged weapons
-    if (target.guild == SOME_MONSTER_GUILD) {
-        return DO_NOT_KILL;
-    }; */
-
-    // Gothic default
-    return DO_NOT_KNOCKOUT;
 };
 
 
