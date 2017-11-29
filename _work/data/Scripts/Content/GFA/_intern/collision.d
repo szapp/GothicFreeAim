@@ -612,10 +612,22 @@ func void GFA_CC_SetDamageBehavior() {
     // Calculate new base damage from adjusted newFinalDamage
     var int newBaseDamage;
     if (GOTHIC_BASE_VERSION == 1) {
-        newBaseDamage = newFinalDamage+protection;
+        // If new final damage is zero, the new base damage is also
+        if (newFinalDamage) {
+            newBaseDamage = newFinalDamage+protection;
+        } else {
+            newBaseDamage = 0;
+        };
     } else {
-        newBaseDamage = (newFinalDamage+protection)-hero.attribute[ATR_DEXTERITY];
+        // If new final damage is less that NPC_MINIMAL_DAMAGE, the new base damage stays zero
+        if (newFinalDamage > NPC_MINIMAL_DAMAGE) {
+            newBaseDamage = (newFinalDamage+protection)-hero.attribute[ATR_DEXTERITY];
+        } else {
+            newBaseDamage = 0;
+        };
     };
+
+    // If the new base damage is below zero, increase the hit points to balance out the final damage
     if (newBaseDamage < 0) {
         targetNpc.attribute[ATR_HITPOINTS] += -newBaseDamage;
         newBaseDamage = 0;
