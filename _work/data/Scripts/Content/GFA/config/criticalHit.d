@@ -122,10 +122,13 @@ func void GFA_GetCriticalHit(var C_Npc target, var string bone, var C_Item weapo
             };
 
             // Extra exception for metal armors (paladin armor). Gothic 2 only: There are no helmets in Gothic 1
-            var C_Item armor; armor = Npc_GetEquippedArmor(target);
-            if (armor.material == MAT_METAL)    // Armor is made out of metal
-            && (!Npc_CanSeeNpc(target, hero)) { // Target is not facing the player (helmets do not cover the face)
-                return;
+            if (Npc_HasEquippedArmor(target) {
+                var C_Item armor; armor = Npc_GetEquippedArmor(target);
+                if (armor.material == MAT_METAL)    // Armor is made out of metal
+                && (!Npc_CanSeeNpc(target, hero)) { // Target is not facing the player (helmets do not cover the face)
+                    damage.info = "Target NPC protected by helmet";
+                    return;
+                };
             };
 
             // In Gothic 2, there are no critical hits for ranged combat by default. Here, x1.3 seems more reasonable,
