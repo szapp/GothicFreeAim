@@ -132,21 +132,19 @@ const float  GFA_SCATTER_MAX        = 6.0;                  // (Visual angle)/2 
 
 var   int    GFA_CollTrj[6];                                // Projectile trajectory of last collision candidate
 var   string GFA_HitModelNode;                              // Name of model node that was hit
-var   int    GFA_LastHitCritical;                           // Was the last hit critical (will be reset immediately)
 
 
 /* Debugging */
 
 var   int    GFA_StatsShots;                                // Shooting statistics: Count total number of shots taken
 var   int    GFA_StatsHits;                                 // Shooting statistics: Count positive hits on target
-var   int    GFA_StatsCriticalHits;                         // Shooting statistics: Count number of critical hits
 
 var   int    GFA_DebugTRTrj;                                // Handle of trace ray trajectory
 var   int    GFA_DebugTRBBox;                               // Handle of trace ray intersection
 var   int    GFA_DebugTRBBoxVob;                            // Handle of trace ray detected vob bounding box
 var   int    GFA_DebugCollTrj;                              // Handle of projectile trajectory
-var   int    GFA_DebugWSBBox;                               // Handle of weak spot bounding box
-var   int    GFA_DebugWSOBBox;                              // Handle of weak spot oriented bounding box
+var   int    GFA_DebugBoneBBox;                             // Handle of bone bounding box
+var   int    GFA_DebugBoneOBBox;                            // Handle of bone oriented bounding box
 
 
 /* Numerical constants */

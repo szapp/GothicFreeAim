@@ -293,7 +293,7 @@ func int GFA_InitOnce() {
         CC_Register(GFA_DebugPrint, "debug GFA zSpy", "turn on GFA debug information in zSpy");
         CC_Register(GFA_DebugTraceRay, "debug GFA traceray", "turn debug visualization on/off");
         CC_Register(GFA_DebugTrajectory, "debug GFA trajectory", "turn debug visualization on/off");
-        CC_Register(GFA_DebugWeakspot, "debug GFA weakspot", "turn debug visualization on/off");
+        CC_Register(GFA_DebugBone, "debug GFA bone", "turn debug visualization on/off");
     };
 
     // Successfully initialized

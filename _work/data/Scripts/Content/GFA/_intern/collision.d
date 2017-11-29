@@ -479,10 +479,7 @@ func int GFA_CC_GetDamageBehavior_(var C_Npc target) {
     var C_Item weapon; weapon = _^(weaponPtr);
 
     // Retrieve damage behavior from config
-    var int dmgBehavior; dmgBehavior = GFA_GetDamageBehavior(target, weapon, talent, GFA_LastHitCritical);
-
-    // Reset critical hit
-    GFA_LastHitCritical = FALSE;
+    var int dmgBehavior; dmgBehavior = GFA_GetDamageBehavior(target, weapon, talent);
 
     // Behaviors
     const int NO_CHANGE        = -1; // Do not change anything

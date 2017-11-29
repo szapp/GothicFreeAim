@@ -801,7 +801,7 @@ func void GFA_EnlargeHumanModelBBox() {
         call = CALL_End();
     };
 
-    // Reset frame counter to allow reassessing the model again. Important for GFA_CH_DetectIntersectionWithNode()
+    // Reset frame counter to allow reassessing the model again. Important for GFA_CH_VisualizeModelNode()
     MEM_WriteInt(model+zCModel_masterFrameCtr_offset, frameCtr);
 
     // Copy the bounding box of the head

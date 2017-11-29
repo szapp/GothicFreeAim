@@ -89,31 +89,31 @@ func string GFA_DebugTrajectory(var string _) {
 
 
 /*
- * Console function to enable/disable weak spot debug output. This function is registered as console command.
- * When enabled, the defined weak spot of the last shot NPC is visualized by a bounding box or oriented bounding box.
+ * Console function to enable/disable bone debug visualization. This function is registered as console command.
+ * When enabled, the hit model node of the last shot NPC is visualized by a bounding box or oriented bounding box.
  */
-func string GFA_DebugWeakspot(var string _) {
-    if (!Hlp_IsValidHandle(GFA_DebugWSBBox)) {
-        GFA_DebugWSBBox = DrawBBoxAddr(0, zCOLOR_RED);
-        HideBBox(GFA_DebugWSBBox);
+func string GFA_DebugBone(var string _) {
+    if (!Hlp_IsValidHandle(GFA_DebugBoneBBox)) {
+        GFA_DebugBoneBBox = DrawBBoxAddr(0, zCOLOR_RED);
+        HideBBox(GFA_DebugBoneBBox);
     };
 
-    if (!Hlp_IsValidHandle(GFA_DebugWSOBBox)) {
-        GFA_DebugWSOBBox = DrawOBBoxAddr(0, zCOLOR_RED);
-        HideOBBox(GFA_DebugWSOBBox);
+    if (!Hlp_IsValidHandle(GFA_DebugBoneOBBox)) {
+        GFA_DebugBoneOBBox = DrawOBBoxAddr(0, zCOLOR_RED);
+        HideOBBox(GFA_DebugBoneOBBox);
     };
 
-    if (!BBoxVisible(GFA_DebugWSBBox) && (!OBBoxVisible(GFA_DebugWSOBBox))) {
-        ShowBBox(GFA_DebugWSBBox);
-        ShowOBBox(GFA_DebugWSOBBox);
+    if (!BBoxVisible(GFA_DebugBoneBBox) && (!OBBoxVisible(GFA_DebugBoneOBBox))) {
+        ShowBBox(GFA_DebugBoneBBox);
+        ShowOBBox(GFA_DebugBoneOBBox);
         if (!LineVisible(GFA_DebugCollTrj)) {
             var string s; s = GFA_DebugTrajectory("");
         };
-        return "Debug weak spot on.";
+        return "Bone visualization on.";
     } else {
-        HideBBox(GFA_DebugWSBBox);
-        HideOBBox(GFA_DebugWSOBBox);
-        return "Debug weak spot off.";
+        HideBBox(GFA_DebugBoneBBox);
+        HideOBBox(GFA_DebugBoneOBBox);
+        return "Bone visualization off.";
     };
 };
 
@@ -152,12 +152,6 @@ func string GFA_GetShootingStats(var string args) {
     SB(STR_Prefix(toStringf(pAccuracy), 4));
     SB("%");
 
-    if (GFA_Flags & GFA_CRITICALHITS) {
-        SBc(13); SBc(10);
-        SB("Critical hits: ");
-        SBi(GFA_StatsCriticalHits);
-    };
-
     var string ret; ret = SB_ToString();
     SB_Destroy();
 
@@ -172,7 +166,6 @@ func string GFA_GetShootingStats(var string args) {
 func string GFA_ResetShootingStats(var string _) {
     GFA_StatsShots = 0;
     GFA_StatsHits = 0;
-    GFA_StatsCriticalHits = 0;
     return "Shooting statistics reset.";
 };
 

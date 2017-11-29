@@ -23,85 +23,70 @@
 
 
 /*
- * Wrapper function for the config function GFA_StartCriticalHitEvent(). It is called from GFA_CH_DetectCriticalHit().
- * This function supplies the readied weapon and checks whether free aiming is active.
- */
-func void GFA_CH_StartCriticalHitEvent_(var C_Npc target) {
-    // Get readied/equipped ranged weapon
-    var int weaponPtr;
-    GFA_GetWeaponAndTalent(hero, _@(weaponPtr), 0);
-    var C_Item weapon; weapon = _^(weaponPtr);
-
-    // Start an event from config
-    GFA_StartCriticalHitEvent(target, weapon, (GFA_ACTIVE && (GFA_Flags & GFA_RANGED)));
-};
-
-
-/*
- * Wrapper function for the config function GFA_GetCriticalHitDefinitions(). It is called from
+ * Wrapper function for the config functions GFA_GetCriticalHit() and GFA_GetCriticalHitAutoAim(). It is called from
  * GFA_CH_DetectCriticalHit().
  * This function is necessary for error handling and to supply the readied weapon and respective talent value.
  */
-func void GFA_CH_GetCriticalHitDefinitions_(var C_Npc target, var int damage, var int damageType, var int returnPtr) {
+func void GFA_CH_GetCriticalHit_(var C_Npc target, var int dmgMsgPtr) {
     // Get readied/equipped ranged weapon
     var int talent; var int weaponPtr;
     GFA_GetWeaponAndTalent(hero, _@(weaponPtr), _@(talent));
     var C_Item weapon; weapon = _^(weaponPtr);
 
-    // Define a critical hit/weak spot in config
-    GFA_GetCriticalHitDefinitions(target, weapon, talent, damage, damageType, returnPtr);
-
-    // Correct the node string to be always upper case
-    var Weakspot weakspot; weakspot = _^(returnPtr);
-    weakspot.node = STR_Upper(weakspot.node);
+    // Define new damage in config
+    if (GFA_ACTIVE) && (GFA_Flags & GFA_RANGED) {
+        GFA_GetCriticalHit(target, GFA_HitModelNode, weapon, talent, dmgMsgPtr);
+    } else {
+        // Critical hits cause an advantage when playing with free aiming enabled compared to auto aim. This is, because
+        // there are no critical hits for ranged combat in Gothic 2. Here, they are introduced for balancing reasons.
+        // Note: Gothic 1 already has critical hits for auto aiming. This is replaced here.
+        GFA_GetCriticalHitAutoAim(target, weapon, talent, dmgMsgPtr);
+        GFA_HitModelNode = "";
+    };
 
     // Correct negative damage
-    if (lf(weakspot.bDmg, FLOATNULL)) {
-        weakspot.bDmg = FLOATNULL;
+    var DmgMsg damage; damage = _^(dmgMsgPtr);
+    if (lf(damage.value, FLOATNULL)) {
+        damage.value = FLOATNULL;
     };
+
+    return;
 };
 
 
 /*
- * Wrapper function for the config function GFA_GetCriticalHitAutoAim(). It is called from GFA_CH_DetectCriticalHit().
- * This function is necessary to supply the readied weapon and respective talent value.
+ * Visualize a model node of an NPC. This function is called from GFA_CH_DetectCriticalHit().
  */
-func int GFA_CH_GetCriticalHitAutoAim_(var C_Npc target) {
-    // Get readied/equipped ranged weapon
-    var int talent; var int weaponPtr;
-    GFA_GetWeaponAndTalent(hero, _@(weaponPtr), _@(talent));
-    var C_Item weapon; weapon = _^(weaponPtr);
-
-    // Retrieve auto aim critical hit chance from config
-    var int criticalHitChance; criticalHitChance = GFA_GetCriticalHitAutoAim(target, weapon, talent);
-
-    // Must be a percentage in range of [0, 100]
-    if (criticalHitChance > 100) {
-        criticalHitChance = 100;
-    } else if (criticalHitChance < 0) {
-        criticalHitChance = 0;
+func void GFA_CH_VisualizeModelNode(var int npcPtr, var string nodeName) {
+    const int emptyBBox = 0;
+    if (!emptyBBox) {
+        emptyBBox = MEM_Alloc(sizeof_zTBBox3D);
     };
-    return criticalHitChance;
-};
+    const int emptyOBBox = 0;
+    if (!emptyOBBox) {
+        emptyOBBox = MEM_Alloc(sizeof_zCOBBox3D);
+    };
 
+    // Reset (remove) visualizations
+    if (BBoxVisible(GFA_DebugBoneBBox)) {
+        UpdateBBoxAddr(GFA_DebugBoneBBox, emptyBBox);
+    };
 
-/*
- * Detect intersection of the projectile trajectory (defined in GFA_DebugCollTrj) with a node of an npc. This function
- * is called from GFA_CH_DetectCriticalHit().
- */
-func int GFA_CH_DetectIntersectionWithNode(var int npcPtr, var string nodeName, var int debugInfoPtr) {
-    // Allow empty string pointer
-    if (!debugInfoPtr) {
-        var string str;
-        debugInfoPtr = _@s(str);
+    if (OBBoxVisible(GFA_DebugBoneOBBox)) {
+        UpdateOBBoxAddr(GFA_DebugBoneOBBox, emptyOBBox);
+    };
+
+    // Exit if nodeName is empty
+    if (Hlp_StrCmp(nodeName, "")) {
+        return;
     };
 
     // Retrieve model of the NPC
     var zCVob npc; npc = _^(npcPtr);
     var int model; model = npc.visual;
     if (!objCheckInheritance(model, zCModel__classDef)) {
-        MEM_WriteString(debugInfoPtr, "NPC visual is not a model");
-        return FALSE;
+        MEM_SendToSpy(zERR_TYPE_WARN, "GFA_CH_VisualizeModelNode: NPC visual is not a model");
+        return;
     };
 
     // Find node by string in model node list
@@ -114,14 +99,9 @@ func int GFA_CH_DetectIntersectionWithNode(var int npcPtr, var string nodeName, 
         };
     end;
     if (nodeIdx == nodes.numInArray) {
-        MEM_WriteString(debugInfoPtr, "Node not found in NPC model");
-        return FALSE;
+        MEM_SendToSpy(zERR_TYPE_WARN, "GFA_CH_VisualizeModelNode: Node not found in NPC model");
+        return;
     };
-
-    // Set up vectors from previously calculated projectile trajectory for detection trace rays
-    var int fromPosPtr; fromPosPtr = _@(GFA_CollTrj);
-    var int dirPosPtr; dirPosPtr = _@(GFA_CollTrj)+sizeof_zVEC3;
-    var int criticalhit;
 
     // Calculate node bounding boxes and world coordinates
     const int call = 0;
@@ -135,35 +115,18 @@ func int GFA_CH_DetectIntersectionWithNode(var int npcPtr, var string nodeName, 
         var int bboxPtr; bboxPtr = nodeInst+zCModelNodeInst_bbox3D_offset;
 
         // Debug visualization
-        if (BBoxVisible(GFA_DebugWSBBox)) {
-            UpdateBBoxAddr(GFA_DebugWSBBox, bboxPtr);
+        if (BBoxVisible(GFA_DebugBoneBBox)) {
+            UpdateBBoxAddr(GFA_DebugBoneBBox, bboxPtr);
         };
 
-        // Prevent debug drawing of oriented bounding box
-        if (OBBoxVisible(GFA_DebugWSOBBox)) {
-            const int QUARTER_BBOX_SIZE = sizeof_zTBBox3D/4;
-            var int emptyBBox[QUARTER_BBOX_SIZE];
-            UpdateOBBoxAddr(GFA_DebugWSOBBox, _@(emptyBBox));
-        };
-
-        // Detect collision
-        const int call2 = 0;
-        if (CALL_Begin(call2)) {
-            CALL_PtrParam(_@(dirPosPtr));      // Intersection vector (not needed)
-            CALL_PtrParam(_@(dirPosPtr));      // Trace ray direction
-            CALL_PtrParam(_@(fromPosPtr));     // Start vector
-            CALL_PutRetValTo(_@(criticalhit)); // Did the trace ray hit
-            CALL__thiscall(_@(bboxPtr), zTBBox3D__TraceRay); // This is a bounding box specific trace ray
-            call2 = CALL_End();
-        };
-        return +criticalhit;
+        return;
     };
 
     // Check model for soft skin list
     var zCArray skins; skins = _^(model+zCModel_meshSoftSkinList_offset); // zCArray<zCMeshSoftSkin*>
     if (skins.numInArray <= 0) {
-        MEM_WriteString(debugInfoPtr, "No soft skins in NPC model");
-        return FALSE;
+        MEM_SendToSpy(zERR_TYPE_WARN, "GFA_CH_VisualizeModelNode: No soft skins in NPC model");
+        return;
     };
 
     // Some models seem to have several skins with different numbers of nodes, iterate over all skins until index found
@@ -183,15 +146,15 @@ func int GFA_CH_DetectIntersectionWithNode(var int npcPtr, var string nodeName, 
         };
     end;
     if (i == skins.numInArray) {
-        MEM_WriteString(debugInfoPtr, "Node index was not found in model soft skin");
-        return FALSE;
+        MEM_SendToSpy(zERR_TYPE_WARN, "GFA_CH_VisualizeModelNode: Node index was not found in model soft skin");
+        return;
     };
 
     // Obtain matching oriented bounding box from oriented bounding box list
     var zCArray nodeObbList; nodeObbList = _^(skin+zCMeshSoftSkin_nodeObbList_offset); // zCArray<zCOBBox3D*>
     if (nodeObbList.numInArray <= nodeIdxS) {
-        MEM_WriteString(debugInfoPtr, "Node index exceeds soft skin OBBox list");
-        return FALSE;
+        MEM_SendToSpy(zERR_TYPE_WARN, "GFA_CH_VisualizeModelNode: Node index exceeds soft skin OBBox list");
+        return;
     };
     var int obboxPtr; obboxPtr = MEM_ReadIntArray(nodeObbList.array, nodeIdxS);
 
@@ -210,39 +173,18 @@ func int GFA_CH_DetectIntersectionWithNode(var int npcPtr, var string nodeName, 
     };
 
     // Debug visualization
-    if (OBBoxVisible(GFA_DebugWSOBBox)) {
-        UpdateOBBoxAddr(GFA_DebugWSOBBox, obboxPtr);
-    };
-
-    // Prevent debug drawing of bounding box
-    if (BBoxVisible(GFA_DebugWSBBox)) {
-        const int QUARTER_OBBOX_SIZE = sizeof_zCOBBox3D/4;
-        var int emptyOBBox[QUARTER_OBBOX_SIZE];
-        UpdateBBoxAddr(GFA_DebugWSBBox, _@(emptyOBBox));
-    };
-
-    // Detect collision
-    const int call4 = 0;
-    if (CALL_Begin(call4)) {
-        CALL_PtrParam(_@(dirPosPtr));      // Intersection vector (not needed)
-        CALL_PtrParam(_@(dirPosPtr));      // Trace ray direction
-        CALL_PtrParam(_@(fromPosPtr));     // Start vector
-        CALL_PutRetValTo(_@(criticalhit)); // Did the trace ray hit
-        CALL__thiscall(_@(obboxPtr), zCOBBox3D__TraceRay); // This is an oriented bounding box specific trace ray
-        call4 = CALL_End();
+    if (OBBoxVisible(GFA_DebugBoneOBBox)) {
+        UpdateOBBoxAddr(GFA_DebugBoneOBBox, obboxPtr);
     };
 
     MEM_Free(obboxPtr);
-
-    return +criticalhit;
 };
 
 
 /*
  * Detect critical hits and adjust base damage. This function hooks the engine function responsible for hit registration
- * and dealing of damage. By walking along the trajectory line of the projectile in space, it is checked whether it hit
- * a defined critical node/bone or weak spot, as defined in GFA_GetCriticalHitDefinitions(). If a critical hit is
- * detected the damage is adjusted and an event is called: GFA_StartCriticalHitEvent().
+ * and dealing of damage. The model node that was hit with the shot is passed to the config-function
+ * GFA_GetCriticalHit() to alter the damage.
  */
 func void GFA_CH_DetectCriticalHit() {
     // First check if shooter is player
@@ -272,13 +214,8 @@ func void GFA_CH_DetectCriticalHit() {
     var int damagePtr; damagePtr = MEMINT_SwitchG1G2(/*esp+48h-48h*/ ESP, /*esp+1ACh-C8h*/ ESP+228); // zREAL*
     var int targetPtr; targetPtr = MEMINT_SwitchG1G2(EBX, MEM_ReadInt(/*esp+1ACh-190h*/ ESP+28)); // oCNpc*
     var C_Npc targetNpc; targetNpc = _^(targetPtr);
-    var int protection;
-    if (GOTHIC_BASE_VERSION == 1) {
-        protection = MEM_ReadStatArr(_@(targetNpc.protection), damageIndex);
-    } else {
-        // Gothic 2 always considers point protection
-        protection = targetNpc.protection[PROT_POINT];
-    };
+    var int protection; protection = MEMINT_SwitchG1G2(MEM_ReadStatArr(_@(targetNpc.protection), damageIndex),
+                                                       targetNpc.protection[PROT_POINT]); // G2: always point protection
 
     // Check if NPC is down, function is not yet defined at time of parsing
     MEM_PushInstParam(targetNpc);
@@ -287,53 +224,31 @@ func void GFA_CH_DetectCriticalHit() {
         return;
     };
 
-    // Get weak spot node from target model
-    var int weakspotPtr; weakspotPtr = MEM_Alloc(sizeof_Weakspot);
-    var Weakspot weakspot; weakspot = _^(weakspotPtr);
-    GFA_CH_GetCriticalHitDefinitions_(targetNpc, MEM_ReadInt(damagePtr), damageIndex, weakspotPtr); // Get weak spot
+    // Create damage message
+    var int dmgMsgPtr; dmgMsgPtr = MEM_Alloc(sizeof_DmgMsg);
+    var DmgMsg damage; damage = _^(dmgMsgPtr);
+    damage.value = MEM_ReadInt(damagePtr);
+    damage.type = damageIndex;
+    damage.protection = protection;
+    damage.info = "";
 
-    var int criticalHit; // Variable that holds whether a critical hit was detected
-    var string debugInfo; debugInfo = ""; // Internal debugging info string to display in zSpy (see GFA_DEBUG_PRINT)
+    // Update damage message in config
+    GFA_CH_GetCriticalHit_(targetNpc, dmgMsgPtr);
 
-    if (Hlp_StrCmp(weakspot.node, "")) {
-        criticalHit = 0;
-        debugInfo = "No weak spot defined in config";
-    } else if (!GFA_ACTIVE) || (!(GFA_Flags & GFA_RANGED)) {
-        // Critical hits cause an advantage when playing with free aiming enabled compared to auto aim. This is, because
-        // there are no critical hits for ranged combat in Gothic 2. Here, they are introduced for balancing reasons.
-        // Note: Gothic 1 already has critical hits for auto aiming. This is replaced here.
-        var int critChance; critChance = GFA_CH_GetCriticalHitAutoAim_(targetNpc);
-        criticalHit = (r_MinMax(1, 100) <= critChance); // Allow critChance=0 to disable this feature
-
-        debugInfo = "Auto aiming: critical hit by probability (critical hit chance)";
-    } else {
-        // When free aiming is enabled the critical hit is determined by the actual node/bone that the projectile hits
-        criticalHit = GFA_CH_DetectIntersectionWithNode(targetPtr, weakspot.node, _@s(debugInfo));
+    // Debug visualization
+    if (BBoxVisible(GFA_DebugBoneBBox)) || (OBBoxVisible(GFA_DebugBoneOBBox)) {
+        GFA_CH_VisualizeModelNode(targetPtr, GFA_HitModelNode);
     };
 
     if (GFA_DEBUG_PRINT) {
         MEM_Info("GFA_CH_DetectCriticalHit:");
         var int s; s = SB_New();
 
-        SB("   critical hit:      ");
-        var int shotDamage;
-        if (criticalhit) {
-            SB("yes");
-            shotDamage = roundf(weakspot.bDmg);
-        } else {
-            SB("no");
-            shotDamage = roundf(MEM_ReadInt(damagePtr));
-        };
-        MEM_Info(SB_ToString());
-        SB_Clear();
-
-        SB("   base damage:       ");
+        var int newDamageInt; newDamageInt = roundf(damage.value);
+        SB("   base damage (n/o): ");
+        SBi(newDamageInt);
+        SB("/");
         SBi(roundf(MEM_ReadInt(damagePtr)));
-        MEM_Info(SB_ToString());
-        SB_Clear();
-
-        SB("   critical damage:   ");
-        SBi(roundf(weakspot.bDmg));
         MEM_Info(SB_ToString());
         SB_Clear();
 
@@ -341,18 +256,18 @@ func void GFA_CH_DetectCriticalHit() {
         // Calculate damage by formula (incl. protection of target, etc.)
         if (GOTHIC_BASE_VERSION == 1) {
             SB("(");
-            SBi(shotDamage);
+            SBi(newDamageInt);
             SB(" - ");
             SBi(protection);
             SB(") = ");
-            shotDamage = shotDamage-protection;
-            if (shotDamage < 0) {
-                shotDamage = 0;
+            newDamageInt = newDamageInt-protection;
+            if (newDamageInt < 0) {
+                newDamageInt = 0;
             };
-            SBi(shotDamage);
+            SBi(newDamageInt);
         } else {
             SB("max[ (");
-            SBi(shotDamage);
+            SBi(newDamageInt);
             SB(" + ");
             SBi(hero.attribute[ATR_DEXTERITY]);
             SB(" - ");
@@ -360,42 +275,32 @@ func void GFA_CH_DetectCriticalHit() {
             SB("), ");
             SBi(NPC_MINIMAL_DAMAGE);
             SB(" ] = ");
-            shotDamage = (shotDamage+hero.attribute[ATR_DEXTERITY])-protection;
+            newDamageInt = (newDamageInt+hero.attribute[ATR_DEXTERITY])-protection;
             if (protection == /*IMMUNE*/ -1) { // Gothic 2 only
-                shotDamage = 0;
-            } else if (shotDamage < NPC_MINIMAL_DAMAGE) {
-                shotDamage = NPC_MINIMAL_DAMAGE; // Minimum damage in Gothic 2 as defined in AI_Constants.d
+                newDamageInt = 0;
+            } else if (newDamageInt < NPC_MINIMAL_DAMAGE) {
+                newDamageInt = NPC_MINIMAL_DAMAGE; // Minimum damage in Gothic 2 as defined in AI_Constants.d
             };
-            SBi(shotDamage);
+            SBi(newDamageInt);
         };
         MEM_Info(SB_ToString());
         SB_Clear();
 
-        SB("   weak spot:         '");
-        SB(weakspot.node);
+        SB("   hit model bone:    '");
+        SB(GFA_HitModelNode);
         SB("'");
         MEM_Info(SB_ToString());
         SB_Destroy();
 
-        // Internal debug info
-        if (!Hlp_StrCmp(debugInfo, "")) {
-            MEM_Info(ConcatStrings("   ", debugInfo));
-        };
-
         // Config debug info
-        if (!Hlp_StrCmp(weakspot.debugInfo, "")) {
-            MEM_Info(ConcatStrings("   ", weakspot.debugInfo));
+        if (!Hlp_StrCmp(damage.info, "")) {
+            MEM_Info(ConcatStrings("   ", damage.info));
         };
     };
 
-    // Create an event, if a critical hit was detected
-    if (criticalHit) {
-        MEM_WriteInt(damagePtr, weakspot.bDmg); // Base damage not final damage
-        GFA_LastHitCritical = TRUE; // Used for GFA_CC_SetDamageBehavior(), will be reset to FALSE immediately
-        GFA_StatsCriticalHits += 1; // Update shooting statistics
-        GFA_CH_StartCriticalHitEvent_(targetNpc); // Use this function to add an event, e.g. a print or a sound
-    };
-    MEM_Free(weakspotPtr);
+    // Overwrite base damage value
+    MEM_WriteInt(damagePtr, damage.value);
+    MEM_Free(dmgMsgPtr);
 };
 
 

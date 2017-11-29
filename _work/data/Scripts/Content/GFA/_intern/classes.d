@@ -23,14 +23,15 @@
 
 
 /*
- * Class: Critical hit definitions
+ * Class: Critical hit damage message
  */
-const int sizeof_Weakspot = 44;
+const int sizeof_DmgMsg = 32;
 
-class Weakspot {
-    var string node;
-    var int bDmg;
-    var string debugInfo;
+class DmgMsg {
+    var int value;      // Base damage (float)
+    var int type;       // Damage type (read-only)
+    var int protection; // Protection of target to DmgMsg.type (read-only)
+    var string info;    // Optional debug information
 };
 
 
