@@ -32,9 +32,8 @@
 func void GFA_GetCriticalHit(var C_Npc target, var string bone, var C_Item weapon, var int talent, var int dmgMsgPtr) {
     var DmgMsg damage; damage = _^(dmgMsgPtr);
 
-    // In case this helps with differentiating between NPC types:
-    var zCPar_Symbol sym; sym = _^(MEM_GetSymbolByIndex(Hlp_GetInstanceID(target)));
-    var string instName; instName = sym.name; // Exact instance name in upper case, e.g. "ORCWARRIOR_LOBART1"
+    // In case this helps with differentiating between NPC types: Exact instance name, e.g. "ORCWARRIOR_LOBART1"
+    var string instName; instName = MEM_ReadString(MEM_GetSymbolByIndex(Hlp_GetInstanceID(target)));
 
     /*
     // The damage may depend on the target NPC (e.g. different damage for monsters). Make use of 'target' for that
@@ -122,7 +121,7 @@ func void GFA_GetCriticalHit(var C_Npc target, var string bone, var C_Item weapo
             };
 
             // Extra exception for metal armors (paladin armor). Gothic 2 only: There are no helmets in Gothic 1
-            if (Npc_HasEquippedArmor(target) {
+            if (Npc_HasEquippedArmor(target)) {
                 var C_Item armor; armor = Npc_GetEquippedArmor(target);
                 if (armor.material == MAT_METAL)    // Armor is made out of metal
                 && (!Npc_CanSeeNpc(target, hero)) { // Target is not facing the player (helmets do not cover the face)
@@ -181,6 +180,9 @@ func void GFA_GetCriticalHit(var C_Npc target, var string bone, var C_Item weapo
  */
 func void GFA_GetCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int talent, var int dmgMsgPtr) {
     var DmgMsg damage; damage = _^(dmgMsgPtr);
+
+    // In case this helps with differentiating between NPC types: Exact instance name, e.g. "ORCWARRIOR_LOBART1"
+    var string instName; instName = MEM_ReadString(MEM_GetSymbolByIndex(Hlp_GetInstanceID(target)));
 
     // Define critical hit probability
     var int rand; rand = Hlp_Random(100);
