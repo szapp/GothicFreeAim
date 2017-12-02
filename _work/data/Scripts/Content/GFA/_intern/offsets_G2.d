@@ -32,7 +32,6 @@ const int zCVob__TraceRay                            =  6291008; //0x5FFE40
 const int zCVob__SetAI                               =  6285552; //0x5FE8F0
 const int zCVob__SetSleeping                         =  6302000; //0x602930
 const int zCVob__RotateWorld                         =  6403360; //0x61B520
-const int zCArray_zCVob__IsInList                    =  7159168; //0x6D3D80
 const int zCRigidBody__SetVelocity                   =  5990096; //0x5B66D0                // Not used for Gothic 2
 const int zCCollisionReport__vtbl                    =  8592708; //0x831D44
 const int zCWorld__TraceRayNearestHit_Vob            =  6430624; //0x621FA0
@@ -91,7 +90,6 @@ const int zVEC3__NormalizeSafe                       =  4819488; //0x498A20
 const int zTBBox3D__CalcGreaterBBox3D                =  5522768; //0x544550
 const int zTBBox3D__TraceRay                         =  5528896; //0x545D40
 const int zCOBBox3D__Transform                       =  5544080; //0x549890
-const int zCOBBox3D__TraceRay                        =  5542176; //0x549120
 const int ztimer                                     = 10073044; //0x99B3D4                // Not used for Gothic 2
 const int oCGame__s_bUseOldControls                  =  9118144; //0x8B21C0
 const int zCInput_Win32__s_mouseEnabled              =  9248108; //0x8D1D6C
@@ -173,7 +171,6 @@ const int oCVisualFX_targetVob_offset                = 1200;//0x04B0
 const int oCVisualFX_instanceName_offset             = 1220;//0x04C4
 
 const int zCAICamera_elevation_offset                = 56;  //0x0038
-const int zCAICamera_azimuth_offset                  = 68;  //0x0044
 
 const int zCAIPlayer_bitfield1_forceModelHalt        = 1<<0;
 
@@ -190,7 +187,6 @@ const int oCAIHuman_bitfield_dontKnowAniPlayed       = 1<<6;
 const int oCAIHuman_bitfield_spellReleased           = 1<<7;
 
 const int oCAIArrowBase_ignoreVobList_offset         = 48;  //0x0030
-const int oCAIArrowBase_collision_offset             = 52;  //0x0034
 const int oCAIArrowBase_lifeTime_offset              = 56;  //0x0038
 const int oCAIArrowBase_hostVob_offset               = 60;  //0x003C
 const int oCAIArrowBase_creatingImpactFX_offset      = 64;  //0x0040
