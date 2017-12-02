@@ -533,7 +533,7 @@ func void GFA_ExtendCollisionCheck() {
         };
 
         // Ignore by refined collision check with NPCs
-        if (GFA_Flags & GFA_RANGED) && (GFA_TRUE_HITCHANCE) && (hit) {
+        if (GFA_Flags & GFA_RANGED) && (hit) {
             hit = GFA_RefinedProjectileCollisionCheck(vobPtr, arrowAI);
         };
     } else if (GFA_Flags & GFA_CUSTOM_COLLISIONS) && (GFA_TRIGGER_COLL_FIX) && (GOTHIC_BASE_VERSION == 2) {
