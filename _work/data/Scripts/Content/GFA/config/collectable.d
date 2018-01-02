@@ -20,13 +20,8 @@
 func int GFA_GetUsedProjectileInstance(var int projectileInst, var C_Npc shooter, var C_Npc inventoryNpc) {
     /*
     // Exchange the projectile with a 'used' one (e.g. arrow, that needs to be repaired)
-    if (projectileInst == Hlp_GetInstanceID(ItRw_Arrow)) { // ItAmArrow in Gothic 1
-        if (!Hlp_IsValidItem(ItRw_UsedArrow)) {
-            // Initialize! It is important, that the item instance is valid (must have been created before), otherwise
-            // its value is -1. To ensure this, create the item once at way point 'TOT'.
-            Wld_InsertItem(ItRw_UsedArrow, MEM_FARFARAWAY);
-        };
-        projectileInst = Hlp_GetInstanceID(ItRw_UsedArrow);
+    if (projectileInst == ItRw_Arrow) { // ItAmArrow in Gothic 1
+        projectileInst = ItRw_UsedArrow;
     }; */
 
     // Remove magical arrows/bolts from Gothic 2 Addon (if re-usable, they would be overpowered)
