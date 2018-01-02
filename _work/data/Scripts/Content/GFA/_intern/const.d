@@ -1,7 +1,7 @@
 /*
  * Internal constants of GFA
  *
- * Gothic Free Aim (GFA) v1.0.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.0.1 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2017  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
@@ -29,7 +29,7 @@
 
 /* Initialization */
 
-const string GFA_VERSION            = "Gothic Free Aim v1.0.0";
+const string GFA_VERSION            = "Gothic Free Aim v1.0.1";
 const int    GFA_LEGO_FLAGS         = LeGo_HookEngine       // For initializing all hooks
                                     | LeGo_FrameFunctions   // For projectile gravity
                                     | LeGo_ConsoleCommands  // For console commands and debugging
