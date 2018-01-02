@@ -72,23 +72,23 @@ func int GFA_GetDrawForce(var C_Item weapon, var int talent) {
 func int GFA_GetAccuracy(var C_Item weapon, var int talent) {
     // Here, the 'hit chance' is scaled by draw force, where 'hit chance' is talent (Gothic 2) or dexterity (Gothic 1)
     //  Draw force = 100% -> accuracy = hit chance
-    //  Draw force =   0% -> accuracy = hit chance * 0.75
+    //  Draw force =   0% -> accuracy = hit chance * 0.8
 
     // In Gothic 1, the hit chance is actually the dexterity (for both bows and crossbows), NOT the talent!
     if (GOTHIC_BASE_VERSION == 1) {
         talent = hero.attribute[ATR_DEXTERITY];
     };
 
-    // Get draw force from the function above and re-scale it from [0, 100] to [75, 100]
+    // Get draw force from the function above and re-scale it from [0, 100] to [80, 100]
     var int drawForce; drawForce = GFA_GetDrawForce(weapon, talent);
-    drawForce = GFA_ScaleRanges(drawForce, 0, 100, 75, 100);
+    drawForce = GFA_ScaleRanges(drawForce, 0, 100, 80, 100);
 
     // Scale accuracy by draw force
     var int accuracy; accuracy = (talent * drawForce) / 100;
 
-    // Decrease accuracy if moving by 0.25
+    // Decrease accuracy if moving by 0.2
     if (GFA_IsStrafing) {
-        accuracy = accuracy*3/4;
+        accuracy = accuracy*(4/5);
     };
 
     return accuracy;
@@ -119,9 +119,9 @@ func int GFA_GetRecoil(var C_Item weapon, var int talent) {
     var int scaledStrength; scaledStrength = hero.attribute[ATR_STRENGTH];
     scaledStrength = GFA_ScaleRanges(scaledStrength, 20, 120, 0, 80);
 
-    // Get draw force (steady aim) from the function above and re-scale it from [0, 100] to [75, 100]
+    // Get draw force (steady aim) from the function above and re-scale it from [0, 100] to [80, 100]
     var int steadyAim; steadyAim = GFA_GetDrawForce(weapon, talent);
-    steadyAim = GFA_ScaleRanges(steadyAim, 0, 100, 75, 100);
+    steadyAim = GFA_ScaleRanges(steadyAim, 0, 100, 80, 100);
 
     // Apply steady aim to scaled strength and inverse result to obtain recoil percentage
     var int recoil; recoil = (scaledStrength * steadyAim) / 100;
@@ -153,7 +153,7 @@ func int GFA_GetInitialBaseDamage(var int baseDamage, var int damageType, var C_
         var int aimingDistance) {
     // Here the damage is scaled by draw force:
     //  Draw force = 100% -> baseDamage
-    //  Draw force =   0% -> baseDamage * 0.75
+    //  Draw force =   0% -> baseDamage * 0.8
 
     /*
     // Optionally, it is possible to exclude certain damage types
@@ -162,9 +162,9 @@ func int GFA_GetInitialBaseDamage(var int baseDamage, var int damageType, var C_
         return baseDamage;
     }; */
 
-    // Get draw force from the function above and re-scale it from [0, 100] to [75, 100]
+    // Get draw force from the function above and re-scale it from [0, 100] to [80, 100]
     var int drawForce; drawForce = GFA_GetDrawForce(weapon, talent);
-    drawForce = GFA_ScaleRanges(drawForce, 0, 100, 75, 100);
+    drawForce = GFA_ScaleRanges(drawForce, 0, 100, 80, 100);
 
     // Scale initial damage with adjusted draw force
     baseDamage = (baseDamage * drawForce) / 100;
