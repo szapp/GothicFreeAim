@@ -235,7 +235,7 @@ func void GFA_SetupProjectile() {
         var int accuracy; accuracy = GFA_GetAccuracy_(); // Change the accuracy in that function, not here!
 
         // Determine whether it is considered accurate enough for a positive hit
-        if (r_MinMax(0, 99) < accuracy) {
+        if (r_Max(99) < accuracy) {
 
             // The projectile will land inside the hit radius scaled by the accuracy
             rmin = FLOATNULL;
@@ -244,12 +244,12 @@ func void GFA_SetupProjectile() {
             var int hitRadius; hitRadius = castToIntf(GFA_SCATTER_HIT);
             var int hitArea; hitArea = mulf(PI, sqrf(hitRadius)); // Area of circle from radius
 
-            // Scale the maximum area with minimum acurracy
+            // Scale the maximum area with minimum accuracy
             // (hitArea - 1) * (accuracy - 100)
             // --------------------------------  + 1
             //               -100
             var int maxArea;
-            maxArea = addf(divf(mulf(subf(hitArea, FLOATONE), mkf(accuracy-100)), negf(FLOAT1C)), FLOATONE);
+            maxArea = addf(divf(mulf(subf(hitArea, FLOATONE), mkf(100-accuracy)), FLOAT1C), FLOATONE);
 
             // Convert back to a radius
             rmax = sqrtf(divf(maxArea, PI));
@@ -267,8 +267,8 @@ func void GFA_SetupProjectile() {
         // r_MinMax works with integers: scale up
         var int rmaxI; rmaxI = roundf(mulf(rmax, FLOAT1K));
 
-        // Azimiuth scatter (horizontal deviation from a perfect shot in degrees)
-        var int angleX; angleX = fracf(r_MinMax(FLOATNULL, rmaxI), 1000); // Here the 1000 are scaled down again
+        // Azimuth scatter (horizontal deviation from a perfect shot in degrees)
+        var int angleX; angleX = fracf(r_Max(rmaxI), 1000); // Here the 1000 are scaled down again
 
         // For a circular scattering pattern the range of possible values (rmin and rmax) for angleY is decreased:
         // r^2 - x^2 = y^2  =>  y = sqrt(r^2 - x^2), where r is the radius to stay within the maximum radius
