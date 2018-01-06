@@ -2,7 +2,7 @@
  * Initialization of GFA
  *
  * Gothic Free Aim (GFA) v1.0.1 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2017  mud-freak (@szapp)
+ * Copyright (C) 2016-2018  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
  * <http://github.com/szapp/GothicFreeAim>
@@ -245,7 +245,7 @@ func int GFA_InitOnce() {
 
     // Copyright notice in zSpy
     var int s; s = SB_New();
-    SB("     "); SB(GFA_VERSION); SB(", Copyright "); SBc(169 /* (C) */); SB(" 2016-2017  mud-freak (@szapp)");
+    SB("     "); SB(GFA_VERSION); SB(", Copyright "); SBc(169 /* (C) */); SB(" 2016-2018  mud-freak (@szapp)");
     MEM_Info("");
     MEM_Info(SB_ToString()); SB_Destroy();
     MEM_Info("     <http://github.com/szapp/GothicFreeAim>");
