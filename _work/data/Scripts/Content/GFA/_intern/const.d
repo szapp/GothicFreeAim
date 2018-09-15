@@ -34,8 +34,7 @@ const int    GFA_LEGO_FLAGS         = LeGo_HookEngine       // For initializing 
                                     | LeGo_FrameFunctions   // For projectile gravity
                                     | LeGo_ConsoleCommands  // For console commands and debugging
                                     | LeGo_Random           // For scattering and other uses of random numbers
-                                    | LeGo_Draw3D           // For debug visualizations
-                                    | LeGo_PrintS;          // To be safe (in case it is used in critical hit event)
+                                    | LeGo_Draw3D;          // For debug visualizations
 
 var   int    GFA_Flags;                                     // Flags for initialization of GFA
 const int    GFA_RANGED             = 1<<0;                 // Free aiming for ranged combat (bow and crossbow)
