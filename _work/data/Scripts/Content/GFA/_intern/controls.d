@@ -430,8 +430,11 @@ func void GFA_FixStandingBodyState() {
         };
     } else {
         // oCAniCtrl_Human::SearchStandAni()
-        var zCAIPlayer playerAI; playerAI = _^(ESI);
-        npcPtr = playerAI.vob;
+        npcPtr = MEM_ReadInt(ESI+oCAniCtrl_Human_npc_offset);
+
+        if (!Hlp_Is_oCNpc(npcPtr)) {
+            return;
+        };
     };
 
     // Reset body state back to standing (instead of running/walking/sneaking)

@@ -174,6 +174,7 @@ const int zCAICamera_elevation_offset                = 56;  //0x0038
 
 const int zCAIPlayer_bitfield1_forceModelHalt        = 1<<0;
 
+const int oCAniCtrl_Human_npc_offset                 = 300; //0x012C
 const int oCAniCtrl_Human_walkmode_offset            = 352; //0x0160
 const int oCAniCtrl_Human_t_stand_2_cast_offset      = 4572;//0x11DC
 const int oCAniCtrl_Human_s_cast_offset              = 4576;//0x11E0
