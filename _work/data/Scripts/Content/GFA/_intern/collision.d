@@ -474,6 +474,35 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
 
 
 /*
+ * Complete the half-implemented feature in Gothic 1 of fading out the visibility of a projectile before removing it.
+ * This function hooks oCAIArrowBase::DoAI(), if the collectable feature is not enabled.
+ */
+func void GFA_CC_FadeProjectileVisibility() {
+    // Check if AI was already removed
+    var int destroyed; destroyed = MEM_ReadInt(EDI);
+    if (destroyed) {
+        return;
+    };
+
+    // Check validity of projectile
+    var int projectilePtr; projectilePtr = EBX; // oCItem*
+    if (!projectilePtr) {
+        return;
+    };
+    var zCVob projectile; projectile = _^(projectilePtr);
+
+    // Check if the projectile stopped moving
+    if (!(projectile.bitfield[0] & zCVob_bitfield0_physicsEnabled)) {
+        var int arrowAI; arrowAI = ESI; // oCAIArrow*
+        var int lifeTime; lifeTime = MEM_ReadInt(arrowAI+oCAIArrowBase_lifeTime_offset);
+        if (lifeTime == -1082130432) { // -1
+            MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE);
+        };
+    };
+};
+
+
+/*
  * Disable collision of projectiles with NPCs once the projectiles have bounced off of another surface. This function is
  * called from GFA_ExtendCollisionCheck() only if GFA_COLL_PRIOR_NPC == -1.
  */

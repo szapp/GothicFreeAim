@@ -173,6 +173,9 @@ func void GFA_InitFeatureCustomCollisions() {
     HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_CC_ProjectileCollisionWithNpc); // Hit reg/coll on NPCs
     if (GOTHIC_BASE_VERSION == 1) {
         writeNOP(oCAIArrow__ReportCollisionToAI_destroyPrj, 7); // Disable destroying of projectiles
+        if (!(GFA_Flags & GFA_REUSE_PROJECTILES)) {
+            HookEngineF(oCAIArrow__DoAI_rtn, 6, GFA_CC_FadeProjectileVisibility); // Implement fading like in Gothic 2
+        };
         HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_CC_ProjectileCollisionWithWorld); // Collision world
         MemoryProtectionOverride(oCAIArrow__ReportCollisionToAI_keepPlyStrp, 2); // Keep poly strip after coll
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_keepPlyStrp, /*EB*/ 235); // jmp
