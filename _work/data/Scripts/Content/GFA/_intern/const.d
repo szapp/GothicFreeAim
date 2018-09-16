@@ -33,9 +33,7 @@ const string GFA_VERSION            = "Gothic Free Aim v1.0.1";
 const int    GFA_LEGO_FLAGS         = LeGo_HookEngine       // For initializing all hooks
                                     | LeGo_ConsoleCommands  // For console commands and debugging
                                     | LeGo_Random           // For scattering and other uses of random numbers
-                                    | LeGo_Draw3D           // For debug visualizations (may be removed)
-                                    | LeGo_FrameFunctions   // For hitmarker in config (may be removed)
-                                    | LeGo_View;            // For hitmarker in config (may be removed)
+                                    | LeGo_Draw3D;          // For debug visualizations (may be removed)
 
 var   int    GFA_Flags;                                     // Flags for initialization of GFA
 const int    GFA_RANGED             = 1<<0;                 // Free aiming for ranged combat (bow and crossbow)
