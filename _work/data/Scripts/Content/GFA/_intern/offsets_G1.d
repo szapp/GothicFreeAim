@@ -129,6 +129,7 @@ const int oCAIArrow__DoAI_rtn                        =  6395210; //0x61954A // H
 const int oCAIArrow__ReportCollisionToAI_collAll     =  6395474; //0x619652 // Hook len 8
 const int oCAIArrow__ReportCollisionToAI_hitChc      =  6395775; //0x61977F // Hook len 6
 const int oCAIArrow__ReportCollisionToAI_damage      =  6395861; //0x6197D5 // Hook len 7
+const int oCAIArrowBase__DoAI_setLifeTime            =  6393028; //0x618CC4 // Hook len 7
 const int oCAIArrowBase__ReportCollisionToAI_hitNpc  =  6395866; //0x6197DA // Hook len 5
 const int oCAIArrowBase__ReportCollisionToAI_hitVob  =  0;                                 // Does not exist in Gothic 1
 const int oCAIArrowBase__ReportCollisionToAI_hitWld  =  0;                                 // Does not exist in Gothic 1

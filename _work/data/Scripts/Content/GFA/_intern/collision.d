@@ -121,11 +121,8 @@ func void GFA_CC_ProjectileStuck(var int projectilePtr) {
  * It is called for both Gothic 1 and Gothic 2.
  */
 func void GFA_CC_ProjectileDestroy(var int arrowAI) {
-    if (GOTHIC_BASE_VERSION == 1) {
-        MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1); // Gothic 1
-    } else {
-        MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATNULL); // Gothic 2
-    };
+    MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1);
+    MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATNULL);
 };
 
 
@@ -227,7 +224,9 @@ func void GFA_CC_ProjectileCollisionWithNpc() {
         if (collision == DEFLECT) {
             var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
             GFA_CC_ProjectileDeflect(projectile._zCVob_rigidBody);
-            MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, -1); // Mark as deflecting, such that it is ignored
+            if (GFA_Flags & GFA_REUSE_PROJECTILES) {
+                MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, -1); // Mark as deflecting to ignored it
+            };
         } else {
             MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1); // Destroy projectile on impact
         };
@@ -495,7 +494,7 @@ func void GFA_CC_FadeProjectileVisibility() {
     if (!(projectile.bitfield[0] & zCVob_bitfield0_physicsEnabled)) {
         var int arrowAI; arrowAI = ESI; // oCAIArrow*
         var int lifeTime; lifeTime = MEM_ReadInt(arrowAI+oCAIArrowBase_lifeTime_offset);
-        if (lifeTime == -1082130432) { // -1
+        if (lifeTime == FLOATONE_NEG) {
             MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE);
         };
     };

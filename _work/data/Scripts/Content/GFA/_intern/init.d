@@ -47,6 +47,10 @@ func void GFA_InitFeatureFreeAiming() {
         HookEngineF(oCAIHuman__BowMode_notAiming, 6, GFA_RangedIdle); // Fix focus collection while not aiming
         HookEngineF(oCAIHuman__BowMode_interpolateAim, 5, GFA_RangedAiming); // Interpolate aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, GFA_SetupProjectile); // Setup projectile trajectory (shooting)
+        writeNOP(oCAIArrowBase__DoAI_setLifeTime, 7);
+        MEM_WriteByte(oCAIArrowBase__DoAI_setLifeTime, /*85*/ 133); // test eax, eax
+        MEM_WriteByte(oCAIArrowBase__DoAI_setLifeTime+1, /*C0*/ 192);
+        HookEngineF(oCAIArrowBase__DoAI_setLifeTime, 7, GFA_EnableProjectileGravity); // Enable gravity after some time
         HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_ResetProjectileGravity); // Reset gravity on impact
         HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_OverwriteHitChance); // Manipulate hit chance
         MemoryProtectionOverride(oCAIHuman__CheckFocusVob_ranged, 1); // Prevent toggling focus in ranged combat
@@ -304,13 +308,10 @@ func int GFA_InitOnce() {
 
 
 /*
- * Initializations to perfrom on every game start, level change and loading of saved games. This function is called from
+ * Initializations to perform on every game start, level change and loading of saved games. This function is called from
  * GFA_Init().
  */
 func void GFA_InitAlways() {
-    // Pause frame functions when in menu
-    Timer_SetPauseInMenu(1);
-
     // Retrieve trace ray interval: Recalculate trace ray intersection every x ms
     GFA_AimRayInterval = STR_ToInt(MEM_GetGothOpt("GFA", "focusUpdateIntervalMS"));
     if (GFA_AimRayInterval > 500) {

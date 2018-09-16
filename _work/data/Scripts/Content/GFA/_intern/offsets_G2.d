@@ -129,6 +129,7 @@ const int oCAIArrow__DoAI_rtn                        =  6952073; //0x6A1489 // H
 const int oCAIArrow__ReportCollisionToAI_collAll     =  6949315; //0x6A09C3 // Hook len 8
 const int oCAIArrow__ReportCollisionToAI_hitChc      =  6953482; //0x6A1A0A // Hook len 6
 const int oCAIArrow__ReportCollisionToAI_damage      =  6953711; //0x6A1AEF // Hook len 7
+const int oCAIArrowBase__DoAI_setLifeTime            =  6949017; //0x6A0899 // Hook len 7
 const int oCAIArrowBase__ReportCollisionToAI_hitNpc  =  6949832; //0x6A0BC8 // Hook len 5
 const int oCAIArrowBase__ReportCollisionToAI_hitVob  =  6949929; //0x6A0C29 // Hook len 5
 const int oCAIArrowBase__ReportCollisionToAI_hitWld  =  6949460; //0x6A0A54 // Hook len 5
@@ -193,7 +194,7 @@ const int oCAIArrowBase_hostVob_offset               = 60;  //0x003C
 const int oCAIArrowBase_creatingImpactFX_offset      = 64;  //0x0040
 const int oCAIArrowBase_hasHit_offset                = 84;  //0x0054
 const int oCAIArrow_origin_offset                    = 92;  //0x005C
-const int oCAIArrow_destroyProjectile_offset         = 96;  //0x0060                       // Not used for Gothic 2
+const int oCAIArrow_destroyProjectile_offset         = 96;  //0x0060
 
 const int zCRigidBody_mass_offset                    = 0;   //0x0000
 const int zCRigidBody_xPos_offset                    = 80;  //0x0050
