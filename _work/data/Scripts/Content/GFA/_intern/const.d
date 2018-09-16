@@ -32,10 +32,10 @@
 const string GFA_VERSION            = "Gothic Free Aim v1.0.1";
 const int    GFA_LEGO_FLAGS         = LeGo_HookEngine       // For initializing all hooks
                                     | LeGo_ConsoleCommands  // For console commands and debugging
-                                    | LeGo_View             // For drawing reticle
                                     | LeGo_Random           // For scattering and other uses of random numbers
                                     | LeGo_Draw3D           // For debug visualizations (may be removed)
-                                    | LeGo_FrameFunctions;  // For hitmarker in config (may be removed)
+                                    | LeGo_FrameFunctions   // For hitmarker in config (may be removed)
+                                    | LeGo_View;            // For hitmarker in config (may be removed)
 
 var   int    GFA_Flags;                                     // Flags for initialization of GFA
 const int    GFA_RANGED             = 1<<0;                 // Free aiming for ranged combat (bow and crossbow)
@@ -69,7 +69,7 @@ var   int    GFA_AimRayPrevCalcTime;                        // Time of last trac
 
 const int    GFA_RETICLE_MIN_SIZE   = 32;                   // Smallest reticle size in pixels
 const int    GFA_RETICLE_MAX_SIZE   = 64;                   // Biggest reticle size in pixels
-var   int    GFA_ReticleHndl;                               // Handle of the reticle
+const int    GFA_RETICLE_PTR        = 0;                    // Reticle zCView
 var   int    GFA_AimVobHasFX;                               // For performance: check whether FX needs to be removed
 
 const string GFA_CAMERA             = "CamModGFA";          // CCamSys_Def script instance

@@ -26,8 +26,8 @@
  * Hide the reticle. This function is called from various functions to ensure that the reticle disappears.
  */
 func void GFA_RemoveReticle() {
-    if (Hlp_IsValidHandle(GFA_ReticleHndl)) {
-        View_Close(GFA_ReticleHndl);
+    if (GFA_RETICLE_PTR) {
+        ViewPtr_Close(GFA_RETICLE_PTR);
     };
 };
 
@@ -57,35 +57,35 @@ func void GFA_InsertReticle(var int reticlePtr) {
         // Get the screen to retrieve the center
         var zCView screen; screen = _^(MEM_Game._zCSession_viewport);
 
-        if (!Hlp_IsValidHandle(GFA_ReticleHndl)) {
+        if (!GFA_RETICLE_PTR) {
             // Create reticle if it does not exist
-            GFA_ReticleHndl = View_CreateCenterPxl(screen.psizex/2, screen.psizey/2, size, size);
-            View_SetTexture(GFA_ReticleHndl, reticle.texture);
-            View_SetColor(GFA_ReticleHndl, reticle.color);
-            View_Open(GFA_ReticleHndl);
+            GFA_RETICLE_PTR = ViewPtr_CreateCenterPxl(screen.psizex/2, screen.psizey/2, size, size);
+            ViewPtr_SetTexture(GFA_RETICLE_PTR, reticle.texture);
+            ViewPtr_SetColor(GFA_RETICLE_PTR, reticle.color);
+            ViewPtr_Open(GFA_RETICLE_PTR);
         } else {
             // If the reticle already exists adjust it to the new texture, size and color
-            if (!Hlp_StrCmp(View_GetTexture(GFA_ReticleHndl), reticle.texture)) {
+            if (!Hlp_StrCmp(ViewPtr_GetTexture(GFA_RETICLE_PTR), reticle.texture)) {
                 // Update its texture
-                View_SetTexture(GFA_ReticleHndl, reticle.texture);
+                ViewPtr_SetTexture(GFA_RETICLE_PTR, reticle.texture);
             };
 
-            if (View_GetColor(GFA_ReticleHndl) != reticle.color) {
+            if (ViewPtr_GetColor(GFA_RETICLE_PTR) != reticle.color) {
                 // Update its color
-                View_SetColor(GFA_ReticleHndl, reticle.color);
+                ViewPtr_SetColor(GFA_RETICLE_PTR, reticle.color);
             };
 
-            var zCView crsHr; crsHr = _^(getPtr(GFA_ReticleHndl));
+            var zCView crsHr; crsHr = _^(GFA_RETICLE_PTR);
             if (crsHr.psizex != size) || (screen.psizex/2 != centerX) {
                 // Update its size and re-position it to center
                 var int centerX; centerX = screen.psizex/2;
-                View_ResizePxl(GFA_ReticleHndl, size, size);
-                View_MoveToPxl(GFA_ReticleHndl, screen.psizex/2-(size/2), screen.psizey/2-(size/2));
+                ViewPtr_ResizePxl(GFA_RETICLE_PTR, size, size);
+                ViewPtr_MoveToPxl(GFA_RETICLE_PTR, screen.psizex/2-(size/2), screen.psizey/2-(size/2));
             };
 
             if (!crsHr.isOpen) {
                 // Show the reticle if it is not visible
-                View_Open(GFA_ReticleHndl);
+                ViewPtr_Open(GFA_RETICLE_PTR);
             };
         };
     } else {
