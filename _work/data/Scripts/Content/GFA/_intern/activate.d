@@ -160,7 +160,7 @@ func void GFA_IsActive() {
 
     // Check if falling (body state BS_FALL is unreliable, because it is set after the falling animation has started)
     var zCAIPlayer playerAI; playerAI = _^(her.anictrl);
-    if (gef(playerAI.aboveFloor, mkf(12))) {
+    if (gef(playerAI.aboveFloor, mkf(50))) {
         GFA_ResetSpell();
         GFA_AimMovement(0, "");
         GFA_RemoveReticle();
