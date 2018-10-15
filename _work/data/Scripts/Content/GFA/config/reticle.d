@@ -144,9 +144,57 @@ func void GFA_GetSpellReticle(var C_Npc target, var int spellID, var C_Spell spe
     // Scale size by the amount of mana invested
     reticle.size = manaInvested; // This should still adjusted to be scaled between [0, 100] */
 
-    // For examples for reticle textures based on spellID, see this function in config\reticleBySpellID_G1.d or
-    // config\reticleBySpellID_G2.d
+    // Here are examples for reticle textures based on spell names.
     // Keep in mind: This is just a suggestion. In fact, reticles can be defined completely differently, see examples
     // above. Feel free to create more interesting reticles.
-    reticle.texture = reticleBySpellID(spellID);
+    // Note: Only spells are listed that are eligible for free aiming. All other spells will not have a reticle anyways.
+
+    // Exact spell name, e.g. "FIREBOLT"
+    var string spellName; spellName = STR_Upper(MEM_ReadStatStringArr(spellFxInstanceNames, spellID));
+
+    if (STR_IndexOf(spellName, "ICE") != -1)
+    || (STR_IndexOf(spellName, "THUNDERBOLT") != -1) {
+        // Ice spells
+        reticle.texture = RETICLE_SPADES;
+    } else if (STR_IndexOf(spellName, "WATER") != -1)
+    || (STR_IndexOf(spellName, "INFLATE") != -1)
+    || (STR_IndexOf(spellName, "GEYSER") != -1)
+    || (STR_IndexOf(spellName, "WIND") != -1)
+    || (STR_IndexOf(spellName, "STORM") != -1) {
+        // Water/wind spells
+        reticle.texture = GFA_AnimateReticleByTime(RETICLE_WHIRL, 30, 10); // Animate reticle with 30 FPS (10 Frames)
+    } else if (STR_IndexOf(spellName, "FIRE") != -1)
+    || (STR_IndexOf(spellName, "PYRO") != -1) {
+        // Fire spells
+        reticle.texture = RETICLE_HORNS;
+    } else if (STR_IndexOf(spellName, "ZAP") != -1)
+    || (STR_IndexOf(spellName, "LIGHTNING") != -1)
+    || (STR_IndexOf(spellName, "FLASH") != -1)
+    || (STR_IndexOf(spellName, "THUNDER") != -1) {
+        // Electric spells
+        reticle.texture = RETICLE_BOLTS;
+    } else if (STR_IndexOf(spellName, "PAL") != -1) {
+        // Paladin spells
+        reticle.texture = RETICLE_FRAME;
+    } else if (STR_IndexOf(spellName, "DEATH") != -1)
+    || (STR_IndexOf(spellName, "DESTROYUNDEAD") != -1)
+    || (STR_IndexOf(spellName, "MASTEROFDISASTER") != -1)
+    || (STR_IndexOf(spellName, "SWARM") != -1)
+    || (STR_IndexOf(spellName, "GREENTENTACLE") != -1)
+    || (STR_IndexOf(spellName, "ENERGYBALL") != -1)
+    || (STR_IndexOf(spellName, "SUCKENERGY") != -1)
+    || (STR_IndexOf(spellName, "SKULL") != -1) {
+        // Evil spells
+        reticle.texture = RETICLE_BOWL;
+    } else if (STR_IndexOf(spellName, "CHARM") != -1)
+    || (STR_IndexOf(spellName, "SLEEP") != -1)
+    || (STR_IndexOf(spellName, "CONTROL") != -1)
+    || (STR_IndexOf(spellName, "BERZERK") != -1)
+    || (STR_IndexOf(spellName, "SHRINK") != -1) {
+        // Psyonic spells
+        reticle.texture = RETICLE_EDGES;
+    } else {
+        // Set this as 'default' texture here (if none of the conditions above is met)
+        reticle.texture = RETICLE_EDGES;
+    };
 };
