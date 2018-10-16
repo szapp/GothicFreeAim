@@ -326,10 +326,27 @@ func void GFA_InitAlways() {
         // The focus instances are, however, critical for enabling/disabling free aiming: Reinitialize them by hand.
         // Additionally, they need to be reset on loading. Otherwise the default values are lost
         MEM_Info("Initializing focus modes.");
-        const int call = 0;
-        if (CALL_Begin(call)) {
-            CALL__cdecl(oCNpcFocus__InitFocusModes);
-            call = CALL_End();
+
+        if (!MEM_ReadInt(oCNpcFocus__focus)) {
+            // Create and initialize focus modes
+            const int call = 0;
+            if (CALL_Begin(call)) {
+                CALL__cdecl(oCNpcFocus__InitFocusModes);
+                call = CALL_End();
+            };
+        } else {
+            // Reinitialize already created focus modes
+            repeat(i, oCNpcFocus__num); var int i;
+                var int focusModePtr; focusModePtr = MEM_ReadIntArray(oCNpcFocus__focuslist, i);
+                var int focusModeNamePtr; focusModeNamePtr = oCNpcFocus__focusnames + i * sizeof_zString;
+
+                const int call2 = 0;
+                if (CALL_Begin(call2)) {
+                    CALL_PtrParam(_@(focusModeNamePtr));
+                    CALL__thiscall(_@(focusModePtr), oCNpcFocus__Init);
+                    call2 = CALL_End();
+                };
+            end;
         };
 
         // Backup focus instance values

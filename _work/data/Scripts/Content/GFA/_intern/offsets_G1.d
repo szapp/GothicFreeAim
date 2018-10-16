@@ -64,6 +64,10 @@ const int oCNpc__EV_Strafe_magicCombat               =  0;                      
 const int oCNpc__Interrupt_stopAnisLayerA            =  6891985; //0x6929D1
 const int oCNpc__RefreshNpc_createAmmoIfNone         =  6940460; //0x69E72C
 const int oCNpcFocus__InitFocusModes                 =  6507760; //0x634CF0
+const int oCNpcFocus__Init                           =  6508608; //0x635040
+const int oCNpcFocus__focusnames                     =  9283000; //0x8DA5B8
+const int oCNpcFocus__focuslist                      =  9283120; //0x8DA630
+const int oCNpcFocus__focus                          =  9283144; //0x8DA648
 const int oCItem___CreateNewInstance                 =  6764320; //0x673720
 const int oCItem__InitByScript                       =  6755936; //0x671660
 const int oCItem__InsertEffect                       =  0;                                 // Does not exist in Gothic 1
@@ -255,6 +259,8 @@ const int sizeof_zCOBBox3D                           = 68;  //0x0044
 const int sizeof_zTTraceRayReport                    = 40;  //0x0028
 const int sizeof_zCCollisionReport                   = 52;  //0x0034
 const int sizeof_zMAT4                               = 64;  //0x0040
+
+const int oCNpcFocus__num                            = 6;   // Number of different focus modes
 
 // Trafo matrix as zMAT4 is divided column wise
 const int zMAT4_rightVec                             = 0; // Right vector
