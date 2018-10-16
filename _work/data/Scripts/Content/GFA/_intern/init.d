@@ -95,6 +95,7 @@ func void GFA_InitFeatureFreeAiming() {
             HookEngineF(oCVisualFX__ProcessCollision_checkTarget, 6, GFA_SpellFixTarget); // Match target with collision
             MemoryProtectionOverride(oCNpc__EV_Strafe_magicCombat, 5); // Disable magic during default strafing
             HookEngineF(oCNpc__EV_Strafe_g2ctrl, 6, GFA_SpellStrafeReticle); // Update reticle while default strafing
+            MemoryProtectionOverride(oCAIHuman__MagicMode_g2ctrlCheck, 4); // Change Gothic 2 controls
         };
     };
 
