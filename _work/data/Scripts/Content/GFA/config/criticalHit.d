@@ -150,8 +150,13 @@ func void GFA_GetCriticalHit(var C_Npc target, var string bone, var C_Item weapo
         if (!GFA_HITMARKER) {
             // Create it (if it does not exist) in the center of the screen
             Print_GetScreenSize(); // Necessary for Print_ToRatio
-            GFA_HITMARKER = ViewPtr_CreateCenter(PS_VMax/2, PS_VMax/2, // Coordinates. Dimensions below
-                                                 GFA_RETICLE_MAX_SIZE, Print_ToRatio(GFA_RETICLE_MAX_SIZE, PS_Y));
+            if (GFA_ScaleReticleWithResolution) {
+                GFA_HITMARKER = ViewPtr_CreateCenter(PS_VMax/2, PS_VMax/2,
+                                                     GFA_RETICLE_MAX_SIZE, Print_ToRatio(GFA_RETICLE_MAX_SIZE, PS_Y));
+            } else {
+                GFA_HITMARKER = ViewPtr_CreateCenterPxl(Print_Screen[PS_X]/2, Print_Screen[PS_Y]/2,
+                                                        GFA_RETICLE_MAX_SIZE/6, GFA_RETICLE_MAX_SIZE/6);
+            };
 
             // Get 7th frame of animated texture as static texture
             ViewPtr_SetTexture(GFA_HITMARKER, GFA_AnimateReticleByPercent(RETICLE_TRI_IN, 100, 7));

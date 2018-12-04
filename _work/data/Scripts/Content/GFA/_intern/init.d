@@ -157,6 +157,11 @@ func void GFA_InitFeatureFreeAiming() {
         MEM_SetGothOpt("GFA", "showFocusWhenNotAiming", "0");
     };
 
+    if (!MEM_GothOptExists("GFA", "scaleReticleWithResolution")) {
+        // Add INI-entry, if not set (disable by default)
+        MEM_SetGothOpt("GFA", "scaleReticleWithResolution", "0");
+    };
+
     if (GOTHIC_BASE_VERSION == 2) {
         if (GFA_Flags & GFA_RANGED) {
             if (!MEM_GothOptExists("GFA", "overwriteControlSchemeRanged")) {
@@ -327,6 +332,9 @@ func void GFA_InitAlways() {
 
     // Remove focus when not aiming: Prevent using bow/spell as enemy detector
     GFA_NoAimNoFocus = !STR_ToInt(MEM_GetGothOpt("GFA", "showFocusWhenNotAiming"));
+
+    // Scale the reticle relative to the screen resolution
+    GFA_ScaleReticleWithResolution = STR_ToInt(MEM_GetGothOpt("GFA", "scaleReticleWithResolution"));
 
     // Reset/reinitialize free aiming settings every time to prevent crashes
     if (GFA_Flags & GFA_RANGED) || (GFA_Flags & GFA_SPELLS) {
