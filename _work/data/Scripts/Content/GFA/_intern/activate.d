@@ -37,8 +37,10 @@ func void GFA_UpdateSettings(var int on) {
     if (on) {
         // Turn free aiming on
         if (GFA_Flags & GFA_RANGED) {
-            // Set stricter focus collection
-            Focus_Ranged.npc_azi = castFromIntf(castToIntf(GFA_FOCUS_FAR_NPC)); // Cast twice, Deadalus floats are dumb
+            if (GFA_NoAimNoFocus) {
+                // Set stricter focus collection
+                Focus_Ranged.npc_azi = castFromIntf(castToIntf(GFA_FOCUS_FAR_NPC)); // Cast twice for, Deadalus floats
+            };
 
             // New camera mode (does not affect Gothic 1)
             MEM_WriteString(zString_CamModRanged, STR_Upper(GFA_CAMERA));
@@ -224,8 +226,10 @@ func void GFA_IsActive() {
                 return;
             };
         } else {
-            // Spell uses free aiming: Set stricter focus collection
-            Focus_Magic.npc_azi = castFromIntf(castToIntf(GFA_FOCUS_SPL_NPC)); // Cast twice, Deadalus floats are dumb
+            if (GFA_NoAimNoFocus) {
+                // Spell uses free aiming: Set stricter focus collection
+                Focus_Magic.npc_azi = castFromIntf(castToIntf(GFA_FOCUS_SPL_NPC)); // Cast twice for Deadalus floats
+            };
             Focus_Magic.item_prio = GFA_FOCUS_SPL_ITM;
         };
 

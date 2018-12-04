@@ -81,7 +81,7 @@ func void GFA_SpellAiming() {
 
             if (GFA_IsSpellEligible(spell) & GFA_ACT_FREEAIM) {
                 // Remove focus and target
-                if (GFA_NO_AIM_NO_FOCUS) {
+                if (GFA_NoAimNoFocus) {
                     GFA_SetFocusAndTarget(0);
                 };
 

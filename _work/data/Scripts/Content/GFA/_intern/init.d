@@ -112,7 +112,7 @@ func void GFA_InitFeatureFreeAiming() {
     HookEngineF(oCAniCtrl_Human__SearchStandAni_walkmode, 6, GFA_FixStandingBodyState); // Fix bug with wrong body state
     HookEngineF(oCNpc__SetWeaponMode2_walkmode, 6, GFA_FixStandingBodyState); // Fix bug with wrong body state
     // Prevent focus collection during jumping and falling (necessary for Gothic 2 only)
-    if (GOTHIC_BASE_VERSION == 2) && (GFA_NO_AIM_NO_FOCUS) {
+    if (GOTHIC_BASE_VERSION == 2) {
         HookEngineF(oCAIHuman__PC_ActionMove_bodyState, 6, GFA_PreventFocusCollectionBodyStates);
     };
 
@@ -150,6 +150,11 @@ func void GFA_InitFeatureFreeAiming() {
     if (!MEM_GothOptExists("GFA", "focusUpdateIntervalMS")) {
         // Add INI-entry, if not set (set to instantaneous=0ms by default)
         MEM_SetGothOpt("GFA", "focusUpdateIntervalMS", "0");
+    };
+
+    if (!MEM_GothOptExists("GFA", "showFocusWhenNotAiming")) {
+        // Add INI-entry, if not set (disable by default)
+        MEM_SetGothOpt("GFA", "showFocusWhenNotAiming", "0");
     };
 
     if (GOTHIC_BASE_VERSION == 2) {
@@ -319,6 +324,9 @@ func void GFA_InitAlways() {
         GFA_AimRayInterval = 500;
         MEM_SetGothOpt("GFA", "focusUpdateIntervalMS", IntToString(GFA_AimRayInterval));
     };
+
+    // Remove focus when not aiming: Prevent using bow/spell as enemy detector
+    GFA_NoAimNoFocus = !STR_ToInt(MEM_GetGothOpt("GFA", "showFocusWhenNotAiming"));
 
     // Reset/reinitialize free aiming settings every time to prevent crashes
     if (GFA_Flags & GFA_RANGED) || (GFA_Flags & GFA_SPELLS) {

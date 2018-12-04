@@ -14,7 +14,6 @@ const int   GFA_MAX_RECOIL         = 15;    // Visual angle (degrees) of maximum
 
 // GFA_RANGED and/or GFA_SPELLS
 const int   GFA_STRAFING           = TRUE;  // Enable/disable movement while aiming (for both ranged and spell combat)
-const int   GFA_NO_AIM_NO_FOCUS    = TRUE;  // Remove focus when not aiming: Prevent using bow/spell as enemy detector
 const float GFA_ROTATION_SCALE     = 0.16;  // Turn rate while aiming (changes Gothic 1 controls only)
 const int   GFA_CAMERA_X_SHIFT     = FALSE; // Set to true, if camera is set to shoulderview (not recommended)
 const int   GFA_DEBUG_CONSOLE      = TRUE;  // Enable console commands (debugging). Disable in final mod
