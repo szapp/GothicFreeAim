@@ -54,12 +54,10 @@ func void GFA_InsertReticle(var int reticlePtr) {
             size = GFA_RETICLE_MIN_SIZE;
         };
 
-        // Get the screen to retrieve the center
-        var zCView screen; screen = _^(MEM_Game._zCSession_viewport);
-
         if (!GFA_RETICLE_PTR) {
             // Create reticle if it does not exist
-            GFA_RETICLE_PTR = ViewPtr_CreateCenterPxl(screen.psizex/2, screen.psizey/2, size, size);
+            Print_GetScreenSize(); // Necessary for Print_ToRatio
+            GFA_RETICLE_PTR = ViewPtr_CreateCenter(PS_VMax/2, PS_VMax/2, size, Print_ToRatio(size, PS_Y));
             ViewPtr_SetTexture(GFA_RETICLE_PTR, reticle.texture);
             ViewPtr_SetColor(GFA_RETICLE_PTR, reticle.color);
             ViewPtr_Open(GFA_RETICLE_PTR);
@@ -76,11 +74,13 @@ func void GFA_InsertReticle(var int reticlePtr) {
             };
 
             var zCView crsHr; crsHr = _^(GFA_RETICLE_PTR);
-            if (crsHr.psizex != size) || (screen.psizex/2 != centerX) {
+            if (crsHr.vsizex != size) || (Print_Screen[PS_X]/2 != centerX) {
                 // Update its size and re-position it to center
-                var int centerX; centerX = screen.psizex/2;
-                ViewPtr_ResizePxl(GFA_RETICLE_PTR, size, size);
-                ViewPtr_MoveToPxl(GFA_RETICLE_PTR, screen.psizex/2-(size/2), screen.psizey/2-(size/2));
+                Print_GetScreenSize(); // Necessary for Print_ToRatio
+                var int centerX; centerX = Print_Screen[PS_X]/2;
+                var int sizey; sizey = Print_ToRatio(size, PS_Y);
+                ViewPtr_Resize(GFA_RETICLE_PTR, size, sizey);
+                ViewPtr_MoveTo(GFA_RETICLE_PTR, PS_VMax/2-size/2, PS_VMax/2-sizey/2);
             };
 
             if (!crsHr.isOpen) {

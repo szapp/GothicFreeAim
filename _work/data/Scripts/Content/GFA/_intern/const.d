@@ -64,8 +64,8 @@ const int    GFA_MAX_DIST           = 5000;                 // Distance for shoo
 var   int    GFA_AimRayInterval;                            // Perform trace ray every x ms (change in ini-file)
 var   int    GFA_AimRayPrevCalcTime;                        // Time of last trace ray calculation
 
-const int    GFA_RETICLE_MIN_SIZE   = 32;                   // Smallest reticle size in pixels
-const int    GFA_RETICLE_MAX_SIZE   = 64;                   // Biggest reticle size in pixels
+const int    GFA_RETICLE_MIN_SIZE   = 200;                  // Smallest reticle size in virtual coordinates
+const int    GFA_RETICLE_MAX_SIZE   = 400;                  // Biggest reticle size in virtual coordinates
 const int    GFA_RETICLE_PTR        = 0;                    // Reticle zCView
 var   int    GFA_AimVobHasFX;                               // For performance: check whether FX needs to be removed
 

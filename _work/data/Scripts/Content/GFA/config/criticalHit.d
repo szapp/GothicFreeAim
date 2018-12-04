@@ -149,9 +149,9 @@ func void GFA_GetCriticalHit(var C_Npc target, var string bone, var C_Item weapo
         // Shooter-like hit marker
         if (!GFA_HITMARKER) {
             // Create it (if it does not exist) in the center of the screen
-            var zCView screen; screen = _^(MEM_Game._zCSession_viewport);
-            GFA_HITMARKER = ViewPtr_CreateCenterPxl(screen.psizex/2, screen.psizey/2,            // Coordinates
-                                                    GFA_RETICLE_MAX_SIZE, GFA_RETICLE_MAX_SIZE); // Dimensions
+            Print_GetScreenSize(); // Necessary for Print_ToRatio
+            GFA_HITMARKER = ViewPtr_CreateCenter(PS_VMax/2, PS_VMax/2, // Coordinates. Dimensions below
+                                                 GFA_RETICLE_MAX_SIZE, Print_ToRatio(GFA_RETICLE_MAX_SIZE, PS_Y));
 
             // Get 7th frame of animated texture as static texture
             ViewPtr_SetTexture(GFA_HITMARKER, GFA_AnimateReticleByPercent(RETICLE_TRI_IN, 100, 7));
