@@ -158,8 +158,8 @@ func void GFA_InitFeatureFreeAiming() {
     };
 
     if (!MEM_GothOptExists("GFA", "scaleReticleWithResolution")) {
-        // Add INI-entry, if not set (disable by default)
-        MEM_SetGothOpt("GFA", "scaleReticleWithResolution", "0");
+        // Add INI-entry, if not set (enable by default)
+        MEM_SetGothOpt("GFA", "scaleReticleWithResolution", "1");
     };
 
     if (GOTHIC_BASE_VERSION == 2) {
