@@ -77,10 +77,10 @@ func void GFA_InsertReticle(var int reticlePtr) {
                 ViewPtr_SetColor(GFA_RETICLE_PTR, reticle.color);
             };
 
-            var zCView crsHr; crsHr = _^(GFA_RETICLE_PTR);
-            if (crsHr.vsizex != size) || (Print_Screen[PS_X]/2 != centerX) {
+            if (csize != size) || (Print_Screen[PS_X]/2 != centerX) {
                 // Update its size and re-position it to center
                 Print_GetScreenSize(); // Necessary for Print_ToRatio
+                var int csize; csize = size;
                 var int centerX; centerX = Print_Screen[PS_X]/2;
                 if (GFA_ScaleReticleWithResolution) {
                     var int sizey; sizey = Print_ToRatio(size, PS_Y);
@@ -92,6 +92,7 @@ func void GFA_InsertReticle(var int reticlePtr) {
                 };
             };
 
+            var zCView crsHr; crsHr = _^(GFA_RETICLE_PTR);
             if (!crsHr.isOpen) {
                 // Show the reticle if it is not visible
                 ViewPtr_Open(GFA_RETICLE_PTR);
