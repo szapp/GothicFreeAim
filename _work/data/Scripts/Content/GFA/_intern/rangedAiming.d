@@ -61,7 +61,7 @@ func void GFA_RangedIdle() {
         // In bow mode but not pressing down the aiming key
         GFA_RemoveReticle();
 
-        if (GFA_NoAimNoFocus) {
+        if (GFA_NO_AIM_NO_FOCUS) {
             GFA_SetFocusAndTarget(0);
         };
 
@@ -81,7 +81,7 @@ func void GFA_RangedAiming() {
         return;
     } else if (GFA_ACTIVE < FMODE_FAR) {
         GFA_RemoveReticle();
-        if (GFA_NoAimNoFocus) {
+        if (GFA_NO_AIM_NO_FOCUS) {
             GFA_SetFocusAndTarget(0);
         };
         return;

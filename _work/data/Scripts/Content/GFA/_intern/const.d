@@ -61,9 +61,9 @@ const float  GFA_MAX_TURN_RATE_G1   = 2.0;                  // Gothic 1 has a ma
 
 const int    GFA_MIN_AIM_DIST       = 140;                  // Minimum targeting distance. Fixes vertical shooting bug
 const int    GFA_MAX_DIST           = 5000;                 // Distance for shooting/reticle. Do not change
-var   int    GFA_AimRayInterval;                            // Perform trace ray every x ms (change in ini-file)
+var   int    GFA_NO_AIM_NO_FOCUS;                           // Remove focus when not aiming (change in ini-file)
+var   int    GFA_RAY_INTERVAL;                              // Perform trace ray every x ms (change in ini-file)
 var   int    GFA_AimRayPrevCalcTime;                        // Time of last trace ray calculation
-var   int    GFA_NoAimNoFocus;                              // Remove focus when not aiming (change in ini-file)
 
 const int    GFA_RETICLE_MIN_SIZE   = 32;                   // Reticle size in pixels (at its smallest)
 const int    GFA_RETICLE_MAX_SIZE   = 64;                   // Reticle size in pixels (at its biggest)

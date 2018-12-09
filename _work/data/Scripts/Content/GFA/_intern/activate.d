@@ -37,7 +37,7 @@ func void GFA_UpdateSettings(var int on) {
     if (on) {
         // Turn free aiming on
         if (GFA_Flags & GFA_RANGED) {
-            if (GFA_NoAimNoFocus) {
+            if (GFA_NO_AIM_NO_FOCUS) {
                 // Set stricter focus collection
                 Focus_Ranged.npc_azi = castFromIntf(castToIntf(GFA_FOCUS_FAR_NPC)); // Cast twice for, Deadalus floats
             };
@@ -226,7 +226,7 @@ func void GFA_IsActive() {
                 return;
             };
         } else {
-            if (GFA_NoAimNoFocus) {
+            if (GFA_NO_AIM_NO_FOCUS) {
                 // Spell uses free aiming: Set stricter focus collection
                 Focus_Magic.npc_azi = castFromIntf(castToIntf(GFA_FOCUS_SPL_NPC)); // Cast twice for Deadalus floats
             };

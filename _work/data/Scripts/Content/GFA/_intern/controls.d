@@ -388,7 +388,7 @@ func void GFA_TreatBodyStates() {
 /*
  * Prevent focus collection while jumping and falling during free aiming fight modes. This function hooks
  * oCAIHuman::PC_ActionMove() at an offset at which the fight modes are not reached. This happens during certain body
- * states. At that offset, the focus collection remains normal, which will counteract the idea of GFA_NoAimNoFocus.
+ * states. At that offset, the focus collection remains normal, which will counteract the idea of GFA_NO_AIM_NO_FOCUS.
  * This only happens for Gothic 2.
  */
 func void GFA_PreventFocusCollectionBodyStates() {
@@ -399,7 +399,7 @@ func void GFA_PreventFocusCollectionBodyStates() {
     var oCNpc her; her = getPlayerInst();
     if ((her.fmode == FMODE_FAR) || (her.fmode == FMODE_FAR+1)) && (GFA_Flags & GFA_RANGED) // Bow or crossbow
     || ((her.fmode == FMODE_MAGIC) && (GFA_Flags & GFA_SPELLS)) { // Spell
-        if (GFA_NoAimNoFocus) || ((GFA_ACTIVE_CTRL_SCHEME == 2) && (her.fmode == FMODE_MAGIC)) {
+        if (GFA_NO_AIM_NO_FOCUS) || ((GFA_ACTIVE_CTRL_SCHEME == 2) && (her.fmode == FMODE_MAGIC)) {
             GFA_SetFocusAndTarget(0);
         };
 

@@ -247,7 +247,7 @@ func string GFA_GetInfo(var string _) {
         SB(MEM_ReadStatStringArr(onOff, GFA_STRAFING > 0));
 
         SB(". Focus update every ");
-        SBi(GFA_AimRayInterval);
+        SBi(GFA_RAY_INTERVAL);
         SB(" ms");
     };
     SBc(13); SBc(10);

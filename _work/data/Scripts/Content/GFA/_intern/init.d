@@ -147,20 +147,35 @@ func void GFA_InitFeatureFreeAiming() {
         MEM_SetGothOpt("GFA", "freeAimingEnabled", "1");
     };
 
+    // Retrieve trace ray interval: Recalculate trace ray intersection every x ms
     if (!MEM_GothOptExists("GFA", "focusUpdateIntervalMS")) {
         // Add INI-entry, if not set (set to instantaneous=0ms by default)
         MEM_SetGothOpt("GFA", "focusUpdateIntervalMS", "0");
     };
+    GFA_RAY_INTERVAL = STR_ToInt(MEM_GetGothOpt("GFA", "focusUpdateIntervalMS"));
+    if (GFA_RAY_INTERVAL > 500) {
+        GFA_RAY_INTERVAL = 500;
+        MEM_SetGothOpt("GFA", "focusUpdateIntervalMS", IntToString(GFA_RAY_INTERVAL));
+    };
 
+    // Remove focus when not aiming: Prevent using bow/spell as enemy detector
     if (!MEM_GothOptExists("GFA", "showFocusWhenNotAiming")) {
         // Add INI-entry, if not set (disable by default)
         MEM_SetGothOpt("GFA", "showFocusWhenNotAiming", "0");
     };
+    GFA_NO_AIM_NO_FOCUS = !STR_ToInt(MEM_GetGothOpt("GFA", "showFocusWhenNotAiming"));
 
+    // Set the reticle size in pixels
     if (!MEM_GothOptExists("GFA", "reticleSizePx")) {
         // Add INI-entry, if not set
         MEM_SetGothOpt("GFA", "reticleSizePx", IntToString(GFA_RETICLE_MAX_SIZE));
     };
+    GFA_RETICLE_MAX_SIZE = STR_ToInt(MEM_GetGothOpt("GFA", "reticleSizePx"));
+    if (GFA_RETICLE_MAX_SIZE < GFA_RETICLE_MIN_SIZE) {
+        GFA_RETICLE_MAX_SIZE = GFA_RETICLE_MIN_SIZE;
+        MEM_SetGothOpt("GFA", "reticleSizePx", IntToString(GFA_RETICLE_MAX_SIZE));
+    };
+    GFA_RETICLE_MIN_SIZE = GFA_RETICLE_MAX_SIZE/2;
 
     if (GOTHIC_BASE_VERSION == 2) {
         if (GFA_Flags & GFA_RANGED) {
@@ -323,24 +338,6 @@ func int GFA_InitOnce() {
  * GFA_Init().
  */
 func void GFA_InitAlways() {
-    // Retrieve trace ray interval: Recalculate trace ray intersection every x ms
-    GFA_AimRayInterval = STR_ToInt(MEM_GetGothOpt("GFA", "focusUpdateIntervalMS"));
-    if (GFA_AimRayInterval > 500) {
-        GFA_AimRayInterval = 500;
-        MEM_SetGothOpt("GFA", "focusUpdateIntervalMS", IntToString(GFA_AimRayInterval));
-    };
-
-    // Remove focus when not aiming: Prevent using bow/spell as enemy detector
-    GFA_NoAimNoFocus = !STR_ToInt(MEM_GetGothOpt("GFA", "showFocusWhenNotAiming"));
-
-    // Set the reticle size in pixels
-    GFA_RETICLE_MAX_SIZE = STR_ToInt(MEM_GetGothOpt("GFA", "reticleSizePx"));
-    if (GFA_RETICLE_MAX_SIZE < GFA_RETICLE_MIN_SIZE) {
-        GFA_RETICLE_MAX_SIZE = GFA_RETICLE_MIN_SIZE;
-        MEM_SetGothOpt("GFA", "reticleSizePx", IntToString(GFA_RETICLE_MAX_SIZE));
-    };
-    GFA_RETICLE_MIN_SIZE = GFA_RETICLE_MAX_SIZE/2;
-
     // Reset/reinitialize free aiming settings every time to prevent crashes
     if (GFA_Flags & GFA_RANGED) || (GFA_Flags & GFA_SPELLS) {
         // On level change, Gothic does not maintain the focus instances (see Focus.d), nor does it reinitialize them.
