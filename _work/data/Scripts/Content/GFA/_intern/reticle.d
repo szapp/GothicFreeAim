@@ -56,12 +56,8 @@ func void GFA_InsertReticle(var int reticlePtr) {
 
         if (!GFA_RETICLE_PTR) {
             // Create reticle if it does not exist
-            Print_GetScreenSize(); // Necessary for Print_ToRatio
-            if (GFA_ScaleReticleWithResolution) {
-                GFA_RETICLE_PTR = ViewPtr_CreateCenter(PS_VMax/2, PS_VMax/2, size, Print_ToRatio(size, PS_Y));
-            } else {
-                GFA_RETICLE_PTR = ViewPtr_CreateCenterPxl(Print_Screen[PS_X]/2, Print_Screen[PS_Y]/2, size/6, size/6);
-            };
+            Print_GetScreenSize(); // Necessary for Print_Screen
+            GFA_RETICLE_PTR = ViewPtr_CreateCenterPxl(Print_Screen[PS_X]/2, Print_Screen[PS_Y]/2, size, size);
             ViewPtr_SetTexture(GFA_RETICLE_PTR, reticle.texture);
             ViewPtr_SetColor(GFA_RETICLE_PTR, reticle.color);
             ViewPtr_Open(GFA_RETICLE_PTR);
@@ -79,17 +75,11 @@ func void GFA_InsertReticle(var int reticlePtr) {
 
             if (csize != size) || (Print_Screen[PS_X]/2 != centerX) {
                 // Update its size and re-position it to center
-                Print_GetScreenSize(); // Necessary for Print_ToRatio
+                Print_GetScreenSize(); // Necessary for Print_Screen
                 var int csize; csize = size;
                 var int centerX; centerX = Print_Screen[PS_X]/2;
-                if (GFA_ScaleReticleWithResolution) {
-                    var int sizey; sizey = Print_ToRatio(size, PS_Y);
-                    ViewPtr_Resize(GFA_RETICLE_PTR, size, sizey);
-                    ViewPtr_MoveTo(GFA_RETICLE_PTR, PS_VMax/2-size/2, PS_VMax/2-sizey/2);
-                } else {
-                    ViewPtr_ResizePxl(GFA_RETICLE_PTR, size/6, size/6);
-                    ViewPtr_MoveToPxl(GFA_RETICLE_PTR, Print_Screen[PS_X]/2-size/6/2, Print_Screen[PS_Y]/2-size/6/2);
-                };
+                ViewPtr_ResizePxl(GFA_RETICLE_PTR, size, size);
+                ViewPtr_MoveToPxl(GFA_RETICLE_PTR, Print_Screen[PS_X]/2-size/2, Print_Screen[PS_Y]/2-size/2);
             };
 
             var zCView crsHr; crsHr = _^(GFA_RETICLE_PTR);

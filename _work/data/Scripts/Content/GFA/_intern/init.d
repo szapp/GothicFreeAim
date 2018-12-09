@@ -157,9 +157,9 @@ func void GFA_InitFeatureFreeAiming() {
         MEM_SetGothOpt("GFA", "showFocusWhenNotAiming", "0");
     };
 
-    if (!MEM_GothOptExists("GFA", "scaleReticleWithResolution")) {
-        // Add INI-entry, if not set (enable by default)
-        MEM_SetGothOpt("GFA", "scaleReticleWithResolution", "1");
+    if (!MEM_GothOptExists("GFA", "reticleSizePx")) {
+        // Add INI-entry, if not set
+        MEM_SetGothOpt("GFA", "reticleSizePx", IntToString(GFA_RETICLE_MAX_SIZE));
     };
 
     if (GOTHIC_BASE_VERSION == 2) {
@@ -333,8 +333,13 @@ func void GFA_InitAlways() {
     // Remove focus when not aiming: Prevent using bow/spell as enemy detector
     GFA_NoAimNoFocus = !STR_ToInt(MEM_GetGothOpt("GFA", "showFocusWhenNotAiming"));
 
-    // Scale the reticle relative to the screen resolution
-    GFA_ScaleReticleWithResolution = STR_ToInt(MEM_GetGothOpt("GFA", "scaleReticleWithResolution"));
+    // Set the reticle size in pixels
+    GFA_RETICLE_MAX_SIZE = STR_ToInt(MEM_GetGothOpt("GFA", "reticleSizePx"));
+    if (GFA_RETICLE_MAX_SIZE < GFA_RETICLE_MIN_SIZE) {
+        GFA_RETICLE_MAX_SIZE = GFA_RETICLE_MIN_SIZE;
+        MEM_SetGothOpt("GFA", "reticleSizePx", IntToString(GFA_RETICLE_MAX_SIZE));
+    };
+    GFA_RETICLE_MIN_SIZE = GFA_RETICLE_MAX_SIZE/2;
 
     // Reset/reinitialize free aiming settings every time to prevent crashes
     if (GFA_Flags & GFA_RANGED) || (GFA_Flags & GFA_SPELLS) {
