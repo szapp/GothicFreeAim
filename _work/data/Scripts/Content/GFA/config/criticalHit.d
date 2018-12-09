@@ -9,6 +9,10 @@
  */
 
 
+// Stores the pointer of the hit marker zCView
+const int GFA_HITMARKER = 0;
+
+
 /*
  * This function is called every time (any kind of) NPC is hit by a projectile (arrows and bolts). Originally it was
  * meant to design critical hits based on a specific bone of the model, but it can also be used to change the damage
@@ -143,26 +147,41 @@ func void GFA_GetCriticalHit(var C_Npc target, var string bone, var C_Item weapo
         PrintS("Critical hit"); */
 
         // Shooter-like hit marker
-        var int hitMarker;
-        if (!Hlp_IsValidHandle(hitMarker)) {
+        if (!GFA_HITMARKER) {
             // Create it (if it does not exist) in the center of the screen
-            var zCView screen; screen = _^(MEM_Game._zCSession_viewport);
-            hitMarker = View_CreateCenterPxl(screen.psizex/2, screen.psizey/2, // Coordinates
-                GFA_RETICLE_MAX_SIZE, GFA_RETICLE_MAX_SIZE);                   // Dimensions
+            Print_GetScreenSize(); // Necessary for Print_Screen
+            GFA_HITMARKER = ViewPtr_CreateCenterPxl(Print_Screen[PS_X]/2, Print_Screen[PS_Y]/2,  // Coordinates
+                                                    GFA_RETICLE_MAX_SIZE, GFA_RETICLE_MAX_SIZE); // Size
 
             // Get 7th frame of animated texture as static texture
-            View_SetTexture(hitMarker, GFA_AnimateReticleByPercent(RETICLE_TRI_IN, 100, 7));
+            ViewPtr_SetTexture(GFA_HITMARKER, GFA_AnimateReticleByPercent(RETICLE_TRI_IN, 100, 7));
         };
-        View_Open(hitMarker);
+        ViewPtr_Open(GFA_HITMARKER);
 
-        // Hide the hit marker after 300 ms
-        FF_ApplyExtData(View_Close, 300, 1, hitMarker);
+        // Hide the hit marker after 300 ms (formerly a timed framefunction, see below)
+        HookEngineF(oCGame__Render, 7, GFA_RemoveHitMarker);
 
         // Sound notification
         Snd_Play3D(target, "GFA_CRITICALHIT_SFX");
     };
 
     return;
+};
+
+
+/*
+ * A little helper function to avoid using handles (View and FrameFunction) for removing the hit marker. This way,
+ * neither the hit marker, nor the framefunction to remove it will be stored in the game save. Furthermore, the number
+ * of available handles will not be depleted by creating a new framefunction every time the hit marker is displayed.
+ */
+func void GFA_RemoveHitMarker() {
+    const int TIME = 0; TIME += MEM_Timer.frameTime;
+    // After 300 ms hide the hit marker
+    if (TIME >= 300) {
+        TIME = 0;
+        ViewPtr_Close(GFA_HITMARKER);
+        RemoveHookF(oCGame__Render, 0, GFA_RemoveHitMarker);
+    };
 };
 
 

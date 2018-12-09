@@ -1,7 +1,7 @@
 /*
  * Input and controls manipulation
  *
- * Gothic Free Aim (GFA) v1.0.1 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.1.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2018  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
@@ -399,7 +399,9 @@ func void GFA_PreventFocusCollectionBodyStates() {
     var oCNpc her; her = getPlayerInst();
     if ((her.fmode == FMODE_FAR) || (her.fmode == FMODE_FAR+1)) && (GFA_Flags & GFA_RANGED) // Bow or crossbow
     || ((her.fmode == FMODE_MAGIC) && (GFA_Flags & GFA_SPELLS)) { // Spell
-        GFA_SetFocusAndTarget(0);
+        if (GFA_NO_AIM_NO_FOCUS) || ((GFA_ACTIVE_CTRL_SCHEME == 2) && (her.fmode == FMODE_MAGIC)) {
+            GFA_SetFocusAndTarget(0);
+        };
 
         // With Gothic 2 controls, the reticle is still visible
         if (GFA_ACTIVE_CTRL_SCHEME == 2) {
@@ -430,8 +432,11 @@ func void GFA_FixStandingBodyState() {
         };
     } else {
         // oCAniCtrl_Human::SearchStandAni()
-        var zCAIPlayer playerAI; playerAI = _^(ESI);
-        npcPtr = playerAI.vob;
+        npcPtr = MEM_ReadInt(ESI+oCAniCtrl_Human_npc_offset);
+
+        if (!Hlp_Is_oCNpc(npcPtr)) {
+            return;
+        };
     };
 
     // Reset body state back to standing (instead of running/walking/sneaking)

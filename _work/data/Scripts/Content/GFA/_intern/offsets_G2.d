@@ -1,7 +1,7 @@
 /*
  * Engine offsets for Gothic 2
  *
- * Gothic Free Aim (GFA) v1.0.1 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.1.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2018  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
@@ -64,6 +64,10 @@ const int oCNpc__EV_Strafe_magicCombat               =  6833595; //0x6845BB
 const int oCNpc__Interrupt_stopAnisLayerA            =  7560322; //0x735C82
 const int oCNpc__RefreshNpc_createAmmoIfNone         =  7611174; //0x742326
 const int oCNpcFocus__InitFocusModes                 =  7072384; //0x6BEA80
+const int oCNpcFocus__Init                           =  7073344; //0x6BEE40
+const int oCNpcFocus__focusnames                     = 11208320; //0xAB0680
+const int oCNpcFocus__focuslist                      = 11208440; //0xAB06F8
+const int oCNpcFocus__focus                          = 11208504; //0xAB0738
 const int oCItem___CreateNewInstance                 =  7423040; //0x714440
 const int oCItem__InitByScript                       =  7412688; //0x711BD0
 const int oCItem__InsertEffect                       =  7416896; //0x712C40
@@ -129,6 +133,7 @@ const int oCAIArrow__DoAI_rtn                        =  6952073; //0x6A1489 // H
 const int oCAIArrow__ReportCollisionToAI_collAll     =  6949315; //0x6A09C3 // Hook len 8
 const int oCAIArrow__ReportCollisionToAI_hitChc      =  6953482; //0x6A1A0A // Hook len 6
 const int oCAIArrow__ReportCollisionToAI_damage      =  6953711; //0x6A1AEF // Hook len 7
+const int oCAIArrowBase__DoAI_setLifeTime            =  6949017; //0x6A0899 // Hook len 7
 const int oCAIArrowBase__ReportCollisionToAI_hitNpc  =  6949832; //0x6A0BC8 // Hook len 5
 const int oCAIArrowBase__ReportCollisionToAI_hitVob  =  6949929; //0x6A0C29 // Hook len 5
 const int oCAIArrowBase__ReportCollisionToAI_hitWld  =  6949460; //0x6A0A54 // Hook len 5
@@ -174,6 +179,7 @@ const int zCAICamera_elevation_offset                = 56;  //0x0038
 
 const int zCAIPlayer_bitfield1_forceModelHalt        = 1<<0;
 
+const int oCAniCtrl_Human_npc_offset                 = 300; //0x012C
 const int oCAniCtrl_Human_walkmode_offset            = 352; //0x0160
 const int oCAniCtrl_Human_t_stand_2_cast_offset      = 4572;//0x11DC
 const int oCAniCtrl_Human_s_cast_offset              = 4576;//0x11E0
@@ -192,7 +198,7 @@ const int oCAIArrowBase_hostVob_offset               = 60;  //0x003C
 const int oCAIArrowBase_creatingImpactFX_offset      = 64;  //0x0040
 const int oCAIArrowBase_hasHit_offset                = 84;  //0x0054
 const int oCAIArrow_origin_offset                    = 92;  //0x005C
-const int oCAIArrow_destroyProjectile_offset         = 96;  //0x0060                       // Not used for Gothic 2
+const int oCAIArrow_destroyProjectile_offset         = 96;  //0x0060
 
 const int zCRigidBody_mass_offset                    = 0;   //0x0000
 const int zCRigidBody_xPos_offset                    = 80;  //0x0050
@@ -253,6 +259,8 @@ const int sizeof_zCOBBox3D                           = 68;  //0x0044
 const int sizeof_zTTraceRayReport                    = 40;  //0x0028
 const int sizeof_zCCollisionReport                   = 52;  //0x0034
 const int sizeof_zMAT4                               = 64;  //0x0040
+
+const int oCNpcFocus__num                            = 6;   // Number of different focus modes
 
 // Trafo matrix as zMAT4 is divided column wise
 const int zMAT4_rightVec                             = 0; // Right vector

@@ -1,7 +1,7 @@
 /*
  * Definition of all console commands
  *
- * Gothic Free Aim (GFA) v1.0.1 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.1.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2018  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
@@ -38,8 +38,13 @@ func string GFA_DebugPrint(var string _) {
 /*
  * Console function to enable/disable trace ray debug output. This function is registered as console command.
  * When enabled, the trace ray is continuously drawn, as well as the nearest intersection with it.
+ * The visualizations require the LeGo package Draw3D to be initialized.
  */
 func string GFA_DebugTraceRay(var string _) {
+    if (!(_LeGo_Flags & LeGo_Draw3D)) {
+        return "LeGo_Draw3D is not initialized. Cannot comply.";
+    };
+
     if (!Hlp_IsValidHandle(GFA_DebugTRTrj)) {
         GFA_DebugTRTrj = DrawLineAddr(0, zCOLOR_GREEN);
         HideLine(GFA_DebugTRTrj);
@@ -72,8 +77,13 @@ func string GFA_DebugTraceRay(var string _) {
 /*
  * Console function to enable/disable trace ray debug output. This function is registered as console command.
  * When enabled, the trajectory of the projectile is continuously drawn.
+ * The visualizations require the LeGo package Draw3D to be initialized.
  */
 func string GFA_DebugTrajectory(var string _) {
+    if (!(_LeGo_Flags & LeGo_Draw3D)) {
+        return "LeGo_Draw3D is not initialized. Cannot comply.";
+    };
+
     if (!Hlp_IsValidHandle(GFA_DebugCollTrj)) {
         GFA_DebugCollTrj = DrawLineAddr(_@(GFA_CollTrj), zCOLOR_RED);
     } else {
@@ -91,8 +101,13 @@ func string GFA_DebugTrajectory(var string _) {
 /*
  * Console function to enable/disable bone debug visualization. This function is registered as console command.
  * When enabled, the hit model node of the last shot NPC is visualized by a bounding box or oriented bounding box.
+ * The visualizations require the LeGo package Draw3D to be initialized.
  */
 func string GFA_DebugBone(var string _) {
+    if (!(_LeGo_Flags & LeGo_Draw3D)) {
+        return "LeGo_Draw3D is not initialized. Cannot comply.";
+    };
+
     if (!Hlp_IsValidHandle(GFA_DebugBoneBBox)) {
         GFA_DebugBoneBBox = DrawBBoxAddr(0, zCOLOR_RED);
         HideBBox(GFA_DebugBoneBBox);
@@ -232,7 +247,7 @@ func string GFA_GetInfo(var string _) {
         SB(MEM_ReadStatStringArr(onOff, GFA_STRAFING > 0));
 
         SB(". Focus update every ");
-        SBi(GFA_AimRayInterval);
+        SBi(GFA_RAY_INTERVAL);
         SB(" ms");
     };
     SBc(13); SBc(10);

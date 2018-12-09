@@ -1,7 +1,7 @@
 /*
  * Free aiming mechanics for ranged combat shooting
  *
- * Gothic Free Aim (GFA) v1.0.1 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.1.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2018  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
@@ -387,8 +387,11 @@ func void GFA_SetupProjectile() {
     // Calculate the air time at which to apply the gravity, by the maximum air time GFA_TRAJECTORY_ARC_MAX. Because
     // drawForce is a percentage, GFA_TRAJECTORY_ARC_MAX is first multiplied by 100 and later divided by 10000
     var int dropTime; dropTime = (drawForce*(GFA_TRAJECTORY_ARC_MAX*100))/10000;
-    // Create a timed frame function to apply the gravity to the projectile after the calculated air time
-    FF_ApplyOnceExtData(GFA_EnableProjectileGravity, dropTime, 1, rBody);
+    if (dropTime < 2) {
+        dropTime = 2; // Timer value should not be 1 or 0, otherwise gravity is never applied
+    };
+    // Use life time to apply gravity after the calculated air time, see GFA_EnableProjectileGravity()
+    MEM_WriteInt(ECX+oCAIArrowBase_lifeTime_offset, negf(mkf(dropTime)));
     // Set the gravity to the projectile. Again: The gravity does not take effect until it is activated
     MEM_WriteInt(rBody+zCRigidBody_gravity_offset, mulf(castToIntf(GFA_PROJECTILE_GRAVITY), gravityMod));
 
@@ -493,31 +496,72 @@ func void GFA_SetupProjectile() {
 
 
 /*
- * This is a frame function timed by draw force and is responsible for applying gravity to a projectile after a certain
- * air time as determined in GFA_SetupProjectile(). The gravity is merely turned on, the gravity strength itself is set
- * in GFA_SetupProjectile().
+ * This function applies gravity to a projectile after a certain air time as determined in GFA_SetupProjectile(). The
+ * gravity is merely turned on, the gravity strength itself is set in GFA_SetupProjectile(). This function hooks
+ * oCAIArrowBase::DoAI() at an address where the life time and projectile visibility is decreased. With EAX it is
+ * later determined whether to decrease the life timer and visibility.
  */
-func void GFA_EnableProjectileGravity(var int rigidBody) {
-    if (!rigidBody) {
+func void GFA_EnableProjectileGravity() {
+    var int projectilePtr; projectilePtr = EBP;
+    if (!projectilePtr) {
+        EAX = TRUE;
         return;
     };
+    var zCVob projectile; projectile = _^(projectilePtr); // oCItem*
 
-    // Check validity of the zCRigidBody pointer by its first class variable (value is always 10.0). This is necessary
-    // for loading a saved game, as the pointer will not point to a zCRigidBody address anymore.
-    if (roundf(MEM_ReadInt(rigidBody+zCRigidBody_mass_offset)) != 10) {
-        return;
+    var int arrowAI; arrowAI = ESI; // oCAIArrow*
+    var int lifeTime; lifeTime = MEM_ReadInt(arrowAI+oCAIArrowBase_lifeTime_offset);
+    // Gravity counter:     lifeTime < -1
+    // Mid-flight:          lifeTime = -1
+    // Visibility counter:  0 <= lifeTime <= 1
+
+    if (gef(lifeTime, FLOATNULL)) {
+        // lifeTime >= 0: Decrease visibility?
+        if (MEM_ReadInt(arrowAI+oCAIArrow_destroyProjectile_offset) == 1)
+        || (!(GFA_Flags & GFA_REUSE_PROJECTILES)) {
+            // Yes (destroy or no collectable feature)
+            if (gf(lifeTime, FLOATONE)) {
+                // Reset life time to 1
+                MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE);
+            };
+            // Decrease life time and visibility (default behavior)
+            EAX = TRUE;
+        } else {
+            // No (collectable feature). Reset life time to -1
+            MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE_NEG);
+            EAX = FALSE;
+        };
+    } else if (!(projectile.bitfield[0] & zCVob_bitfield0_physicsEnabled)) {
+        // Stopped moving: Decrease visibility?
+        if (GFA_Flags & GFA_REUSE_PROJECTILES) {
+            // No (collectable feature). Reset life time to -1
+            MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE_NEG);
+            EAX = FALSE;
+        } else {
+            // Yes (no collectable feature). Reset life time to 1
+            MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE);
+            // Decrease life time and visibility (default behavior)
+            EAX = TRUE;
+        };
+    } else if (lf(lifeTime, FLOATONE_NEG)) {
+        // lifeTime < -1: Continue counting flight time until gravity drop
+        lifeTime = addf(lifeTime, MEM_Timer.frameTimeFloat);
+        if (gef(lifeTime, FLOATONE_NEG)) {
+            lifeTime = FLOATONE_NEG;
+            // Apply gravity. Reset life time to -1
+            var int rigidBody; rigidBody = projectile.rigidBody; // zCRigidBody*
+            if (rigidBody) {
+                var int bitfield; bitfield = MEM_ReadByte(rigidBody+zCRigidBody_bitfield_offset);
+                MEM_WriteByte(rigidBody+zCRigidBody_bitfield_offset, bitfield | zCRigidBody_bitfield_gravityActive);
+            };
+        };
+        MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, lifeTime);
+        // Do not decrease visibility
+        EAX = FALSE;
+    } else { // Mid-flight: lifeTime == -1.0
+        // Do not decrease visibility
+        EAX = FALSE;
     };
-
-    // Do not add gravity if projectile already stopped moving
-    if (MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset) == FLOATNULL) // zCRigidBody.velocity[3]
-    && (MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset+4) == FLOATNULL)
-    && (MEM_ReadInt(rigidBody+zCRigidBody_velocity_offset+8) == FLOATNULL) {
-        return;
-    };
-
-    // Turn on gravity
-    var int bitfield; bitfield = MEM_ReadByte(rigidBody+zCRigidBody_bitfield_offset);
-    MEM_WriteByte(rigidBody+zCRigidBody_bitfield_offset, bitfield | zCRigidBody_bitfield_gravityActive);
 };
 
 
@@ -530,18 +574,17 @@ func void GFA_EnableProjectileGravity(var int rigidBody) {
 func void GFA_ResetProjectileGravity() {
     var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, ECX);
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
-    if (!projectile._zCVob_rigidBody) {
-        return;
-    };
     var int rigidBody; rigidBody = projectile._zCVob_rigidBody;
-
-    // Better safe than writing to an invalid address
-    if (FF_ActiveData(GFA_EnableProjectileGravity, rigidBody)) {
-        FF_RemoveData(GFA_EnableProjectileGravity, rigidBody);
+    if (!rigidBody) {
+        return;
     };
 
     // Reset projectile gravity (zCRigidBody.gravity) after collision (oCAIArrow.collision) to default
     MEM_WriteInt(rigidBody+zCRigidBody_gravity_offset, FLOATONE);
+    if (lf(MEM_ReadInt(arrowAI+oCAIArrowBase_lifeTime_offset), FLOATONE_NEG)) {
+        // Reset gravity timer
+        MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE_NEG);
+    };
 
     // Remove trail strip FX
     if (GOTHIC_BASE_VERSION == 1) {

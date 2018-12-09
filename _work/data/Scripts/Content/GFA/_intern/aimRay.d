@@ -1,7 +1,7 @@
 /*
  * Aim-specific trace ray and focus collection
  *
- * Gothic Free Aim (GFA) v1.0.1 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.1.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2018  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
@@ -117,9 +117,9 @@ func int GFA_AimRayHead(var int npcPtr, var int fromPosPtr, var int dirPosPtr, v
  */
 func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int posPtr, var int distPtr,
         var int trueDistPtr) {
-    // Only run full trace ray machinery every so often (see GFA_AimRayInterval) to allow weaker machines to run this
+    // Only run full trace ray machinery every so often (see GFA_RAY_INTERVAL) to allow weaker machines to run this
     var int curTime; curTime = MEM_Timer.totalTime; // Get current time
-    if (curTime-GFA_AimRayPrevCalcTime >= GFA_AimRayInterval) { // If the interval has passed, recompute trace ray
+    if (curTime-GFA_AimRayPrevCalcTime >= GFA_RAY_INTERVAL) { // If the interval has passed, recompute trace ray
         // Update time of previous calculation
         GFA_AimRayPrevCalcTime = curTime;
 

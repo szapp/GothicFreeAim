@@ -1,7 +1,7 @@
 /*
  * Custom projectile collision behaviors feature
  *
- * Gothic Free Aim (GFA) v1.0.1 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.1.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2018  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
@@ -121,11 +121,8 @@ func void GFA_CC_ProjectileStuck(var int projectilePtr) {
  * It is called for both Gothic 1 and Gothic 2.
  */
 func void GFA_CC_ProjectileDestroy(var int arrowAI) {
-    if (GOTHIC_BASE_VERSION == 1) {
-        MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1); // Gothic 1
-    } else {
-        MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATNULL); // Gothic 2
-    };
+    MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1);
+    MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATNULL);
 };
 
 
@@ -227,7 +224,9 @@ func void GFA_CC_ProjectileCollisionWithNpc() {
         if (collision == DEFLECT) {
             var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
             GFA_CC_ProjectileDeflect(projectile._zCVob_rigidBody);
-            MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, -1); // Mark as deflecting, such that it is ignored
+            if (GFA_Flags & GFA_REUSE_PROJECTILES) {
+                MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, -1); // Mark as deflecting to ignored it
+            };
         } else {
             MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1); // Destroy projectile on impact
         };
@@ -470,6 +469,35 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
 
     // Play PFX on impact and increment property as counter (needed for GFA_CC_DisableProjectileCollisionOnRebound())
     MEM_WriteInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset, collisionCounter+1);
+};
+
+
+/*
+ * Complete the half-implemented feature in Gothic 1 of fading out the visibility of a projectile before removing it.
+ * This function hooks oCAIArrowBase::DoAI(), if the collectable feature is not enabled.
+ */
+func void GFA_CC_FadeProjectileVisibility() {
+    // Check if AI was already removed
+    var int destroyed; destroyed = MEM_ReadInt(EDI);
+    if (destroyed) {
+        return;
+    };
+
+    // Check validity of projectile
+    var int projectilePtr; projectilePtr = EBX; // oCItem*
+    if (!projectilePtr) {
+        return;
+    };
+    var zCVob projectile; projectile = _^(projectilePtr);
+
+    // Check if the projectile stopped moving
+    if (!(projectile.bitfield[0] & zCVob_bitfield0_physicsEnabled)) {
+        var int arrowAI; arrowAI = ESI; // oCAIArrow*
+        var int lifeTime; lifeTime = MEM_ReadInt(arrowAI+oCAIArrowBase_lifeTime_offset);
+        if (lifeTime == FLOATONE_NEG) {
+            MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE);
+        };
+    };
 };
 
 

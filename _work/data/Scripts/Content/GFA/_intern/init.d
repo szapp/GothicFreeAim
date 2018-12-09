@@ -1,7 +1,7 @@
 /*
  * Initialization of GFA
  *
- * Gothic Free Aim (GFA) v1.0.1 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.1.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2018  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
@@ -47,6 +47,10 @@ func void GFA_InitFeatureFreeAiming() {
         HookEngineF(oCAIHuman__BowMode_notAiming, 6, GFA_RangedIdle); // Fix focus collection while not aiming
         HookEngineF(oCAIHuman__BowMode_interpolateAim, 5, GFA_RangedAiming); // Interpolate aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, GFA_SetupProjectile); // Setup projectile trajectory (shooting)
+        writeNOP(oCAIArrowBase__DoAI_setLifeTime, 7);
+        MEM_WriteByte(oCAIArrowBase__DoAI_setLifeTime, /*85*/ 133); // test eax, eax
+        MEM_WriteByte(oCAIArrowBase__DoAI_setLifeTime+1, /*C0*/ 192);
+        HookEngineF(oCAIArrowBase__DoAI_setLifeTime, 7, GFA_EnableProjectileGravity); // Enable gravity after some time
         HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_ResetProjectileGravity); // Reset gravity on impact
         HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_OverwriteHitChance); // Manipulate hit chance
         MemoryProtectionOverride(oCAIHuman__CheckFocusVob_ranged, 1); // Prevent toggling focus in ranged combat
@@ -91,6 +95,7 @@ func void GFA_InitFeatureFreeAiming() {
             HookEngineF(oCVisualFX__ProcessCollision_checkTarget, 6, GFA_SpellFixTarget); // Match target with collision
             MemoryProtectionOverride(oCNpc__EV_Strafe_magicCombat, 5); // Disable magic during default strafing
             HookEngineF(oCNpc__EV_Strafe_g2ctrl, 6, GFA_SpellStrafeReticle); // Update reticle while default strafing
+            MemoryProtectionOverride(oCAIHuman__MagicMode_g2ctrlCheck, 4); // Change Gothic 2 controls
         };
     };
 
@@ -107,7 +112,7 @@ func void GFA_InitFeatureFreeAiming() {
     HookEngineF(oCAniCtrl_Human__SearchStandAni_walkmode, 6, GFA_FixStandingBodyState); // Fix bug with wrong body state
     HookEngineF(oCNpc__SetWeaponMode2_walkmode, 6, GFA_FixStandingBodyState); // Fix bug with wrong body state
     // Prevent focus collection during jumping and falling (necessary for Gothic 2 only)
-    if (GOTHIC_BASE_VERSION == 2) && (GFA_NO_AIM_NO_FOCUS) {
+    if (GOTHIC_BASE_VERSION == 2) {
         HookEngineF(oCAIHuman__PC_ActionMove_bodyState, 6, GFA_PreventFocusCollectionBodyStates);
     };
 
@@ -142,10 +147,35 @@ func void GFA_InitFeatureFreeAiming() {
         MEM_SetGothOpt("GFA", "freeAimingEnabled", "1");
     };
 
+    // Retrieve trace ray interval: Recalculate trace ray intersection every x ms
     if (!MEM_GothOptExists("GFA", "focusUpdateIntervalMS")) {
         // Add INI-entry, if not set (set to instantaneous=0ms by default)
         MEM_SetGothOpt("GFA", "focusUpdateIntervalMS", "0");
     };
+    GFA_RAY_INTERVAL = STR_ToInt(MEM_GetGothOpt("GFA", "focusUpdateIntervalMS"));
+    if (GFA_RAY_INTERVAL > 500) {
+        GFA_RAY_INTERVAL = 500;
+        MEM_SetGothOpt("GFA", "focusUpdateIntervalMS", IntToString(GFA_RAY_INTERVAL));
+    };
+
+    // Remove focus when not aiming: Prevent using bow/spell as enemy detector
+    if (!MEM_GothOptExists("GFA", "showFocusWhenNotAiming")) {
+        // Add INI-entry, if not set (disable by default)
+        MEM_SetGothOpt("GFA", "showFocusWhenNotAiming", "0");
+    };
+    GFA_NO_AIM_NO_FOCUS = !STR_ToInt(MEM_GetGothOpt("GFA", "showFocusWhenNotAiming"));
+
+    // Set the reticle size in pixels
+    if (!MEM_GothOptExists("GFA", "reticleSizePx")) {
+        // Add INI-entry, if not set
+        MEM_SetGothOpt("GFA", "reticleSizePx", IntToString(GFA_RETICLE_MAX_SIZE));
+    };
+    GFA_RETICLE_MAX_SIZE = STR_ToInt(MEM_GetGothOpt("GFA", "reticleSizePx"));
+    if (GFA_RETICLE_MAX_SIZE < GFA_RETICLE_MIN_SIZE) {
+        GFA_RETICLE_MAX_SIZE = GFA_RETICLE_MIN_SIZE;
+        MEM_SetGothOpt("GFA", "reticleSizePx", IntToString(GFA_RETICLE_MAX_SIZE));
+    };
+    GFA_RETICLE_MIN_SIZE = GFA_RETICLE_MAX_SIZE/2;
 
     if (GOTHIC_BASE_VERSION == 2) {
         if (GFA_Flags & GFA_RANGED) {
@@ -173,6 +203,9 @@ func void GFA_InitFeatureCustomCollisions() {
     HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_CC_ProjectileCollisionWithNpc); // Hit reg/coll on NPCs
     if (GOTHIC_BASE_VERSION == 1) {
         writeNOP(oCAIArrow__ReportCollisionToAI_destroyPrj, 7); // Disable destroying of projectiles
+        if (!(GFA_Flags & GFA_REUSE_PROJECTILES)) {
+            HookEngineF(oCAIArrow__DoAI_rtn, 6, GFA_CC_FadeProjectileVisibility); // Implement fading like in Gothic 2
+        };
         HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_CC_ProjectileCollisionWithWorld); // Collision world
         MemoryProtectionOverride(oCAIArrow__ReportCollisionToAI_keepPlyStrp, 2); // Keep poly strip after coll
         MEM_WriteByte(oCAIArrow__ReportCollisionToAI_keepPlyStrp, /*EB*/ 235); // jmp
@@ -301,30 +334,37 @@ func int GFA_InitOnce() {
 
 
 /*
- * Initializations to perfrom on every game start, level change and loading of saved games. This function is called from
+ * Initializations to perform on every game start, level change and loading of saved games. This function is called from
  * GFA_Init().
  */
 func void GFA_InitAlways() {
-    // Pause frame functions when in menu
-    Timer_SetPauseInMenu(1);
-
-    // Retrieve trace ray interval: Recalculate trace ray intersection every x ms
-    GFA_AimRayInterval = STR_ToInt(MEM_GetGothOpt("GFA", "focusUpdateIntervalMS"));
-    if (GFA_AimRayInterval > 500) {
-        GFA_AimRayInterval = 500;
-        MEM_SetGothOpt("GFA", "focusUpdateIntervalMS", IntToString(GFA_AimRayInterval));
-    };
-
     // Reset/reinitialize free aiming settings every time to prevent crashes
     if (GFA_Flags & GFA_RANGED) || (GFA_Flags & GFA_SPELLS) {
         // On level change, Gothic does not maintain the focus instances (see Focus.d), nor does it reinitialize them.
         // The focus instances are, however, critical for enabling/disabling free aiming: Reinitialize them by hand.
         // Additionally, they need to be reset on loading. Otherwise the default values are lost
         MEM_Info("Initializing focus modes.");
-        const int call = 0;
-        if (CALL_Begin(call)) {
-            CALL__cdecl(oCNpcFocus__InitFocusModes);
-            call = CALL_End();
+
+        if (!MEM_ReadInt(oCNpcFocus__focus)) {
+            // Create and initialize focus modes
+            const int call = 0;
+            if (CALL_Begin(call)) {
+                CALL__cdecl(oCNpcFocus__InitFocusModes);
+                call = CALL_End();
+            };
+        } else {
+            // Reinitialize already created focus modes
+            repeat(i, oCNpcFocus__num); var int i;
+                var int focusModePtr; focusModePtr = MEM_ReadIntArray(oCNpcFocus__focuslist, i);
+                var int focusModeNamePtr; focusModeNamePtr = oCNpcFocus__focusnames + i * sizeof_zString;
+
+                const int call2 = 0;
+                if (CALL_Begin(call2)) {
+                    CALL_PtrParam(_@(focusModeNamePtr));
+                    CALL__thiscall(_@(focusModePtr), oCNpcFocus__Init);
+                    call2 = CALL_End();
+                };
+            end;
         };
 
         // Backup focus instance values

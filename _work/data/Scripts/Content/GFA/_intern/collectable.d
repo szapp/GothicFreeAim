@@ -1,7 +1,7 @@
 /*
  * Collectable projectiles feature
  *
- * Gothic Free Aim (GFA) v1.0.1 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.1.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2018  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
@@ -46,8 +46,10 @@ func void GFA_RP_KeepProjectileInWorld() {
     };
 
     // Always keep the projectile alive, set infinite life time
-    MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, -1082130432); // -1
-    projectile._zCVob_visualAlpha = FLOATONE; // Fully visible
+    if (gef(MEM_ReadInt(arrowAI+oCAIArrowBase_lifeTime_offset), FLOATNULL)) {
+        MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE_NEG);
+        projectile._zCVob_visualAlpha = FLOATONE; // Fully visible
+    };
 
     // Check if the projectile stopped moving
     if (!(projectile._zCVob_bitfield[0] & zCVob_bitfield0_physicsEnabled)) {

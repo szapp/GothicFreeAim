@@ -1,7 +1,7 @@
 /*
  * Activate free aiming and set internal settings
  *
- * Gothic Free Aim (GFA) v1.0.1 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.1.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2018  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
@@ -37,8 +37,10 @@ func void GFA_UpdateSettings(var int on) {
     if (on) {
         // Turn free aiming on
         if (GFA_Flags & GFA_RANGED) {
-            // Set stricter focus collection
-            Focus_Ranged.npc_azi = castFromIntf(castToIntf(GFA_FOCUS_FAR_NPC)); // Cast twice, Deadalus floats are dumb
+            if (GFA_NO_AIM_NO_FOCUS) {
+                // Set stricter focus collection
+                Focus_Ranged.npc_azi = castFromIntf(castToIntf(GFA_FOCUS_FAR_NPC)); // Cast twice for, Deadalus floats
+            };
 
             // New camera mode (does not affect Gothic 1)
             MEM_WriteString(zString_CamModRanged, STR_Upper(GFA_CAMERA));
@@ -160,7 +162,7 @@ func void GFA_IsActive() {
 
     // Check if falling (body state BS_FALL is unreliable, because it is set after the falling animation has started)
     var zCAIPlayer playerAI; playerAI = _^(her.anictrl);
-    if (gef(playerAI.aboveFloor, mkf(12))) {
+    if (gef(playerAI.aboveFloor, mkf(50))) {
         GFA_ResetSpell();
         GFA_AimMovement(0, "");
         GFA_RemoveReticle();
@@ -224,8 +226,10 @@ func void GFA_IsActive() {
                 return;
             };
         } else {
-            // Spell uses free aiming: Set stricter focus collection
-            Focus_Magic.npc_azi = castFromIntf(castToIntf(GFA_FOCUS_SPL_NPC)); // Cast twice, Deadalus floats are dumb
+            if (GFA_NO_AIM_NO_FOCUS) {
+                // Spell uses free aiming: Set stricter focus collection
+                Focus_Magic.npc_azi = castFromIntf(castToIntf(GFA_FOCUS_SPL_NPC)); // Cast twice for Deadalus floats
+            };
             Focus_Magic.item_prio = GFA_FOCUS_SPL_ITM;
         };
 

@@ -1,7 +1,7 @@
 /*
  * Internal constants of GFA
  *
- * Gothic Free Aim (GFA) v1.0.1 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.1.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2018  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
@@ -29,13 +29,10 @@
 
 /* Initialization */
 
-const string GFA_VERSION            = "Gothic Free Aim v1.0.1";
+const string GFA_VERSION            = "Gothic Free Aim v1.1.0";
 const int    GFA_LEGO_FLAGS         = LeGo_HookEngine       // For initializing all hooks
-                                    | LeGo_FrameFunctions   // For projectile gravity
                                     | LeGo_ConsoleCommands  // For console commands and debugging
-                                    | LeGo_Random           // For scattering and other uses of random numbers
-                                    | LeGo_Draw3D           // For debug visualizations
-                                    | LeGo_PrintS;          // To be safe (in case it is used in critical hit event)
+                                    | LeGo_Random;          // For scattering and other uses of random numbers
 
 var   int    GFA_Flags;                                     // Flags for initialization of GFA
 const int    GFA_RANGED             = 1<<0;                 // Free aiming for ranged combat (bow and crossbow)
@@ -64,12 +61,13 @@ const float  GFA_MAX_TURN_RATE_G1   = 2.0;                  // Gothic 1 has a ma
 
 const int    GFA_MIN_AIM_DIST       = 140;                  // Minimum targeting distance. Fixes vertical shooting bug
 const int    GFA_MAX_DIST           = 5000;                 // Distance for shooting/reticle. Do not change
-var   int    GFA_AimRayInterval;                            // Perform trace ray every x ms (change in ini-file)
+var   int    GFA_NO_AIM_NO_FOCUS;                           // Remove focus when not aiming (change in ini-file)
+var   int    GFA_RAY_INTERVAL;                              // Perform trace ray every x ms (change in ini-file)
 var   int    GFA_AimRayPrevCalcTime;                        // Time of last trace ray calculation
 
-const int    GFA_RETICLE_MIN_SIZE   = 32;                   // Smallest reticle size in pixels
-const int    GFA_RETICLE_MAX_SIZE   = 64;                   // Biggest reticle size in pixels
-var   int    GFA_ReticleHndl;                               // Handle of the reticle
+const int    GFA_RETICLE_MIN_SIZE   = 32;                   // Reticle size in pixels (at its smallest)
+const int    GFA_RETICLE_MAX_SIZE   = 64;                   // Reticle size in pixels (at its biggest)
+const int    GFA_RETICLE_PTR        = 0;                    // Reticle zCView
 var   int    GFA_AimVobHasFX;                               // For performance: check whether FX needs to be removed
 
 const string GFA_CAMERA             = "CamModGFA";          // CCamSys_Def script instance
@@ -157,6 +155,7 @@ var   int    GFA_DebugBoneOBBox;                            // Handle of bone or
 
 /* Numerical constants */
 
+const int    FLOATONE_NEG           = -1082130432;          // -1 as float
 const int    FLOAT1C                = 1120403456;           // 100 as float
 const int    FLOAT3C                = 1133903872;           // 300 as float
 const int    FLOAT1K                = 1148846080;           // 1000 as float
