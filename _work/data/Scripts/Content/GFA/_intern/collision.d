@@ -561,7 +561,8 @@ func void GFA_ExtendCollisionCheck() {
         };
 
         // Ignore by refined collision check with NPCs
-        if (GFA_Flags & GFA_RANGED) && (hit) {
+        var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
+        if (GFA_Flags & GFA_RANGED) && (hit) && (Npc_IsPlayer(shooter)) {
             hit = GFA_RefinedProjectileCollisionCheck(vobPtr, arrowAI);
         };
     } else if (GFA_Flags & GFA_CUSTOM_COLLISIONS) && (GFA_TRIGGER_COLL_FIX) && (GOTHIC_BASE_VERSION == 2) {
@@ -582,4 +583,52 @@ func void GFA_ExtendCollisionCheck() {
         // Set return value of collision check to false
         ECX = 0;
     };
+};
+
+
+/*
+ * Enable extended collision check for NPCs also. This function rewrites the opcode of oCAIArrow::CanThisCollideWith()
+ * such that the ignore list check and the hook GFA_ExtendCollisionCheck() are also executed for NPCs. This fixes the
+ * trigger collision bug for NPCs. Only implemented for Gothic 2, as the trigger bug does not exist in Gothic 1.
+ */
+func void GFA_ExtendCollisionCheckNpc() {
+    if (IsHooked(oCAIArrow__CanThisCollideWith_positive)) || (GOTHIC_BASE_VERSION != 2) {
+        return;
+    };
+
+    // Skip checks for shooter and target
+    MemoryProtectionOverride(oCAIArrow__CanThisCollideWith_skipCheck, 2);
+    MEM_WriteByte(oCAIArrow__CanThisCollideWith_skipCheck,   /*EB*/ 235);             // jmp     0x6A14F0
+    MEM_WriteByte(oCAIArrow__CanThisCollideWith_skipCheck+1, /*5A*/  90);             //         0x6A14F0-0x6A1494-2
+
+    // Re-add these checks later (after ignore list iteration and Daedalus hook)
+    ASM_Open(42);
+    // Check if extended detection returned zero
+    ASM_1(/*85*/ 133); ASM_1(/*C9*/ 201);                                             // test    ecx, ecx
+    ASM_1(/*74*/ 116); ASM_1(/*1D*/  29);                                             // jz      .continue
+    // Check if shooter is player
+    ASM_1(/*51*/  81);                                                                // push    ecx
+    ASM_1(/*8B*/ 139); ASM_1(/*4F*/  79); ASM_1(/*5C*/  92);                          // mov     ecx, [edi+0x5C]
+    ASM_1(/*8B*/ 139); ASM_1(/*01*/   1);                                             // mov     eax, [ecx]
+    ASM_1(/*FF*/ 255); ASM_1(/*90*/ 144); ASM_4(/*100*/256);                          // call    DWORD [eax+0x100]
+    ASM_1(/*59*/  89);                                                                // pop     ecx
+    ASM_1(/*85*/ 133); ASM_1(/*C0*/ 192);                                             // test    eax, eax
+    ASM_1(/*75*/ 117); ASM_1(/*0C*/  12);                                             // jnz     .continue
+    // Check if arrow AI has target
+    ASM_1(/*8B*/ 139); ASM_1(/*47*/  71); ASM_1(/*64*/ 100);                          // mov     eax, [edi+0x64]
+    ASM_1(/*85*/ 133); ASM_1(/*C0*/ 192);                                             // test    eax, eax
+    ASM_1(/*74*/ 116); ASM_1(/*05*/   5);                                             // jz      .continue
+    ASM_1(/*E9*/ 233); ASM_4(oCAIArrow__CanThisCollideWith_npcShooter-ASM_Here()-4);  // jmp     0x6A14AA
+    // .continue:
+    ASM_1(/*5F*/  95);                                                                // pop     edi
+    ASM_1(/*5E*/  94);                                                                // pop     esi
+    ASM_1(/*8B*/ 139); ASM_1(/*C1*/ 193);                                             // mov     eax, ecx
+    ASM_1(/*C2*/ 194); ASM_1(/*04*/   4); ASM_1(/*00*/   0);                          // ret     4
+
+    // Need absolute jump here, because Daedalus hook later relocates this jump
+    MemoryProtectionOverride(oCAIArrow__CanThisCollideWith_positive, 7);
+    MEM_WriteByte(oCAIArrow__CanThisCollideWith_positive,   /*B8*/ 184);              // mov eax, newCheck
+    MEM_WriteInt(oCAIArrow__CanThisCollideWith_positive+1,  ASM_Close());
+    MEM_WriteByte(oCAIArrow__CanThisCollideWith_positive+5, /*FF*/ 255);              // jmp eax
+    MEM_WriteByte(oCAIArrow__CanThisCollideWith_positive+6, /*E0*/ 224);
 };

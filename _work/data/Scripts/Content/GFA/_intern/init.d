@@ -55,6 +55,7 @@ func void GFA_InitFeatureFreeAiming() {
         HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_OverwriteHitChance); // Manipulate hit chance
         MemoryProtectionOverride(oCAIHuman__CheckFocusVob_ranged, 1); // Prevent toggling focus in ranged combat
         HookEngineF(zCModel__CalcModelBBox3DWorld_rtn, 6, GFA_EnlargeHumanModelBBox); // Include head in model bbox
+        GFA_ExtendCollisionCheckNpc();
         HookEngineF(oCAIArrow__CanThisCollideWith_positive, MEMINT_SwitchG1G2(6, 7), GFA_ExtendCollisionCheck);
         if (GFA_STRAFING) {
             HookEngineF(oCAIHuman__BowMode_rtn, 7, GFA_RangedLockMovement); // Allow strafing or not when falling
@@ -221,6 +222,7 @@ func void GFA_InitFeatureCustomCollisions() {
 
     // Extend and refine collision detection on vobs
     if ((GFA_COLL_PRIOR_NPC == -1) || ((GFA_TRIGGER_COLL_FIX) && (GOTHIC_BASE_VERSION == 2))) {
+        GFA_ExtendCollisionCheckNpc();
         HookEngineF(oCAIArrow__CanThisCollideWith_positive, MEMINT_SwitchG1G2(6, 7), GFA_ExtendCollisionCheck);
     };
 };
