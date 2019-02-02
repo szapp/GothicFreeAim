@@ -181,8 +181,8 @@ func void GFA_InitFeatureFreeAiming() {
     if (GOTHIC_BASE_VERSION == 2) {
         if (GFA_Flags & GFA_RANGED) {
             if (!MEM_GothOptExists("GFA", "overwriteControlSchemeRanged")) {
-                // Add INI-entry, if not set (disable override by default)
-                MEM_SetGothOpt("GFA", "overwriteControlSchemeRanged", "0");
+                // Add INI-entry, if not set (set to Gothic 2 by default)
+                MEM_SetGothOpt("GFA", "overwriteControlSchemeRanged", "2");
             };
         };
 
