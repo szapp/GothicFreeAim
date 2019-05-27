@@ -64,7 +64,7 @@ func void GFA_AllowSoftSkinTraceRay(var int on) {
 func int GFA_AimRayHead(var int npcPtr, var int fromPosPtr, var int dirPosPtr, var int vecPtr) {
     var int hit; hit = FALSE;
     var oCNpc npc; npc = _^(npcPtr);
-    if (!Hlp_StrCmp(npc.head_visualName, "") && (npc.anictrl)) {
+    if (!Hlp_StrCmp(npc.head_visualName, "") && (npc.anictrl) && (npc._zCVob_homeWorld)) {
         // Perform a lot of safety checks, to prevent crashes
         var zCAIPlayer playerAI; playerAI = _^(npc.anictrl);
         if (playerAI.modelHeadNode) {
