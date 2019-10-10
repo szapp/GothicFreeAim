@@ -216,7 +216,9 @@ func void GFA_CC_ProjectileCollisionWithNpc() {
     } else {
         // Retrieve the collision behavior based on the shooter, target and the material type of their armor
         var C_Npc target; target = _^(MEMINT_SwitchG1G2(EBX, MEM_ReadInt(/*esp+1ACh-190h*/ ESP+28)));
+        GFA_ProjectilePtr = MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset); // Temporarily provide projectile
         collision = GFA_CC_GetCollisionWithNpc_(shooter, target);
+        GFA_ProjectilePtr = 0;
     };
 
     // Apply collision behavior
@@ -359,7 +361,9 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
     var int speed; speed = sqrtf(addf(addf(sqrf(vel[0]), sqrf(vel[1])), sqrf(vel[2]))); // Norm of vel
 
     // Retrieve the collision behavior based on the shooter, the material types and the textures of the collision object
+    GFA_ProjectilePtr = projectilePtr; // Temporarily provide projectile
     var int collision; collision = GFA_CC_GetCollisionWithWorld_(shooter, materials, textures);
+    GFA_ProjectilePtr = 0;
     const int DESTROY = 0; // Projectile breaks and vanishes
     const int STUCK   = 1; // Projectile stays and is stuck in the surface of the collision object
     const int DEFLECT = 2; // Projectile deflects off of the surfaces and bounces off

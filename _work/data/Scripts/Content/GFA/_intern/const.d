@@ -131,6 +131,8 @@ const float  GFA_SCATTER_MAX        = 6.0;                  // (Visual angle)/2 
 var   int    GFA_CollTrj[6];                                // Projectile trajectory of last collision candidate
 var   string GFA_HitModelNode;                              // Name of model node that was hit
 
+var   int    GFA_ProjectilePtr;                             // Pointer of currently colliding projectile (temporary)
+
 const int    DMG_NO_CHANGE          = 0;                    // Do not adjust the damage
 const int    DMG_DO_NOT_KNOCKOUT    = 1;                    // Normal damage, shot may kill but never knockout (HP != 1)
 const int    DMG_DO_NOT_KILL        = 2;                    // Normal damage, shot may knockout but never kill (HP > 0)
