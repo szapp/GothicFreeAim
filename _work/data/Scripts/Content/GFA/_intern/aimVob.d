@@ -1,7 +1,7 @@
 /*
  * Definition and manipulation of aim vob (targeting system)
  *
- * Gothic Free Aim (GFA) v1.1.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
  * Copyright (C) 2016-2019  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
