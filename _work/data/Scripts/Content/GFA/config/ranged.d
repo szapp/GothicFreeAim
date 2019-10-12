@@ -201,5 +201,12 @@ func int GFA_GetInitialBaseDamage(var int baseDamage, var int damageType, var C_
     aimingDistance = (-aimingDistance+100); // Inverse distance percentage
     baseDamage = (baseDamage * aimingDistance) / 100; */
 
+    /*
+    // Optionally, add a special effect to the projectile if it is fired with maximum draw force
+    if (GFA_GetDrawForce(weapon, talent) > 90) {
+        var C_Item projectile; projectile = _^(GFA_ProjectilePtr); // This global variable is only filled temporarily
+        Wld_PlayEffect("spellFX_BELIARSRAGE_COLLIDE", projectile, projectile, 0, 0, 0, FALSE);
+    };*/
+
     return baseDamage;
 };

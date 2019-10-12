@@ -211,7 +211,9 @@ func void GFA_SetupProjectile() {
     } else {
         // Retrieve and update damage
         baseDamage = MEM_ReadStatArr(_@(projectile.damage), damageIndex);
+        GFA_ProjectilePtr = projectilePtr; // Temporarily provide projectile
         newBaseDamage = GFA_GetInitialBaseDamage_(baseDamage, damageIndex, distPlayer);
+        GFA_ProjectilePtr = 0;
 
         // Apply new damage to projectile
         projectile.damageTotal = newBaseDamage;

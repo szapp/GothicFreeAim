@@ -205,7 +205,8 @@ func void GFA_CH_DetectCriticalHit() {
     };
 
     // Do this for one damage type only. It gets too complicated for multiple damage types
-    var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
+    var int projectilePtr; projectilePtr = MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset);
+    var oCItem projectile; projectile = _^(projectilePtr);
     var int iterator; iterator = projectile.damageType;
     var int damageIndex; damageIndex = 0;
     // Find damage index from bit field
@@ -244,7 +245,9 @@ func void GFA_CH_DetectCriticalHit() {
     damage.info       = "";
 
     // Update damage message in config
+    GFA_ProjectilePtr = projectilePtr; // Temporarily provide projectile
     GFA_CH_GetCriticalHit_(targetNpc, dmgMsgPtr);
+    GFA_ProjectilePtr = 0;
 
     // Adjust damage for damage behavior
     var string damageBehaviorStr; // Debug output on zSpy
