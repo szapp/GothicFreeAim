@@ -1,8 +1,8 @@
 /*
  * Internal constants of GFA
  *
- * Gothic Free Aim (GFA) v1.1.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2018  mud-freak (@szapp)
+ * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Copyright (C) 2016-2019  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
  * <http://github.com/szapp/GothicFreeAim>
@@ -29,7 +29,7 @@
 
 /* Initialization */
 
-const string GFA_VERSION            = "Gothic Free Aim v1.1.0";
+const string GFA_VERSION            = "Gothic Free Aim v1.2.0";
 const int    GFA_LEGO_FLAGS         = LeGo_HookEngine       // For initializing all hooks
                                     | LeGo_ConsoleCommands  // For console commands and debugging
                                     | LeGo_Random;          // For scattering and other uses of random numbers
@@ -130,6 +130,8 @@ const float  GFA_SCATTER_MAX        = 6.0;                  // (Visual angle)/2 
 
 var   int    GFA_CollTrj[6];                                // Projectile trajectory of last collision candidate
 var   string GFA_HitModelNode;                              // Name of model node that was hit
+
+var   int    GFA_ProjectilePtr;                             // Pointer of currently colliding projectile (temporary)
 
 const int    DMG_NO_CHANGE          = 0;                    // Do not adjust the damage
 const int    DMG_DO_NOT_KNOCKOUT    = 1;                    // Normal damage, shot may kill but never knockout (HP != 1)

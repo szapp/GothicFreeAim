@@ -1,8 +1,8 @@
 /*
  * Initialization of GFA
  *
- * Gothic Free Aim (GFA) v1.1.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2018  mud-freak (@szapp)
+ * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Copyright (C) 2016-2019  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
  * <http://github.com/szapp/GothicFreeAim>
@@ -55,6 +55,7 @@ func void GFA_InitFeatureFreeAiming() {
         HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_OverwriteHitChance); // Manipulate hit chance
         MemoryProtectionOverride(oCAIHuman__CheckFocusVob_ranged, 1); // Prevent toggling focus in ranged combat
         HookEngineF(zCModel__CalcModelBBox3DWorld_rtn, 6, GFA_EnlargeHumanModelBBox); // Include head in model bbox
+        GFA_ExtendCollisionCheckNpc();
         HookEngineF(oCAIArrow__CanThisCollideWith_positive, MEMINT_SwitchG1G2(6, 7), GFA_ExtendCollisionCheck);
         if (GFA_STRAFING) {
             HookEngineF(oCAIHuman__BowMode_rtn, 7, GFA_RangedLockMovement); // Allow strafing or not when falling
@@ -221,6 +222,7 @@ func void GFA_InitFeatureCustomCollisions() {
 
     // Extend and refine collision detection on vobs
     if ((GFA_COLL_PRIOR_NPC == -1) || ((GFA_TRIGGER_COLL_FIX) && (GOTHIC_BASE_VERSION == 2))) {
+        GFA_ExtendCollisionCheckNpc();
         HookEngineF(oCAIArrow__CanThisCollideWith_positive, MEMINT_SwitchG1G2(6, 7), GFA_ExtendCollisionCheck);
     };
 };
@@ -278,7 +280,7 @@ func int GFA_InitOnce() {
 
     // Copyright notice in zSpy
     var int s; s = SB_New();
-    SB("     "); SB(GFA_VERSION); SB(", Copyright "); SBc(169 /* (C) */); SB(" 2016-2018  mud-freak (@szapp)");
+    SB("     "); SB(GFA_VERSION); SB(", Copyright "); SBc(169 /* (C) */); SB(" 2016-2019  mud-freak (@szapp)");
     MEM_Info("");
     MEM_Info(SB_ToString()); SB_Destroy();
     MEM_Info("     <http://github.com/szapp/GothicFreeAim>");

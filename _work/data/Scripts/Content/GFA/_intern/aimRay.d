@@ -1,8 +1,8 @@
 /*
  * Aim-specific trace ray and focus collection
  *
- * Gothic Free Aim (GFA) v1.1.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2018  mud-freak (@szapp)
+ * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Copyright (C) 2016-2019  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
  * <http://github.com/szapp/GothicFreeAim>
@@ -64,7 +64,7 @@ func void GFA_AllowSoftSkinTraceRay(var int on) {
 func int GFA_AimRayHead(var int npcPtr, var int fromPosPtr, var int dirPosPtr, var int vecPtr) {
     var int hit; hit = FALSE;
     var oCNpc npc; npc = _^(npcPtr);
-    if (!Hlp_StrCmp(npc.head_visualName, "") && (npc.anictrl)) {
+    if (!Hlp_StrCmp(npc.head_visualName, "") && (npc.anictrl) && (npc._zCVob_homeWorld)) {
         // Perform a lot of safety checks, to prevent crashes
         var zCAIPlayer playerAI; playerAI = _^(npc.anictrl);
         if (playerAI.modelHeadNode) {

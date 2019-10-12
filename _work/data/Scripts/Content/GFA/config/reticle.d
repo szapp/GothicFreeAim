@@ -156,6 +156,10 @@ func void GFA_GetSpellReticle(var C_Npc target, var int spellID, var C_Spell spe
     || (STR_IndexOf(spellName, "THUNDERBOLT") != -1) {
         // Ice spells
         reticle.texture = RETICLE_SPADES;
+    } else if (STR_IndexOf(spellName, "FIRE") != -1)
+    || (STR_IndexOf(spellName, "PYRO") != -1) {
+        // Fire spells
+        reticle.texture = RETICLE_HORNS;
     } else if (STR_IndexOf(spellName, "WATER") != -1)
     || (STR_IndexOf(spellName, "INFLATE") != -1)
     || (STR_IndexOf(spellName, "GEYSER") != -1)
@@ -163,10 +167,6 @@ func void GFA_GetSpellReticle(var C_Npc target, var int spellID, var C_Spell spe
     || (STR_IndexOf(spellName, "STORM") != -1) {
         // Water/wind spells
         reticle.texture = GFA_AnimateReticleByTime(RETICLE_WHIRL, 30, 10); // Animate reticle with 30 FPS (10 Frames)
-    } else if (STR_IndexOf(spellName, "FIRE") != -1)
-    || (STR_IndexOf(spellName, "PYRO") != -1) {
-        // Fire spells
-        reticle.texture = RETICLE_HORNS;
     } else if (STR_IndexOf(spellName, "ZAP") != -1)
     || (STR_IndexOf(spellName, "LIGHTNING") != -1)
     || (STR_IndexOf(spellName, "FLASH") != -1)

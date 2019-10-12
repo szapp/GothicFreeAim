@@ -1,8 +1,8 @@
 /*
  * Engine offsets for Gothic 2
  *
- * Gothic Free Aim (GFA) v1.1.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2018  mud-freak (@szapp)
+ * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Copyright (C) 2016-2019  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
  * <http://github.com/szapp/GothicFreeAim>
@@ -103,6 +103,8 @@ const int oCAIArrowBase__ReportCollisionToAI_PFXon2  =  6949396; //0x6A0A14
 const int oCAIArrowBase__ReportCollisionToAI_collNpc =  6949734; //0x6A0B66
 const int oCAIArrow__ReportCollisionToAI_destroyPrj  =  0;                                 // Does not exist in Gothic 2
 const int oCAIArrow__ReportCollisionToAI_keepPlyStrp =  0;                                 // Does not exist in Gothic 2
+const int oCAIArrow__CanThisCollideWith_skipCheck    =  6952087; //0x6A1497
+const int oCAIArrow__CanThisCollideWith_npcShooter   =  6952106; //0x6A14AA
 const int oCAIHuman__MagicMode_g2ctrlCheck           =  4665380; //0x473024
 const int oCAIHuman__BowMode_g2ctrlCheck             =  6905643; //0x695F2B
 const int oCAIHuman__BowMode_shootingKey             =  6906610; //0x6962F2

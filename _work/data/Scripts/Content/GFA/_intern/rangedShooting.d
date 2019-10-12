@@ -1,8 +1,8 @@
 /*
  * Free aiming mechanics for ranged combat shooting
  *
- * Gothic Free Aim (GFA) v1.1.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2018  mud-freak (@szapp)
+ * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Copyright (C) 2016-2019  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
  * <http://github.com/szapp/GothicFreeAim>
@@ -211,7 +211,9 @@ func void GFA_SetupProjectile() {
     } else {
         // Retrieve and update damage
         baseDamage = MEM_ReadStatArr(_@(projectile.damage), damageIndex);
+        GFA_ProjectilePtr = projectilePtr; // Temporarily provide projectile
         newBaseDamage = GFA_GetInitialBaseDamage_(baseDamage, damageIndex, distPlayer);
+        GFA_ProjectilePtr = 0;
 
         // Apply new damage to projectile
         projectile.damageTotal = newBaseDamage;

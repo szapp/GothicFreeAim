@@ -1,8 +1,8 @@
 /*
  * Collectable projectiles feature
  *
- * Gothic Free Aim (GFA) v1.1.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2018  mud-freak (@szapp)
+ * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
+ * Copyright (C) 2016-2019  mud-freak (@szapp)
  *
  * This file is part of Gothic Free Aim.
  * <http://github.com/szapp/GothicFreeAim>
@@ -69,7 +69,9 @@ func void GFA_RP_KeepProjectileInWorld() {
         // Replace the projectile if desired, retrieve new projectile instance from config
         var C_Npc emptyNpc; emptyNpc = MEM_NullToInst(); // No NPC was hit, so pass an empty instance as argument
         var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
+        GFA_ProjectilePtr = projectilePtr; // Temporarily provide projectile
         var int projInst; projInst = GFA_GetUsedProjectileInstance(projectile.instanz, shooter, emptyNpc);
+        GFA_ProjectilePtr = 0;
 
         // Check if the new projectile instance is valid, -1 for invalid instance, 0 for empty
         if (projInst > 0) {
@@ -121,7 +123,8 @@ func void GFA_RP_PutProjectileIntoInventory() {
         return;
     };
 
-    var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
+    var int projectilePtr; projectilePtr = MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset);
+    var oCItem projectile; projectile = _^(projectilePtr);
 
     // Differentiate between positive hit and collision without damage (in case of auto aim hit registration)
     var int positiveHit; positiveHit = MEMINT_SwitchG1G2(
@@ -133,7 +136,9 @@ func void GFA_RP_PutProjectileIntoInventory() {
         var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
 
         // Replace the projectile if desired, retrieve new projectile instance from config
+        GFA_ProjectilePtr = projectilePtr; // Temporarily provide projectile
         var int projInst; projInst = GFA_GetUsedProjectileInstance(projectile.instanz, shooter, victim);
+        GFA_ProjectilePtr = 0;
         if (projInst > 0) {
             CreateInvItem(victim, projInst); // Put respective instance in inventory
         };

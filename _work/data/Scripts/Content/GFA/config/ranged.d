@@ -27,6 +27,12 @@
  * recoil, see GFA_GetRecoil() below. All of this is a design choice and can be changed in the functions in this file.
  */
 func int GFA_GetDrawForce(var C_Item weapon, var int talent) {
+
+    // Default:
+    return 100; // Remove this line if you  want to use this configuration function!
+    // --- Everything below is ignored ---
+
+
     var int drawForce;
 
     // Differentiate between bows and crossbows
@@ -70,6 +76,12 @@ func int GFA_GetDrawForce(var C_Item weapon, var int talent) {
  * Note: For Gothic 1, instead of the talent, the dexterity is used (as is default for Gothic 1)
  */
 func int GFA_GetAccuracy(var C_Item weapon, var int talent) {
+
+    // Default:
+    return MEMINT_SwitchG1G2(hero.attribute[ATR_DEXTERITY], talent); // Remove this line if you want to use this config!
+    // --- Everything below is ignored ---
+
+
     // Here, the 'hit chance' is scaled by draw force, where 'hit chance' is talent (Gothic 2) or dexterity (Gothic 1)
     //  Draw force = 100% -> accuracy = hit chance
     //  Draw force =   0% -> accuracy = hit chance * 0.8
@@ -106,6 +118,12 @@ func int GFA_GetAccuracy(var C_Item weapon, var int talent) {
  * aiming time (better draw force), see GFA_GetDrawForce() above.
  */
 func int GFA_GetRecoil(var C_Item weapon, var int talent) {
+
+    // Default:
+    return 0; // Remove this line if you  want to use this configuration function!
+    // --- Everything below is ignored ---
+
+
     // No recoil for bows, since they have longer draw time, see GFA_GetDrawForce() above.
     if (weapon.flags & ITEM_BOW) {
         return 0;
@@ -151,6 +169,12 @@ func int GFA_GetRecoil(var C_Item weapon, var int talent) {
  */
 func int GFA_GetInitialBaseDamage(var int baseDamage, var int damageType, var C_Item weapon, var int talent,
         var int aimingDistance) {
+
+    // Default:
+    return baseDamage; // Remove this line if you  want to use this configuration function!
+    // --- Everything below is ignored ---
+
+
     // Here the damage is scaled by draw force:
     //  Draw force = 100% -> baseDamage
     //  Draw force =   0% -> baseDamage * 0.8
@@ -176,6 +200,13 @@ func int GFA_GetInitialBaseDamage(var int baseDamage, var int damageType, var C_
     // 0 (<= RANGED_CHANCE_MINDIST) and 100 (>= RANGED_CHANCE_MAXDIST), see AI_Constants.d.
     aimingDistance = (-aimingDistance+100); // Inverse distance percentage
     baseDamage = (baseDamage * aimingDistance) / 100; */
+
+    /*
+    // Optionally, add a special effect to the projectile if it is fired with maximum draw force
+    if (GFA_GetDrawForce(weapon, talent) > 90) {
+        var C_Item projectile; projectile = _^(GFA_ProjectilePtr); // This global variable is only filled temporarily
+        Wld_PlayEffect("spellFX_BELIARSRAGE_COLLIDE", projectile, projectile, 0, 0, 0, FALSE);
+    };*/
 
     return baseDamage;
 };
