@@ -603,7 +603,7 @@ func void GFA_ExtendCollisionCheckNpc() {
     // Skip checks for shooter and target
     MemoryProtectionOverride(oCAIArrow__CanThisCollideWith_skipCheck, 2);
     MEM_WriteByte(oCAIArrow__CanThisCollideWith_skipCheck,   /*EB*/ 235);             // jmp     0x6A14F0
-    MEM_WriteByte(oCAIArrow__CanThisCollideWith_skipCheck+1, /*5A*/  90);             //         0x6A14F0-0x6A1494-2
+    MEM_WriteByte(oCAIArrow__CanThisCollideWith_skipCheck+1, /*57*/  87);             //         0x6A14F0-0x6A1497-2
 
     // Re-add these checks later (after ignore list iteration and Daedalus hook)
     ASM_Open(42);
