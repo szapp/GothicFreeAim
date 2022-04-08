@@ -155,6 +155,10 @@ func int GFA_SetupAimVob(var int posPtr) {
 
         // Ignored by trace ray, no collision
         vob.bitfield[0] = 3105;
+
+        // Set to non-focusable
+        var C_Item itm; itm = _^(vobPtr);
+        itm.flags = itm.flags | ITEM_NFOCUS;
     };
 
     // Update position and rotation
