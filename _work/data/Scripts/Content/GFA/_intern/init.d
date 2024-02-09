@@ -32,7 +32,7 @@ func void GFA_InitFeatureFreeAiming() {
     // Controls
     MEM_Info("Initializing free aiming mouse controls.");
     HookEngineF(mouseUpdate, 5, GFA_TurnPlayerModel); // Rotate the player model by mouse input
-    if (GOTHIC_BASE_VERSION == 1) {
+    if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
         MemoryProtectionOverride(oCAIHuman__MagicMode_turnToTarget, 5); // G1: Prevent auto turning in spell combat
         HookEngineF(oCNpc__OnDamage_Anim_stumbleAniName, 5, GFA_AdjustDamageAnimation); // Additional hurt animation
     } else {
@@ -47,7 +47,7 @@ func void GFA_InitFeatureFreeAiming() {
         HookEngineF(oCAIHuman__BowMode_notAiming, 6, GFA_RangedIdle); // Fix focus collection while not aiming
         HookEngineF(oCAIHuman__BowMode_interpolateAim, 5, GFA_RangedAiming); // Interpolate aiming animation
         HookEngineF(oCAIArrow__SetupAIVob, 6, GFA_SetupProjectile); // Setup projectile trajectory (shooting)
-        writeNOP(oCAIArrowBase__DoAI_setLifeTime, 7);
+        GFA_WriteNOP(oCAIArrowBase__DoAI_setLifeTime, 7);
         MEM_WriteByte(oCAIArrowBase__DoAI_setLifeTime, /*85*/ 133); // test eax, eax
         MEM_WriteByte(oCAIArrowBase__DoAI_setLifeTime+1, /*C0*/ 192);
         HookEngineF(oCAIArrowBase__DoAI_setLifeTime, 7, GFA_EnableProjectileGravity); // Enable gravity after some time
@@ -56,17 +56,17 @@ func void GFA_InitFeatureFreeAiming() {
         MemoryProtectionOverride(oCAIHuman__CheckFocusVob_ranged, 1); // Prevent toggling focus in ranged combat
         HookEngineF(zCModel__CalcModelBBox3DWorld_rtn, 6, GFA_EnlargeHumanModelBBox); // Include head in model bbox
         GFA_ExtendCollisionCheckNpc();
-        HookEngineF(oCAIArrow__CanThisCollideWith_positive, MEMINT_SwitchG1G2(6, 7), GFA_ExtendCollisionCheck);
+        HookEngineF(oCAIArrow__CanThisCollideWith_positive, GFA_SwitchExe(6, 6, 7, 7), GFA_ExtendCollisionCheck);
         if (GFA_STRAFING) {
             HookEngineF(oCAIHuman__BowMode_rtn, 7, GFA_RangedLockMovement); // Allow strafing or not when falling
         };
 
         // Aiming condition (detect aiming onset and overwrite aiming condition if GFA_STRAFING)
-        writeNOP(oCAIHuman__BowMode_aimCondition, 5);
+        GFA_WriteNOP(oCAIHuman__BowMode_aimCondition, 5);
         HookEngineF(oCAIHuman__BowMode_aimCondition, 5, GFA_RangedAimingCondition); // Replace condition with own
 
         // Gothic 2 controls
-        if (GOTHIC_BASE_VERSION == 2) {
+        if (GOTHIC_BASE_VERSION == 130) || (GOTHIC_BASE_VERSION == 2) {
             MEM_Info("Initializing free aiming Gothic 2 controls.");
             MemoryProtectionOverride(oCAIHuman__BowMode_g2ctrlCheck, 6); // Skip jump to G2 controls: jz to 0x696391
             MemoryProtectionOverride(oCAIHuman__BowMode_shootingKey, 2); // Shooting key: push 3
@@ -74,9 +74,17 @@ func void GFA_InitFeatureFreeAiming() {
             HookEngineF(cGameManager__HandleEvent_clearKeyBuffer, 6, GFA_CancelOUsDontClearKeyBuffer); // Fix key buffer
         };
 
+        // Fix projectile velocity multiplier in Gothic 1.12
+        if (GOTHIC_BASE_VERSION == 112) {
+            MemoryProtectionOverride(oCAIArrow__SetupAIVob_velocity1, 4);
+            MemoryProtectionOverride(oCAIArrow__SetupAIVob_velocity2, 4);
+            MEM_WriteInt(oCAIArrow__SetupAIVob_velocity1, mkf(2000));
+            MEM_WriteInt(oCAIArrow__SetupAIVob_velocity2, mkf(2000));
+        };
+
         // Fix dropped projectile AI bug
         MEM_Info("Initializing dropped projectiles AI bug fix.");
-        writeNOP(oCAIVobMove__DoAI_stopMovement, 7); // First erase a call, to make room for hook
+        GFA_WriteNOP(oCAIVobMove__DoAI_stopMovement, 7); // First erase a call, to make room for hook
         HookEngineF(oCAIVobMove__DoAI_stopMovement, 7, GFA_FixDroppedProjectileAI); // Rewrite what has been overwritten
     };
 
@@ -92,28 +100,29 @@ func void GFA_InitFeatureFreeAiming() {
         };
 
         // Fixes for Gothic 2
-        if (GOTHIC_BASE_VERSION == 2) {
+        if (GOTHIC_BASE_VERSION == 130) || (GOTHIC_BASE_VERSION == 2) {
             HookEngineF(oCVisualFX__ProcessCollision_checkTarget, 6, GFA_SpellFixTarget); // Match target with collision
             MemoryProtectionOverride(oCNpc__EV_Strafe_magicCombat, 5); // Disable magic during default strafing
             HookEngineF(oCNpc__EV_Strafe_g2ctrl, 6, GFA_SpellStrafeReticle); // Update reticle while default strafing
             MemoryProtectionOverride(oCAIHuman__MagicMode_g2ctrlCheck, 4); // Change Gothic 2 controls
+            HookDaedalusFuncS("C_CanNpcCollideWithSpell", "GFA_CanNpcCollideWithSpell"); // Avoid spell hit beyond range
         };
     };
 
     // Fix open inventory bug
     if (GFA_Flags & GFA_SPELLS) || (GFA_STRAFING) {
         MEM_Info("Initializing open inventory bug fix.");
-        writeNOP(oCGame__HandleEvent_openInvCheck, 5); // First erase a call, to make room for hook
+        GFA_WriteNOP(oCGame__HandleEvent_openInvCheck, 5); // First erase a call, to make room for hook
         HookEngineF(oCGame__HandleEvent_openInvCheck, 5, GFA_FixOpenInventory); // Rewrite what has been overwritten
     };
 
     // Treat special body states (lying or sliding)
     HookEngineF(zCAIPlayer__IsSliding_true, 5, GFA_TreatBodyStates); // Called during sliding
     HookEngineF(oCAIHuman__PC_CheckSpecialStates_lie, 5, GFA_TreatBodyStates); // Called when lying after a fall
-    HookEngineF(oCAniCtrl_Human__SearchStandAni_walkmode, 6, GFA_FixStandingBodyState); // Fix bug with wrong body state
+    HookEngineF(oCAniCtrl_Human__SearchStandAni_walkmode, 7, GFA_FixStandingBodyState); // Fix bug with wrong body state
     HookEngineF(oCNpc__SetWeaponMode2_walkmode, 6, GFA_FixStandingBodyState); // Fix bug with wrong body state
     // Prevent focus collection during jumping and falling (necessary for Gothic 2 only)
-    if (GOTHIC_BASE_VERSION == 2) {
+    if (GOTHIC_BASE_VERSION == 130) || (GOTHIC_BASE_VERSION == 2) {
         HookEngineF(oCAIHuman__PC_ActionMove_bodyState, 6, GFA_PreventFocusCollectionBodyStates);
     };
 
@@ -134,9 +143,9 @@ func void GFA_InitFeatureFreeAiming() {
     // to squeeze in a check whether the character in question is the player.
     //
     // Inspired by: http://forum.worldofplayers.de/forum/threads/879891?p=14886885
-    if (GOTHIC_BASE_VERSION == 2) {
+    if (GOTHIC_BASE_VERSION == 130) || (GOTHIC_BASE_VERSION == 2) {
         MEM_Info("Initializing NPC attack-run turning bug fix.");
-        writeNOP(oCNpc__EV_AttackRun_playerTurn, 7); // Erase call to oCAIHuman::PC_Turnings()
+        GFA_WriteNOP(oCNpc__EV_AttackRun_playerTurn, 7); // Erase call to oCAIHuman::PC_Turnings()
         HookEngineF(oCNpc__EV_AttackRun_playerTurn, 7, GFA_FixNpcAttackRun); // Re-write what has been overwritten
     };
 
@@ -178,7 +187,7 @@ func void GFA_InitFeatureFreeAiming() {
     };
     GFA_RETICLE_MIN_SIZE = GFA_RETICLE_MAX_SIZE/2;
 
-    if (GOTHIC_BASE_VERSION == 2) {
+    if (GOTHIC_BASE_VERSION == 130) || (GOTHIC_BASE_VERSION == 2) {
         if (GFA_Flags & GFA_RANGED) {
             if (!MEM_GothOptExists("GFA", "overwriteControlSchemeRanged")) {
                 // Add INI-entry, if not set (disable override by default)
@@ -202,28 +211,37 @@ func void GFA_InitFeatureFreeAiming() {
 func void GFA_InitFeatureCustomCollisions() {
     MEM_Info("Initializing custom collision behaviors.");
     HookEngineF(oCAIArrow__ReportCollisionToAI_hitChc, 6, GFA_CC_ProjectileCollisionWithNpc); // Hit reg/coll on NPCs
-    if (GOTHIC_BASE_VERSION == 1) {
-        writeNOP(oCAIArrow__ReportCollisionToAI_destroyPrj, 7); // Disable destroying of projectiles
+    if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
+        GFA_WriteNOP(oCAIArrow__ReportCollisionToAI_destroyPrj, 7); // Disable destroying of projectiles
         if (!(GFA_Flags & GFA_REUSE_PROJECTILES)) {
             HookEngineF(oCAIArrow__DoAI_rtn, 6, GFA_CC_FadeProjectileVisibility); // Implement fading like in Gothic 2
         };
         HookEngineF(oCAIArrow__ReportCollisionToAI_collAll, 8, GFA_CC_ProjectileCollisionWithWorld); // Collision world
         MemoryProtectionOverride(oCAIArrow__ReportCollisionToAI_keepPlyStrp, 2); // Keep poly strip after coll
-        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_keepPlyStrp, /*EB*/ 235); // jmp
-        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_keepPlyStrp+1, /*3D*/ 61); // to 0x619648
+        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_keepPlyStrp, /*EB*/ 235); // jmp to 0x619648 (G1) / 0x63CB0C (G1A)
+        MEM_WriteByte(oCAIArrow__ReportCollisionToAI_keepPlyStrp+1, GFA_SwitchExe(/*3D*/ 61, /*41*/ 65, 0, 0));
     } else {
         // Gothic 2
-        writeNOP(oCAIArrowBase__ReportCollisionToAI_PFXon1, 7); // Prevent too early setting of dust PFX
-        writeNOP(oCAIArrowBase__ReportCollisionToAI_PFXon2, 7);
+        GFA_WriteNOP(oCAIArrowBase__ReportCollisionToAI_PFXon1, 7); // Prevent too early setting of dust PFX
+        GFA_WriteNOP(oCAIArrowBase__ReportCollisionToAI_PFXon2, 7);
         HookEngineF(oCAIArrowBase__ReportCollisionToAI_collVob, 5, GFA_CC_ProjectileCollisionWithWorld); // Vobs
         HookEngineF(oCAIArrowBase__ReportCollisionToAI_collWld, 5, GFA_CC_ProjectileCollisionWithWorld); // Static world
         MemoryProtectionOverride(oCAIArrowBase__ReportCollisionToAI_collNpc, 2); // Set collision behavior on NPCs
     };
 
     // Extend and refine collision detection on vobs
-    if ((GFA_COLL_PRIOR_NPC == -1) || ((GFA_TRIGGER_COLL_FIX) && (GOTHIC_BASE_VERSION == 2))) {
+    if (GFA_COLL_PRIOR_NPC == -1)
+    || ((GFA_TRIGGER_COLL_FIX) && ((GOTHIC_BASE_VERSION == 130) || (GOTHIC_BASE_VERSION == 2))) {
         GFA_ExtendCollisionCheckNpc();
-        HookEngineF(oCAIArrow__CanThisCollideWith_positive, MEMINT_SwitchG1G2(6, 7), GFA_ExtendCollisionCheck);
+        HookEngineF(oCAIArrow__CanThisCollideWith_positive, GFA_SwitchExe(6, 6, 7, 7), GFA_ExtendCollisionCheck);
+    };
+
+    // Fix projectile velocity multiplier in Gothic 1.12
+    if (GOTHIC_BASE_VERSION == 112) {
+        MemoryProtectionOverride(oCAIArrow__SetupAIVob_velocity1, 4);
+        MemoryProtectionOverride(oCAIArrow__SetupAIVob_velocity2, 4);
+        MEM_WriteInt(oCAIArrow__SetupAIVob_velocity1, mkf(2000));
+        MEM_WriteInt(oCAIArrow__SetupAIVob_velocity2, mkf(2000));
     };
 };
 
@@ -234,7 +252,7 @@ func void GFA_InitFeatureCustomCollisions() {
 func void GFA_InitFeatureCriticalHits() {
     MEM_Info("Initializing critical hit detection.");
     HookEngineF(oCAIArrow__ReportCollisionToAI_damage, 5, GFA_CH_DetectCriticalHit); // Perform critical hit detection
-    if (GOTHIC_BASE_VERSION == 1) {
+    if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
         HookEngineF(oCNpc__OnDamage_Hit_criticalHit, 5, GFA_CH_DisableDefaultCriticalHits); // Disable G1 critical hits
     };
 };
@@ -247,7 +265,7 @@ func void GFA_InitFeatureReuseProjectiles() {
     MEM_Info("Initializing collectable projectiles.");
     HookEngineF(oCAIArrow__DoAI_rtn, 6, GFA_RP_KeepProjectileInWorld); // Keep projectiles when stop moving
     HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitNpc, 5, GFA_RP_PutProjectileIntoInventory); // Projectile hits NPC
-    if (GOTHIC_BASE_VERSION == 2) {
+    if (GOTHIC_BASE_VERSION == 130) || (GOTHIC_BASE_VERSION == 2) {
         // Reposition projectiles when they are stuck in the surface, only necessary for Gothic 2
         HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitVob, 5, GFA_RP_RepositionProjectileInSurface);
         HookEngineF(oCAIArrowBase__ReportCollisionToAI_hitWld, 5, GFA_RP_RepositionProjectileInSurface);
@@ -260,8 +278,16 @@ func void GFA_InitFeatureReuseProjectiles() {
     // Fix dropped projectile AI bug
     if (!IsHookF(oCAIVobMove__DoAI_stopMovement, GFA_FixDroppedProjectileAI)) {
         MEM_Info("Initializing dropped projectiles AI bug fix.");
-        writeNOP(oCAIVobMove__DoAI_stopMovement, 7); // First erase a call, to make room for hook
+        GFA_WriteNOP(oCAIVobMove__DoAI_stopMovement, 7); // First erase a call, to make room for hook
         HookEngineF(oCAIVobMove__DoAI_stopMovement, 7, GFA_FixDroppedProjectileAI); // Rewrite what has been overwritten
+    };
+
+    // Fix projectile velocity multiplier in Gothic 1.12
+    if (GOTHIC_BASE_VERSION == 112) {
+        MemoryProtectionOverride(oCAIArrow__SetupAIVob_velocity1, 4);
+        MemoryProtectionOverride(oCAIArrow__SetupAIVob_velocity2, 4);
+        MEM_WriteInt(oCAIArrow__SetupAIVob_velocity1, mkf(2000));
+        MEM_WriteInt(oCAIArrow__SetupAIVob_velocity2, mkf(2000));
     };
 };
 
@@ -294,6 +320,9 @@ func int GFA_InitOnce() {
         MEM_Info("Remove GFA.emergencyLock override in Mod-INI to enable GFA.");
         return FALSE;
     };
+
+    // Auto-fill common constants
+    GFA_FillConstants();
 
     // FEATURE: Free aiming
     if (GFA_Flags & GFA_RANGED) || (GFA_Flags & GFA_SPELLS) {
@@ -409,9 +438,9 @@ func void GFA_Init(var int flags) {
         LeGo_Init(_LeGo_Flags);
     };
 
-    // Fix zTimer for Gothic 1 (the address in Ikarus is wrong)
-    if (GOTHIC_BASE_VERSION == 1) {
-        MEMINT_zTimer_Address = ztimer;
+    // Fix zTimer for Gothic 1 (the address in Ikarus < v1.2.1 is wrong)
+    if (GOTHIC_BASE_VERSION == 1) && (!MEM_CheckVersion(1, 2, 1)) {
+        MEMINT_zTimer_Address = 9236968; //0x8CF1E8
         MEM_Timer = _^(MEMINT_zTimer_Address);
     };
 

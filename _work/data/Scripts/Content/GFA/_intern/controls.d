@@ -55,7 +55,7 @@ func void GFA_TurnPlayerModel() {
     };
 
     // Gothic 2 controls only need the rotation if currently shooting
-    var oCNpc her; her = getPlayerInst();
+    var oCNpc her; her = GFA_GetPlayerInst();
     if (GFA_ACTIVE_CTRL_SCHEME == 2) {
         // Enabled turning when action key is down
         if (!MEM_KeyPressed(MEM_GetKey("keyAction"))) && (!MEM_KeyPressed(MEM_GetSecondaryKey("keyAction"))) {
@@ -81,7 +81,7 @@ func void GFA_TurnPlayerModel() {
     deltaX = mulf(deltaX, castToIntf(GFA_ROTATION_SCALE));
 
     // Gothic 1 has a maximum turn rate
-    if (GOTHIC_BASE_VERSION == 1) {
+    if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
         // Also add another multiplier for Gothic 1 (mouse is faster)
         deltaX = mulf(deltaX, castToIntf(0.5));
 
@@ -98,6 +98,7 @@ func void GFA_TurnPlayerModel() {
     if (CALL_Begin(call)) {
         CALL_IntParam(_@(zero)); // 0 = disable turn animation (there is none while aiming anyways)
         CALL_FloatParam(_@(deltaX));
+        CALL_RetValIsFloat();
         CALL_PutRetValTo(0);
         CALL__thiscall(_@(hAniCtrl), oCAniCtrl_Human__Turn);
         call = CALL_End();
@@ -117,7 +118,7 @@ func void GFA_DisableAutoTurning(var int on) {
         return; // No change necessary
     };
 
-    if (GOTHIC_BASE_VERSION == 2) {
+    if (GOTHIC_BASE_VERSION == 130) || (GOTHIC_BASE_VERSION == 2) {
         if (on) {
             // Jump from 0x737D75 to 0x737E32: 7568946-7568757 = 189-5 = 184 // Length of instruction: 5
             MEM_WriteByte(oCNpc__TurnToEnemy_camCheck, /*E9*/ 233); // jmp
@@ -141,10 +142,7 @@ func void GFA_DisableAutoTurning(var int on) {
             MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+4, ASMINT_OP_nop);
         } else {
             MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget, /*E8*/ 232); // Reset to default: call oCNpc::GetFocusVob()
-            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+1, /*8B*/ 139);
-            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+2, /*2C*/ 44);
-            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+3, /*22*/ 34);
-            MEM_WriteByte(oCAIHuman__MagicMode_turnToTarget+4, /*00*/ 0);
+            MEM_WriteInt(oCAIHuman__MagicMode_turnToTarget+1, oCNpc__GetFocusVob-oCAIHuman__MagicMode_turnToTarget-5);
         };
     };
     SET = !SET;
@@ -162,7 +160,7 @@ func void GFA_DisableAutoTurning(var int on) {
  * This function is called from GFA_UpdateStatus() if the menu settings change.
  */
 func void GFA_SetControlSchemeRanged(var int scheme) {
-    if (GOTHIC_BASE_VERSION != 2) || (!(GFA_Flags & GFA_RANGED)) {
+    if ((GOTHIC_BASE_VERSION != 130) && (GOTHIC_BASE_VERSION != 2)) || (!(GFA_Flags & GFA_RANGED)) {
         return;
     };
 
@@ -198,10 +196,11 @@ func void GFA_SetControlSchemeRanged(var int scheme) {
         // Revert to original Gothic controls
         MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck, /*0F*/ 15); // Revert G2 controls to default: jz to 0x696391
         MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+1, /*84*/ 132);
-        MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+2, /*60*/ 96);
-        MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+3, /*04*/ 4);
-        MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+4, /*00*/ 0);
-        MEM_WriteByte(oCAIHuman__BowMode_g2ctrlCheck+5, /*00*/ 0);
+        if (GOTHIC_BASE_VERSION == 130) {
+            MEM_WriteInt(oCAIHuman__BowMode_g2ctrlCheck+2, /*A4 03 00 00*/ 932);
+        } else {
+            MEM_WriteInt(oCAIHuman__BowMode_g2ctrlCheck+2, /*60 04 00 00*/ 1120);
+        };
 
         // Revert key changes
         MEM_WriteByte(oCAIHuman__BowMode_shootingKey+1, 3); // Revert to default: push 3
@@ -225,7 +224,7 @@ func void GFA_SetControlSchemeRanged(var int scheme) {
  * This function is called from GFA_UpdateStatus() if the menu settings change.
  */
 func void GFA_SetControlSchemeSpells(var int scheme) {
-    if (GOTHIC_BASE_VERSION != 2) || (!(GFA_Flags & GFA_SPELLS)) {
+    if ((GOTHIC_BASE_VERSION != 130) && (GOTHIC_BASE_VERSION != 2)) || (!(GFA_Flags & GFA_SPELLS)) {
         return;
     };
 
@@ -253,7 +252,7 @@ func void GFA_SetControlSchemeSpells(var int scheme) {
  * This function is called from GFA_IsActive() and GFA_UpdateStatus().
  */
 func void GFA_SetCameraModes(var int on) {
-    if (GOTHIC_BASE_VERSION != 1) {
+    if (GOTHIC_BASE_VERSION != 1) && (GOTHIC_BASE_VERSION != 112) {
         return;
     };
 
@@ -300,7 +299,7 @@ func void GFA_DisableToggleFocusRanged(var int on) {
         // Disable toggling focus with left and right keys
         MEM_WriteByte(oCAIHuman__CheckFocusVob_ranged, FMODE_FAR+1); // No focus toggle if her.fmode <= FMODE_FAR+1
     } else {
-        MEM_WriteByte(oCAIHuman__CheckFocusVob_ranged, 4); // Revert to default: 83 F8 04  mov eax, 4
+        MEM_WriteByte(oCAIHuman__CheckFocusVob_ranged, FMODE_FAR-1); // Revert to default: 83 F8 04  mov eax, 4
     };
     SET = !SET;
 };
@@ -338,7 +337,7 @@ func void GFA_DisableToggleFocusSpells(var int on) {
  * function exits immediately when called with Gothic 1.
  */
 func void GFA_DisableMagicDuringStrafing(var int on) {
-    if (GOTHIC_BASE_VERSION != 2) || (!(GFA_Flags & GFA_SPELLS)) {
+    if ((GOTHIC_BASE_VERSION != 130) && (GOTHIC_BASE_VERSION != 2)) || (!(GFA_Flags & GFA_SPELLS)) {
         return;
     };
 
@@ -354,10 +353,7 @@ func void GFA_DisableMagicDuringStrafing(var int on) {
         end;
     } else {
         MEM_WriteByte(oCNpc__EV_Strafe_magicCombat, /*E8*/ 232); // Revert to default call
-        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+1, /*A0*/ 160);
-        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+2, /*B4*/ 180);
-        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+3, /*FF*/ 255);
-        MEM_WriteByte(oCNpc__EV_Strafe_magicCombat+4, /*FF*/ 255);
+        MEM_WriteInt(oCNpc__EV_Strafe_magicCombat+1, oCNpc__FightAttackMagic-oCNpc__EV_Strafe_magicCombat-5);
     };
     SET = !SET;
 };
@@ -396,8 +392,8 @@ func void GFA_PreventFocusCollectionBodyStates() {
         return;
     };
 
-    var oCNpc her; her = getPlayerInst();
-    if ((her.fmode == FMODE_FAR) || (her.fmode == FMODE_FAR+1)) && (GFA_Flags & GFA_RANGED) // Bow or crossbow
+    var oCNpc her; her = GFA_GetPlayerInst();
+    if (((her.fmode == FMODE_FAR) || (her.fmode == FMODE_FAR+1)) && (GFA_Flags & GFA_RANGED)) // Bow or crossbow
     || ((her.fmode == FMODE_MAGIC) && (GFA_Flags & GFA_SPELLS)) { // Spell
         if (GFA_NO_AIM_NO_FOCUS) || ((GFA_ACTIVE_CTRL_SCHEME == 2) && (her.fmode == FMODE_MAGIC)) {
             GFA_SetFocusAndTarget(0);
@@ -426,13 +422,15 @@ func void GFA_FixStandingBodyState() {
         npcPtr = ESI;
 
         // Exit if NPC is walking/running during weapon switch
-        var int moving; moving = MEM_ReadInt(ESP+MEMINT_SwitchG1G2(/*esp+0A0h-08Ch*/ 20, /*esp+0A0h-088h*/ 24));
+        var int offset; offset = GFA_SwitchExe(/*A0h-8Ch*/ 20, 24, 20, /*A0h-88h*/ 24);
+        var int moving; moving = MEM_ReadInt(ESP+offset);
         if (moving) {
             return;
         };
     } else {
         // oCAniCtrl_Human::SearchStandAni()
-        npcPtr = MEM_ReadInt(ESI+oCAniCtrl_Human_npc_offset);
+        var int aniCtrlPtr; aniCtrlPtr = GFA_SwitchExe(ESI, EBP, ESI, ESI);
+        npcPtr = MEM_ReadInt(aniCtrlPtr+oCAniCtrl_Human_npc_offset);
 
         if (!Hlp_Is_oCNpc(npcPtr)) {
             return;
@@ -528,7 +526,7 @@ func void GFA_FixSpellOnStrafe() {
  * whether aim movement is active.
  */
 func void GFA_DontInterruptStrafing() {
-    var C_NPC slf; slf = _^(ESI);
+    var C_NPC slf; slf = _^(GFA_SwitchExe(ESI, EBX, ESI, ESI));
     if (Npc_IsPlayer(slf)) && (GFA_IsStrafing) {
         // Stop only all animations in layers higher than the aim movements
         MEM_WriteByte(oCNpc__Interrupt_stopAnisLayerA, GFA_MOVE_ANI_LAYER+1); // zCModel::StopAnisLayerRange(X+1, 1000)
@@ -545,7 +543,7 @@ func void GFA_DontInterruptStrafing() {
  * CGameManager::HandleEvent() at an offset where the key buffer is cleared after canceling OUs.
  */
 func void GFA_CancelOUsDontClearKeyBuffer() {
-    if (GFA_ACTIVE_CTRL_SCHEME == 2) && (GFA_ACTIVE == FMODE_FAR) {
+    if (GFA_ACTIVE_CTRL_SCHEME == 2) && (GFA_ACTIVE == GFA_ACT_FAR) {
         EAX = 0;
     };
 };
@@ -556,9 +554,10 @@ func void GFA_CancelOUsDontClearKeyBuffer() {
  * if the player is aiming. Also the draw force and steady aim are reset.
  */
 func void GFA_AdjustDamageAnimation() {
-    var int victimPtr; victimPtr = MEM_ReadInt(ESP+204); // G1: esp+200h-134h, G2: esp+1FCh-130h
+    var int offset; offset = GFA_SwitchExe(/*200h-134h*/ 204, 228, 204, /*1FCh-130h*/ 204);
+    var int victimPtr; victimPtr = MEM_ReadInt(ESP+offset);
     var C_Npc victim; victim = _^(victimPtr);
-    if (!Npc_IsPlayer(victim)) || (GFA_ACTIVE < FMODE_FAR) {
+    if (!Npc_IsPlayer(victim)) || (GFA_ACTIVE < GFA_ACT_FAR) {
         return;
     };
 
@@ -583,7 +582,8 @@ func void GFA_AdjustDamageAnimation() {
 
             // Check if animation with casting modifier exists
             var int aniNamePtr; aniNamePtr = _@s(ConcatStrings(ConcatStrings(prefix, castMod), aniName));
-            var int model; model = MEM_ReadInt(MEMINT_SwitchG1G2(/*esp+200h-ECh*/ ESP+276, /*esp+1FCh-DCh*/ ESP+288));
+            offset = GFA_SwitchExe(/*200h-ECh*/ 276, 364, 288, /*1FCh-DCh*/ 288);
+            var int model; model = MEM_ReadInt(ESP+offset);
             var zCArray protoTypes; protoTypes = _^(model+zCModel_prototypes_offset);
             var int modelPrototype; modelPrototype = MEM_ReadInt(protoTypes.array);
             const int call = 0;
@@ -605,6 +605,7 @@ func void GFA_AdjustDamageAnimation() {
     aniName = ConcatStrings(ConcatStrings(prefix, modifier), aniName);
 
     // Overwrite damage animation
-    var int aniNameAddr; aniNameAddr = ESP+24; // G1: esp+200h-1E8h, G2: esp+1FCh-1E4h
+    offset = GFA_SwitchExe(/*200h-1E8h*/ 24, 28, 24, /*1FCh-1E4h*/ 24);
+    var int aniNameAddr; aniNameAddr = ESP+offset;
     MEM_WriteString(aniNameAddr, aniName);
 };

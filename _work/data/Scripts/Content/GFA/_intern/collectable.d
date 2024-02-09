@@ -88,7 +88,7 @@ func void GFA_RP_KeepProjectileInWorld() {
             };
 
             // Make the projectile focusable, i.e. collectable
-            projectile.flags = projectile.flags & ~ITEM_NFOCUS;
+            projectile.flags = projectile.flags & ~GFA_ITEM_NFOCUS;
             projectile._zCVob_bitfield[4] = projectile._zCVob_bitfield[4] & ~zCVob_bitfield4_dontWriteIntoArchive;
 
             // Detach arrow AI from projectile (projectile will have no AI)
@@ -127,12 +127,16 @@ func void GFA_RP_PutProjectileIntoInventory() {
     var oCItem projectile; projectile = _^(projectilePtr);
 
     // Differentiate between positive hit and collision without damage (in case of auto aim hit registration)
-    var int positiveHit; positiveHit = MEMINT_SwitchG1G2(
-        (ECX != 100),                                      // Gothic 1: ECX is 100 if the hit did not register
-        MEM_ReadInt(arrowAI+oCAIArrowBase_hasHit_offset)); // Gothic 2: dedicated property (does not exist in Gothic 1)
-
+    var int positiveHit;
+    if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
+        // Gothic 1: ECX is 100 if the hit did not register
+        positiveHit = (ECX != 100);
+    } else {
+        // Gothic 2: dedicated property (does not exist in Gothic 1)
+        positiveHit = MEM_ReadInt(arrowAI+oCAIArrowBase_hasHit_offset);
+    };
     if (positiveHit) {
-        var C_Npc victim; victim = _^(MEMINT_SwitchG1G2(EBX, EDI));
+        var C_Npc victim; victim = _^(GFA_SwitchExe(EBX, EBP, EDI, EDI));
         var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
 
         // Replace the projectile if desired, retrieve new projectile instance from config

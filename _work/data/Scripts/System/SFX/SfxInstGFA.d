@@ -21,7 +21,12 @@
  * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-INSTANCE GFA_CRITICALHIT_SFX (C_SFX_DEF) {
+Instance GFA_CRITICALHIT_SFX (C_SFX_Def) {
     file = "BOW_FIRE_02.WAV";
     vol  = 60;
+};
+
+Instance GFA_COLLISION_BREAK (C_SFX_Def) {
+    file = "PICKLOCK_BROKEN.WAV";
+    vol  = 50;
 };

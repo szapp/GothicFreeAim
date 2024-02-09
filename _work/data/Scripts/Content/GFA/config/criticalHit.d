@@ -23,7 +23,7 @@ const int GFA_HITMARKER = 0;
  * GFA_GetCriticalHitAutoAim() below.
  *
  * The damage value is a float and represents the new base damage (damage of weapon), not the final damage!
- * All possible damage behaviors are defined in _intern/const.d (DMG_*).
+ * All possible damage behaviors are defined in _intern/const.d (GFA_DMG_*).
  *
  * Note: This function is specific to free aiming. For critical hits without free aiming see GFA_GetCriticalHitAutoAim()
  *       below.
@@ -34,7 +34,7 @@ const int GFA_HITMARKER = 0;
  * Here, preliminary critical hits for almost all Gothic 1 and Gothic 2 monsters are defined (all head shots).
  */
 func void GFA_GetCriticalHit(var C_Npc target, var string bone, var C_Item weapon, var int talent, var int dmgMsgPtr) {
-    var DmgMsg damage; damage = _^(dmgMsgPtr);
+    var GFA_DmgMsg damage; damage = _^(dmgMsgPtr);
 
     // In case this helps with differentiating between NPC types: Exact instance name, e.g. "ORCWARRIOR_LOBART1"
     var string instName; instName = MEM_ReadString(MEM_GetSymbolByIndex(Hlp_GetInstanceID(target)));
@@ -65,7 +65,7 @@ func void GFA_GetCriticalHit(var C_Npc target, var string bone, var C_Item weapo
     /*
     // Instant kill on head shot
     if (Hlp_StrCmp(bone, "BIP01 HEAD")) {
-        damage.behavior = DMG_INSTANT_KILL;
+        damage.behavior = GFA_DMG_INSTANT_KILL;
         return;
     };*/
 
@@ -83,9 +83,9 @@ func void GFA_GetCriticalHit(var C_Npc target, var string bone, var C_Item weapo
     // Increase damage for head shots (or other weak spots)
     if (Hlp_StrCmp(bone, "BIP01 HEAD")) {
         // Differentiate between Gothic 1 and Gothic 2
-        if (GOTHIC_BASE_VERSION == 1) {
+        if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
 
-            // Gothic 1: Only allow critical hit, if the total damage would still not cause damage:
+            // Gothic 1: Prevent critical hit, if the total damage would still not cause damage:
             // (damage * 2 < protection of target)
             if (roundf(damage.value)*2 < damage.protection) {
                 damage.info = "Critical hit would not exceed protection"; // Debugging info for zSpy
@@ -97,24 +97,22 @@ func void GFA_GetCriticalHit(var C_Npc target, var string bone, var C_Item weapo
             // incentive to learn the higher stages of ranged weapons, an additional probability for critical hits can
             // be imposed here. Keep in mind that critical hits are still determined by aiming, but hits are not
             // considered critical 100% of the time
-            if (GOTHIC_BASE_VERSION == 1) {
-                if (!talent) {
-                    // With no learned skill level, there are no critical hits (just like in the original Gothic 1)
-                    damage.info = "Critical hits not yet learned, critical hit chance = 0% (see character menu)";
+            if (!talent) {
+                // With no learned skill level, there are no critical hits (just like in the original Gothic 1)
+                damage.info = "Critical hits not yet learned, critical hit chance = 0% (see character menu)";
+                return;
+            } else if (talent < 25) {
+                // Stage 1: Only 50% of the positive hits are in fact critical
+                damage.info = "First level critical hit chance (character menu), adjusted to 50-50 chance";
+                if (Hlp_Random(100) < 50) { // Approx. 50-50 chance
                     return;
-                } else if (talent < 25) {
-                    // Stage 1: Only 50% of the positive hits are in fact critical
-                    damage.info = "First level critical hit chance (character menu), adjusted to 50-50 chance";
-                    if (Hlp_Random(100) < 50) { // Approx. 50-50 chance
-                        return;
-                    };
-                }; // Else stage 2: All positive hits on the weak spot are critical hits (no change)
-            };
+                };
+            }; // Else stage 2: All positive hits on the weak spot are critical hits (no change)
 
             // In Gothic 1, critical hits receive weapon damage x2 (this is the default)
             damage.value = mulf(damage.value, castToIntf(2.0)); // This is a float
 
-        } else if (GOTHIC_BASE_VERSION == 2) {
+        } else {
 
             // Gothic 2: Only allow critical hits, if non-critical shots would cause damage
             // (damage + dexterity > point protection of target), Gothic 2 always takes point damage for projectiles!
@@ -154,7 +152,7 @@ func void GFA_GetCriticalHit(var C_Npc target, var string bone, var C_Item weapo
                                                     GFA_RETICLE_MAX_SIZE, GFA_RETICLE_MAX_SIZE); // Size
 
             // Get 7th frame of animated texture as static texture
-            ViewPtr_SetTexture(GFA_HITMARKER, GFA_AnimateReticleByPercent(RETICLE_TRI_IN, 100, 7));
+            ViewPtr_SetTexture(GFA_HITMARKER, GFA_AnimateReticleByPercent(GFA_RETICLE_TRI_IN, 100, 7));
         };
         ViewPtr_Open(GFA_HITMARKER);
 
@@ -162,7 +160,7 @@ func void GFA_GetCriticalHit(var C_Npc target, var string bone, var C_Item weapo
         HookEngineF(oCGame__Render, 7, GFA_RemoveHitMarker);
 
         // Sound notification
-        Snd_Play3D(target, "GFA_CRITICALHIT_SFX");
+        Snd_Play3D(target, GFA_CRITICALHIT_SFX);
     };
 
     return;
@@ -198,7 +196,7 @@ func void GFA_RemoveHitMarker() {
  * Some examples are written below (section of Gothic 2) and commented out and serve as inspiration of what is possible.
  */
 func void GFA_GetCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int talent, var int dmgMsgPtr) {
-    var DmgMsg damage; damage = _^(dmgMsgPtr);
+    var GFA_DmgMsg damage; damage = _^(dmgMsgPtr);
 
     // In case this helps with differentiating between NPC types: Exact instance name, e.g. "ORCWARRIOR_LOBART1"
     var string instName; instName = MEM_ReadString(MEM_GetSymbolByIndex(Hlp_GetInstanceID(target)));
@@ -207,14 +205,14 @@ func void GFA_GetCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int
     var int rand; rand = Hlp_Random(100);
 
     // Differentiate between Gothic 1 and Gothic 2
-    if (GOTHIC_BASE_VERSION == 1) {
+    if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
         // Gothic 1 already has a critical hit chance by default. Here, the default is just preserved:
         if (rand < talent) {
             // Increase damage by x2 (like it is default in Gothic 1)
             damage.value = mulf(damage.value, castToIntf(2.0)); // This is a float
 
             // Sound notification on critical hit
-            Snd_Play3D(target, "GFA_CRITICALHIT_SFX");
+            Snd_Play3D(target, GFA_CRITICALHIT_SFX);
         };
         return;
 
@@ -227,15 +225,15 @@ func void GFA_GetCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int
 
         // Also take the distance into account
         var int distance; distance = Npc_GetDistToPlayer(target);
-        if (distance <= FloatToInt(RANGED_CHANCE_MINDIST)/2) {
+        if (distance <= FloatToInt(GFA_RANGED_CHANCE_MINDIST)/2) {
             // Close range
             min = 3;
             max = 30;
-        } else if (distance <= FloatToInt(RANGED_CHANCE_MINDIST)) {
+        } else if (distance <= FloatToInt(GFA_RANGED_CHANCE_MINDIST)) {
             // Medium range
             min = 2;
             max = 20;
-        } else if (distance < FloatToInt(RANGED_CHANCE_MAXDIST)) {
+        } else if (distance < FloatToInt(GFA_RANGED_CHANCE_MAXDIST)) {
             // Far range
             min = 1;
             max = 10;
@@ -276,7 +274,7 @@ func void GFA_GetCriticalHitAutoAim(var C_Npc target, var C_Item weapon, var int
             damage.value = mulf(damage.value, castToIntf(1.3)); // This is a float
 
             // Sound notification on critical hit
-            Snd_Play3D(target, "GFA_CRITICALHIT_SFX");
+            Snd_Play3D(target, GFA_CRITICALHIT_SFX);
         };
 
         return;

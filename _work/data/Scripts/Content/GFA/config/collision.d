@@ -29,20 +29,22 @@ func int GFA_GetCollisionWithNpc(var C_Npc shooter, var C_Npc target, var C_Item
     const int DAMAGE  = 1; // Positive hit registration (projectile is put into inventory with GFA_REUSE_PROJECTILES)
     const int DEFLECT = 2; // No hit registration (no damage), projectile bounces off
 
+    /*
     // Disable friendly-fire for the player
     if (Npc_IsPlayer(shooter))
     && (target.aivar[AIV_PARTYMEMBER])
     && (target.aivar[AIV_LASTTARGET] != Hlp_GetInstanceID(hero)) {
         return DESTROY;
-    };
+    }; */
 
+    /*
     // Gothic 1 free mine Gorn fix
     if (GOTHIC_BASE_VERSION == 1)        // Only for Gothic 1
     && (Npc_IsPlayer(shooter))           // Only if player is the shooter
     && (target.id == 5)                  // Gorn in free mine has his own ID (different ID in the main world)
     && (target.aivar[AIV_PARTYMEMBER]) { // Only while he is not waiting
         return DESTROY;
-    };
+    }; */
 
     /*
     // Metal armors may be more durable
@@ -51,7 +53,7 @@ func int GFA_GetCollisionWithNpc(var C_Npc shooter, var C_Npc target, var C_Item
     }; */
 
     // Fix AI reaction
-    if (Npc_IsPlayer(shooter)) && (Npc_GetDistToPlayer(target) > FIGHT_DIST_CANCEL) {
+    if (Npc_IsPlayer(shooter)) && (Npc_GetDistToPlayer(target) > GFA_FIGHT_DIST_CANCEL) {
         // If player is too far away, do nothing. This is important, because of a limitation in the AI. NPCs do not
         // react to damage if they are shot from outside of the ranged combat distance. This check fixes the problem
         return DESTROY;
