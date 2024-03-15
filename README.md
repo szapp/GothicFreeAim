@@ -1,4 +1,6 @@
-# Gothic Free Aim
+<div align="center">
+
+[![Gothic Free Aim](https://github.com/szapp/GothicFreeAim/wiki/media/GFA_TITLE_LARGE_FA_trans.png)](https://github.com/szapp/GothicFreeAim)
 
 [![Documentation](https://img.shields.io/badge/docs-wiki-blue)](https://github.com/szapp/GothicFreeAim/wiki)
 [![GitHub release](https://img.shields.io/github/v/release/szapp/GothicFreeAim.svg)](https://github.com/szapp/GothicFreeAim/releases/latest)
@@ -8,8 +10,10 @@
 
 **Script package for the video games Gothic and Gothic II that enables free aiming for ranged weapons and spells.**
 
-[![Trailer on Youtube](https://raw.githubusercontent.com/wiki/szapp/GothicFreeAim/media/thumb_small.jpg)](http://www.youtube.com/watch?v=9CrFlxo21Qw)
+<br />
 
+[![Trailer on Youtube](https://raw.githubusercontent.com/wiki/szapp/GothicFreeAim/media/thumb_small.jpg)](http://www.youtube.com/watch?v=9CrFlxo21Qw)
+</div>
 
 ## Features
 
