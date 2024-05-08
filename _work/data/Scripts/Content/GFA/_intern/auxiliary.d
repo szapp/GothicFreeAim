@@ -38,7 +38,7 @@ func void GFA_WriteNOP(var int addr, var int len) {
 
 
 /*
- * Emulate GFA_SwitchExe of Ikarus for older Ikarus versions
+ * Emulate MEMINT_SwitchExe of Ikarus for older Ikarus versions
  * In order of likelihood for performance micro-optimization
  */
 func int GFA_SwitchExe(var int g1Val, var int g112Val, var int g130Val, var int g2Val) {
@@ -655,41 +655,56 @@ func int GFA_NpcIsDown(var C_Npc slf) {
  * Gothic 1: oCSpell::IsTargetTypeValid()+149h 0x47DD09
  */
 func int GFA_NpcIsUndead(var C_Npc slf) {
-    var int funcId; funcId = MEM_GetSymbolIndex("C_NPCISUNDEAD");
+    const int funcId        = -2;
+    const int GIL_ZOMBIE    = 0;
+    const int GIL_UNDEADORC = 0;
+    const int GIL_SKELETON  = 0;
+
+    // Search for symbols once only
+    if (funcId == -2) {
+        funcId = MEM_GetSymbolIndex("C_NPCISUNDEAD");
+
+        var int symbPtr;
+        var zCPar_Symbol symb;
+
+        symbPtr = MEM_GetSymbol("GIL_ZOMBIE");
+        if (symbPtr) {
+            symb = _^(symbPtr);
+            GIL_ZOMBIE = symb.content;
+        };
+
+        symbPtr = MEM_GetSymbol("GIL_UNDEADORC");
+        if (symbPtr) {
+            symb = _^(symbPtr);
+            GIL_UNDEADORC = symb.content;
+        };
+
+        symbPtr = MEM_GetSymbol("GIL_SKELETON");
+        if (symbPtr) {
+            symb = _^(symbPtr);
+            GIL_SKELETON = symb.content;
+        };
+
+    };
+
+    // Call script function if it exists
     if (funcId != -1) {
         MEM_PushInstParam(slf);
         MEM_CallById(funcId);
         return MEM_PopIntResult();
     };
 
-    var int symbPtr;
-    var zCPar_Symbol symb;
-
-    // if (slf.guild == GIL_ZOMBIE)
-    symbPtr = MEM_GetSymbol("GIL_ZOMBIE");
-    if (symbPtr) {
-        symb = _^(symbPtr);
-        if (slf.guild == symb.content) {
-            return TRUE;
-        };
+    // Emulate conditions
+    if (slf.guild == GIL_ZOMBIE) {
+        return TRUE;
     };
 
-    // if (slf.guild == GIL_UNDEADORC)
-    symbPtr = MEM_GetSymbol("GIL_UNDEADORC");
-    if (symbPtr) {
-        symb = _^(symbPtr);
-        if (slf.guild == symb.content) {
-            return TRUE;
-        };
+    if (slf.guild == GIL_UNDEADORC) {
+        return TRUE;
     };
 
-    // if (slf.guild == GIL_SKELETON)
-    symbPtr = MEM_GetSymbol("GIL_SKELETON");
-    if (symbPtr) {
-        symb = _^(symbPtr);
-        if (slf.guild == symb.content) {
-            return TRUE;
-        };
+    if (slf.guild == GIL_SKELETON) {
+        return TRUE;
     };
 
     return FALSE;

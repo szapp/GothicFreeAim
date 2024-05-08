@@ -201,7 +201,7 @@ func void GFA_CC_ProjectileCollisionWithNpc() {
     MEM_WriteInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset, collisionCounter+1);
 
     // Collision behaviors
-    const int DESTROY = 0; // Projectile doest not cause damage and vanishes
+    const int DESTROY = 0; // Projectile does not cause damage and vanishes
     const int DAMAGE  = 1; // Projectile causes damage and may stay in the inventory of the victim
     const int DEFLECT = 2; // Projectile deflects off of the surfaces and bounces off
 
