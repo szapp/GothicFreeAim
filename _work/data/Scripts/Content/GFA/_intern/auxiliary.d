@@ -160,6 +160,46 @@ func int GFA_GetActiveSpellIsScroll(var C_Npc slf) {
     return CALL_RetValAsInt();
 };
 
+/*
+ * Get the instance name of a spell by its spell ID.
+ * This function is used for compatibility and only used optionally in the configuration.
+ */
+func string GFA_GetSpellName(var int spellID) {
+    const spellFxInstanceNamesPtr = 0;
+    if (!spellFxInstanceNamesPtr) {
+        var int symPtr; symbPtr = MEM_GetSymbol("SPELLFXINSTANCENAMES");
+        if (symbPtr) {
+            var zCPar_Symbol symb; symb = _^(symbPtr);
+            spellFxInstanceNamesPtr = symb.content;
+        } else {
+            MEM_Warn("GFA_GetSpellName: String constant 'spellFxInstanceNames' not found.");
+            return "";
+        };
+    };
+
+    return STR_Upper(MEM_ReadStringArray(spellFxInstanceNamesPtr, spellID));
+};
+
+/*
+ * Get the animation name of a spell by its spell ID.
+ * This function is used for compatibility.
+ */
+func string GFA_GetSpellAni(var int spellID) {
+    const spellFxAniLettersPtr = 0;
+    if (!spellFxAniLettersPtr) {
+        var int symPtr; symbPtr = MEM_GetSymbol("SPELLFXANILETTERS");
+        if (symbPtr) {
+            var zCPar_Symbol symb; symb = _^(symbPtr);
+            spellFxAniLettersPtr = symb.content;
+        } else {
+            MEM_Warn("GFA_GetSpellAni: String constant 'spellFxAniLetters' not found.");
+            return "";
+        };
+    };
+
+    return MEM_ReadStringArray(spellFxAniLettersPtr, spellID);
+};
+
 
 /*
  * Retrieve whether a spell is eligible for free aiming (GFA_SPL_FREEAIM), that is, it supports free aiming by its

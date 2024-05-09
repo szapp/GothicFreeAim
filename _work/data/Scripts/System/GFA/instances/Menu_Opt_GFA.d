@@ -50,8 +50,8 @@ const int    GFA_IT_EFFECTS_NEXT     = 128;                         // IT_EFFECT
 
 Instance MENUITEM_OPT_GFA (GFA_C_Menu_Item) {
     backPic               = GFA_MENU_ITEM_BACK_PIC;
-    type                  = MENU_ITEM_TEXT;
-    fontName              = MENU_FONT_DEFAULT;
+    type                  = GFA_MENU_ITEM_TEXT;
+    fontName              = GFA_MENU_FONT_DEFAULT;
     text[0]               = GFA_MENU_LABEL;
     text[1]               = GFA_MENU_DESCR;
     posx                  = 1000;

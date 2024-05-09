@@ -266,7 +266,7 @@ func void GFA_Strafe() {
             // Also treat variations of casting animations
             var int spellID; spellID = Npc_GetActiveSpell(hero); // Scrolls are removed: sometimes not found
             if (GFA_InvestingOrCasting(hero) > 0) && (spellID != -1) {
-                modifier = ConcatStrings(modifier, MEM_ReadStatStringArr(spellFxAniLetters, spellID));
+                modifier = ConcatStrings(modifier, GFA_GetSpellAni(spellID));
             };
         } else if (her.fmode == FMODE_FAR) {
             modifier = "BOW";

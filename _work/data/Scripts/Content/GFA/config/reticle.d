@@ -150,7 +150,7 @@ func void GFA_GetSpellReticle(var C_Npc target, var int spellID, var GFA_C_Spell
     // Note: Only spells are listed that are eligible for free aiming. All other spells will not have a reticle anyways.
 
     // Exact spell name, e.g. "FIREBOLT"
-    var string spellName; spellName = STR_Upper(MEM_ReadStatStringArr(spellFxInstanceNames, spellID));
+    var string spellName; spellName = GFA_GetSpellName(spellID);
 
     if (STR_IndexOf(spellName, "ICE") != -1)
     || (STR_IndexOf(spellName, "THUNDERBOLT") != -1) {
