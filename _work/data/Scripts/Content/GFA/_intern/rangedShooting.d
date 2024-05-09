@@ -80,7 +80,7 @@ func int GFA_GetInitialBaseDamage_(var int baseDamage, var int damageType, var i
 
     // Scale distance between [0, 100] for [RANGED_CHANCE_MINDIST, RANGED_CHANCE_MAXDIST], see AI_Constants.d
     // For readability: 100*(aimingDistance-RANGED_CHANCE_MINDIST)/(RANGED_CHANCE_MAXDIST-RANGED_CHANCE_MINDIST)
-    aimingDistance = roundf(divf(mulf(FLOAT1C, subf(aimingDistance, castToIntf(GFA_RANGED_CHANCE_MINDIST))),
+    aimingDistance = roundf(divf(mulf(GFA_FLOAT1C, subf(aimingDistance, castToIntf(GFA_RANGED_CHANCE_MINDIST))),
                                  subf(castToIntf(GFA_RANGED_CHANCE_MAXDIST), castToIntf(GFA_RANGED_CHANCE_MINDIST))));
     // Clip to range [0, 100]
     if (aimingDistance > 100) {
@@ -241,7 +241,7 @@ func void GFA_SetupProjectile() {
             // --------------------------------  + 1
             //               -100
             var int maxArea;
-            maxArea = addf(divf(mulf(subf(hitArea, FLOATONE), mkf(100-accuracy)), FLOAT1C), FLOATONE);
+            maxArea = addf(divf(mulf(subf(hitArea, FLOATONE), mkf(100-accuracy)), GFA_FLOAT1C), FLOATONE);
 
             // Convert back to a radius
             rmax = sqrtf(divf(maxArea, PI));
@@ -257,7 +257,7 @@ func void GFA_SetupProjectile() {
         };
 
         // r_MinMax works with integers: scale up
-        var int rmaxI; rmaxI = roundf(mulf(rmax, FLOAT1K));
+        var int rmaxI; rmaxI = roundf(mulf(rmax, GFA_FLOAT1K));
 
         // Azimuth scatter (horizontal deviation from a perfect shot in degrees)
         var int angleX; angleX = fracf(r_Max(rmaxI), 1000); // Here the 1000 are scaled down again
@@ -273,7 +273,7 @@ func void GFA_SetupProjectile() {
         };
 
         // r_MinMax works with integers: scale up
-        var int rminI; rminI = roundf(mulf(rmin, FLOAT1K));
+        var int rminI; rminI = roundf(mulf(rmin, GFA_FLOAT1K));
 
         // Adjust rmax
         if (lf(angleX, rmax)) {
@@ -283,7 +283,7 @@ func void GFA_SetupProjectile() {
         };
 
         // r_MinMax works with integers: scale up
-        rmaxI = roundf(mulf(rmax, FLOAT1K));
+        rmaxI = roundf(mulf(rmax, GFA_FLOAT1K));
 
         // Elevation scatter (vertical deviation from a perfect shot in degrees)
         var int angleY; angleY = fracf(r_MinMax(rminI, rmaxI), 1000); // Here the 1000 are scaled down again
@@ -427,7 +427,7 @@ func void GFA_SetupProjectile() {
         var int s; s = SB_New();
 
         SB("   aiming distance:   ");
-        SB(STR_Prefix(toStringf(divf(distPlayer, FLOAT1C)), 4));
+        SB(STR_Prefix(toStringf(divf(distPlayer, GFA_FLOAT1C)), 4));
         SB("m");
         MEM_Info(SB_ToString());
         SB_Clear();
@@ -520,14 +520,14 @@ func void GFA_EnableProjectileGravity() {
             EAX = TRUE;
         } else {
             // No (collectable feature). Reset life time to -1
-            MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE_NEG);
+            MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, GFA_FLOATONE_NEG);
             EAX = FALSE;
         };
     } else if (!(projectile.bitfield[0] & zCVob_bitfield0_physicsEnabled)) {
         // Stopped moving: Decrease visibility?
         if (GFA_Flags & GFA_REUSE_PROJECTILES) {
             // No (collectable feature). Reset life time to -1
-            MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE_NEG);
+            MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, GFA_FLOATONE_NEG);
             EAX = FALSE;
         } else {
             // Yes (no collectable feature). Reset life time to 1
@@ -535,11 +535,11 @@ func void GFA_EnableProjectileGravity() {
             // Decrease life time and visibility (default behavior)
             EAX = TRUE;
         };
-    } else if (lf(lifeTime, FLOATONE_NEG)) {
+    } else if (lf(lifeTime, GFA_FLOATONE_NEG)) {
         // lifeTime < -1: Continue counting flight time until gravity drop
         lifeTime = addf(lifeTime, MEM_Timer.frameTimeFloat);
-        if (gef(lifeTime, FLOATONE_NEG)) {
-            lifeTime = FLOATONE_NEG;
+        if (gef(lifeTime, GFA_FLOATONE_NEG)) {
+            lifeTime = GFA_FLOATONE_NEG;
             // Apply gravity. Reset life time to -1
             var int rigidBody; rigidBody = projectile.rigidBody; // zCRigidBody*
             if (rigidBody) {
@@ -573,9 +573,9 @@ func void GFA_ResetProjectileGravity() {
 
     // Reset projectile gravity (zCRigidBody.gravity) after collision (oCAIArrow.collision) to default
     MEM_WriteInt(rigidBody+zCRigidBody_gravity_offset, FLOATONE);
-    if (lf(MEM_ReadInt(arrowAI+oCAIArrowBase_lifeTime_offset), FLOATONE_NEG)) {
+    if (lf(MEM_ReadInt(arrowAI+oCAIArrowBase_lifeTime_offset), GFA_FLOATONE_NEG)) {
         // Reset gravity timer
-        MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE_NEG);
+        MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, GFA_FLOATONE_NEG);
     };
 
     // Remove trail strip FX
@@ -627,7 +627,7 @@ func void GFA_OverwriteHitChance() {
     } else {
         // If accuracy/scattering is enabled, all shots that hit the target are always positive hits
         hit = TRUE;
-        MEM_WriteInt(hitChancePtr, GFA_SwitchExe(FLOAT1C, FLOAT1C, 100, 100)); // Overwrite to hit always
+        MEM_WriteInt(hitChancePtr, GFA_SwitchExe(GFA_FLOAT1C, GFA_FLOAT1C, 100, 100)); // Overwrite to hit always
     };
 
     // Update the shooting statistics
@@ -680,12 +680,12 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
     MEM_CopyBytes(vobPtr+zCVob_bbox3D_offset, _@(bbox), sizeof_zTBBox3D);
     var int dist; // Distance from bbox.mins to bbox.max
     dist = sqrtf(addf(addf(sqrf(subf(bbox[3], bbox[0])), sqrf(subf(bbox[4], bbox[1]))), sqrf(subf(bbox[5], bbox[2]))));
-    dist = addf(dist, FLOAT3C); // Add the 3m-shift of the start (see below)
+    dist = addf(dist, GFA_FLOAT3C); // Add the 3m-shift of the start (see below)
 
     // Adjust length of ray (large models have huge bounding boxes)
-    GFA_CollTrj[0] = subf(GFA_CollTrj[0], mulf(GFA_CollTrj[3], FLOAT3C)); // Start 3m behind projectile
-    GFA_CollTrj[1] = subf(GFA_CollTrj[1], mulf(GFA_CollTrj[4], FLOAT3C));
-    GFA_CollTrj[2] = subf(GFA_CollTrj[2], mulf(GFA_CollTrj[5], FLOAT3C));
+    GFA_CollTrj[0] = subf(GFA_CollTrj[0], mulf(GFA_CollTrj[3], GFA_FLOAT3C)); // Start 3m behind projectile
+    GFA_CollTrj[1] = subf(GFA_CollTrj[1], mulf(GFA_CollTrj[4], GFA_FLOAT3C));
+    GFA_CollTrj[2] = subf(GFA_CollTrj[2], mulf(GFA_CollTrj[5], GFA_FLOAT3C));
     GFA_CollTrj[3] = mulf(GFA_CollTrj[3], dist); // Trace trajectory from the edge through the bounding box
     GFA_CollTrj[4] = mulf(GFA_CollTrj[4], dist);
     GFA_CollTrj[5] = mulf(GFA_CollTrj[5], dist);

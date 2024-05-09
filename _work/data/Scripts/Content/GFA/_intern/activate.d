@@ -200,7 +200,7 @@ func void GFA_IsActive() {
         GFA_SetCameraModes(1);
 
         // Check if active spell supports free aiming
-        var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
+        var GFA_C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
         var int eligible; eligible = GFA_IsSpellEligible(spell);
         if (!(eligible & GFA_ACT_FREEAIM)) {
             // Reset spell focus collection

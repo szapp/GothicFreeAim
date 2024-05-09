@@ -85,7 +85,7 @@ func int GFA_ObjCheckInheritance(var int objPtr, var int classDef) {
 func MEMINT_HelperClass GFA_GetActiveSpellInst(var C_Npc slf) {
     if (Npc_GetActiveSpell(slf) == -1) {
         // NPC does not have a spell drawn
-        var C_Spell ret; ret = MEM_NullToInst();
+        var GFA_C_Spell ret; ret = MEM_NullToInst();
         MEMINT_StackPushInst(ret);
         return;
     };
@@ -169,7 +169,7 @@ func int GFA_GetActiveSpellIsScroll(var C_Npc slf) {
  * Do not change the properties that make a spell eligible! This is very well thought through and works for ALL Gothic 1
  * and Gothic 2 spells. For new spells, adjust THEIR properties accordingly.
  */
-func int GFA_IsSpellEligible(var C_Spell spell) {
+func int GFA_IsSpellEligible(var GFA_C_Spell spell) {
     // Exit if the spell instance is invalid
     if (!_@(spell)) {
         return FALSE;
@@ -377,7 +377,7 @@ func string GFA_AnimateReticleByTime(var string fileName, var int fps, var int n
  */
 func string GFA_AnimateReticleByPercent(var string fileName, var int percent, var int numFrames) {
     // Cycle through [0, numFrames-1] by percentage
-    var int cycle; cycle = roundf(mulf(mkf(percent), divf(mkf(numFrames-1), FLOAT1C)));
+    var int cycle; cycle = roundf(mulf(mkf(percent), divf(mkf(numFrames-1), GFA_FLOAT1C)));
 
     // Base name (without extension)
     var string prefix; prefix = STR_SubStr(fileName, 0, STR_Len(fileName)-4);

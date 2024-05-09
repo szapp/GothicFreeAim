@@ -90,7 +90,7 @@ func void GFA_GetRangedReticle(var C_Npc target, var C_Item weapon, var int tale
  * Here, for example, the size is scaled by aiming distance. As indicated by the in-line comments, basing the size (or
  * color) on the any provided spell properties is easily possible.
  */
-func void GFA_GetSpellReticle(var C_Npc target, var int spellID, var C_Spell spellInst, var int spellLevel,
+func void GFA_GetSpellReticle(var C_Npc target, var int spellID, var GFA_C_Spell spellInst, var int spellLevel,
         var int isScroll, var int manaInvested, var int dist, var int returnPtr) {
     // Get reticle instance from call-by-reference argument
     var GFA_Reticle reticle; reticle = _^(returnPtr);

@@ -157,7 +157,7 @@ var   int    GFA_DebugBoneOBBox;                            // Handle of bone or
 
 /* Numerical constants */
 
-const int    FLOATONE_NEG           = -1082130432;          // -1 as float
-const int    FLOAT1C                = 1120403456;           // 100 as float
-const int    FLOAT3C                = 1133903872;           // 300 as float
-const int    FLOAT1K                = 1148846080;           // 1000 as float
+const int    GFA_FLOATONE_NEG           = -1082130432;      // -1 as float
+const int    GFA_FLOAT1C                = 1120403456;       // 100 as float
+const int    GFA_FLOAT3C                = 1133903872;       // 300 as float
+const int    GFA_FLOAT1K                = 1148846080;       // 1000 as float

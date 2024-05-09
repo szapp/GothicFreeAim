@@ -37,7 +37,7 @@ func void GFA_RP_KeepProjectileInWorld() {
 
     // Always keep the projectile alive, set infinite life time
     if (gef(MEM_ReadInt(arrowAI+oCAIArrowBase_lifeTime_offset), FLOATNULL)) {
-        MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE_NEG);
+        MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, GFA_FLOATONE_NEG);
         projectile._zCVob_visualAlpha = FLOATONE; // Fully visible
     };
 

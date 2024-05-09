@@ -36,3 +36,24 @@ class GFA_Reticle {
     var int size;
     var int color;
 };
+
+
+/*
+ * Class: Re-define the C_Spell class under a different name
+ */
+const int sizeof_GFA_C_Spell = 48;
+
+class GFA_C_Spell {
+    var float time_per_mana;
+    var int damage_per_level;
+    var int damageType;
+    var int spellType;
+    var int canTurnDuringInvest;
+    var int canChangeTargetDuringInvest;
+    var int isMultiEffect;
+    var int targetCollectAlgo;
+    var int targetCollectType;
+    var int targetCollectRange;
+    var int targetCollectAzi;
+    var int targetCollectElev;
+};

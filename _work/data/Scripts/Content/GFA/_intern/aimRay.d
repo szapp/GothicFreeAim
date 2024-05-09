@@ -139,12 +139,12 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
 
             // Line consisting of two points: Left and right of the player model along the camera right vector
             var int line[6];
-            line[0] = subf(her._zCVob_trafoObjToWorld[ 3], mulf(camPos.v0[zMAT4_rightVec], FLOAT1K)); // Left
-            line[1] = subf(her._zCVob_trafoObjToWorld[ 7], mulf(camPos.v1[zMAT4_rightVec], FLOAT1K));
-            line[2] = subf(her._zCVob_trafoObjToWorld[11], mulf(camPos.v2[zMAT4_rightVec], FLOAT1K));
-            line[3] = addf(her._zCVob_trafoObjToWorld[ 3], mulf(camPos.v0[zMAT4_rightVec], FLOAT1K)); // Right
-            line[4] = addf(her._zCVob_trafoObjToWorld[ 7], mulf(camPos.v1[zMAT4_rightVec], FLOAT1K));
-            line[5] = addf(her._zCVob_trafoObjToWorld[11], mulf(camPos.v2[zMAT4_rightVec], FLOAT1K));
+            line[0] = subf(her._zCVob_trafoObjToWorld[ 3], mulf(camPos.v0[zMAT4_rightVec], GFA_FLOAT1K)); // Left
+            line[1] = subf(her._zCVob_trafoObjToWorld[ 7], mulf(camPos.v1[zMAT4_rightVec], GFA_FLOAT1K));
+            line[2] = subf(her._zCVob_trafoObjToWorld[11], mulf(camPos.v2[zMAT4_rightVec], GFA_FLOAT1K));
+            line[3] = addf(her._zCVob_trafoObjToWorld[ 3], mulf(camPos.v0[zMAT4_rightVec], GFA_FLOAT1K)); // Right
+            line[4] = addf(her._zCVob_trafoObjToWorld[ 7], mulf(camPos.v1[zMAT4_rightVec], GFA_FLOAT1K));
+            line[5] = addf(her._zCVob_trafoObjToWorld[11], mulf(camPos.v2[zMAT4_rightVec], GFA_FLOAT1K));
 
             // Subtract both points of the line from the camera position
             var int u[3]; var int v[3];

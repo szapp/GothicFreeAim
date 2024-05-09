@@ -392,7 +392,7 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
         };
 
         // Destroy the projectile only if it is still fast enough and check number of prior collisions
-        if (gf(speed, FLOAT3C)) && (collisionCounter < 2) {
+        if (gf(speed, GFA_FLOAT3C)) && (collisionCounter < 2) {
             // For both Gothic 1 and Gothic 2
             GFA_CC_ProjectileDestroy(arrowAI);
 
@@ -455,7 +455,7 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
         const int WATER = 1<<5;
         const int SNOW  = 1<<6;
 
-        if (gf(speed, FLOAT3C)) && (collisionCounter < 3) {
+        if (gf(speed, GFA_FLOAT3C)) && (collisionCounter < 3) {
             // Play sound on first collisions and if fast enough only
             if (materials & METAL) {
                 Snd_Play3d(projectile, GFA_COLL_SND_METAL);
@@ -500,7 +500,7 @@ func void GFA_CC_FadeProjectileVisibility() {
     if (!(projectile.bitfield[0] & zCVob_bitfield0_physicsEnabled)) {
         var int arrowAI; arrowAI = ESI; // oCAIArrow*
         var int lifeTime; lifeTime = MEM_ReadInt(arrowAI+oCAIArrowBase_lifeTime_offset);
-        if (lifeTime == FLOATONE_NEG) {
+        if (lifeTime == GFA_FLOATONE_NEG) {
             MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE);
         };
     };

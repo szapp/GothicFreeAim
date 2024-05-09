@@ -152,7 +152,7 @@ func string GFA_GetShootingStats(var string args) {
         // Division by zero
         pAccuracy = FLOATNULL;
     } else {
-        pAccuracy = mulf(fracf(GFA_StatsHits, GFA_StatsShots), FLOAT1C);
+        pAccuracy = mulf(fracf(GFA_StatsHits, GFA_StatsShots), GFA_FLOAT1C);
     };
     SB(STR_Prefix(toStringf(pAccuracy), 4));
     SB("%");

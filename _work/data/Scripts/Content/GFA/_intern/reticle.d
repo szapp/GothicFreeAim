@@ -127,7 +127,7 @@ func void GFA_GetRangedReticle_(var int target, var int distance, var int return
  * Wrapper function for the config function GFA_GetSpellReticle(). It is called from GFA_SpellAiming().
  * This function supplies a lot of spell properties.
  */
-func void GFA_GetSpellReticle_(var int target, var C_Spell spellInst, var int distance, var int returnPtr) {
+func void GFA_GetSpellReticle_(var int target, var GFA_C_Spell spellInst, var int distance, var int returnPtr) {
     // Define spell properties
     var int spellID; spellID = Npc_GetActiveSpell(hero);
     var int spellLvl; spellLvl = Npc_GetActiveSpellLevel(hero);

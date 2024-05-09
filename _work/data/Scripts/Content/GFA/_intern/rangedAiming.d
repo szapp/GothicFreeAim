@@ -27,7 +27,7 @@ func void GFA_RangedIdle() {
 
         // Additionally, update reticle
         if (GFA_UPDATE_RET_SHOOT) {
-            distance = roundf(divf(mulf(distance, FLOAT1C), mkf(GFA_MAX_DIST))); // Distance scaled between [0, 100]
+            distance = roundf(divf(mulf(distance, GFA_FLOAT1C), mkf(GFA_MAX_DIST))); // Distance scaled between [0, 100]
 
             // Create reticle
             var int reticlePtr; reticlePtr = MEM_Alloc(sizeof_GFA_Reticle);
@@ -80,7 +80,7 @@ func void GFA_RangedAiming() {
     // Shoot aim ray to retrieve the focus NPC and distance to it from the camera(!)
     var int distance; var int target;
     GFA_AimRay(GFA_MAX_DIST, TARGET_TYPE_NPCS, _@(target), 0, _@(distance), 0);
-    distance = roundf(divf(mulf(distance, FLOAT1C), mkf(GFA_MAX_DIST))); // Distance scaled between [0, 100]
+    distance = roundf(divf(mulf(distance, GFA_FLOAT1C), mkf(GFA_MAX_DIST))); // Distance scaled between [0, 100]
 
     // Create reticle
     var int reticlePtr; reticlePtr = MEM_Alloc(sizeof_GFA_Reticle);

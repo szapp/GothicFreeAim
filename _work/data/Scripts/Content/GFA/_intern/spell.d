@@ -30,7 +30,7 @@ func void GFA_SetupSpell() {
     };
 
     // Determine focus type. For TARGET_COLLECT_NONE no focus will be collect, but only an intersection with the world
-    var C_Spell spell; spell = _^(spellOC+oCSpell_C_Spell_offset);
+    var GFA_C_Spell spell; spell = _^(spellOC+oCSpell_C_Spell_offset);
     var int focusType;
     if (spell.targetCollectAlgo == TARGET_COLLECT_NONE) {
         focusType = 0;
@@ -55,7 +55,7 @@ func void GFA_SetupSpell() {
  * but exits right away if the active spell does not support free aiming or if the player is not currently aiming.
  */
 func void GFA_SpellAiming() {
-    var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
+    var GFA_C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
     var int aniCtrlPtr; aniCtrlPtr = ECX;
 
     // Only show reticle for spells that support free aiming and during aiming (Gothic 1 controls)
@@ -117,7 +117,7 @@ func void GFA_SpellAiming() {
 
         // Shoot aim ray, to retrieve the distance to an intersection and a possible target
         GFA_AimRay(spell.targetCollectRange, focusType, _@(target), 0, _@(distance), 0);
-        distance = roundf(divf(mulf(distance, FLOAT1C), mkf(spell.targetCollectRange))); // Distance scaled to [0, 100]
+        distance = roundf(divf(mulf(distance, GFA_FLOAT1C), mkf(spell.targetCollectRange))); // Distance scaled [0, 100]
 
     } else {
         // No focus collection
@@ -316,7 +316,7 @@ func void GFA_ResetSpell() {
         return;
     };
 
-    var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
+    var GFA_C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
     if (!_@(spell)) {
         return;
     };
