@@ -13,7 +13,7 @@
 
 <br />
 
-[![Trailer on Youtube](https://raw.githubusercontent.com/wiki/szapp/GothicFreeAim/media/thumb_small.jpg)](http://www.youtube.com/watch?v=9CrFlxo21Qw)
+[![Trailer on Youtube](https://raw.githubusercontent.com/wiki/szapp/GothicFreeAim/media/thumb_small.jpg)](https://www.youtube.com/watch?v=9CrFlxo21Qw)
 </div>
 
 ## Features
@@ -27,8 +27,31 @@
 - Adjustable projectile trajectory, gravity and damage, as well as weapon recoil
 - High customizability with easy to use configuration
 
-
 ## Wiki
 
 [Visit the wiki](https://github.com/szapp/GothicFreeAim/wiki) for all information on this script package, including
 requirements and installation steps, a complete list of features and elaborate information on configuration.
+
+## Usage in a Git repository
+
+If you intend to use (portions of) GFA in your git repository, it is recommended to incorporate it using a [git-submodule](https://git-scm.com/book/en/v2/Git-Tools-Submodules).
+This not only helps to maintain your scripts at the latest version, but also ensures proper licensing and directs users to the original source.
+
+Since submodules do not allow directly referring to sub-directories of the target repository, implement the following procedure.
+
+After adding GFA as submodule into a suitable sub-directory in your repository, refer to the relevant sub-directories using relative symlinks.
+Symlinks are supported in git (also in Windows) and will resolve the file paths as desired.
+
+The following is done in the Windows Command Prompt with administrative privileges (for creating symlinks).
+
+```cmd
+mkdir .github\submodules
+git submodule add -b https://github.com/szapp/GothicFreeAim.git .github\submodules\GothicFreeAim
+git config core.symlinks true
+```
+
+Now, you can add relevant symlinks to desired sub-directories within the GFA scripts.
+
+```cmd
+mklink /d path\to\Scripts\GFA\_intern .github\submodules\GothicFreeAim\_work\data\Scripts\Content\GFA\_intern
+```

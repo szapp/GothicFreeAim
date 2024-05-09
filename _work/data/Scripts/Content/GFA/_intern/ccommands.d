@@ -1,24 +1,14 @@
 /*
  * Definition of all console commands
  *
- * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2019  mud-freak (@szapp)
- *
  * This file is part of Gothic Free Aim.
- * <http://github.com/szapp/GothicFreeAim>
+ * Copyright (C) 2016-2024  Sören Zapp (aka. mud-freak, szapp)
+ * https://github.com/szapp/GothicFreeAim
  *
  * Gothic Free Aim is free software: you can redistribute it and/or
  * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
- *
- * Gothic Free Aim is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * MIT License for more details.
- *
- * You should have received a copy of the MIT License along with
- * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -203,16 +193,16 @@ func string GFA_GetLicense(var string _) {
     SB(GFA_VERSION);
     SB(", Copyright ");
     SBc(169 /* (C) */);
-    SB(" 2016-2019  mud-freak (@szapp)");
+    SB(" 2016-2024  Sören Zapp (aka. mud-freak, szapp)");
     SBc(13); SBc(10);
 
-    SB("<http://github.com/szapp/GothicFreeAim>");
+    SB("https://github.com/szapp/GothicFreeAim");
     SBc(13); SBc(10);
 
     SB("Released under the MIT License.");
     SBc(13); SBc(10);
 
-    SB("For more details see <http://opensource.org/licenses/MIT>.");
+    SB("For more details see https://opensource.org/licenses/MIT.");
 
     var string ret; ret = SB_ToString();
     SB_Destroy();

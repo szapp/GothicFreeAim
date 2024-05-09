@@ -1,24 +1,14 @@
 /*
  * Auxiliary functions including finding the active spell instance and ranged weapon and offering animated reticles
  *
- * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2019  mud-freak (@szapp)
- *
  * This file is part of Gothic Free Aim.
- * <http://github.com/szapp/GothicFreeAim>
+ * Copyright (C) 2016-2024  Sören Zapp (aka. mud-freak, szapp)
+ * https://github.com/szapp/GothicFreeAim
  *
  * Gothic Free Aim is free software: you can redistribute it and/or
  * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
- *
- * Gothic Free Aim is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * MIT License for more details.
- *
- * You should have received a copy of the MIT License along with
- * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -71,7 +61,7 @@ func MEMINT_HelperClass GFA_GetPlayerInst() {
 /*
  * Check the inheritance of a zCObject against a zCClassDef. Emulating zCObject::CheckInheritance() at 0x476E30 in G2.
  *
- * Taken from http://forum.worldofplayers.de/forum/threads/1495001?p=25548652
+ * Taken from https://forum.worldofplayers.de/forum/threads/1495001?p=25548652
  */
 func int GFA_ObjCheckInheritance(var int objPtr, var int classDef) {
     if (!objPtr) || (!classDef) {
@@ -432,7 +422,7 @@ func int GFA_ScaleRanges(var int x, var int min, var int max, var int a, var int
  * The function returns the number of stopped effects, or zero if none was found or an error occurred.
  * Compatible with Gothic 1 and Gothic 2.
  *
- * Taken from http://forum.worldofplayers.de/forum/threads/1495001?p=25548652
+ * Taken from https://forum.worldofplayers.de/forum/threads/1495001?p=25548652
  */
 func int GFA_Wld_StopEffect_Ext(var string effectName, var int originInst, var int targetInst, var int all) {
     var int worldPtr; worldPtr = _@(MEM_World);

@@ -1,24 +1,14 @@
 /*
  * Initialization of GFA
  *
- * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2019  mud-freak (@szapp)
- *
  * This file is part of Gothic Free Aim.
- * <http://github.com/szapp/GothicFreeAim>
+ * Copyright (C) 2016-2024  Sören Zapp (aka. mud-freak, szapp)
+ * https://github.com/szapp/GothicFreeAim
  *
  * Gothic Free Aim is free software: you can redistribute it and/or
  * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
- *
- * Gothic Free Aim is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * MIT License for more details.
- *
- * You should have received a copy of the MIT License along with
- * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -142,7 +132,7 @@ func void GFA_InitFeatureFreeAiming() {
     // To still allow the player to turn while performing an attack run, the solution from the link below is extended,
     // to squeeze in a check whether the character in question is the player.
     //
-    // Inspired by: http://forum.worldofplayers.de/forum/threads/879891?p=14886885
+    // Inspired by: https://forum.worldofplayers.de/forum/threads/879891?p=14886885
     if (GOTHIC_BASE_VERSION == 130) || (GOTHIC_BASE_VERSION == 2) {
         MEM_Info("Initializing NPC attack-run turning bug fix.");
         GFA_WriteNOP(oCNpc__EV_AttackRun_playerTurn, 7); // Erase call to oCAIHuman::PC_Turnings()
@@ -306,12 +296,13 @@ func int GFA_InitOnce() {
 
     // Copyright notice in zSpy
     var int s; s = SB_New();
-    SB("     "); SB(GFA_VERSION); SB(", Copyright "); SBc(169 /* (C) */); SB(" 2016-2019  mud-freak (@szapp)");
+    SB("     "); SB(GFA_VERSION);
+    SB(", Copyright "); SBc(169 /* (C) */); SB(" 2016-2024  Sören Zapp (aka. mud-freak, szapp)");
     MEM_Info("");
     MEM_Info(SB_ToString()); SB_Destroy();
-    MEM_Info("     <http://github.com/szapp/GothicFreeAim>");
+    MEM_Info("     https://github.com/szapp/GothicFreeAim");
     MEM_Info("     Released under the MIT License.");
-    MEM_Info("     For more details see <http://opensource.org/licenses/MIT>.");
+    MEM_Info("     For more details see https://opensource.org/licenses/MIT.");
     MEM_Info("");
 
     // Add emergency-lock, in case a mod-project is released with a critical bug related to GFA

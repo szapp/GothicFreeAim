@@ -1,1 +1,10 @@
+* text=auto
+
+# Checkout Windows-style line endings and ensure correct encoding
+# Encoding is not localization but fixed zSTRING::Upper code page handling!
+# See https://forum.worldofplayers.de/forum/threads/1537187/page3
+# and https://forum.worldofplayers.de/forum/threads/759496
+*.[dD] text working-tree-encoding=CP1252 eol=crlf
+
+# Ignore ASCII animation files from linguist statistics
 *.ASC linguist-detectable=false
