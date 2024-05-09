@@ -45,13 +45,22 @@ Symlinks are supported in git (also in Windows) and will resolve the file paths 
 The following is done in the Windows Command Prompt with administrative privileges (for creating symlinks).
 
 ```cmd
-mkdir .github\submodules
-git submodule add -b https://github.com/szapp/GothicFreeAim.git .github\submodules\GothicFreeAim
+mkdir .github/submodules
+git submodule add https://github.com/szapp/GothicFreeAim.git .github/submodules/GothicFreeAim
 git config core.symlinks true
 ```
 
-Now, you can add relevant symlinks to desired sub-directories within the GFA scripts.
+The file `.gitmodules` should now look like this (mind the use forward-slashes):
+
+```
+[submodule ".github/submodules/GothicFreeAim"]
+    path = .github/submodules/GothicFreeAim
+    url = https://github.com/szapp/GothicFreeAim.git
+```
+
+Now, you can add relevant symlinks to desired sub-directories within the GFA scripts, for example:
 
 ```cmd
-mklink /d path\to\Scripts\GFA\_intern .github\submodules\GothicFreeAim\_work\data\Scripts\Content\GFA\_intern
+cd path/to/Scripts/GFA
+mklink /d _intern ../../../../.github/submodules/GothicFreeAim/_work/data/Scripts/Content/GFA/_intern
 ```

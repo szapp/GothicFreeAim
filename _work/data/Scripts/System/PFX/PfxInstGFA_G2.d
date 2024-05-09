@@ -39,8 +39,8 @@ Instance GFA_TRAIL (C_ParticleFX)
     vissizestart_s = "2 2";
     vissizeendscale = 1;
     visalphafunc_s = "BLEND";
-    visalphastart = 255.;
-    visalphastart = 200.;
+    visalphastart = 255.0;
+    visalphastart = 200.0;
     trlfadespeed = 0.5;
     trltexture_s = "SMK_16BIT_A0.TGA";
     trlwidth = 3;
@@ -83,8 +83,8 @@ Instance GFA_IMPACT (C_ParticleFX)
     vistexcolorstart_s = "255 255 255";
     vistexcolorend_s = "255 255 255";
     vissizestart_s = "8 8";
-    vissizeendscale = 1.;
+    vissizeendscale = 1.0;
     visalphafunc_s = "BLEND";
-    visalphastart = 255.;
-    visalphaend = 50.;
+    visalphastart = 255.0;
+    visalphaend = 50.0;
 };
