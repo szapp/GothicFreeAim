@@ -36,7 +36,7 @@ func void GFA_AllowSoftSkinTraceRay(var int on) {
         // Skip first soft skin check, and first only!
         // The opcode for G1 and G2 is functionally identical. However, the instruction in G2 is 6 bytes long
         MEM_WriteByte(zCModel__TraceRay_softSkinCheck, ASMINT_OP_nop);
-        if (GOTHIC_BASE_VERSION == 1) {
+        if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
             MEM_WriteByte(zCModel__TraceRay_softSkinCheck+1, /*33*/ 51); // xor  eax, eax
             MEM_WriteByte(zCModel__TraceRay_softSkinCheck+2, /*C0*/ 192);
         } else {
@@ -48,7 +48,7 @@ func void GFA_AllowSoftSkinTraceRay(var int on) {
         // G1:  8B 43 78         mov  eax, [ebx+78h]
         // G2:  8B 86 84 0 0 0   mov  eax, [esi+84h]
         MEM_WriteByte(zCModel__TraceRay_softSkinCheck, /*8B*/ 139);
-        MEM_WriteByte(zCModel__TraceRay_softSkinCheck+1, MEMINT_SwitchG1G2(/*43*/ 67, /*86*/ 134)); // EBX/ESI zCModel*
+        MEM_WriteByte(zCModel__TraceRay_softSkinCheck+1, GFA_SwitchExe(/*43*/ 67, 67, /*86*/ 134, 134)); // zCModel*
         MEM_WriteByte(zCModel__TraceRay_softSkinCheck+2, zCModel_meshSoftSkinList_numInArray_offset);
     };
     SET = !SET;
@@ -71,7 +71,7 @@ func int GFA_AimRayHead(var int npcPtr, var int fromPosPtr, var int dirPosPtr, v
             // Check if head has indeed a dedicated visual
             var int headNode; headNode = playerAI.modelHeadNode;
             if (MEM_ReadInt(headNode+zCModelNodeInst_visual_offset))
-            && (objCheckInheritance(npc._zCVob_visual, zCModel__classDef)) {
+            && (GFA_ObjCheckInheritance(npc._zCVob_visual, zCModel__classDef)) {
                 // Calculate bounding boxes of model nodes
                 var int model; model = npc._zCVob_visual;
                 const int call = 0;
@@ -128,7 +128,7 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
         // Get camera vob and player
         var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
         var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
-        var oCNpc her; her = getPlayerInst();
+        var oCNpc her; her = GFA_GetPlayerInst();
         var int herPtr; herPtr = _@(her);
 
         // Shift the start point for the trace ray beyond the player model. This is necessary, because if zooming out
@@ -227,18 +227,13 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
 
             if (focusType != TARGET_TYPE_ITEMS) && (Hlp_Is_oCNpc(her.focus_vob)) {
                 // If an NPC focus is desired, more detailed checks are necessary
-
-                // Check if NPC is undead, function is not yet defined at time of parsing
                 var C_Npc target; target = _^(her.focus_vob);
-                MEM_PushInstParam(target);
-                MEM_Call(C_NpcIsUndead); // C_NpcIsUndead(target);
-                var int npcIsUndead; npcIsUndead = MEM_PopIntResult();
 
                 // More detailed focus type tests
-                if (focusType == TARGET_TYPE_NPCS)                                           // Focus any NPC
-                || ((focusType == TARGET_TYPE_ORCS) && (target.guild > GIL_SEPERATOR_ORC))   // Only focus orcs
-                || ((focusType == TARGET_TYPE_HUMANS) && (target.guild < GIL_SEPERATOR_HUM)) // Only focus humans
-                || ((focusType == TARGET_TYPE_UNDEAD) && (npcIsUndead)) {                    // Only focus undead NPCs
+                if (focusType == TARGET_TYPE_NPCS)                                             // Focus any NPC
+                || ((focusType == TARGET_TYPE_ORCS) && (target.guild > GFA_GIL_SEPERATOR_ORC)) // Only focus orcs
+                || ((focusType == TARGET_TYPE_HUMANS) && (target.guild < GIL_SEPERATOR_HUM))   // Only focus humans
+                || ((focusType == TARGET_TYPE_UNDEAD) && (GFA_NpcIsUndead(target))) {          // Only focus undead NPCs
                     // If focus was already found
                     if (her.focus_vob == foundVob) {
                         foundFocus = her.focus_vob;

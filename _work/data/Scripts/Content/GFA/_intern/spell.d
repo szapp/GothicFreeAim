@@ -27,7 +27,7 @@
  * vob that is placed in front of the camera at the nearest intersection with the world or an object.
  */
 func void GFA_SetupSpell() {
-    var int spellOC; spellOC = MEMINT_SwitchG1G2(ESI, EBP);
+    var int spellOC; spellOC = GFA_SwitchExe(ESI, ESI, EBP, EBP);
     var int casterPtr; casterPtr = MEM_ReadInt(spellOC+oCSpell_spellCasterNpc_offset);
     if (!casterPtr) {
         return;
@@ -139,8 +139,8 @@ func void GFA_SpellAiming() {
     };
 
     // Create reticle
-    var int reticlePtr; reticlePtr = MEM_Alloc(sizeof_Reticle);
-    var Reticle reticle; reticle = _^(reticlePtr);
+    var int reticlePtr; reticlePtr = MEM_Alloc(sizeof_GFA_Reticle);
+    var GFA_Reticle reticle; reticle = _^(reticlePtr);
     reticle.texture = ""; // Do not show reticle by default
     reticle.color = -1; // Do not set color by default
     reticle.size = 75; // Medium size by default
@@ -163,9 +163,9 @@ func void GFA_SpellLockMovement() {
         return;
     };
 
-    var oCNpc her; her = getPlayerInst();
+    var oCNpc her; her = GFA_GetPlayerInst();
     var int model; model = her._zCVob_visual;
-    if (!objCheckInheritance(model, zCModel__classDef)) {
+    if (!GFA_ObjCheckInheritance(model, zCModel__classDef)) {
         return;
     };
 
@@ -203,10 +203,7 @@ func void GFA_SpellLockMovement() {
         // Gothic 2 controls: Aim movement while investing/casting as well as allowing to cast from running
 
         // Do not allow any of the below when the player is lying after a fall
-        MEM_PushInstParam(hero);
-        MEM_PushIntParam(BS_LIE);
-        MEM_Call(C_BodyStateContains);
-        if (MEM_PopIntResult()) {
+        if (GFA_BodyStateContains(hero, BS_LIE)) {
             return;
         };
 
@@ -270,10 +267,10 @@ func void GFA_SpellLockMovement() {
  * offset where the Gothic 2 controls are used.
  */
 func void GFA_SpellStrafeReticle() {
-    if (GFA_ACTIVE_CTRL_SCHEME == 2) && (GFA_ACTIVE == FMODE_MAGIC) {
+    if (GFA_ACTIVE_CTRL_SCHEME == 2) && (GFA_ACTIVE == GFA_ACT_SPL) {
         // Use existing function to update reticle. Set ECX and back it up first
         var int ecxBak; ecxBak = ECX;
-        var oCNpc her; her = getPlayerInst();
+        var oCNpc her; her = GFA_GetPlayerInst();
         ECX = her.anictrl;
 
         GFA_SpellAiming();
@@ -299,7 +296,8 @@ func void GFA_SpellFixTarget() {
     };
 
     // Get collision vob and target vob
-    var int collisionVob; collisionVob = MEM_ReadInt(MEM_ReadInt(ESP+360)); // esp+164h+4h
+    var int offset; offset = GFA_SwitchExe(0, 0, 356, /*164h+4h*/ 360);
+    var int collisionVob; collisionVob = MEM_ReadInt(MEM_ReadInt(ESP+offset)); // zSVisualFXColl->collisionVob*
     var int target; target = MEM_ReadInt(visualFX+oCVisualFX_targetVob_offset);
 
     // Update target (increase/decrease reference counters properly)
@@ -334,7 +332,7 @@ func void GFA_ResetSpell() {
     };
 
     // Stop active spell (to remove higher spell level)
-    var oCNpc her; her = getPlayerInst();
+    var oCNpc her; her = GFA_GetPlayerInst();
     var int magBookPtr; magBookPtr = her.mag_book;
     const int call = 0;
     if (CALL_Begin(call)) {

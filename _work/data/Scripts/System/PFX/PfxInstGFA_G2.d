@@ -21,7 +21,7 @@
  * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-INSTANCE GFA_TRAIL (C_PARTICLEFX)
+Instance GFA_TRAIL (C_ParticleFX)
 {
     ppsvalue = 100.000000000;
     ppsislooping = 1;
@@ -57,7 +57,7 @@ INSTANCE GFA_TRAIL (C_PARTICLEFX)
     useemittersfor = 1;
 };
 
-INSTANCE GFA_IMPACT (C_PARTICLEFX)
+Instance GFA_IMPACT (C_ParticleFX)
 {
     ppsvalue = 200.000000000;
     ppsscalekeys_s = "1";

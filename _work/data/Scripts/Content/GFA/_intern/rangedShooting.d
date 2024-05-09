@@ -90,8 +90,8 @@ func int GFA_GetInitialBaseDamage_(var int baseDamage, var int damageType, var i
 
     // Scale distance between [0, 100] for [RANGED_CHANCE_MINDIST, RANGED_CHANCE_MAXDIST], see AI_Constants.d
     // For readability: 100*(aimingDistance-RANGED_CHANCE_MINDIST)/(RANGED_CHANCE_MAXDIST-RANGED_CHANCE_MINDIST)
-    aimingDistance = roundf(divf(mulf(FLOAT1C, subf(aimingDistance, castToIntf(RANGED_CHANCE_MINDIST))),
-                                 subf(castToIntf(RANGED_CHANCE_MAXDIST), castToIntf(RANGED_CHANCE_MINDIST))));
+    aimingDistance = roundf(divf(mulf(FLOAT1C, subf(aimingDistance, castToIntf(GFA_RANGED_CHANCE_MINDIST))),
+                                 subf(castToIntf(GFA_RANGED_CHANCE_MAXDIST), castToIntf(GFA_RANGED_CHANCE_MINDIST))));
     // Clip to range [0, 100]
     if (aimingDistance > 100) {
         aimingDistance = 100;
@@ -172,7 +172,7 @@ func void GFA_SetupProjectile() {
     // When the target is too close, shots go vertically up, because the reticle is targeted. To solve this problem,
     // restrict the minimum distance
     var int focusDist;
-    var oCNpc her; her = getPlayerInst();
+    var oCNpc her; her = GFA_GetPlayerInst();
     if (Hlp_Is_oCNpc(her.focus_vob)) {
         var C_Npc focusNpc; focusNpc = _^(her.focus_vob);
         focusDist = Npc_GetDistToPlayer(focusNpc);
@@ -466,7 +466,7 @@ func void GFA_SetupProjectile() {
             SB_Clear();
         } else {
             var int hitchance;
-            if (GOTHIC_BASE_VERSION == 1) {
+            if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
                 // In Gothic 1, the hit chance is determined by dexterity (for both bows and crossbows)
                 hitchance = hero.attribute[ATR_DEXTERITY];
             } else {
@@ -574,7 +574,7 @@ func void GFA_EnableProjectileGravity() {
  * float around with the previously set drop-off gravity (GFA_PROJECTILE_GRAVITY).
  */
 func void GFA_ResetProjectileGravity() {
-    var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, ECX);
+    var int arrowAI; arrowAI = GFA_SwitchExe(ESI, ESI, ECX, ECX);
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
     var int rigidBody; rigidBody = projectile._zCVob_rigidBody;
     if (!rigidBody) {
@@ -589,8 +589,8 @@ func void GFA_ResetProjectileGravity() {
     };
 
     // Remove trail strip FX
-    if (GOTHIC_BASE_VERSION == 1) {
-        Wld_StopEffect_Ext(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0);
+    if (GOTHIC_BASE_VERSION != 2) {
+        GFA_Wld_StopEffect_Ext(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0);
     };
 };
 
@@ -605,7 +605,7 @@ func void GFA_ResetProjectileGravity() {
  * This function is only making changes if the shooter is the player.
  */
 func void GFA_OverwriteHitChance() {
-    var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EBP);
+    var int arrowAI; arrowAI = GFA_SwitchExe(ESI, ESI, EBP, EBP);
     var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
 
     // Only if shooter is the player and if free aiming is enabled for ranged combat
@@ -616,14 +616,18 @@ func void GFA_OverwriteHitChance() {
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
 
     // Hit chance, calculated from skill (or dexterity in Gothic 1) and distance
-    var int hitChancePtr; hitChancePtr = MEMINT_SwitchG1G2(/*esp+3Ch-28h*/ ESP+20, /*esp+1ACh-194h*/ ESP+24);
+    var int offset; offset = GFA_SwitchExe(/*3Ch-28h*/ 20, 20, 24, /*1ACh-194h*/ 24);
+    var int hitChancePtr; hitChancePtr = ESP+offset;
     var int hit;
 
     if (!GFA_TRUE_HITCHANCE) {
         // If accuracy/scattering is disabled, stick to the hit chance calculation from Gothic
 
         // G1: float, G2: integer
-        var int hitChance; hitChance = MEMINT_SwitchG1G2(MEM_ReadInt(hitChancePtr), mkf(MEM_ReadInt(hitChancePtr)));
+        var int hitChance; hitChance = MEM_ReadInt(hitChancePtr);
+        if (GOTHIC_BASE_VERSION == 130) || (GOTHIC_BASE_VERSION == 2) {
+            hitChance = mkf(hitChance);
+        };
 
         // The random number by which a hit is determined (integer)
         var int rand; rand = EAX % 100;
@@ -633,7 +637,7 @@ func void GFA_OverwriteHitChance() {
     } else {
         // If accuracy/scattering is enabled, all shots that hit the target are always positive hits
         hit = TRUE;
-        MEM_WriteInt(hitChancePtr, MEMINT_SwitchG1G2(FLOAT1C, 100)); // Overwrite to hit always
+        MEM_WriteInt(hitChancePtr, GFA_SwitchExe(FLOAT1C, FLOAT1C, 100, 100)); // Overwrite to hit always
     };
 
     // Update the shooting statistics
@@ -783,7 +787,9 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
  * at an address where zCModel::TraceRay() returns a positive intersection.
  */
 func void GFA_RecordHitNode() {
-    var int nodeInst; nodeInst = MEM_ReadInt(MEMINT_SwitchG1G2(/*esp+18Ch-16Ch*/ ESP+32, /*esp+260h-248h*/ ESP+24));
+    var int offset; offset = GFA_SwitchExe(/*18Ch-16Ch*/ 32, 36, 24, /*260h-248h*/ 24);
+    var int nodeInstPtr; nodeInstPtr = ESP+offset;
+    var int nodeInst; nodeInst = MEM_ReadInt(nodeInstPtr); // zCModelNodeInst*
     var int node; node = MEM_ReadInt(nodeInst+zCModelNodeInst_protoNode_offset);
     GFA_HitModelNode = MEM_ReadString(node+zCModelNode_nodeName_offset);
 };

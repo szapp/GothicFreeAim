@@ -40,8 +40,8 @@ func void GFA_RangedIdle() {
             distance = roundf(divf(mulf(distance, FLOAT1C), mkf(GFA_MAX_DIST))); // Distance scaled between [0, 100]
 
             // Create reticle
-            var int reticlePtr; reticlePtr = MEM_Alloc(sizeof_Reticle);
-            var Reticle reticle; reticle = _^(reticlePtr);
+            var int reticlePtr; reticlePtr = MEM_Alloc(sizeof_GFA_Reticle);
+            var GFA_Reticle reticle; reticle = _^(reticlePtr);
             reticle.texture = ""; // Do not show reticle by default
             reticle.color = -1; // Do not set color by default
             reticle.size = 75; // Medium size by default
@@ -79,7 +79,7 @@ func void GFA_RangedIdle() {
 func void GFA_RangedAiming() {
     if (!GFA_ACTIVE) {
         return;
-    } else if (GFA_ACTIVE < FMODE_FAR) {
+    } else if (GFA_ACTIVE < GFA_ACT_FAR) {
         GFA_RemoveReticle();
         if (GFA_NO_AIM_NO_FOCUS) {
             GFA_SetFocusAndTarget(0);
@@ -93,8 +93,8 @@ func void GFA_RangedAiming() {
     distance = roundf(divf(mulf(distance, FLOAT1C), mkf(GFA_MAX_DIST))); // Distance scaled between [0, 100]
 
     // Create reticle
-    var int reticlePtr; reticlePtr = MEM_Alloc(sizeof_Reticle);
-    var Reticle reticle; reticle = _^(reticlePtr);
+    var int reticlePtr; reticlePtr = MEM_Alloc(sizeof_GFA_Reticle);
+    var GFA_Reticle reticle; reticle = _^(reticlePtr);
     reticle.texture = ""; // Do not show reticle by default
     reticle.color = -1; // Do not set color by default
     reticle.size = 75; // Medium size by default
@@ -119,7 +119,7 @@ func void GFA_RangedAiming() {
     pos[2] = addf(camPos.v2[zMAT4_position], mulf(camPos.v2[zMAT4_outVec], distance));
 
     // Get aiming angles
-    var oCNpc her; her = getPlayerInst();
+    var oCNpc her; her = GFA_GetPlayerInst();
     var int herPtr; herPtr = _@(her);
     var int angleX; var int angXptr; angXptr = _@(angleX);
     var int angleY; var int angYptr; angYptr = _@(angleY);
@@ -154,7 +154,11 @@ func void GFA_RangedAiming() {
 
     // New aiming coordinates. Overwrite the arguments one and two passed to oCAniCtrl_Human::InterpolateCombineAni()
     MEM_WriteInt(ESP+20, FLOATHALF); // First argument: Always aim at center (azimuth). G2: esp+44h-30h, G1: esp+2Ch-18h
-    ECX = angleY; // Second argument: New elevation
+    if (GOTHIC_BASE_VERSION == 112) {
+        EAX = angleY; // Second argument: New elevation
+    } else {
+        ECX = angleY; // Second argument: New elevation
+    };
 };
 
 
@@ -168,7 +172,7 @@ func void GFA_RangedLockMovement() {
         return;
     };
 
-    if (GFA_ACTIVE < FMODE_FAR) {
+    if (GFA_ACTIVE < GFA_ACT_FAR) {
         // Overwrite: Not aiming. Necessary for falling while strafing
         GFA_AimMovement(0, "");
         EAX = 0;
@@ -187,7 +191,7 @@ func void GFA_RangedLockMovement() {
  * Additionally, this function is used to detect the onset of aiming (so it is also used if GFA_STRAFING is disabled).
  */
 func void GFA_RangedAimingCondition() {
-    var oCNpc her; her = getPlayerInst();
+    var oCNpc her; her = GFA_GetPlayerInst();
     var int herPtr; herPtr = _@(her);
     var int aniCtrlPtr; aniCtrlPtr = her.anictrl;
 
@@ -204,7 +208,7 @@ func void GFA_RangedAimingCondition() {
             call = CALL_End();
         };
         return;
-    } else if (GFA_ACTIVE < FMODE_FAR) {
+    } else if (GFA_ACTIVE < GFA_ACT_FAR) {
         EAX = 0;
         return;
     };
@@ -228,7 +232,7 @@ func void GFA_RangedAimingCondition() {
 
     // Remove turning animations (player model sometimes gets stuck in turning animation)
     var int model; model = her._zCVob_visual;
-    if (objCheckInheritance(model, zCModel__classDef)) {
+    if (GFA_ObjCheckInheritance(model, zCModel__classDef)) {
         const int twenty = 20;
         const int call3 = 0;
         if (CALL_Begin(call3)) {

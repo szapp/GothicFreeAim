@@ -21,8 +21,7 @@
  * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
-INSTANCE GFA_TRAIL (C_PARTICLEFX)
-{
+Instance GFA_TRAIL (C_ParticleFX) {
     ppsvalue = 20.000000000;
     ppsislooping = 0;
     ppsscalekeys_s = "1 1 1 1 8 8 8 8 8 8   8 8 8 8 8 8 8 8 8 8"; // Artificial delay of 0.4 sec
@@ -56,8 +55,7 @@ INSTANCE GFA_TRAIL (C_PARTICLEFX)
     trlwidth = 3;
 };
 
-INSTANCE GFA_IMPACT (C_PARTICLEFX)
-{
+Instance GFA_IMPACT (C_ParticleFX) {
     ppsvalue = 200.000000000;
     ppsscalekeys_s = "1";
     ppsissmooth = 1;

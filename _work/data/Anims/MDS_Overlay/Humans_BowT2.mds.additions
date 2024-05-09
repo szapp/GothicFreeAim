@@ -1,9 +1,21 @@
+/////////////////////////////////////////////////
+//                Gothic Free Aim              //
+// Copyright (C) 2016-2019  mud-freak (@szapp) //
+//   <http://github.com/szapp/GothicFreeAim>   //
+//       Released under the MIT License.       //
+/////////////////////////////////////////////////
+
+
 // Additions to Humans_BowT2.mds
 //
 // Place in between the two curly brackets: { {  here  } }
 // Remember to delete the file _compiled\HUMANS_BOWT2.MSB (Gothic 2)
 
+Model ("HuS")
+{
 
+    aniEnum
+    {
 
 /////////////////////////////
 //     Gothic Free Aim     //
@@ -22,3 +34,6 @@
             aniAlias    ("s_Bow_Aim_MoveLB"         2   "s_Bow_Aim_MoveLB"  0.0 0.0 M.  "s_Bow_Aim_MoveRF"          R)
 
             ani         ("t_Bow_Aim_Move_2_Aim_Stand"  2   ""               0.2 0.0 M.  "Hum_BowT2_Aim_MoveF.asc"   F   27  30)
+
+    }
+}

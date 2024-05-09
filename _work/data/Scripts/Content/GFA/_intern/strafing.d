@@ -31,7 +31,7 @@ func void GFA_AimMovement(var int movement, var string modifier) {
         return;
     };
 
-    var oCNpc her; her = getPlayerInst();
+    var oCNpc her; her = GFA_GetPlayerInst();
 
     // Send perception before anything else (every 1500 ms)
     var int newBodystate; newBodystate = -1;
@@ -80,7 +80,7 @@ func void GFA_AimMovement(var int movement, var string modifier) {
 
     // Get player model
     var int model; model = her._zCVob_visual;
-    if (!objCheckInheritance(model, zCModel__classDef)) {
+    if (!GFA_ObjCheckInheritance(model, zCModel__classDef)) {
         return;
     };
     var int bitfield; bitfield = MEM_ReadInt(her.anictrl+oCAIHuman_bitfield_offset);
@@ -236,7 +236,7 @@ func void GFA_Strafe() {
         return;
     };
 
-    var oCNpc her; her = getPlayerInst();
+    var oCNpc her; her = GFA_GetPlayerInst();
 
     // Check whether keys are pressed down (held)
     var int mFront;

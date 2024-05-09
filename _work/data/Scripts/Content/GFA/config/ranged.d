@@ -29,9 +29,11 @@
 func int GFA_GetDrawForce(var C_Item weapon, var int talent) {
 
     // Default:
-    return 100; // Remove this line if you  want to use this configuration function!
+    // Remove the following lines if you want to use this configuration function!
+    if (STR_ToInt(MEM_GetGothOpt("GFA", "freeAimingEnabled")) < 2) {
+        return 100;
+    };
     // --- Everything below is ignored ---
-
 
     var int drawForce;
 
@@ -76,18 +78,12 @@ func int GFA_GetDrawForce(var C_Item weapon, var int talent) {
  * Note: For Gothic 1, instead of the talent, the dexterity is used (as is default for Gothic 1)
  */
 func int GFA_GetAccuracy(var C_Item weapon, var int talent) {
-
-    // Default:
-    return MEMINT_SwitchG1G2(hero.attribute[ATR_DEXTERITY], talent); // Remove this line if you want to use this config!
-    // --- Everything below is ignored ---
-
-
     // Here, the 'hit chance' is scaled by draw force, where 'hit chance' is talent (Gothic 2) or dexterity (Gothic 1)
     //  Draw force = 100% -> accuracy = hit chance
     //  Draw force =   0% -> accuracy = hit chance * 0.8
 
     // In Gothic 1, the hit chance is actually the dexterity (for both bows and crossbows), NOT the talent!
-    if (GOTHIC_BASE_VERSION == 1) {
+    if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
         talent = hero.attribute[ATR_DEXTERITY];
     };
 
@@ -98,8 +94,10 @@ func int GFA_GetAccuracy(var C_Item weapon, var int talent) {
     // Scale accuracy by draw force
     var int accuracy; accuracy = (talent * drawForce) / 100;
 
-    // Decrease accuracy if moving by 0.2
-    if (GFA_IsStrafing) {
+    // Decrease accuracy if moving by 0.2 -- here, only with an extended menu-setting
+    if (GFA_IsStrafing)
+    && (STR_ToInt(MEM_GetGothOpt("GFA", "freeAimingEnabled")) > 1) // Remove this line to always add strafing modifier
+    {
         accuracy = accuracy*(4/5);
     };
 
@@ -120,7 +118,10 @@ func int GFA_GetAccuracy(var C_Item weapon, var int talent) {
 func int GFA_GetRecoil(var C_Item weapon, var int talent) {
 
     // Default:
-    return 0; // Remove this line if you  want to use this configuration function!
+    // Remove the following lines if you want to use this configuration function!
+    if (STR_ToInt(MEM_GetGothOpt("GFA", "freeAimingEnabled")) < 2) {
+        return 0;
+    };
     // --- Everything below is ignored ---
 
 
@@ -168,10 +169,13 @@ func int GFA_GetRecoil(var C_Item weapon, var int talent) {
  * crossbow only briefly held steady.
  */
 func int GFA_GetInitialBaseDamage(var int baseDamage, var int damageType, var C_Item weapon, var int talent,
-        var int aimingDistance) {
+                                  var int aimingDistance) {
 
     // Default:
-    return baseDamage; // Remove this line if you  want to use this configuration function!
+    // Remove the following lines if you  want to use this configuration function!
+    if (STR_ToInt(MEM_GetGothOpt("GFA", "freeAimingEnabled")) < 2) {
+        return baseDamage;
+    };
     // --- Everything below is ignored ---
 
 

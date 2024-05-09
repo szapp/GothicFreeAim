@@ -25,12 +25,12 @@
 /*
  * Class: Critical hit damage message
  */
-const int sizeof_DmgMsg = 36;
+const int sizeof_GFA_DmgMsg = 36;
 
-class DmgMsg {
+class GFA_DmgMsg {
     var int value;      // Base damage (float)
     var int type;       // Damage type (read-only)
-    var int protection; // Protection of target to DmgMsg.type (read-only)
+    var int protection; // Protection of target to GFA_DmgMsg.type (read-only)
     var int behavior;   // Damage behavior as defined in const.d (DMG_*)
     var string info;    // Optional debug information
 };
@@ -39,9 +39,9 @@ class DmgMsg {
 /*
  * Class: Reticle definitions
  */
-const int sizeof_Reticle = 28;
+const int sizeof_GFA_Reticle = 28;
 
-class Reticle {
+class GFA_Reticle {
     var string texture;
     var int size;
     var int color;

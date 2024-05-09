@@ -39,7 +39,7 @@ func void GFA_RemoveReticle() {
  */
 func void GFA_InsertReticle(var int reticlePtr) {
     // Get reticle instance from call-by-reference argument
-    var Reticle reticle; reticle = _^(reticlePtr);
+    var GFA_Reticle reticle; reticle = _^(reticlePtr);
     var int size;
 
     // Only draw the reticle if the texture is specified. An empty texture removes the reticle
@@ -141,7 +141,7 @@ func void GFA_GetSpellReticle_(var int target, var C_Spell spellInst, var int di
     // Define spell properties
     var int spellID; spellID = Npc_GetActiveSpell(hero);
     var int spellLvl; spellLvl = Npc_GetActiveSpellLevel(hero);
-    var int isScroll; isScroll = Npc_GetActiveSpellIsScroll(hero);
+    var int isScroll; isScroll = GFA_GetActiveSpellIsScroll(hero);
 
     // Getting the amount of mana invested takes a bit more effort
     var int spellOC; spellOC = _@(spellInst)-oCSpell_C_Spell_offset;

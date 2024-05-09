@@ -26,7 +26,7 @@
  */
 func void GFA_GetRangedReticle(var C_Npc target, var C_Item weapon, var int talent, var int dist, var int returnPtr) {
     // Get reticle instance from call-by-reference argument
-    var Reticle reticle; reticle = _^(returnPtr);
+    var GFA_Reticle reticle; reticle = _^(returnPtr);
 
     // Color (do not set the color to preserve the original texture color)
     if (Hlp_IsValidNpc(target)) {
@@ -57,23 +57,23 @@ func void GFA_GetRangedReticle(var C_Npc target, var C_Item weapon, var int tale
         var int drawForce; drawForce = GFA_GetDrawForce(weapon, talent);
 
         // Animate reticle by draw force
-        reticle.texture = GFA_AnimateReticleByPercent(RETICLE_NOTCH, drawForce, 17);
+        reticle.texture = GFA_AnimateReticleByPercent(GFA_RETICLE_NOTCH, drawForce, 17);
 
     } else if (weapon.flags & ITEM_CROSSBOW) {
         // Get draw force. Already scaled to [0, 100]
         var int steadyAim; steadyAim = GFA_GetDrawForce(weapon, talent);
 
         // Animate reticle by draw force
-        reticle.texture = GFA_AnimateReticleByPercent(RETICLE_PEAK, steadyAim, 17);
+        reticle.texture = GFA_AnimateReticleByPercent(GFA_RETICLE_PEAK, steadyAim, 17);
 
         /*
         // Alternatively, keep the reticle fixed, only resized with distance
-        reticle.texture = RETICLE_PEAK; */
+        reticle.texture = GFA_RETICLE_PEAK; */
 
         /*
         // Alternatively, change the reticle texture with distance
         reticle.size = 75; // Keep the size fixed here
-        reticle.texture = GFA_AnimateReticleByPercent(RETICLE_DROP, dist, 8); // Animate reticle with distance */
+        reticle.texture = GFA_AnimateReticleByPercent(GFA_RETICLE_DROP, dist, 8); // Animate reticle with distance */
     };
 };
 
@@ -93,16 +93,16 @@ func void GFA_GetRangedReticle(var C_Npc target, var C_Item weapon, var int tale
 func void GFA_GetSpellReticle(var C_Npc target, var int spellID, var C_Spell spellInst, var int spellLevel,
         var int isScroll, var int manaInvested, var int dist, var int returnPtr) {
     // Get reticle instance from call-by-reference argument
-    var Reticle reticle; reticle = _^(returnPtr);
+    var GFA_Reticle reticle; reticle = _^(returnPtr);
 
     /*
     // Different reticles by spell type
     if (spellInst.spellType == SPELL_GOOD) {
-        reticle.texture = RETICLE_CIRCLECROSS;
+        reticle.texture = GFA_RETICLE_CIRCLECROSS;
     } else if (spellInst.spellType == SPELL_NEUTRAL) {
-        reticle.texture = RETICLE_CIRCLECROSS;
+        reticle.texture = GFA_RETICLE_CIRCLECROSS;
     } else if (spellInst.spellType == SPELL_BAD) {
-        reticle.texture = RETICLE_CIRCLECROSS;
+        reticle.texture = GFA_RETICLE_CIRCLECROSS;
     }; */
 
     // The color (do not set the color to preserve the original texture color)
@@ -155,27 +155,27 @@ func void GFA_GetSpellReticle(var C_Npc target, var int spellID, var C_Spell spe
     if (STR_IndexOf(spellName, "ICE") != -1)
     || (STR_IndexOf(spellName, "THUNDERBOLT") != -1) {
         // Ice spells
-        reticle.texture = RETICLE_SPADES;
+        reticle.texture = GFA_RETICLE_SPADES;
     } else if (STR_IndexOf(spellName, "FIRE") != -1)
     || (STR_IndexOf(spellName, "PYRO") != -1) {
         // Fire spells
-        reticle.texture = RETICLE_HORNS;
+        reticle.texture = GFA_RETICLE_HORNS;
     } else if (STR_IndexOf(spellName, "WATER") != -1)
     || (STR_IndexOf(spellName, "INFLATE") != -1)
     || (STR_IndexOf(spellName, "GEYSER") != -1)
     || (STR_IndexOf(spellName, "WIND") != -1)
     || (STR_IndexOf(spellName, "STORM") != -1) {
         // Water/wind spells
-        reticle.texture = GFA_AnimateReticleByTime(RETICLE_WHIRL, 30, 10); // Animate reticle with 30 FPS (10 Frames)
+        reticle.texture = GFA_AnimateReticleByTime(GFA_RETICLE_WHIRL, 30, 10); // Animate reticle w/ 30 FPS (10 Frames)
     } else if (STR_IndexOf(spellName, "ZAP") != -1)
     || (STR_IndexOf(spellName, "LIGHTNING") != -1)
     || (STR_IndexOf(spellName, "FLASH") != -1)
     || (STR_IndexOf(spellName, "THUNDER") != -1) {
         // Electric spells
-        reticle.texture = RETICLE_BOLTS;
+        reticle.texture = GFA_RETICLE_BOLTS;
     } else if (STR_IndexOf(spellName, "PAL") != -1) {
         // Paladin spells
-        reticle.texture = RETICLE_FRAME;
+        reticle.texture = GFA_RETICLE_FRAME;
     } else if (STR_IndexOf(spellName, "DEATH") != -1)
     || (STR_IndexOf(spellName, "DESTROYUNDEAD") != -1)
     || (STR_IndexOf(spellName, "MASTEROFDISASTER") != -1)
@@ -185,16 +185,16 @@ func void GFA_GetSpellReticle(var C_Npc target, var int spellID, var C_Spell spe
     || (STR_IndexOf(spellName, "SUCKENERGY") != -1)
     || (STR_IndexOf(spellName, "SKULL") != -1) {
         // Evil spells
-        reticle.texture = RETICLE_BOWL;
+        reticle.texture = GFA_RETICLE_BOWL;
     } else if (STR_IndexOf(spellName, "CHARM") != -1)
     || (STR_IndexOf(spellName, "SLEEP") != -1)
     || (STR_IndexOf(spellName, "CONTROL") != -1)
     || (STR_IndexOf(spellName, "BERZERK") != -1)
     || (STR_IndexOf(spellName, "SHRINK") != -1) {
         // Psyonic spells
-        reticle.texture = RETICLE_EDGES;
+        reticle.texture = GFA_RETICLE_EDGES;
     } else {
         // Set this as 'default' texture here (if none of the conditions above is met)
-        reticle.texture = RETICLE_EDGES;
+        reticle.texture = GFA_RETICLE_EDGES;
     };
 };

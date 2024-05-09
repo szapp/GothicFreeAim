@@ -34,16 +34,16 @@ func void GFA_AimVobDetachFX() {
     };
 
     // Retrieve vob by name
-    var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB");
+    var int vobPtr; vobPtr = MEM_SearchVobByName(GFA_AIMVOB);
     if (!vobPtr) {
         return;
     };
 
-    if (GOTHIC_BASE_VERSION == 1) {
+    if (GOTHIC_BASE_VERSION != 2) {
         // In Gothic 1 there are no item effects
         var C_Item vob; vob = _^(vobPtr);
-        Wld_StopEffect_Ext("", vob, 0, TRUE); // Remove all effects "from" the aim vob
-        Wld_StopEffect_Ext("", 0, vob, TRUE); // Remove all effects "to" the aim vob
+        GFA_Wld_StopEffect_Ext("", vob, 0, TRUE); // Remove all effects "from" the aim vob
+        GFA_Wld_StopEffect_Ext("", 0, vob, TRUE); // Remove all effects "to" the aim vob
     } else {
         // Remove item FX immediately
         const int call = 0;
@@ -66,7 +66,7 @@ func void GFA_AimVobDetachFX() {
  */
 func void GFA_AimVobAttachFX(var string effectInst) {
     // Retrieve vob by name
-    var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB");
+    var int vobPtr; vobPtr = MEM_SearchVobByName(GFA_AIMVOB);
     if (!vobPtr) {
         return;
     };
@@ -75,7 +75,7 @@ func void GFA_AimVobAttachFX(var string effectInst) {
         GFA_AimVobDetachFX();
     };
 
-    if (GOTHIC_BASE_VERSION == 1) {
+    if (GOTHIC_BASE_VERSION != 2) {
         // In Gothic 1 there are no item effects
         var C_Item vob; vob = _^(vobPtr);
         Wld_PlayEffect(effectInst, vob, vob, 0, 0, 0, FALSE);
@@ -132,7 +132,7 @@ func void GFA_AimVobManipulatePos(var int posPtr) {
  */
 func int GFA_SetupAimVob(var int posPtr) {
     // Retrieve vob by name
-    var int vobPtr; vobPtr = MEM_SearchVobByName("AIMVOB");
+    var int vobPtr; vobPtr = MEM_SearchVobByName(GFA_AIMVOB);
 
     // Create vob if it does not exit
     if (!vobPtr) {
@@ -146,7 +146,7 @@ func int GFA_SetupAimVob(var int posPtr) {
 
         // Set up vob properties
         var zCVob vob; vob = _^(vobPtr);
-        vob._zCObject_objectName = "AIMVOB";
+        vob._zCObject_objectName = GFA_AIMVOB;
 
         // Insert into world
         CALL_PtrParam(_@(MEM_Vobtree));
@@ -156,15 +156,18 @@ func int GFA_SetupAimVob(var int posPtr) {
         // Ignored by trace ray, no collision
         vob.bitfield[0] = 3105;
 
+        // Do not preserve across game saves
+        vob.bitfield[4] = vob.bitfield[4] | zCVob_bitfield4_dontWriteIntoArchive;
+
         // Set to non-focusable
         var C_Item itm; itm = _^(vobPtr);
-        itm.flags = itm.flags | ITEM_NFOCUS;
+        itm.flags = itm.flags | GFA_ITEM_NFOCUS;
     };
 
     // Update position and rotation
     if (posPtr) {
         // Copy rotation from the player model (not necessary for free aiming, but might be important for some spells)
-        var oCNpc her; her = getPlayerInst();
+        var oCNpc her; her = GFA_GetPlayerInst();
         MEM_CopyBytes(_@(her)+zCVob_trafoObjToWorld_offset, vobPtr+zCVob_trafoObjToWorld_offset, sizeof_zMAT4);
 
         // Additionally shift the vob (for certain spells, adjust in GFA_ShiftAimVob())

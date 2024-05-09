@@ -8,7 +8,8 @@
 [![Steam Gothic 1](https://img.shields.io/badge/steam-Gothic%201-2a3f5a?logo=steam&labelColor=1b2838)](https://steamcommunity.com/sharedfiles/filedetails/?id=2786959658)
 [![Steam Gothic 2](https://img.shields.io/badge/steam-Gothic%202-2a3f5a?logo=steam&labelColor=1b2838)](https://steamcommunity.com/sharedfiles/filedetails/?id=2786958841)
 
-**Script package for the video games Gothic and Gothic II that enables free aiming for ranged weapons and spells.**
+**Script package for the Gothic video game series that enables free aiming for ranged weapons and spells.**
+*Gothic, Gothic Sequel, Gothic II, Gothic II: Night of the Raven*
 
 <br />
 

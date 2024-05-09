@@ -50,7 +50,9 @@ const int    GFA_INITIALIZED        = 0;                    // Indicator whether
 const int    GFA_ACTIVE             = 0;                    // Status indicator of free aiming/free movement
 const int    GFA_ACT_FREEAIM        = 1<<1;                 // Free aiming status (for spells only)
 const int    GFA_ACT_MOVEMENT       = 1<<2;                 // Free movement status
-const int    GFA_SPL_FREEAIM        = (FMODE_MAGIC          // Free aiming modifier for spells
+const int    GFA_ACT_FAR            = 5;                    // Free aiming in ranged combat
+const int    GFA_ACT_SPL            = 7;                    // Free aiming spell
+const int    GFA_SPL_FREEAIM        = (GFA_ACT_SPL          // Free aiming modifier for spells
                                        & ~GFA_ACT_MOVEMENT);
 
 const int    GFA_ACTIVE_CTRL_SCHEME = 1;                    // Control scheme of active FMODE (for Gothic 1 always 1)
@@ -70,6 +72,7 @@ const int    GFA_RETICLE_MAX_SIZE   = 64;                   // Reticle size in p
 const int    GFA_RETICLE_PTR        = 0;                    // Reticle zCView
 var   int    GFA_AimVobHasFX;                               // For performance: check whether FX needs to be removed
 
+const string GFA_AIMVOB             = "GFA_AIMVOB";         // Uniquely identifiable name of aim vob
 const string GFA_CAMERA             = "CamModGFA";          // CCamSys_Def script instance
 
 const float  GFA_FOCUS_FAR_NPC      = 15.0;                 // NPC azimuth for ranged focus for free aiming
@@ -118,6 +121,7 @@ const int    GFA_MOVE_ANI_LAYER     = 2;                    // Layer of aiming m
 const string GFA_TRAIL_FX           = "GFA_TRAIL_VFX";      // Trail strip FX. Should not be changed
 const string GFA_TRAIL_FX_SIMPLE    = "GFA_TRAIL_INST_VFX"; // Simplified trail strip FX for use in Gothic 1
 const string GFA_BREAK_FX           = "GFA_DESTROY_VFX";    // FX of projectile breaking on impact with world
+const string GFA_CRITICALHIT_SFX    = "GFA_CRITICALHIT_SFX";// Sound FX to indicate critical hit
 
 const int    GFA_DRAWTIME_READY     = 475;                  // Time (ms) for readying the weapon. Fixed by animation
 const int    GFA_DRAWTIME_RELOAD    = 1250;                 // Time (ms) for reloading the weapon. Fixed by animation
@@ -133,13 +137,19 @@ var   string GFA_HitModelNode;                              // Name of model nod
 
 var   int    GFA_ProjectilePtr;                             // Pointer of currently colliding projectile (temporary)
 
-const int    DMG_NO_CHANGE          = 0;                    // Do not adjust the damage
-const int    DMG_DO_NOT_KNOCKOUT    = 1;                    // Normal damage, shot may kill but never knockout (HP != 1)
-const int    DMG_DO_NOT_KILL        = 2;                    // Normal damage, shot may knockout but never kill (HP > 0)
-const int    DMG_INSTANT_KNOCKOUT   = 3;                    // One shot knockout (HP = 1)
-const int    DMG_INSTANT_KILL       = 4;                    // One shot kill (HP = 0)
+const int    GFA_DMG_NO_CHANGE         = 0;                 // Do not adjust the damage
+const int    GFA_DMG_DO_NOT_KNOCKOUT   = 1;                 // Normal damage, shot may kill but never knockout (HP != 1)
+const int    GFA_DMG_DO_NOT_KILL       = 2;                 // Normal damage, shot may knockout but never kill (HP > 0)
+const int    GFA_DMG_INSTANT_KNOCKOUT  = 3;                 // One shot knockout (HP = 1)
+const int    GFA_DMG_INSTANT_KILL      = 4;                 // One shot kill (HP = 0)
 
-const int    DMG_BEHAVIOR_MAX       = 4;
+const int    GFA_DMG_BEHAVIOR_MAX      = 4;
+
+const int    GFA_GIL_SEPERATOR_ORC     = 0;                 // Do not overwrite! These constants are auto-filled in
+const int    GFA_FIGHT_DIST_CANCEL     = 3500;              // GFA_FillConstants according to the values found in the
+const float  GFA_RANGED_CHANCE_MINDIST = 1500;              // corresponding Daedalus script constants of the mod.
+const float  GFA_RANGED_CHANCE_MAXDIST = 4500;              // This ensures the existence of the constants
+const int    GFA_NPC_MINIMAL_DAMAGE    = 1;
 
 
 /* Debugging */

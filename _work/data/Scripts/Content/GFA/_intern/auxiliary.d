@@ -25,7 +25,7 @@
 /*
  * Overwrite opcode with nop at a span of addresses
  */
-func void writeNOP(var int addr, var int len) {
+func void GFA_WriteNOP(var int addr, var int len) {
     if (IsHooked(addr)) {
         MEM_Error("Trying to overwrite hook");
         return;
@@ -38,10 +38,27 @@ func void writeNOP(var int addr, var int len) {
 
 
 /*
+ * Emulate MEMINT_SwitchExe of Ikarus for older Ikarus versions
+ * In order of likelihood for performance micro-optimization
+ */
+func int GFA_SwitchExe(var int g1Val, var int g112Val, var int g130Val, var int g2Val) {
+    if (GOTHIC_BASE_VERSION == 2) {
+        return +g2Val;
+    } else if (GOTHIC_BASE_VERSION == 1) {
+        return +g1Val;
+    } else if (GOTHIC_BASE_VERSION == 130) {
+        return +g130Val;
+    } else {
+        return +g112Val;
+    };
+};
+
+
+/*
  * Return the current NPC instance of the player. If the player is not initialized, return a null pointer. It is
  * recommended to use Hlp_IsValidNpc() afterwards.
  */
-func MEMINT_HelperClass getPlayerInst() {
+func MEMINT_HelperClass GFA_GetPlayerInst() {
     if (!MEM_ReadInt(oCNpc__player)) {
         var oCNpc ret; ret = MEM_NullToInst();
         MEMINT_StackPushInst(ret);
@@ -53,11 +70,10 @@ func MEMINT_HelperClass getPlayerInst() {
 
 /*
  * Check the inheritance of a zCObject against a zCClassDef. Emulating zCObject::CheckInheritance() at 0x476E30 in G2.
- * This function is used in Wld_StopEffect_Ext().
  *
  * Taken from http://forum.worldofplayers.de/forum/threads/1495001?p=25548652
  */
-func int objCheckInheritance(var int objPtr, var int classDef) {
+func int GFA_ObjCheckInheritance(var int objPtr, var int classDef) {
     if (!objPtr) || (!classDef) {
         return 0;
     };
@@ -76,19 +92,18 @@ func int objCheckInheritance(var int objPtr, var int classDef) {
  * Retrieve the active spell instance of an NPC. Returns an empty instance if no spell is drawn. This function is
  * usually called in conjunction with GFA_IsSpellEligible(), see below. It might prove to also be useful outside of GFA.
  */
-func MEMINT_HelperClass GFA_GetActiveSpellInst(var C_Npc npc) {
-    if (Npc_GetActiveSpell(npc) == -1) {
+func MEMINT_HelperClass GFA_GetActiveSpellInst(var C_Npc slf) {
+    if (Npc_GetActiveSpell(slf) == -1) {
         // NPC does not have a spell drawn
         var C_Spell ret; ret = MEM_NullToInst();
         MEMINT_StackPushInst(ret);
         return;
     };
 
-    var int npcPtr; npcPtr = _@(npc);
-    var oCNpc npcOC; npcOC = _^(npcPtr);
+    var oCNpc npc; npc = MEM_CpyInst(slf);
 
     // Get the magic book to retrieve the active spell
-    var int magBookPtr; magBookPtr = npcOC.mag_book;
+    var int magBookPtr; magBookPtr = npc.mag_book;
     const int call = 0;
     if (CALL_Begin(call)) {
         CALL__thiscall(_@(magBookPtr), oCMag_Book__GetSelectedSpell);
@@ -97,6 +112,62 @@ func MEMINT_HelperClass GFA_GetActiveSpellInst(var C_Npc npc) {
 
     // This returns an oCSpell instance. Add an offset to retrieve the C_Spell instance
     _^(CALL_RetValAsPtr()+oCSpell_C_Spell_offset);
+};
+
+
+/*
+ * Emulate the Gothic 2 external function Npc_GetActiveSpellIsScroll()
+ * Gothic 2: oCNpc::GetActiveSpellIsScroll() 0x73D020
+ */
+func int GFA_GetActiveSpellIsScroll(var C_Npc slf) {
+    if (GOTHIC_BASE_VERSION == 2) {
+        MEM_PushInstParam(slf);
+        MEM_CallByString("NPC_GETACTIVESPELLISSCROLL");
+        return MEM_PopIntResult();
+    };
+
+    var oCNpc npc; npc = MEM_CpyInst(slf);
+
+    if (npc.fmode != FMODE_MAGIC) {
+        return 0;
+    };
+
+    // Get magic book
+    if (!npc.mag_book) {
+        return 0;
+    };
+
+    // Retrieve selected spell number from magic book
+    const int call = 0;
+    var int magBookPtr; magBookPtr = npc.mag_book;
+    var int spellNr;
+    if (CALL_Begin(call)) {
+        CALL_PutRetValTo(_@(spellNr));
+        CALL__thiscall(_@(magBookPtr), oCMag_Book__GetSelectedSpellNr);
+        call = CALL_End();
+    };
+
+    // Retrieve spell item from spell number
+    const int call2 = 0;
+    var int itemPtr;
+    if (CALL_Begin(call2)) {
+        CALL_IntParam(_@(spellNr));
+        CALL_PutRetValTo(_@(itemPtr));
+        CALL__thiscall(_@(magBookPtr), oCMag_Book__GetSpellItem);
+        call2 = CALL_End();
+    };
+    if (!itemPtr) {
+        return 0;
+    };
+
+    // If item is stackable, it is a scroll
+    const int call3 = 0;
+    if (CALL_Begin(call3)) {
+        CALL__thiscall(_@(itemPtr), oCItem__MultiSlot);
+        call3 = CALL_End();
+    };
+
+    return CALL_RetValAsInt();
 };
 
 
@@ -121,7 +192,7 @@ func int GFA_IsSpellEligible(var C_Spell spell) {
 
         // Targeting spells support free aiming
         if (spell.canChangeTargetDuringInvest) && (spell.targetCollectAlgo == TARGET_COLLECT_FOCUS_FALLBACK_NONE) {
-            eligibleFor = eligibleFor | GFA_SPL_FREEAIM; // == FMODE_MAGIC
+            eligibleFor = eligibleFor | GFA_SPL_FREEAIM; // == GFA_ACT_SPL
         };
     };
 
@@ -132,19 +203,19 @@ func int GFA_IsSpellEligible(var C_Spell spell) {
 /*
  * Returns whether an NPC is currently investing (1), casting (2) or failing (-1) a spell, otherwise 0.
  */
-func int GFA_InvestingOrCasting(var C_Npc npc) {
-    var int npcPtr; npcPtr = _@(npc);
-    var oCNpc npcOC; npcOC = _^(npcPtr);
+func int GFA_InvestingOrCasting(var C_Npc slf) {
+    var oCNpc npc; npc = MEM_CpyInst(slf);
 
     // Investing (when the cast fails, the release status is stuck, so also check dontKnowAniPlayed)
-    if (!(MEM_ReadInt(npcOC.anictrl+oCAIHuman_bitfield_offset) & oCAIHuman_bitfield_spellReleased))
-    && (!(MEM_ReadInt(npcOC.anictrl+oCAIHuman_bitfield_offset) & oCAIHuman_bitfield_dontKnowAniPlayed)) {
+    var int bitfield; bitfield = MEM_ReadInt(npc.anictrl+oCAIHuman_bitfield_offset);
+    if (!(bitfield & oCAIHuman_bitfield_spellReleased))
+    && (!(bitfield & oCAIHuman_bitfield_dontKnowAniPlayed)) {
         return 1;
     };
 
     // Casting or failing (check by active animations)
-    var int model; model = npcOC._zCVob_visual;
-    if (!objCheckInheritance(model, zCModel__classDef)) {
+    var int model; model = npc._zCVob_visual;
+    if (!GFA_ObjCheckInheritance(model, zCModel__classDef)) {
         MEM_Warn("GFA_InvestingOrCasting: NPC has no model visual.");
         return FALSE;
     };
@@ -170,11 +241,11 @@ func int GFA_InvestingOrCasting(var C_Npc npc) {
     repeat(i, MEM_ReadInt(model+zCModel_numActAnis_offset)); var int i;
         var int aniID; aniID = MEM_ReadInt(MEM_ReadInt(MEM_ReadInt(actAniOffset))+zCModelAni_aniID_offset);
 
-        if (aniID == MEM_ReadInt(npcOC.anictrl+oCAniCtrl_Human_t_stand_2_cast_offset))
-        || (aniID == MEM_ReadInt(npcOC.anictrl+oCAniCtrl_Human_s_cast_offset))
-        || (aniID == MEM_ReadInt(npcOC.anictrl+oCAniCtrl_Human_t_cast_2_shoot_offset))
-        || (aniID == MEM_ReadInt(npcOC.anictrl+oCAniCtrl_Human_s_shoot_offset))
-        || (aniID == MEM_ReadInt(npcOC.anictrl+oCAniCtrl_Human_t_shoot_2_stand_offset)) {
+        if (aniID == MEM_ReadInt(npc.anictrl+oCAniCtrl_Human_t_stand_2_cast_offset))
+        || (aniID == MEM_ReadInt(npc.anictrl+oCAniCtrl_Human_s_cast_offset))
+        || (aniID == MEM_ReadInt(npc.anictrl+oCAniCtrl_Human_t_cast_2_shoot_offset))
+        || (aniID == MEM_ReadInt(npc.anictrl+oCAniCtrl_Human_s_shoot_offset))
+        || (aniID == MEM_ReadInt(npc.anictrl+oCAniCtrl_Human_t_shoot_2_stand_offset)) {
             return 2;
         };
 
@@ -195,7 +266,7 @@ func int GFA_InvestingOrCasting(var C_Npc npc) {
  * focus and target can be set to empty, by passing zero as argument.
  */
 func void GFA_SetFocusAndTarget(var int focusPtr) {
-    var oCNpc her; her = getPlayerInst();
+    var oCNpc her; her = GFA_GetPlayerInst();
     var int herPtr; herPtr = _@(her);
 
     // Update the focus vob (properly, mind the reference counter)
@@ -262,16 +333,15 @@ func int GFA_GetWeaponAndTalent(var C_Npc slf, var int weaponPtr, var int talent
             };
 
             if (talent) {
-                if (GOTHIC_BASE_VERSION == 1) {
+                if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
                     // Caution: The hit chance in Gothic 1 is defined by dexterity (same for bow and crossbow). This
                     // function, however, returns the critical hit chance!
                     talent = Npc_GetTalentValue(slf, talent);
                 } else {
                     // In Gothic 2 the hit chance is the skill level
                     // talent = slf.hitChance[NPC_TALENT_BOW]; // Cannot write this, because of Gothic 1 compatibility
-                    var int slfPtr; slfPtr = _@(slf);
-                    var oCNpc slfOC; slfOC = _^(slfPtr);
-                    talent = MEM_ReadStatArr(_@(slfOC)+oCNpc_hitChance_offset, talent);
+                    var oCNpc npc; npc = MEM_CpyInst(slf);
+                    talent = MEM_ReadStatArr(_@(npc)+oCNpc_hitChance_offset, talent);
                 };
             };
         };
@@ -364,7 +434,7 @@ func int GFA_ScaleRanges(var int x, var int min, var int max, var int a, var int
  *
  * Taken from http://forum.worldofplayers.de/forum/threads/1495001?p=25548652
  */
-func int Wld_StopEffect_Ext(var string effectName, var int originInst, var int targetInst, var int all) {
+func int GFA_Wld_StopEffect_Ext(var string effectName, var int originInst, var int targetInst, var int all) {
     var int worldPtr; worldPtr = _@(MEM_World);
     if (!worldPtr) {
         return 0;
@@ -401,8 +471,8 @@ func int Wld_StopEffect_Ext(var string effectName, var int originInst, var int t
             originInst = 0;
         };
 
-        if (!objCheckInheritance(originInst, zCVob__classDef)) {
-            MEM_Warn("Wld_StopEffect_Ext: Origin is not a valid vob");
+        if (!GFA_ObjCheckInheritance(originInst, zCVob__classDef)) {
+            MEM_Warn("GFA_Wld_StopEffect_Ext: Origin is not a valid vob");
             return 0;
         };
     };
@@ -417,8 +487,8 @@ func int Wld_StopEffect_Ext(var string effectName, var int originInst, var int t
             targetInst = 0;
         };
 
-        if (!objCheckInheritance(targetInst, zCVob__classDef)) {
-            MEM_Warn("Wld_StopEffect_Ext: Target is not a valid vob");
+        if (!GFA_ObjCheckInheritance(targetInst, zCVob__classDef)) {
+            MEM_Warn("GFA_Wld_StopEffect_Ext: Target is not a valid vob");
             return 0;
         };
     };
@@ -475,6 +545,20 @@ func int Wld_StopEffect_Ext(var string effectName, var int originInst, var int t
 
 
 /*
+ * Emulate the Gothic 2 external function Wld_StopEffect()
+ * Gothic 2: 0x6E32B0
+ */
+func void GFA_Wld_StopEffect(var string effectName) {
+    if (GOTHIC_BASE_VERSION == 130) || (GOTHIC_BASE_VERSION == 2) {
+        MEM_PushStringParam(effectName);
+        MEM_CallByString("WLD_STOPEFFECT");
+    } else {
+        GFA_Wld_StopEffect_Ext(effectName, 0, 0, 0);
+    };
+};
+
+
+/*
  * When dropping dead or unconscious while having a ranged weapon readied, the dropped projectile will not dereference
  * its AI properly, causing an annoying error message box on any consecutive loading (only with GothicStarter_mod.exe)
  * in Gothic 2. Mind, that this bug has nothing to do with GFA, it is already present in the original Gothic 2!
@@ -511,5 +595,184 @@ func void GFA_FixDroppedProjectileAI() {
             CALL__thiscall(_@(vobPtr), zCVob__SetAI);
             call3 = CALL_End();
         };
+    };
+};
+
+
+/*
+ * Ensure (a simple version of) the script function "C_BodyStateContains" exists
+ */
+func int GFA_BodyStateContains(var C_Npc slf, var int bodystate) {
+    bodystate = (bodystate & (BS_MAX|BS_FLAG_INTERRUPTABLE|BS_FLAG_FREEHANDS));
+    return ((Npc_GetBodyState(slf) & (BS_MAX|BS_FLAG_INTERRUPTABLE|BS_FLAG_FREEHANDS)) == bodystate);
+};
+
+
+/*
+ * Ensure the Deadalus function C_NpcIsDown exists. Emulate it based on Npc_IsDead and common ZS
+ */
+func int GFA_NpcIsDown(var C_Npc slf) {
+    var int funcId; funcId = MEM_GetSymbolIndex("C_NPCISDOWN");
+    if (funcId != -1) {
+        MEM_PushInstParam(slf);
+        MEM_CallById(funcId);
+        return MEM_PopIntResult();
+    };
+
+    var int symbPtr;
+    var zCPar_Symbol symb;
+
+    // if (Npc_IsInState(slf, ZS_Unconscious)
+    symbPtr = MEM_GetSymbol("ZS_UNCONSCIOUS");
+    if (symbPtr) {
+        symb = _^(symbPtr);
+        MEM_PushInstParam(slf);
+        symb.content;
+        MEM_Call(Npc_IsInState);
+        if (MEM_PopIntResult()) {
+            return TRUE;
+        };
+    };
+
+    // if (Npc_IsInState(slf, ZS_MagicSleep)
+    symbPtr = MEM_GetSymbol("ZS_MAGICSLEEP");
+    if (symbPtr) {
+        symb = _^(symbPtr);
+        MEM_PushInstParam(slf);
+        symb.content;
+        MEM_Call(Npc_IsInState);
+        if (MEM_PopIntResult()) {
+            return TRUE;
+        };
+    };
+
+    return Npc_IsDead(slf);
+};
+
+
+/*
+ * Ensure the Deadalus function C_NpcIsUndead exists. Emulate it based on the specifications in
+ * Gothic 1: oCSpell::IsTargetTypeValid()+149h 0x47DD09
+ */
+func int GFA_NpcIsUndead(var C_Npc slf) {
+    const int funcId        = -2;
+    const int GIL_ZOMBIE    = 0;
+    const int GIL_UNDEADORC = 0;
+    const int GIL_SKELETON  = 0;
+
+    // Search for symbols once only
+    if (funcId == -2) {
+        funcId = MEM_GetSymbolIndex("C_NPCISUNDEAD");
+
+        var int symbPtr;
+        var zCPar_Symbol symb;
+
+        symbPtr = MEM_GetSymbol("GIL_ZOMBIE");
+        if (symbPtr) {
+            symb = _^(symbPtr);
+            GIL_ZOMBIE = symb.content;
+        };
+
+        symbPtr = MEM_GetSymbol("GIL_UNDEADORC");
+        if (symbPtr) {
+            symb = _^(symbPtr);
+            GIL_UNDEADORC = symb.content;
+        };
+
+        symbPtr = MEM_GetSymbol("GIL_SKELETON");
+        if (symbPtr) {
+            symb = _^(symbPtr);
+            GIL_SKELETON = symb.content;
+        };
+
+    };
+
+    // Call script function if it exists
+    if (funcId != -1) {
+        MEM_PushInstParam(slf);
+        MEM_CallById(funcId);
+        return MEM_PopIntResult();
+    };
+
+    // Emulate conditions
+    if (slf.guild == GIL_ZOMBIE) {
+        return TRUE;
+    };
+
+    if (slf.guild == GIL_UNDEADORC) {
+        return TRUE;
+    };
+
+    if (slf.guild == GIL_SKELETON) {
+        return TRUE;
+    };
+
+    return FALSE;
+};
+
+
+/*
+ * Hook before C_CanNpcCollideWithSpell to avoid spell hit registration beyond AI perception range. Relevant for
+ * Gothic 2 only
+ */
+func int GFA_CanNpcCollideWithSpell(var int spellType) {
+    const int COLL_DONOTHING = 0;
+
+    // Do not damage beyond maximum fighting range (AI does not react)
+    if (Npc_GetDistToNpc(self, other) > GFA_FIGHT_DIST_CANCEL) {
+        return COLL_DONOTHING;
+    };
+
+    // Otherwise continue as normal
+    passArgumentI(spellType);
+    ContinueCall();
+};
+
+
+/*
+ * Ensure the existence of common constants and auto-fill them if found in the mod once during initialization
+ */
+func void GFA_FillConstants() {
+    var int symbPtr;
+    var zCPar_Symbol symb;
+
+    symbPtr = MEM_GetSymbol("NPC_MINIMAL_DAMAGE");
+    if (symbPtr) {
+        symb = _^(symbPtr);
+        GFA_NPC_MINIMAL_DAMAGE = symb.content;
+    } else {
+        GFA_NPC_MINIMAL_DAMAGE = GFA_SwitchExe(1, 2, 5, 5);
+    };
+
+    symbPtr = MEM_GetSymbol("FIGHT_DIST_CANCEL");
+    if (symbPtr) {
+        symb = _^(symbPtr);
+        GFA_FIGHT_DIST_CANCEL = symb.content;
+    } else {
+        symbPtr = MEM_GetSymbol("HAI_DIST_ABORT_RANGED");
+        if (symbPtr) {
+            symb = _^(symbPtr);
+            GFA_FIGHT_DIST_CANCEL = symb.content;
+        };
+    };
+
+    symbPtr = MEM_GetSymbol("RANGED_CHANCE_MINDIST");
+    if (symbPtr) {
+        symb = _^(symbPtr);
+        GFA_RANGED_CHANCE_MINDIST = castFromIntf(symb.content);
+    };
+
+    symbPtr = MEM_GetSymbol("RANGED_CHANCE_MAXDIST");
+    if (symbPtr) {
+        symb = _^(symbPtr);
+        GFA_RANGED_CHANCE_MAXDIST = castFromIntf(symb.content);
+    };
+
+    symbPtr = MEM_GetSymbol("GIL_SEPERATOR_ORC");
+    if (symbPtr) {
+        symb = _^(symbPtr);
+        GFA_GIL_SEPERATOR_ORC = symb.content;
+    } else {
+        GFA_GIL_SEPERATOR_ORC = GFA_SwitchExe(37, 37, 54, 58);
     };
 };
