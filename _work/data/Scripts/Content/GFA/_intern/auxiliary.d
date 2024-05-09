@@ -165,7 +165,7 @@ func int GFA_GetActiveSpellIsScroll(var C_Npc slf) {
  * This function is used for compatibility and only used optionally in the configuration.
  */
 func string GFA_GetSpellName(var int spellID) {
-    const spellFxInstanceNamesPtr = 0;
+    const int spellFxInstanceNamesPtr = 0;
     if (!spellFxInstanceNamesPtr) {
         var int symPtr; symbPtr = MEM_GetSymbol("SPELLFXINSTANCENAMES");
         if (symbPtr) {
@@ -185,7 +185,7 @@ func string GFA_GetSpellName(var int spellID) {
  * This function is used for compatibility.
  */
 func string GFA_GetSpellAni(var int spellID) {
-    const spellFxAniLettersPtr = 0;
+    const int spellFxAniLettersPtr = 0;
     if (!spellFxAniLettersPtr) {
         var int symPtr; symbPtr = MEM_GetSymbol("SPELLFXANILETTERS");
         if (symbPtr) {
