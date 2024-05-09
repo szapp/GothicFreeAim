@@ -11,12 +11,14 @@
  * identify the original author.
  */
 
-Instance GFA_CRITICALHIT_SFX (C_SFX_Def) {
-    file = "BOW_FIRE_02.WAV";
-    vol  = 60;
+instance GFA_CRITICALHIT_SFX(GFA_C_SFX) {
+    file        = "BOW_FIRE_02.WAV";
+    vol         = 60;
+    reverbLevel = 1;
 };
 
-Instance GFA_COLLISION_BREAK (C_SFX_Def) {
-    file = "PICKLOCK_BROKEN.WAV";
-    vol  = 50;
+instance GFA_COLLISION_BREAK(GFA_C_SFX) {
+    file        = "PICKLOCK_BROKEN.WAV";
+    vol         = 50;
+    reverbLevel = 1;
 };

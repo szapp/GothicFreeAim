@@ -11,8 +11,7 @@
  * identify the original author.
  */
 
-Instance CamModGFA (CCamSys)
-{
+instance CamModGFA(GFA_CCamSys) {
     bestRange           = 1.8; // Decreased from 2.5
     minRange            = 1.4;
     maxRange            = 5.0; // Decreased from 10.0

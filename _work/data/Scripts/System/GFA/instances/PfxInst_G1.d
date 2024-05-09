@@ -11,22 +11,21 @@
  * identify the original author.
  */
 
-Instance GFA_TRAIL (C_ParticleFX)
-{
-    ppsvalue = 100.000000000;
-    ppsislooping = 1;
-    ppsscalekeys_s = "1";
+instance GFA_TRAIL(GFA_C_ParticleFX) {
+    ppsvalue = 20.000000000;
+    ppsislooping = 0;
+    ppsscalekeys_s = "1 1 1 1 8 8 8 8 8 8   8 8 8 8 8 8 8 8 8 8"; // Artificial delay of 0.4 sec
+    ppsFPS = 10; // Ten keys = second, that makes 2 seconds total
+    ppsissmooth = 0; // Do not interpolate keys
     shptype_s = "POINT";
-    shpfor_s = "object";
-    shpoffsetvec_s = "0 0 0";
+    shpfor_s = "OBJECT";
+    shpoffsetvec_s = "-75 0 0";
     dirmode_s = "DIR";
-    dirfor_s = "object";
-    dirmodetargetfor_s = "OBJECT";
-    dirmodetargetpos_s = "0 0 0";
+    dirfor_s = "OBJECT";
     diranglehead = 270.0;
     dirangleheadvar = 0.000000000;
     dirangleelevvar = 0.000000000;
-    velavg = 0.0000001;
+    velavg = 0.7000001;
     lsppartavg = 300.000000000;
     lsppartvar = 0.0000001;
     flygravity_s = "0 0 0";
@@ -44,11 +43,9 @@ Instance GFA_TRAIL (C_ParticleFX)
     trlfadespeed = 0.5;
     trltexture_s = "SMK_16BIT_A0.TGA";
     trlwidth = 3;
-    useemittersfor = 1;
 };
 
-Instance GFA_IMPACT (C_ParticleFX)
-{
+instance GFA_IMPACT(GFA_C_ParticleFX) {
     ppsvalue = 200.000000000;
     ppsscalekeys_s = "1";
     ppsissmooth = 1;
