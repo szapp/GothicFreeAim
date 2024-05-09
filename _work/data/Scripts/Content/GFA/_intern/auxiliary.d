@@ -167,7 +167,7 @@ func int GFA_GetActiveSpellIsScroll(var C_Npc slf) {
 func string GFA_GetSpellName(var int spellID) {
     const int spellFxInstanceNamesPtr = 0;
     if (!spellFxInstanceNamesPtr) {
-        var int symPtr; symbPtr = MEM_GetSymbol("SPELLFXINSTANCENAMES");
+        var int symbPtr; symbPtr = MEM_GetSymbol("SPELLFXINSTANCENAMES");
         if (symbPtr) {
             var zCPar_Symbol symb; symb = _^(symbPtr);
             spellFxInstanceNamesPtr = symb.content;
@@ -187,7 +187,7 @@ func string GFA_GetSpellName(var int spellID) {
 func string GFA_GetSpellAni(var int spellID) {
     const int spellFxAniLettersPtr = 0;
     if (!spellFxAniLettersPtr) {
-        var int symPtr; symbPtr = MEM_GetSymbol("SPELLFXANILETTERS");
+        var int symbPtr; symbPtr = MEM_GetSymbol("SPELLFXANILETTERS");
         if (symbPtr) {
             var zCPar_Symbol symb; symb = _^(symbPtr);
             spellFxAniLettersPtr = symb.content;
