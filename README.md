@@ -2,13 +2,14 @@
 
 [![Gothic Free Aim](https://github.com/szapp/GothicFreeAim/wiki/media/GFA_TITLE_LARGE_FA_trans.png)](https://github.com/szapp/GothicFreeAim)
 
+[![Syntax](https://github.com/szapp/GothicFreeAim/actions/workflows/syntax.yml/badge.svg)](https://github.com/szapp/GothicFreeAim/actions/workflows/syntax.yml)
 [![Documentation](https://img.shields.io/badge/docs-wiki-blue)](https://github.com/szapp/GothicFreeAim/wiki)
 [![GitHub release](https://img.shields.io/github/v/release/szapp/GothicFreeAim.svg)](https://github.com/szapp/GothicFreeAim/releases/latest)
-[![Combined downloads](https://api.szapp.de/downloads/gfa/total/badge)](https://github.com/szapp/GothicFreeAim/releases)
+[![Combined downloads](https://api.szapp.de/downloads/gfa/total/badge)](https://github.com/szapp/GothicFreeAim/releases)  
 [![Steam Gothic 1](https://img.shields.io/badge/steam-Gothic%201-2a3f5a?logo=steam&labelColor=1b2838)](https://steamcommunity.com/sharedfiles/filedetails/?id=2786959658)
 [![Steam Gothic 2](https://img.shields.io/badge/steam-Gothic%202-2a3f5a?logo=steam&labelColor=1b2838)](https://steamcommunity.com/sharedfiles/filedetails/?id=2786958841)
 
-**Script package for the Gothic video game series that enables free aiming for ranged weapons and spells.**
+**Script package for the Gothic video game series that enables free aiming for ranged weapons and spells.**  
 *Gothic, Gothic Sequel, Gothic II, Gothic II: Night of the Raven*
 
 <br />

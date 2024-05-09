@@ -1,0 +1,25 @@
+name: syntax
+
+on:
+  push:
+    paths:
+      - "_work/data/Scripts/**/*.src"
+      - "_work/data/Scripts/**/*.SRC"
+      - "_work/data/Scripts/**/*.d"
+      - "_work/data/Scripts/**/*.D"
+  workflow_dispatch:
+
+permissions:
+  checks: write
+  contents: read
+
+jobs:
+  parsiphae:
+    name: Run Parsiphae
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check scripts
+        uses: szapp/parsiphae-action@v1
+        with:
+          file: _work/data/Scripts/**/GFA/*.src
