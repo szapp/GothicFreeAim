@@ -215,102 +215,65 @@ func void GFA_SetupProjectile() {
     // The scattering is optional: If disabled, the default hit chance from Gothic is used, where shots are always
     // accurate, but register damage in a fraction of shots only, depending on skill and distance
     if (GFA_TRUE_HITCHANCE) {
-        // The accuracy is first used as a probability to decide whether a projectile should hit or not. Depending on
-        // this, the minimum (rmin) and maximum (rmax) scattering angles (half the visual angle) are designed by which
-        // the shot is deviated.
-        // Not-a-hit results in rmin=GFA_SCATTER_MISS and rmax=GFA_SCATTER_MAX.
-        // A positive hit results in rmin=0 and rmax=GFA_SCATTER_HIT*(-accuracy+100).
-        var int rmin;
-        var int rmax;
+        // Scattering is implemented by uniformly sampling from the area of a scatter radius which is scaled by the
+        // accuracy. Hit chance is thereby implemented by the naturally increasing area of the scattering radius at a
+        // given distance. Nevertheless, to accommodate the auto-aim hit chance equation at closer distances
+        // (smaller than RANGED_CHANCE_MINDIST), the scatter radius is unnaturally deformed to emulate auto-aim chances.
 
         // Retrieve accuracy percentage
         var int accuracy; accuracy = GFA_GetAccuracy_(); // Change the accuracy in that function, not here!
 
-        // Determine whether it is considered accurate enough for a positive hit
-        if (r_Max(99) < accuracy) {
+        // Because radius and area behave nonlinear, the accuracy is scaled with the area
+        var int baseRadius; baseRadius = castToIntf(GFA_SCATTER_BASE);
+        var int baseArea; baseArea = mulf(PI, sqrf(baseRadius));
+        var int baseDist; baseDist = castToIntf(RANGED_CHANCE_MINDIST);
 
-            // The projectile will land inside the hit radius scaled by the accuracy
-            rmin = FLOATNULL;
-
-            // The circle area from the radius scales better with accuracy
-            var int hitRadius; hitRadius = castToIntf(GFA_SCATTER_HIT);
-            var int hitArea; hitArea = mulf(PI, sqrf(hitRadius)); // Area of circle from radius
-
-            // Scale the maximum area with minimum accuracy
-            // (hitArea - 1) * (accuracy - 100)
-            // --------------------------------  + 1
-            //               -100
-            var int maxArea;
-            maxArea = addf(divf(mulf(subf(hitArea, FLOATONE), mkf(100-accuracy)), GFA_FLOAT1C), FLOATONE);
-
-            // Convert back to a radius
-            rmax = sqrtf(divf(maxArea, PI));
-
-            if (rmax > hitRadius) {
-                rmax = hitRadius;
-            };
-
+        // Scale the scatter area with accuracy
+        var int scaledArea; var int scaledRadius;
+        var int accFrac; accFrac = fracf(accuracy, 100);
+        if (lf(distPlayer, baseDist)) {
+            // Special case to emulate auto-aim hit chance at close range (see above)
+            var int radiusAtDist; radiusAtDist = mulf(divf(baseRadius, baseDist), distPlayer);
+            var int distScale; distScale = divf(distPlayer, baseDist);
+            var int scale; scale = addf(FLOATONE, mulf(distScale, subf(accFrac, FLOATONE))); // Linear interpolation
+            // Artificially scale hit area
+            var int areaAtDist; areaAtDist = mulf(PI, sqrf(radiusAtDist));
+            var int diff; diff = divf(baseArea, areaAtDist);
+            scaledArea = divf(mulf(baseArea, diff), scale);
+            // Back to radius
+            scaledRadius = sqrtf(divf(scaledArea, PI));
+            // Get corresponding radius at 'distPlayer' for deviation vector at 'distPlayer'
+            scaledRadius = mulf(divf(scaledRadius, baseDist), distPlayer);
         } else {
-            // The projectile will land outside of the hit radius
-            rmin = castToIntf(GFA_SCATTER_MISS);
-            rmax = castToIntf(GFA_SCATTER_MAX);
+            // At dist > RANGED_CHANCE_MINDIST, scale with distance to get accuracy irrespective of distance
+            scaledArea = mulf(baseArea, fracf(100, accuracy));
+            // Back to radius
+            scaledRadius = sqrtf(divf(scaledArea, PI));
         };
 
-        // r_MinMax works with integers: scale up
-        var int rmaxI; rmaxI = roundf(mulf(rmax, GFA_FLOAT1K));
+        // Sample uniformly from circle radius with length and angle
+        var int scaledRadiusI; scaledRadiusI = roundf(mulf(sqrf(scaledRadius), GFA_FLOAT1K)); // Squared and scaled up
+        var int deviation; deviation = sqrtf(fracf(r_Max(scaledRadiusI), 1000)); // Scale back down and take square-root
+        var int angle; angle = mulf(PI, fracf(r_Max(2000), 1000)); // Scaled up/down for better integer resolution
 
-        // Azimuth scatter (horizontal deviation from a perfect shot in degrees)
-        var int angleX; angleX = fracf(r_Max(rmaxI), 1000); // Here the 1000 are scaled down again
-
-        // For a circular scattering pattern the range of possible values (rmin and rmax) for angleY is decreased:
-        // r^2 - x^2 = y^2  =>  y = sqrt(r^2 - x^2), where r is the radius to stay within the maximum radius
-
-        // Adjust rmin
-        if (lf(angleX, rmin)) {
-            rmin = sqrtf(subf(sqrf(rmin), sqrf(angleX)));
-        } else {
-            rmin = FLOATNULL;
+        // Limit the maximum deviation. This is cosmetics only and does not impact the hit chance
+        // Essentially, visually wide scatter makes it frustrating, so the maximum amount of scatter is limited,
+        // while retaining the fraction of wide shots
+        var int maxDeviation; maxDeviation = castToIntf(GFA_SCATTER_MAX);
+        var int minDeviation; minDeviation = castToIntf(GFA_SCATTER_MIN);
+        minDeviation = addf(minDeviation, mulf(subf(FLOATONE, accFrac), subf(baseRadius, minDeviation)));
+        if (gf(deviation, maxDeviation)) {
+            deviation = maxDeviation;
+        } else if (lf(deviation, baseRadius) && gf(deviation, minDeviation)) {
+            deviation = minDeviation;
         };
 
-        // r_MinMax works with integers: scale up
-        var int rminI; rminI = roundf(mulf(rmin, GFA_FLOAT1K));
-
-        // Adjust rmax
-        if (lf(angleX, rmax)) {
-            rmax = sqrtf(subf(sqrf(rmax), sqrf(angleX)));
-        } else {
-            rmax = FLOATNULL;
-        };
-
-        // r_MinMax works with integers: scale up
-        rmaxI = roundf(mulf(rmax, GFA_FLOAT1K));
-
-        // Elevation scatter (vertical deviation from a perfect shot in degrees)
-        var int angleY; angleY = fracf(r_MinMax(rminI, rmaxI), 1000); // Here the 1000 are scaled down again
-
-        // Randomize the sign of scatter
-        if (r_Max(1)) { // 0 or 1, approx. 50-50 chance
-            angleX = negf(angleX);
-        };
-        if (r_Max(1)) {
-            angleY = negf(angleY);
-        };
-
-        // Create vector in local space from distance. The angles calculated above will be applied to this vector
+        // From 2D circle projection, create vector in local 3D space with distance
         var int localPos[3];
-        localPos[0] = FLOATNULL;
-        localPos[1] = FLOATNULL;
+        SinCosApprox(angle);
+        localPos[0] = mulf(deviation, cosApprox); // X
+        localPos[1] = mulf(deviation, sinApprox); // Y
         localPos[2] = distance; // Distance into outVec (facing direction)
-
-        // Rotate around x-axis by angleX (elevation scatter). Rotation equations are simplified, because x and y are 0
-        SinCosApprox(Print_ToRadian(angleX));
-        localPos[1] = mulf(negf(localPos[2]), sinApprox); //  y*cos - z*sin = y'
-        localPos[2] = mulf(localPos[2], cosApprox);       //  y*sin + z*cos = z'
-
-        // Rotate around y-axis by angleY (azimuth scatter)
-        SinCosApprox(Print_ToRadian(angleY));
-        localPos[0] = mulf(localPos[2], sinApprox);       //  x*cos + z*sin = x'
-        localPos[2] = mulf(localPos[2], cosApprox);       // -x*sin + z*cos = z'
 
         // Get camera vob
         var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
@@ -420,6 +383,9 @@ func void GFA_SetupProjectile() {
 
     // Update the shooting statistics
     GFA_StatsShots += 1;
+    if (GFA_TRUE_HITCHANCE) {
+        GFA_StatsHitsMonteCarlo += lef(deviation, baseRadius);
+    };
 
 
     if (GFA_DEBUG_PRINT) {
@@ -445,13 +411,22 @@ func void GFA_SetupProjectile() {
             MEM_Info(SB_ToString());
             SB_Clear();
 
-            SB("   scatter:           (");
-            SB(STR_Prefix(toStringf(angleX), 5));
-            SBc(176 /* deg */);
-            SB(", ");
-            SB(STR_Prefix(toStringf(angleY), 5));
-            SBc(176 /* deg */);
-            SB(") visual angles");
+            SB("   scatter:           ");
+            SB(STR_Prefix(toStringf(deviation), 5));
+            SB("cm deviation (");
+            SB(STR_Prefix(toStringf(baseRadius), 5));
+            SB("cm hit radius, ");
+            SB(STR_Prefix(toStringf(scaledRadius), 5));
+            SB("cm sample radius)");
+            MEM_Info(SB_ToString());
+            SB_Clear();
+
+            SB("   considered as:     ");
+            if (gf(deviation, baseRadius)) {
+                SB("miss");
+            } else {
+                SB("hit");
+            };
             MEM_Info(SB_ToString());
             SB_Clear();
         } else {

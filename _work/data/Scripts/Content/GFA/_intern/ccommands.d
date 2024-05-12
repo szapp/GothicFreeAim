@@ -148,13 +148,20 @@ func string GFA_GetShootingStats(var string args) {
 
     SB("Personal accuracy: ");
     var int pAccuracy;
+    var int pAccuracyMC;
     if (!GFA_StatsShots) {
         // Division by zero
         pAccuracy = FLOATNULL;
+        pAccuracyMC = FLOATNULL;
     } else {
         pAccuracy = mulf(fracf(GFA_StatsHits, GFA_StatsShots), GFA_FLOAT1C);
+        pAccuracyMC = mulf(fracf(GFA_StatsHitsMonteCarlo, GFA_StatsShots), GFA_FLOAT1C);
     };
     SB(STR_Prefix(toStringf(pAccuracy), 4));
+    if (GFA_TRUE_HITCHANCE) {
+        SB("%, theoretical (Monte-Carlo): ");
+        SB(STR_Prefix(toStringf(pAccuracyMC), 4));
+    };
     SB("%");
 
     var string ret; ret = SB_ToString();
@@ -171,6 +178,7 @@ func string GFA_GetShootingStats(var string args) {
 func string GFA_ResetShootingStats(var string _) {
     GFA_StatsShots = 0;
     GFA_StatsHits = 0;
+    GFA_StatsHitsMonteCarlo = 0;
     return "Shooting statistics reset.";
 };
 

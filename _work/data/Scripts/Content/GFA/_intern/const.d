@@ -118,9 +118,9 @@ const int    GFA_DRAWTIME_RELOAD    = 1250;                 // Time (ms) for rel
 var   int    GFA_BowDrawOnset;                              // Time onset of drawing the bow
 var   int    GFA_MouseMovedLast;                            // Time of last mouse movement
 
-const float  GFA_SCATTER_HIT        = 1.5;                  // (Visual angle)/2 within which everything is a hit
-const float  GFA_SCATTER_MISS       = 4.2;                  // (Visual angle)/2 outside which everything is a miss
-const float  GFA_SCATTER_MAX        = 6.0;                  // (Visual angle)/2 of maximum scatter (all in degrees)
+const float  GFA_SCATTER_BASE       = 50;                   // Deviation in cm at distance of RANGED_CHANCE_MINDIST
+const float  GFA_SCATTER_MIN        = 10;                   // Maximum deviation in cm for 100 accuracy
+const float  GFA_SCATTER_MAX        = 75;                   // Maximum deviation in cm for any shot
 
 var   int    GFA_CollTrj[6];                                // Projectile trajectory of last collision candidate
 var   string GFA_HitModelNode;                              // Name of model node that was hit
@@ -146,6 +146,7 @@ const int    GFA_NPC_MINIMAL_DAMAGE    = 1;
 
 var   int    GFA_StatsShots;                                // Shooting statistics: Count total number of shots taken
 var   int    GFA_StatsHits;                                 // Shooting statistics: Count positive hits on target
+var   int    GFA_StatsHitsMonteCarlo;                       // Shooting statistics: Count hits by theoretical deviation
 
 var   int    GFA_DebugTRTrj;                                // Handle of trace ray trajectory
 var   int    GFA_DebugTRBBox;                               // Handle of trace ray intersection
