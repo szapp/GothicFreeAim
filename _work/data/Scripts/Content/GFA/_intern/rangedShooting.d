@@ -226,7 +226,7 @@ func void GFA_SetupProjectile() {
         // Because radius and area behave nonlinear, the accuracy is scaled with the area
         var int baseRadius; baseRadius = castToIntf(GFA_SCATTER_BASE);
         var int baseArea; baseArea = mulf(PI, sqrf(baseRadius));
-        var int baseDist; baseDist = castToIntf(RANGED_CHANCE_MINDIST);
+        var int baseDist; baseDist = castToIntf(GFA_RANGED_CHANCE_MINDIST);
 
         // Scale the scatter area with accuracy
         var int scaledArea; var int scaledRadius;
