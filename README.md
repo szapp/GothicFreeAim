@@ -10,7 +10,7 @@
 [![Steam Gothic 2](https://img.shields.io/badge/steam-Gothic%202-2a3f5a?logo=steam&labelColor=1b2838)](https://steamcommunity.com/sharedfiles/filedetails/?id=2786958841)
 
 **Script package for the Gothic video game series that enables free aiming for ranged weapons and spells.**  
-*Gothic, Gothic Sequel, Gothic II, Gothic II: Night of the Raven*
+<kbd>Gothic</kbd> <kbd>Gothic Sequel</kbd> <kbd>Gothic II</kbd> <kbd>Gothic II: Night of the Raven</kbd>
 
 <br />
 
@@ -40,28 +40,71 @@ This not only helps to maintain your scripts at the latest version, but also ens
 
 Since submodules do not allow directly referring to sub-directories of the target repository, implement the following procedure.
 
-After adding GFA as submodule into a suitable sub-directory in your repository, refer to the relevant sub-directories using relative symlinks.
+First add GFA as a submodule into a suitable sub-directory off to the side in your repository. Then refer to the relevant sub-directories using relative symlinks.
 Symlinks are supported in git (also in Windows) and will resolve the file paths as desired.
 
-The following is done in the Windows Command Prompt with administrative privileges (for creating symlinks).
+This can be achieved by entering the following code into the Windows Command Prompt with administrative privileges (for creating symlinks). Mind the use of forward slashes.
 
 ```cmd
-mkdir .github/submodules
-git submodule add https://github.com/szapp/GothicFreeAim.git .github/submodules/GothicFreeAim
+mkdir .github\submodules
+git submodule add --name GothicFreeAim https://github.com/szapp/GothicFreeAim.git .github/submodules/GothicFreeAim
 git config core.symlinks true
 ```
 
-The file `.gitmodules` should now look like this (mind the use forward-slashes):
+The file `.gitmodules` should now look like this (compare the use of forward slashes):
 
 ```
-[submodule ".github/submodules/GothicFreeAim"]
+[submodule "GothicFreeAim"]
     path = .github/submodules/GothicFreeAim
     url = https://github.com/szapp/GothicFreeAim.git
 ```
 
-Now, you can add relevant symlinks to desired sub-directories within the GFA scripts, for example:
+Now, you can add relevant symlinks to desired sub-directories within the GFA scripts.
+
+For example, the internal content scripts (`Content/GFA/_intern`) should never be modified and can be linked to the submodule.
 
 ```cmd
-cd path/to/Scripts/GFA
-mklink /d _intern ../../../../.github/submodules/GothicFreeAim/_work/data/Scripts/Content/GFA/_intern
+cd path\to\Scripts\Content\GFA
+mklink /d _intern ..\..\..\..\..\.github\submodules\GothicFreeAim\_work\data\Scripts\Content\GFA\_intern
 ```
+
+The configuration (`Content/GFA/config`), on the other hand, will not be linked to be modified by you. Likewise, most of the system scripts do not need adjustment and can be linked as well.
+
+```cmd
+cd path\to\Scripts\System
+mklink /d GFA ..\..\..\..\.github\submodules\GothicFreeAim\_work\data\Scripts\System\GFA
+```
+
+The menu scripts, however, can be copied and placed in a separate file to adjust the menu positioning and language following the documentation.
+
+The directory tree would like something like this:
+```
+.
+├── .gitmodules
+├── .github/
+│   └── submodules/
+│       └── GothicFreeAim/
+│           └── ..
+└── path/
+    └── to/
+        └── Scripts/
+            ├── Content/
+            │   └── GFA/
+            │       ├── [_intern/]     <- symlink
+            │       ├── config/
+            │       │   └── ...
+            │       └── GFA_*.src
+            └── System/
+                ├── [GFA/]             <- symlink
+                └── Menu_Opt_GFA.d
+```
+
+When following these steps, this setup
+- prevents you from accidentally modifying the internal scripts which should never be altered
+- allows you to easily update the GFA core scripts in the event of an update with
+
+  ```cmd
+  git submodule update --remote
+  git add .github\submodules\GothicFreeAim
+  git commit -m "Update GFA core"
+  ```
