@@ -6,6 +6,8 @@
 [![Documentation](https://img.shields.io/badge/docs-wiki-blue)](https://github.com/szapp/GothicFreeAim/wiki)
 [![GitHub release](https://img.shields.io/github/v/release/szapp/GothicFreeAim.svg)](https://github.com/szapp/GothicFreeAim/releases/latest)
 [![Combined downloads](https://api.szapp.de/downloads/gfa/total/badge)](https://github.com/szapp/GothicFreeAim/releases)  
+[![World of Gothic](https://raw.githubusercontent.com/szapp/patch-template/main/.github/actions/initialization/badges/wog.svg)](https://www.worldofgothic.de/dl/download_613.htm)
+[![Spine](https://raw.githubusercontent.com/szapp/patch-template/main/.github/actions/initialization/badges/spine.svg)](https://clockwork-origins.com/spine)
 [![Steam Gothic 1](https://img.shields.io/badge/steam-Gothic%201-2a3f5a?logo=steam&labelColor=1b2838)](https://steamcommunity.com/sharedfiles/filedetails/?id=2786959658)
 [![Steam Gothic 2](https://img.shields.io/badge/steam-Gothic%202-2a3f5a?logo=steam&labelColor=1b2838)](https://steamcommunity.com/sharedfiles/filedetails/?id=2786958841)
 
@@ -14,7 +16,7 @@
 
 <br />
 
-[![Trailer on Youtube](https://raw.githubusercontent.com/wiki/szapp/GothicFreeAim/media/thumb_small.jpg)](https://www.youtube.com/watch?v=9CrFlxo21Qw)
+[![Trailer on Youtube](https://raw.githubusercontent.com/wiki/szapp/GothicFreeAim/media/thumb_medium.png)](https://www.youtube.com/watch?v=9CrFlxo21Qw)
 </div>
 
 ## Features
@@ -42,6 +44,9 @@ Since submodules do not allow directly referring to sub-directories of the targe
 
 First add GFA as a submodule into a suitable sub-directory off to the side in your repository. Then refer to the relevant sub-directories using relative symlinks.
 Symlinks are supported in git (also in Windows) and will resolve the file paths as desired.
+
+> [!TIP]
+> Have a look at the repository [szapp/FreeAiming](https://github.com/szapp/FreeAiming) for an example of using submodules.
 
 This can be achieved by entering the following code into the Windows Command Prompt with administrative privileges (for creating symlinks). Mind the use of forward slashes.
 
