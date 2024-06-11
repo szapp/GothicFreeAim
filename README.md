@@ -4,7 +4,6 @@
 
 [![Syntax](https://github.com/szapp/GothicFreeAim/actions/workflows/syntax.yml/badge.svg)](https://github.com/szapp/GothicFreeAim/actions/workflows/syntax.yml)
 [![Documentation](https://img.shields.io/badge/docs-wiki-blue)](https://github.com/szapp/GothicFreeAim/wiki)
-[![GitHub release](https://img.shields.io/github/v/release/szapp/GothicFreeAim.svg)](https://github.com/szapp/GothicFreeAim/releases/latest)
 [![Combined downloads](https://api.szapp.de/downloads/gfa/total/badge)](https://github.com/szapp/GothicFreeAim/releases)  
 [![World of Gothic](https://raw.githubusercontent.com/szapp/patch-template/main/.github/actions/initialization/badges/wog.svg)](https://www.worldofgothic.de/dl/download_613.htm)
 [![Spine](https://raw.githubusercontent.com/szapp/patch-template/main/.github/actions/initialization/badges/spine.svg)](https://clockwork-origins.com/spine)
