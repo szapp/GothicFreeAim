@@ -1,24 +1,14 @@
 /*
  * Engine offsets for Gothic 1
  *
- * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2019  mud-freak (@szapp)
- *
  * This file is part of Gothic Free Aim.
- * <http://github.com/szapp/GothicFreeAim>
+ * Copyright (C) 2016-2024  Sören Zapp (aka. mud-freak, szapp)
+ * https://github.com/szapp/GothicFreeAim
  *
  * Gothic Free Aim is free software: you can redistribute it and/or
  * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
- *
- * Gothic Free Aim is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * MIT License for more details.
- *
- * You should have received a copy of the MIT License along with
- * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -56,11 +46,13 @@ const int zCAIPlayer__CheckEnoughSpaceMoveDir        =  5248960; //0x5017C0
 const int oCNpc__player                              =  9288624; //0x8DBBB0
 const int oCNpc__TurnToEnemy_camCheck                =  0;                                 // Does not exist in Gothic 1
 const int oCNpc__GetAngles                           =  7650560; //0x74BD00
+const int oCNpc__GetFocusVob                         =  6881216; //0x68FFC0
 const int oCNpc__SetFocusVob                         =  6881136; //0x68FF70
 const int oCNpc__SetEnemy                            =  6888064; //0x691A80
 const int oCNpc__SetBodyState                        =  7045120; //0x6B8000
 const int oCNpc__GetInteractMob                      =  6973008; //0x6A6650
 const int oCNpc__EV_Strafe_magicCombat               =  0;                                 // Does not exist in Gothic 1
+const int oCNpc__FightAttackMagic                    =  7645184; //0x74A800                // Not used for Gothic 1
 const int oCNpc__Interrupt_stopAnisLayerA            =  6891985; //0x6929D1
 const int oCNpc__RefreshNpc_createAmmoIfNone         =  6940460; //0x69E72C
 const int oCNpcFocus__InitFocusModes                 =  6507760; //0x634CF0
@@ -94,7 +86,6 @@ const int zVEC3__NormalizeSafe                       =  4900544; //0x4AC6C0
 const int zTBBox3D__CalcGreaterBBox3D                =  5441728; //0x5308C0
 const int zTBBox3D__TraceRay                         =  5446896; //0x531CF0
 const int zCOBBox3D__Transform                       =  5462192; //0x5358B0
-const int ztimer                                     =  9236968; //0x8CF1E8
 const int oCGame__s_bUseOldControls                  =  0;                                 // Does not exist in Gothic 1
 const int zCInput_Win32__s_mouseEnabled              =  8835836; //0x86D2FC
 const int oCAIArrow__ReportCollisionToAI             =  6395360; //0x6195E0
@@ -105,6 +96,8 @@ const int oCAIArrow__ReportCollisionToAI_destroyPrj  =  6396025; //0x619879
 const int oCAIArrow__ReportCollisionToAI_keepPlyStrp =  6395401; //0x619609
 const int oCAIArrow__CanThisCollideWith_skipCheck    =  0;                                 // Not used for Gothic 1
 const int oCAIArrow__CanThisCollideWith_npcShooter   =  0;                                 // Not used for Gothic 1
+const int oCAIArrow__SetupAIVob_velocity1            =  0;                                 // Not used for Gothic 1
+const int oCAIArrow__SetupAIVob_velocity2            =  0;                                 // Not used for Gothic 1
 const int oCAIHuman__MagicMode_g2ctrlCheck           =  0;                                 // Does not exist in Gothic 1
 const int oCAIHuman__BowMode_g2ctrlCheck             =  0;                                 // Does not exist in Gothic 1
 const int oCAIHuman__BowMode_shootingKey             =  6359374; //0x61094E                // Not used for Gothic 1
@@ -119,7 +112,7 @@ const int cGameManager__HandleEvent_clearKeyBuffer   =  0;                      
 const int zCModel__CalcModelBBox3DWorld_rtn          =  5634548; //0x55F9F4 // Hook len 6
 const int zCModel__TraceRay_positiveNodeHit          =  5670981; //0x568845 // Hook len 7
 const int zCAIPlayer__IsSliding_true                 =  5233245; //0x4FDA5D // Hook len 5
-const int oCAniCtrl_Human__SearchStandAni_walkmode   =  6408587; //0x61C98B // Hook len 6
+const int oCAniCtrl_Human__SearchStandAni_walkmode   =  6408587; //0x61C98B // Hook len 7
 const int oCAIVobMove__DoAI_stopMovement             =  6389348; //0x617E64 // Hook len 7
 const int oCAIHuman__PC_CheckSpecialStates_lie       =  6370192; //0x613390 // Hook len 5
 const int oCAIHuman__PC_ActionMove_bodyState         =  0;                                 // Does not exist in Gothic 1
@@ -134,7 +127,7 @@ const int oCAIArrow__CanThisCollideWith_positive     =  6395335; //0x6195C7 // H
 const int oCAIArrow__DoAI_rtn                        =  6395210; //0x61954A // Hook len 6
 const int oCAIArrow__ReportCollisionToAI_collAll     =  6395474; //0x619652 // Hook len 8
 const int oCAIArrow__ReportCollisionToAI_hitChc      =  6395775; //0x61977F // Hook len 6
-const int oCAIArrow__ReportCollisionToAI_damage      =  6395861; //0x6197D5 // Hook len 7
+const int oCAIArrow__ReportCollisionToAI_damage      =  6395861; //0x6197D5 // Hook len 5
 const int oCAIArrowBase__DoAI_setLifeTime            =  6393028; //0x618CC4 // Hook len 7
 const int oCAIArrowBase__ReportCollisionToAI_hitNpc  =  6395866; //0x6197DA // Hook len 5
 const int oCAIArrowBase__ReportCollisionToAI_hitVob  =  0;                                 // Does not exist in Gothic 1
@@ -201,6 +194,7 @@ const int oCAIArrowBase_creatingImpactFX_offset      = 64;  //0x0040
 const int oCAIArrowBase_hasHit_offset                = 0;                                  // Does not exist in Gothic 1
 const int oCAIArrow_origin_offset                    = 88;  //0x0058
 const int oCAIArrow_destroyProjectile_offset         = 92;  //0x005C
+const int oCAIArrow_target_offset                    = 96;  //0x0060
 
 const int zCRigidBody_mass_offset                    = 0;   //0x0000
 const int zCRigidBody_xPos_offset                    = 80;  //0x0050
@@ -261,8 +255,10 @@ const int sizeof_zCOBBox3D                           = 68;  //0x0044
 const int sizeof_zTTraceRayReport                    = 40;  //0x0028
 const int sizeof_zCCollisionReport                   = 52;  //0x0034
 const int sizeof_zMAT4                               = 64;  //0x0040
+const int sizeof_zCSubMesh                           = 88;  //0x0058
 
 const int oCNpcFocus__num                            = 6;   // Number of different focus modes
+const int GFA_ITEM_NFOCUS                            = 1<<23; // Ensure it's defined (value differs across versions)
 
 // Trafo matrix as zMAT4 is divided column wise
 const int zMAT4_rightVec                             = 0; // Right vector

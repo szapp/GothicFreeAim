@@ -1,24 +1,14 @@
 /*
  * Collectable projectiles feature
  *
- * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2019  mud-freak (@szapp)
- *
  * This file is part of Gothic Free Aim.
- * <http://github.com/szapp/GothicFreeAim>
+ * Copyright (C) 2016-2024  Sören Zapp (aka. mud-freak, szapp)
+ * https://github.com/szapp/GothicFreeAim
  *
  * Gothic Free Aim is free software: you can redistribute it and/or
  * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
- *
- * Gothic Free Aim is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * MIT License for more details.
- *
- * You should have received a copy of the MIT License along with
- * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -47,7 +37,7 @@ func void GFA_RP_KeepProjectileInWorld() {
 
     // Always keep the projectile alive, set infinite life time
     if (gef(MEM_ReadInt(arrowAI+oCAIArrowBase_lifeTime_offset), FLOATNULL)) {
-        MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE_NEG);
+        MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, GFA_FLOATONE_NEG);
         projectile._zCVob_visualAlpha = FLOATONE; // Fully visible
     };
 
@@ -88,7 +78,7 @@ func void GFA_RP_KeepProjectileInWorld() {
             };
 
             // Make the projectile focusable, i.e. collectable
-            projectile.flags = projectile.flags & ~ITEM_NFOCUS;
+            projectile.flags = projectile.flags & ~GFA_ITEM_NFOCUS;
             projectile._zCVob_bitfield[4] = projectile._zCVob_bitfield[4] & ~zCVob_bitfield4_dontWriteIntoArchive;
 
             // Detach arrow AI from projectile (projectile will have no AI)
@@ -127,12 +117,16 @@ func void GFA_RP_PutProjectileIntoInventory() {
     var oCItem projectile; projectile = _^(projectilePtr);
 
     // Differentiate between positive hit and collision without damage (in case of auto aim hit registration)
-    var int positiveHit; positiveHit = MEMINT_SwitchG1G2(
-        (ECX != 100),                                      // Gothic 1: ECX is 100 if the hit did not register
-        MEM_ReadInt(arrowAI+oCAIArrowBase_hasHit_offset)); // Gothic 2: dedicated property (does not exist in Gothic 1)
-
+    var int positiveHit;
+    if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
+        // Gothic 1: ECX is 100 if the hit did not register
+        positiveHit = (ECX != 100);
+    } else {
+        // Gothic 2: dedicated property (does not exist in Gothic 1)
+        positiveHit = MEM_ReadInt(arrowAI+oCAIArrowBase_hasHit_offset);
+    };
     if (positiveHit) {
-        var C_Npc victim; victim = _^(MEMINT_SwitchG1G2(EBX, EDI));
+        var C_Npc victim; victim = _^(GFA_SwitchExe(EBX, EBP, EDI, EDI));
         var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
 
         // Replace the projectile if desired, retrieve new projectile instance from config

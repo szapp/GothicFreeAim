@@ -1,24 +1,14 @@
 /*
  * Custom projectile collision behaviors feature
  *
- * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2019  mud-freak (@szapp)
- *
  * This file is part of Gothic Free Aim.
- * <http://github.com/szapp/GothicFreeAim>
+ * Copyright (C) 2016-2024  Sören Zapp (aka. mud-freak, szapp)
+ * https://github.com/szapp/GothicFreeAim
  *
  * Gothic Free Aim is free software: you can redistribute it and/or
  * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
- *
- * Gothic Free Aim is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * MIT License for more details.
- *
- * You should have received a copy of the MIT License along with
- * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -28,7 +18,7 @@
  * function is called from GFA_CC_ProjectileCollisionWithNpc() to update the collision behavior for each projectile.
  */
 func void GFA_CC_SetProjectileCollisionWithNpc(var int setting) {
-    if (GOTHIC_BASE_VERSION != 2) {
+    if (GOTHIC_BASE_VERSION != 130) && (GOTHIC_BASE_VERSION != 2) {
         return;
     };
 
@@ -69,7 +59,7 @@ func void GFA_CC_SetProjectileCollisionWithNpc(var int setting) {
  * This code inspired by oCAIArrowBase::ReportCollisionToAI() (0x6A0ACF) of Gothic 2.
  */
 func void GFA_CC_ProjectileDeflect(var int rigidBody) {
-    if (!rigidBody) || (GOTHIC_BASE_VERSION != 1) {
+    if (!rigidBody) || ((GOTHIC_BASE_VERSION != 1) && (GOTHIC_BASE_VERSION != 112)) {
         return;
     };
 
@@ -82,9 +72,10 @@ func void GFA_CC_ProjectileDeflect(var int rigidBody) {
     MEM_CopyBytes(rigidBody+zCRigidBody_velocity_offset, _@(vel), sizeof_zVEC3); // zCRigidBody.velocity[3]
 
     // Adjust velocity
-    vel[0] = mulf(vel[0], 1061997773); // 0.8 as in 0x6A0AF7 (Gothic 2)
-    vel[1] = mulf(vel[1], 1061997773);
-    vel[2] = mulf(vel[2], 1061997773);
+    const int FLOAT_0_8 = 1061997773; // 0.8 as in 0x6A0AF7 (Gothic 2)
+    vel[0] = mulf(vel[0], FLOAT_0_8);
+    vel[1] = mulf(vel[1], FLOAT_0_8);
+    vel[2] = mulf(vel[2], FLOAT_0_8);
 
     // Apply velocity
     var int velPtr; velPtr = _@(vel);
@@ -103,7 +94,7 @@ func void GFA_CC_ProjectileDeflect(var int rigidBody) {
  * The code is inspired by oCAIArrowBase::ReportCollisionToAI() (0x6A0A54) of Gothic 2.
  */
 func void GFA_CC_ProjectileStuck(var int projectilePtr) {
-    if (!projectilePtr) || (GOTHIC_BASE_VERSION != 1) {
+    if (!projectilePtr) || ((GOTHIC_BASE_VERSION != 1) && (GOTHIC_BASE_VERSION != 112)) {
         return;
     };
     var oCItem projectile; projectile = _^(projectilePtr);
@@ -180,12 +171,16 @@ func int GFA_CC_GetCollisionWithWorld_(var C_Npc shooter, var int materials, var
  * does nothing or bounces off of the NPC. This function is also called for NPC shooters.
  */
 func void GFA_CC_ProjectileCollisionWithNpc() {
-    var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EBP);
+    var int arrowAI; arrowAI = GFA_SwitchExe(ESI, ESI, EBP, EBP);
     var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
 
     // Hit chance, calculated from skill (or dexterity in Gothic 1) and distance. G1: float, G2: integer
-    var int hitChancePtr; hitChancePtr = MEMINT_SwitchG1G2(/*esp+3Ch-28h*/ ESP+20, /*esp+1ACh-194h*/ ESP+24);
-    var int hitChance; hitChance = MEMINT_SwitchG1G2(MEM_ReadInt(hitChancePtr), mkf(MEM_ReadInt(hitChancePtr)));
+    var int offset; offset = GFA_SwitchExe(/*3Ch-28h*/ 20, 20, /*1ACh-194h*/ 24, 24);
+    var int hitChancePtr; hitChancePtr = ESP+offset;
+    var int hitChance; hitChance = MEM_ReadInt(hitChancePtr);
+    if (GOTHIC_BASE_VERSION == 130) || (GOTHIC_BASE_VERSION == 2) {
+        hitChance = mkf(hitChance);
+    };
 
     // Determine if it is a positive hit (may happen if GFA_TRUE_HITCHANCE == false)
     var int rand; rand = EAX % 100;
@@ -196,7 +191,7 @@ func void GFA_CC_ProjectileCollisionWithNpc() {
     MEM_WriteInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset, collisionCounter+1);
 
     // Collision behaviors
-    const int DESTROY = 0; // Projectile doest not cause damage and vanishes
+    const int DESTROY = 0; // Projectile does not cause damage and vanishes
     const int DAMAGE  = 1; // Projectile causes damage and may stay in the inventory of the victim
     const int DEFLECT = 2; // Projectile deflects off of the surfaces and bounces off
 
@@ -207,7 +202,7 @@ func void GFA_CC_ProjectileCollisionWithNpc() {
         collision = GFA_COLL_PRIOR_NPC;
     } else if (!hit) {
         // If not a positive hit, restore default behavior
-        if (GOTHIC_BASE_VERSION == 1) {
+        if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
             MEM_WriteInt(arrowAI+oCAIArrow_destroyProjectile_offset, 1); // Destroy projectile on impact
         } else {
             GFA_CC_SetProjectileCollisionWithNpc(0); // Restore default damage behavior (automatic by armor material)
@@ -215,14 +210,21 @@ func void GFA_CC_ProjectileCollisionWithNpc() {
         return;
     } else {
         // Retrieve the collision behavior based on the shooter, target and the material type of their armor
-        var C_Npc target; target = _^(MEMINT_SwitchG1G2(EBX, MEM_ReadInt(/*esp+1ACh-190h*/ ESP+28)));
+        var C_Npc target;
+        if (GOTHIC_BASE_VERSION == 1) {
+            target = _^(EBX);
+        } else if (GOTHIC_BASE_VERSION == 112) {
+            target = _^(EBP);
+        } else {
+            target = _^(MEM_ReadInt(/*esp+1ACh-190h*/ ESP+28));
+        };
         GFA_ProjectilePtr = MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset); // Temporarily provide projectile
         collision = GFA_CC_GetCollisionWithNpc_(shooter, target);
         GFA_ProjectilePtr = 0;
     };
 
     // Apply collision behavior
-    if (GOTHIC_BASE_VERSION == 1) {
+    if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
         if (collision == DEFLECT) {
             var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
             GFA_CC_ProjectileDeflect(projectile._zCVob_rigidBody);
@@ -238,7 +240,7 @@ func void GFA_CC_ProjectileCollisionWithNpc() {
 
     // Overwrite hit chance to disable the hit registration if it was supposed to be a positive hit, but now is not
     if (hit) && (collision != DAMAGE) {
-        MEM_WriteInt(hitChancePtr, MEMINT_SwitchG1G2(FLOATNULL, 0)); // G1: float, G2: integer
+        MEM_WriteInt(hitChancePtr, GFA_SwitchExe(FLOATNULL, FLOATNULL, 0, 0)); // G1: float, G2: integer
 
         // Update shooting statistics (decrement, if shot was supposed to hit, see GFA_OverwriteHitChance())
         if (Npc_IsPlayer(shooter)) && (GFA_ACTIVE) && (GFA_Flags & GFA_RANGED) {
@@ -268,8 +270,8 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
     var int collisionCounter; collisionCounter = MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset);
 
     // Retrieve the collision object (collision surface)
-    var int collReport; collReport = MEMINT_SwitchG1G2(/*esp+3Ch+4h*/ MEM_ReadInt(ESP+64), // zCCollisionReport*
-                                                       /*esp+30h+4h*/ MEM_ReadInt(ESP+52));
+    var int offset; offset = GFA_SwitchExe(/*3Ch+4h*/ 64, /*70h+4h*/ 116, /*30h+4h*/ 52, 52);
+    var int collReport; collReport = MEM_ReadInt(ESP+offset); // zCCollisionReport*
     // Collision object: the surface
     var int collObj; collObj = MEM_ReadInt(collReport+zCCollisionReport_hitCollObj_offset); // zCCollisionObject*
 
@@ -297,9 +299,9 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
         if (!vob.visual) || (Hlp_Is_oCNpc(vobPtr))  {
             return;
         };
-        if (!objCheckInheritance(vob.visual, zCProgMeshProto__classDef)) {
+        if (!GFA_ObjCheckInheritance(vob.visual, zCProgMeshProto__classDef)) {
             // Adjust the projectile to deflect (Gothic 2 does it by default)
-            if (GOTHIC_BASE_VERSION == 1) {
+            if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
                 GFA_CC_ProjectileDeflect(rigidBody);
             };
 
@@ -326,9 +328,9 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
             matPtr = MEM_ReadInt(matPtr+zCPolygon_material_offset); // zCMaterial*
         } else {
             // Vob iterates over materials (zCMaterial) directly
-            matPtr = MEM_ReadInt(materialList+i*88); // 0x0058 magic number? Taken from 0x6A0C20 in Gothic 2
+            matPtr = MEM_ReadInt(materialList+i*sizeof_zCSubMesh); // See 0x6A0C20 in Gothic 2
         };
-        if (!objCheckInheritance(matPtr, zCMaterial__classDef)) {
+        if (!GFA_ObjCheckInheritance(matPtr, zCMaterial__classDef)) {
             continue;
         };
 
@@ -373,7 +375,7 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
         if (!MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset)) { // Abusing as collision counter
             // Has not collided yet
 
-            if (GOTHIC_BASE_VERSION == 1) {
+            if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
                 // Gothic 1: Adjust the projectile to get stuck
                 GFA_CC_ProjectileStuck(projectilePtr);
             } else {
@@ -385,17 +387,17 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
         };
 
     } else if (collision == DESTROY) {
-        if (GOTHIC_BASE_VERSION == 2) {
-            EDI = -1;  // Sets the condition at 0x6A0A45 and 0x6A0C1A to false: Projectile deflects
+        if (GOTHIC_BASE_VERSION == 130) || (GOTHIC_BASE_VERSION == 2) {
+            EDI = -1;  // Sets the condition at 0x6A0A45 and 0x6A0C1A (G2) to false: Projectile deflects
         };
 
         // Destroy the projectile only if it is still fast enough and check number of prior collisions
-        if (gf(speed, FLOAT3C)) && (collisionCounter < 2) {
+        if (gf(speed, GFA_FLOAT3C)) && (collisionCounter < 2) {
             // For both Gothic 1 and Gothic 2
             GFA_CC_ProjectileDestroy(arrowAI);
 
             // Speed is high enough to break the projectile: Breaking sound and visual effect
-            Wld_StopEffect(GFA_BREAK_FX); // Sometimes collides several times, so disable first
+            GFA_Wld_StopEffect(GFA_BREAK_FX); // Sometimes collides several times, so disable first
             Wld_PlayEffect(GFA_BREAK_FX, projectile, projectile, 0, 0, 0, FALSE);
         } else {
             // If the projectile is too slow, it bounces off instead
@@ -429,7 +431,7 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
             };
         };
 
-        if (GOTHIC_BASE_VERSION == 1) {
+        if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
             // Gothic 1: Adjust the projectile to deflect
             GFA_CC_ProjectileDeflect(rigidBody);
         } else {
@@ -440,7 +442,7 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
 
 
     // Extra settings
-    if (GOTHIC_BASE_VERSION == 1) {
+    if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
         // Gothic 1: Play collision sounds. This was never fully implemented in the original Gothic 1 for some reason.
         // Additionally, the material sounds of Gothic 1 do not really work well with a small projectile. Therefore,
         // here are some other sound instances that resemble the different sounds quite well
@@ -453,16 +455,16 @@ func void GFA_CC_ProjectileCollisionWithWorld() {
         const int WATER = 1<<5;
         const int SNOW  = 1<<6;
 
-        if (gf(speed, FLOAT3C)) && (collisionCounter < 3) {
+        if (gf(speed, GFA_FLOAT3C)) && (collisionCounter < 3) {
             // Play sound on first collisions and if fast enough only
             if (materials & METAL) {
-                Snd_Play3d(projectile, "RUN_METAL_A4");
+                Snd_Play3d(projectile, GFA_COLL_SND_METAL);
             } else if (materials & STONE) && (collisionCounter < 2) {
-                Snd_Play3d(projectile, "RUN_WOOD_A4");
+                Snd_Play3d(projectile, GFA_COLL_SND_STONE);
             } else if (collision == STUCK) || (collision == DESTROY) {
-                Snd_Play3d(projectile, "CS_IHL_ST_EA");
+                Snd_Play3d(projectile, GFA_COLL_SND_STUCK);
             } else {
-                Snd_Play3d(projectile, "SCRATCH_SMALL");
+                Snd_Play3d(projectile, GFA_COLL_SND_OTHER);
             };
         };
 
@@ -498,7 +500,7 @@ func void GFA_CC_FadeProjectileVisibility() {
     if (!(projectile.bitfield[0] & zCVob_bitfield0_physicsEnabled)) {
         var int arrowAI; arrowAI = ESI; // oCAIArrow*
         var int lifeTime; lifeTime = MEM_ReadInt(arrowAI+oCAIArrowBase_lifeTime_offset);
-        if (lifeTime == FLOATONE_NEG) {
+        if (lifeTime == GFA_FLOATONE_NEG) {
             MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE);
         };
     };
@@ -511,11 +513,7 @@ func void GFA_CC_FadeProjectileVisibility() {
  */
 func int GFA_CC_DisableProjectileCollisionOnRebound(var int vobPtr, var int arrowAI) {
     // Check if the projectile bounced off of a surface before
-    if (MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset)) {
-        return FALSE;
-    } else {
-        return TRUE;
-    };
+    return (!MEM_ReadInt(arrowAI+oCAIArrowBase_creatingImpactFX_offset));
 };
 
 
@@ -533,13 +531,9 @@ func int GFA_CC_DisableProjectileCollisionWithTrigger(var int vobPtr, var int ar
     };
     var zCTrigger trigger; trigger = _^(vobPtr);
 
-    if (trigger.bitfield & zCTrigger_bitfield_respondToObject)
-    && (trigger.bitfield & zCTrigger_bitfield_reactToOnTouch) {
-        // Object-reacting trigger. This kind of trigger needs the collision, e.g. to react to projectiles
-        return TRUE;
-    } else {
-        return FALSE;
-    };
+    // Object-reacting trigger. This kind of trigger needs the collision, e.g. to react to projectiles
+    const int reactToTouchAndObject = zCTrigger_bitfield_respondToObject | zCTrigger_bitfield_reactToOnTouch;
+    return ((trigger.bitfield & reactToTouchAndObject) == reactToTouchAndObject);
 };
 
 
@@ -553,8 +547,9 @@ func int GFA_CC_DisableProjectileCollisionWithTrigger(var int vobPtr, var int ar
  */
 func void GFA_ExtendCollisionCheck() {
     // Retrieve oCAIArrow and collision vob
-    var int vobPtr; vobPtr = MEM_ReadInt(MEMINT_SwitchG1G2(/*esp+4h+4h*/ ESP+8, /*esp+8h+4h*/ ESP+12));
-    var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EDI);
+    var int offset; offset = GFA_SwitchExe(/*4h+4h*/ 8, 8, /*8h+4h*/ 12, 12);
+    var int vobPtr; vobPtr = MEM_ReadInt(ESP+offset);
+    var int arrowAI; arrowAI = GFA_SwitchExe(ESI, ESI, EDI, EDI);
 
     // Perform refined collision checks (in priority order to exit ASAP)
     var int hit; hit = TRUE;
@@ -569,7 +564,8 @@ func void GFA_ExtendCollisionCheck() {
         if (GFA_Flags & GFA_RANGED) && (hit) && (Npc_IsPlayer(shooter)) {
             hit = GFA_RefinedProjectileCollisionCheck(vobPtr, arrowAI);
         };
-    } else if (GFA_Flags & GFA_CUSTOM_COLLISIONS) && (GFA_TRIGGER_COLL_FIX) && (GOTHIC_BASE_VERSION == 2) {
+    } else if (GFA_Flags & GFA_CUSTOM_COLLISIONS) && (GFA_TRIGGER_COLL_FIX)
+           && ((GOTHIC_BASE_VERSION == 130) || (GOTHIC_BASE_VERSION == 2)) {
         // Ignore when colliding with triggers
         hit = GFA_CC_DisableProjectileCollisionWithTrigger(vobPtr, arrowAI);
     };
@@ -596,7 +592,8 @@ func void GFA_ExtendCollisionCheck() {
  * trigger collision bug for NPCs. Only implemented for Gothic 2, as the trigger bug does not exist in Gothic 1.
  */
 func void GFA_ExtendCollisionCheckNpc() {
-    if (IsHooked(oCAIArrow__CanThisCollideWith_positive)) || (GOTHIC_BASE_VERSION != 2) {
+    if (IsHooked(oCAIArrow__CanThisCollideWith_positive))
+    || ((GOTHIC_BASE_VERSION != 130) && (GOTHIC_BASE_VERSION != 2)) {
         return;
     };
 
@@ -604,25 +601,25 @@ func void GFA_ExtendCollisionCheckNpc() {
     MemoryProtectionOverride(oCAIArrow__CanThisCollideWith_skipCheck, 2);
     MEM_WriteByte(oCAIArrow__CanThisCollideWith_skipCheck,   /*EB*/ 235);             // jmp     0x6A14F0
     MEM_WriteByte(oCAIArrow__CanThisCollideWith_skipCheck+1, /*57*/  87);             //         0x6A14F0-0x6A1497-2
+    const int jumpAddr = oCAIArrow__CanThisCollideWith_npcShooter;
 
     // Re-add these checks later (after ignore list iteration and Daedalus hook)
-    ASM_Open(42);
+    ASM_Open(40); // Here: ECX = hit detected, EDI = arrow AI
     // Check if extended detection returned zero
     ASM_1(/*85*/ 133); ASM_1(/*C9*/ 201);                                             // test    ecx, ecx
-    ASM_1(/*74*/ 116); ASM_1(/*1D*/  29);                                             // jz      .continue
+    ASM_1(/*74*/ 116); ASM_1(/*1C*/  28);                                             // jz      .continue
     // Check if shooter is player
     ASM_1(/*51*/  81);                                                                // push    ecx
-    ASM_1(/*8B*/ 139); ASM_1(/*4F*/  79); ASM_1(/*5C*/  92);                          // mov     ecx, [edi+0x5C]
+    ASM_1(/*8B*/ 139); ASM_1(/*4F*/  79); ASM_1(oCAIArrow_origin_offset);             // mov     ecx, [edi+0x5C]
     ASM_1(/*8B*/ 139); ASM_1(/*01*/   1);                                             // mov     eax, [ecx]
-    ASM_1(/*FF*/ 255); ASM_1(/*90*/ 144); ASM_4(/*100*/256);                          // call    DWORD [eax+0x100]
+    ASM_1(/*FF*/ 255); ASM_1(/*90*/ 144); ASM_4(/*100*/256); // oCNpc::IsAPlayer      // call    DWORD [eax+0x100]
     ASM_1(/*59*/  89);                                                                // pop     ecx
     ASM_1(/*85*/ 133); ASM_1(/*C0*/ 192);                                             // test    eax, eax
-    ASM_1(/*75*/ 117); ASM_1(/*0C*/  12);                                             // jnz     .continue
+    ASM_1(/*75*/ 117); ASM_1(/*0B*/  11);                                             // jnz     .continue
     // Check if arrow AI has target
-    ASM_1(/*8B*/ 139); ASM_1(/*47*/  71); ASM_1(/*64*/ 100);                          // mov     eax, [edi+0x64]
+    ASM_1(/*8B*/ 139); ASM_1(/*47*/  71); ASM_1(oCAIArrow_target_offset);             // mov     eax, [edi+0x64]
     ASM_1(/*85*/ 133); ASM_1(/*C0*/ 192);                                             // test    eax, eax
-    ASM_1(/*74*/ 116); ASM_1(/*05*/   5);                                             // jz      .continue
-    ASM_1(/*E9*/ 233); ASM_4(oCAIArrow__CanThisCollideWith_npcShooter-ASM_Here()-4);  // jmp     0x6A14AA
+    ASM_1(/*0F*/  15); ASM_1(/*85*/ 133); ASM_4(jumpAddr-ASM_Here()-4);               // jnz     0x6A14AA
     // .continue:
     ASM_1(/*5F*/  95);                                                                // pop     edi
     ASM_1(/*5E*/  94);                                                                // pop     esi

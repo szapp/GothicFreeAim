@@ -1,24 +1,14 @@
 /*
  * Internal constants of GFA
  *
- * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2019  mud-freak (@szapp)
- *
  * This file is part of Gothic Free Aim.
- * <http://github.com/szapp/GothicFreeAim>
+ * Copyright (C) 2016-2024  Sören Zapp (aka. mud-freak, szapp)
+ * https://github.com/szapp/GothicFreeAim
  *
  * Gothic Free Aim is free software: you can redistribute it and/or
  * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
- *
- * Gothic Free Aim is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * MIT License for more details.
- *
- * You should have received a copy of the MIT License along with
- * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -29,7 +19,7 @@
 
 /* Initialization */
 
-const string GFA_VERSION            = "Gothic Free Aim v1.2.0";
+const string GFA_VERSION            = "Gothic Free Aim v1.4.0";
 const int    GFA_LEGO_FLAGS         = LeGo_HookEngine       // For initializing all hooks
                                     | LeGo_ConsoleCommands  // For console commands and debugging
                                     | LeGo_Random;          // For scattering and other uses of random numbers
@@ -50,7 +40,9 @@ const int    GFA_INITIALIZED        = 0;                    // Indicator whether
 const int    GFA_ACTIVE             = 0;                    // Status indicator of free aiming/free movement
 const int    GFA_ACT_FREEAIM        = 1<<1;                 // Free aiming status (for spells only)
 const int    GFA_ACT_MOVEMENT       = 1<<2;                 // Free movement status
-const int    GFA_SPL_FREEAIM        = (FMODE_MAGIC          // Free aiming modifier for spells
+const int    GFA_ACT_FAR            = 5;                    // Free aiming in ranged combat
+const int    GFA_ACT_SPL            = 7;                    // Free aiming spell
+const int    GFA_SPL_FREEAIM        = (GFA_ACT_SPL          // Free aiming modifier for spells
                                        & ~GFA_ACT_MOVEMENT);
 
 const int    GFA_ACTIVE_CTRL_SCHEME = 1;                    // Control scheme of active FMODE (for Gothic 1 always 1)
@@ -70,6 +62,7 @@ const int    GFA_RETICLE_MAX_SIZE   = 64;                   // Reticle size in p
 const int    GFA_RETICLE_PTR        = 0;                    // Reticle zCView
 var   int    GFA_AimVobHasFX;                               // For performance: check whether FX needs to be removed
 
+const string GFA_AIMVOB             = "GFA_AIMVOB";         // Uniquely identifiable name of aim vob
 const string GFA_CAMERA             = "CamModGFA";          // CCamSys_Def script instance
 
 const float  GFA_FOCUS_FAR_NPC      = 15.0;                 // NPC azimuth for ranged focus for free aiming
@@ -118,34 +111,42 @@ const int    GFA_MOVE_ANI_LAYER     = 2;                    // Layer of aiming m
 const string GFA_TRAIL_FX           = "GFA_TRAIL_VFX";      // Trail strip FX. Should not be changed
 const string GFA_TRAIL_FX_SIMPLE    = "GFA_TRAIL_INST_VFX"; // Simplified trail strip FX for use in Gothic 1
 const string GFA_BREAK_FX           = "GFA_DESTROY_VFX";    // FX of projectile breaking on impact with world
+const string GFA_CRITICALHIT_SFX    = "GFA_CRITICALHIT_SFX";// Sound FX to indicate critical hit
 
 const int    GFA_DRAWTIME_READY     = 475;                  // Time (ms) for readying the weapon. Fixed by animation
 const int    GFA_DRAWTIME_RELOAD    = 1250;                 // Time (ms) for reloading the weapon. Fixed by animation
 var   int    GFA_BowDrawOnset;                              // Time onset of drawing the bow
 var   int    GFA_MouseMovedLast;                            // Time of last mouse movement
 
-const float  GFA_SCATTER_HIT        = 1.5;                  // (Visual angle)/2 within which everything is a hit
-const float  GFA_SCATTER_MISS       = 4.2;                  // (Visual angle)/2 outside which everything is a miss
-const float  GFA_SCATTER_MAX        = 6.0;                  // (Visual angle)/2 of maximum scatter (all in degrees)
+const float  GFA_SCATTER_BASE       = 50;                   // Deviation in cm at distance of RANGED_CHANCE_MINDIST
+const float  GFA_SCATTER_MIN        = 10;                   // Maximum deviation in cm for 100 accuracy
+const float  GFA_SCATTER_MAX        = 75;                   // Maximum deviation in cm for any shot
 
 var   int    GFA_CollTrj[6];                                // Projectile trajectory of last collision candidate
 var   string GFA_HitModelNode;                              // Name of model node that was hit
 
 var   int    GFA_ProjectilePtr;                             // Pointer of currently colliding projectile (temporary)
 
-const int    DMG_NO_CHANGE          = 0;                    // Do not adjust the damage
-const int    DMG_DO_NOT_KNOCKOUT    = 1;                    // Normal damage, shot may kill but never knockout (HP != 1)
-const int    DMG_DO_NOT_KILL        = 2;                    // Normal damage, shot may knockout but never kill (HP > 0)
-const int    DMG_INSTANT_KNOCKOUT   = 3;                    // One shot knockout (HP = 1)
-const int    DMG_INSTANT_KILL       = 4;                    // One shot kill (HP = 0)
+const int    GFA_DMG_NO_CHANGE         = 0;                 // Do not adjust the damage
+const int    GFA_DMG_DO_NOT_KNOCKOUT   = 1;                 // Normal damage, shot may kill but never knockout (HP != 1)
+const int    GFA_DMG_DO_NOT_KILL       = 2;                 // Normal damage, shot may knockout but never kill (HP > 0)
+const int    GFA_DMG_INSTANT_KNOCKOUT  = 3;                 // One shot knockout (HP = 1)
+const int    GFA_DMG_INSTANT_KILL      = 4;                 // One shot kill (HP = 0)
 
-const int    DMG_BEHAVIOR_MAX       = 4;
+const int    GFA_DMG_BEHAVIOR_MAX      = 4;
+
+const int    GFA_GIL_SEPERATOR_ORC     = 0;                 // Do not overwrite! These constants are auto-filled in
+const int    GFA_FIGHT_DIST_CANCEL     = 3500;              // GFA_FillConstants according to the values found in the
+const float  GFA_RANGED_CHANCE_MINDIST = 1500;              // corresponding Daedalus script constants of the mod.
+const float  GFA_RANGED_CHANCE_MAXDIST = 4500;              // This ensures the existence of the constants
+const int    GFA_NPC_MINIMAL_DAMAGE    = 1;
 
 
 /* Debugging */
 
 var   int    GFA_StatsShots;                                // Shooting statistics: Count total number of shots taken
 var   int    GFA_StatsHits;                                 // Shooting statistics: Count positive hits on target
+var   int    GFA_StatsHitsMonteCarlo;                       // Shooting statistics: Count hits by theoretical deviation
 
 var   int    GFA_DebugTRTrj;                                // Handle of trace ray trajectory
 var   int    GFA_DebugTRBBox;                               // Handle of trace ray intersection
@@ -157,7 +158,7 @@ var   int    GFA_DebugBoneOBBox;                            // Handle of bone or
 
 /* Numerical constants */
 
-const int    FLOATONE_NEG           = -1082130432;          // -1 as float
-const int    FLOAT1C                = 1120403456;           // 100 as float
-const int    FLOAT3C                = 1133903872;           // 300 as float
-const int    FLOAT1K                = 1148846080;           // 1000 as float
+const int    GFA_FLOATONE_NEG           = -1082130432;      // -1 as float
+const int    GFA_FLOAT1C                = 1120403456;       // 100 as float
+const int    GFA_FLOAT3C                = 1133903872;       // 300 as float
+const int    GFA_FLOAT1K                = 1148846080;       // 1000 as float

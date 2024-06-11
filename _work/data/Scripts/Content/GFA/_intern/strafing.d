@@ -1,24 +1,14 @@
 /*
  * Movement during free aiming
  *
- * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2019  mud-freak (@szapp)
- *
  * This file is part of Gothic Free Aim.
- * <http://github.com/szapp/GothicFreeAim>
+ * Copyright (C) 2016-2024  Sören Zapp (aka. mud-freak, szapp)
+ * https://github.com/szapp/GothicFreeAim
  *
  * Gothic Free Aim is free software: you can redistribute it and/or
  * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
- *
- * Gothic Free Aim is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * MIT License for more details.
- *
- * You should have received a copy of the MIT License along with
- * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -31,7 +21,7 @@ func void GFA_AimMovement(var int movement, var string modifier) {
         return;
     };
 
-    var oCNpc her; her = getPlayerInst();
+    var oCNpc her; her = GFA_GetPlayerInst();
 
     // Send perception before anything else (every 1500 ms)
     var int newBodystate; newBodystate = -1;
@@ -80,7 +70,7 @@ func void GFA_AimMovement(var int movement, var string modifier) {
 
     // Get player model
     var int model; model = her._zCVob_visual;
-    if (!objCheckInheritance(model, zCModel__classDef)) {
+    if (!GFA_ObjCheckInheritance(model, zCModel__classDef)) {
         return;
     };
     var int bitfield; bitfield = MEM_ReadInt(her.anictrl+oCAIHuman_bitfield_offset);
@@ -236,7 +226,7 @@ func void GFA_Strafe() {
         return;
     };
 
-    var oCNpc her; her = getPlayerInst();
+    var oCNpc her; her = GFA_GetPlayerInst();
 
     // Check whether keys are pressed down (held)
     var int mFront;
@@ -276,7 +266,7 @@ func void GFA_Strafe() {
             // Also treat variations of casting animations
             var int spellID; spellID = Npc_GetActiveSpell(hero); // Scrolls are removed: sometimes not found
             if (GFA_InvestingOrCasting(hero) > 0) && (spellID != -1) {
-                modifier = ConcatStrings(modifier, MEM_ReadStatStringArr(spellFxAniLetters, spellID));
+                modifier = ConcatStrings(modifier, GFA_GetSpellAni(spellID));
             };
         } else if (her.fmode == FMODE_FAR) {
             modifier = "BOW";

@@ -1,24 +1,14 @@
 /*
  * Reticle handling
  *
- * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2019  mud-freak (@szapp)
- *
  * This file is part of Gothic Free Aim.
- * <http://github.com/szapp/GothicFreeAim>
+ * Copyright (C) 2016-2024  Sören Zapp (aka. mud-freak, szapp)
+ * https://github.com/szapp/GothicFreeAim
  *
  * Gothic Free Aim is free software: you can redistribute it and/or
  * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
- *
- * Gothic Free Aim is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * MIT License for more details.
- *
- * You should have received a copy of the MIT License along with
- * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -39,7 +29,7 @@ func void GFA_RemoveReticle() {
  */
 func void GFA_InsertReticle(var int reticlePtr) {
     // Get reticle instance from call-by-reference argument
-    var Reticle reticle; reticle = _^(reticlePtr);
+    var GFA_Reticle reticle; reticle = _^(reticlePtr);
     var int size;
 
     // Only draw the reticle if the texture is specified. An empty texture removes the reticle
@@ -137,11 +127,11 @@ func void GFA_GetRangedReticle_(var int target, var int distance, var int return
  * Wrapper function for the config function GFA_GetSpellReticle(). It is called from GFA_SpellAiming().
  * This function supplies a lot of spell properties.
  */
-func void GFA_GetSpellReticle_(var int target, var C_Spell spellInst, var int distance, var int returnPtr) {
+func void GFA_GetSpellReticle_(var int target, var GFA_C_Spell spellInst, var int distance, var int returnPtr) {
     // Define spell properties
     var int spellID; spellID = Npc_GetActiveSpell(hero);
     var int spellLvl; spellLvl = Npc_GetActiveSpellLevel(hero);
-    var int isScroll; isScroll = Npc_GetActiveSpellIsScroll(hero);
+    var int isScroll; isScroll = GFA_GetActiveSpellIsScroll(hero);
 
     // Getting the amount of mana invested takes a bit more effort
     var int spellOC; spellOC = _@(spellInst)-oCSpell_C_Spell_offset;

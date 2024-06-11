@@ -1,9 +1,25 @@
+///////////////////////////////////////////////////////////////////////////////
+// This file is part of Gothic Free Aim.
+// Copyright (C) 2016-2024  Sören Zapp (aka. mud-freak, szapp)
+// https://github.com/szapp/GothicFreeAim
+//
+// Gothic Free Aim is free software: you can redistribute it and/or
+// modify it under the terms of the MIT License.
+// On redistribution this notice must remain intact and all copies must
+// identify the original author.
+///////////////////////////////////////////////////////////////////////////////
+
+
 // Additions to Humans.mds
 //
 // Place in between the two curly brackets: { {  here  } }
 // Remember to delete the file _compiled\HUMANS.MSB (Gothic 2)
 
+Model ("HuS")
+{
 
+    aniEnum
+    {
 
 /////////////////////////////
 //     Gothic Free Aim     //
@@ -173,3 +189,6 @@
 
             aniBlend    ("t_MagLin_Aim_Move_2_Aim_MoveLB"  "s_MagLin_Aim_MoveLB"  0.2 0.2)
             aniBlend    ("t_MagLin_Aim_Move_2_Aim_MoveRB"  "s_MagLin_Aim_MoveRB"  0.2 0.2)
+
+    }
+}

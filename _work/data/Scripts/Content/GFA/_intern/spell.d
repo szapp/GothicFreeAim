@@ -1,24 +1,14 @@
 /*
  * Free aiming mechanics for spell combat
  *
- * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2019  mud-freak (@szapp)
- *
  * This file is part of Gothic Free Aim.
- * <http://github.com/szapp/GothicFreeAim>
+ * Copyright (C) 2016-2024  Sören Zapp (aka. mud-freak, szapp)
+ * https://github.com/szapp/GothicFreeAim
  *
  * Gothic Free Aim is free software: you can redistribute it and/or
  * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
- *
- * Gothic Free Aim is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * MIT License for more details.
- *
- * You should have received a copy of the MIT License along with
- * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -27,7 +17,7 @@
  * vob that is placed in front of the camera at the nearest intersection with the world or an object.
  */
 func void GFA_SetupSpell() {
-    var int spellOC; spellOC = MEMINT_SwitchG1G2(ESI, EBP);
+    var int spellOC; spellOC = GFA_SwitchExe(ESI, ESI, EBP, EBP);
     var int casterPtr; casterPtr = MEM_ReadInt(spellOC+oCSpell_spellCasterNpc_offset);
     if (!casterPtr) {
         return;
@@ -40,7 +30,7 @@ func void GFA_SetupSpell() {
     };
 
     // Determine focus type. For TARGET_COLLECT_NONE no focus will be collect, but only an intersection with the world
-    var C_Spell spell; spell = _^(spellOC+oCSpell_C_Spell_offset);
+    var GFA_C_Spell spell; spell = _^(spellOC+oCSpell_C_Spell_offset);
     var int focusType;
     if (spell.targetCollectAlgo == TARGET_COLLECT_NONE) {
         focusType = 0;
@@ -65,7 +55,7 @@ func void GFA_SetupSpell() {
  * but exits right away if the active spell does not support free aiming or if the player is not currently aiming.
  */
 func void GFA_SpellAiming() {
-    var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
+    var GFA_C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
     var int aniCtrlPtr; aniCtrlPtr = ECX;
 
     // Only show reticle for spells that support free aiming and during aiming (Gothic 1 controls)
@@ -127,7 +117,7 @@ func void GFA_SpellAiming() {
 
         // Shoot aim ray, to retrieve the distance to an intersection and a possible target
         GFA_AimRay(spell.targetCollectRange, focusType, _@(target), 0, _@(distance), 0);
-        distance = roundf(divf(mulf(distance, FLOAT1C), mkf(spell.targetCollectRange))); // Distance scaled to [0, 100]
+        distance = roundf(divf(mulf(distance, GFA_FLOAT1C), mkf(spell.targetCollectRange))); // Distance scaled [0, 100]
 
     } else {
         // No focus collection
@@ -139,8 +129,8 @@ func void GFA_SpellAiming() {
     };
 
     // Create reticle
-    var int reticlePtr; reticlePtr = MEM_Alloc(sizeof_Reticle);
-    var Reticle reticle; reticle = _^(reticlePtr);
+    var int reticlePtr; reticlePtr = MEM_Alloc(sizeof_GFA_Reticle);
+    var GFA_Reticle reticle; reticle = _^(reticlePtr);
     reticle.texture = ""; // Do not show reticle by default
     reticle.color = -1; // Do not set color by default
     reticle.size = 75; // Medium size by default
@@ -163,9 +153,9 @@ func void GFA_SpellLockMovement() {
         return;
     };
 
-    var oCNpc her; her = getPlayerInst();
+    var oCNpc her; her = GFA_GetPlayerInst();
     var int model; model = her._zCVob_visual;
-    if (!objCheckInheritance(model, zCModel__classDef)) {
+    if (!GFA_ObjCheckInheritance(model, zCModel__classDef)) {
         return;
     };
 
@@ -203,10 +193,7 @@ func void GFA_SpellLockMovement() {
         // Gothic 2 controls: Aim movement while investing/casting as well as allowing to cast from running
 
         // Do not allow any of the below when the player is lying after a fall
-        MEM_PushInstParam(hero);
-        MEM_PushIntParam(BS_LIE);
-        MEM_Call(C_BodyStateContains);
-        if (MEM_PopIntResult()) {
+        if (GFA_BodyStateContains(hero, BS_LIE)) {
             return;
         };
 
@@ -270,10 +257,10 @@ func void GFA_SpellLockMovement() {
  * offset where the Gothic 2 controls are used.
  */
 func void GFA_SpellStrafeReticle() {
-    if (GFA_ACTIVE_CTRL_SCHEME == 2) && (GFA_ACTIVE == FMODE_MAGIC) {
+    if (GFA_ACTIVE_CTRL_SCHEME == 2) && (GFA_ACTIVE == GFA_ACT_SPL) {
         // Use existing function to update reticle. Set ECX and back it up first
         var int ecxBak; ecxBak = ECX;
-        var oCNpc her; her = getPlayerInst();
+        var oCNpc her; her = GFA_GetPlayerInst();
         ECX = her.anictrl;
 
         GFA_SpellAiming();
@@ -299,7 +286,8 @@ func void GFA_SpellFixTarget() {
     };
 
     // Get collision vob and target vob
-    var int collisionVob; collisionVob = MEM_ReadInt(MEM_ReadInt(ESP+360)); // esp+164h+4h
+    var int offset; offset = GFA_SwitchExe(0, 0, 356, /*164h+4h*/ 360);
+    var int collisionVob; collisionVob = MEM_ReadInt(MEM_ReadInt(ESP+offset)); // zSVisualFXColl->collisionVob*
     var int target; target = MEM_ReadInt(visualFX+oCVisualFX_targetVob_offset);
 
     // Update target (increase/decrease reference counters properly)
@@ -328,13 +316,13 @@ func void GFA_ResetSpell() {
         return;
     };
 
-    var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
+    var GFA_C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
     if (!_@(spell)) {
         return;
     };
 
     // Stop active spell (to remove higher spell level)
-    var oCNpc her; her = getPlayerInst();
+    var oCNpc her; her = GFA_GetPlayerInst();
     var int magBookPtr; magBookPtr = her.mag_book;
     const int call = 0;
     if (CALL_Begin(call)) {

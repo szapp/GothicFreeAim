@@ -1,24 +1,14 @@
 /*
  * Free aiming mechanics for ranged combat shooting
  *
- * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2019  mud-freak (@szapp)
- *
  * This file is part of Gothic Free Aim.
- * <http://github.com/szapp/GothicFreeAim>
+ * Copyright (C) 2016-2024  Sören Zapp (aka. mud-freak, szapp)
+ * https://github.com/szapp/GothicFreeAim
  *
  * Gothic Free Aim is free software: you can redistribute it and/or
  * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
- *
- * Gothic Free Aim is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * MIT License for more details.
- *
- * You should have received a copy of the MIT License along with
- * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -90,8 +80,8 @@ func int GFA_GetInitialBaseDamage_(var int baseDamage, var int damageType, var i
 
     // Scale distance between [0, 100] for [RANGED_CHANCE_MINDIST, RANGED_CHANCE_MAXDIST], see AI_Constants.d
     // For readability: 100*(aimingDistance-RANGED_CHANCE_MINDIST)/(RANGED_CHANCE_MAXDIST-RANGED_CHANCE_MINDIST)
-    aimingDistance = roundf(divf(mulf(FLOAT1C, subf(aimingDistance, castToIntf(RANGED_CHANCE_MINDIST))),
-                                 subf(castToIntf(RANGED_CHANCE_MAXDIST), castToIntf(RANGED_CHANCE_MINDIST))));
+    aimingDistance = roundf(divf(mulf(GFA_FLOAT1C, subf(aimingDistance, castToIntf(GFA_RANGED_CHANCE_MINDIST))),
+                                 subf(castToIntf(GFA_RANGED_CHANCE_MAXDIST), castToIntf(GFA_RANGED_CHANCE_MINDIST))));
     // Clip to range [0, 100]
     if (aimingDistance > 100) {
         aimingDistance = 100;
@@ -172,7 +162,7 @@ func void GFA_SetupProjectile() {
     // When the target is too close, shots go vertically up, because the reticle is targeted. To solve this problem,
     // restrict the minimum distance
     var int focusDist;
-    var oCNpc her; her = getPlayerInst();
+    var oCNpc her; her = GFA_GetPlayerInst();
     if (Hlp_Is_oCNpc(her.focus_vob)) {
         var C_Npc focusNpc; focusNpc = _^(her.focus_vob);
         focusDist = Npc_GetDistToPlayer(focusNpc);
@@ -225,102 +215,65 @@ func void GFA_SetupProjectile() {
     // The scattering is optional: If disabled, the default hit chance from Gothic is used, where shots are always
     // accurate, but register damage in a fraction of shots only, depending on skill and distance
     if (GFA_TRUE_HITCHANCE) {
-        // The accuracy is first used as a probability to decide whether a projectile should hit or not. Depending on
-        // this, the minimum (rmin) and maximum (rmax) scattering angles (half the visual angle) are designed by which
-        // the shot is deviated.
-        // Not-a-hit results in rmin=GFA_SCATTER_MISS and rmax=GFA_SCATTER_MAX.
-        // A positive hit results in rmin=0 and rmax=GFA_SCATTER_HIT*(-accuracy+100).
-        var int rmin;
-        var int rmax;
+        // Scattering is implemented by uniformly sampling from the area of a scatter radius which is scaled by the
+        // accuracy. Hit chance is thereby implemented by the naturally increasing area of the scattering radius at a
+        // given distance. Nevertheless, to accommodate the auto-aim hit chance equation at closer distances
+        // (smaller than RANGED_CHANCE_MINDIST), the scatter radius is unnaturally deformed to emulate auto-aim chances.
 
         // Retrieve accuracy percentage
         var int accuracy; accuracy = GFA_GetAccuracy_(); // Change the accuracy in that function, not here!
 
-        // Determine whether it is considered accurate enough for a positive hit
-        if (r_Max(99) < accuracy) {
+        // Because radius and area behave nonlinear, the accuracy is scaled with the area
+        var int baseRadius; baseRadius = castToIntf(GFA_SCATTER_BASE);
+        var int baseArea; baseArea = mulf(PI, sqrf(baseRadius));
+        var int baseDist; baseDist = castToIntf(GFA_RANGED_CHANCE_MINDIST);
 
-            // The projectile will land inside the hit radius scaled by the accuracy
-            rmin = FLOATNULL;
-
-            // The circle area from the radius scales better with accuracy
-            var int hitRadius; hitRadius = castToIntf(GFA_SCATTER_HIT);
-            var int hitArea; hitArea = mulf(PI, sqrf(hitRadius)); // Area of circle from radius
-
-            // Scale the maximum area with minimum accuracy
-            // (hitArea - 1) * (accuracy - 100)
-            // --------------------------------  + 1
-            //               -100
-            var int maxArea;
-            maxArea = addf(divf(mulf(subf(hitArea, FLOATONE), mkf(100-accuracy)), FLOAT1C), FLOATONE);
-
-            // Convert back to a radius
-            rmax = sqrtf(divf(maxArea, PI));
-
-            if (rmax > hitRadius) {
-                rmax = hitRadius;
-            };
-
+        // Scale the scatter area with accuracy
+        var int scaledArea; var int scaledRadius;
+        var int accFrac; accFrac = fracf(accuracy, 100);
+        if (lf(distPlayer, baseDist)) {
+            // Special case to emulate auto-aim hit chance at close range (see above)
+            var int radiusAtDist; radiusAtDist = mulf(divf(baseRadius, baseDist), distPlayer);
+            var int distScale; distScale = divf(distPlayer, baseDist);
+            var int scale; scale = addf(FLOATONE, mulf(distScale, subf(accFrac, FLOATONE))); // Linear interpolation
+            // Artificially scale hit area
+            var int areaAtDist; areaAtDist = mulf(PI, sqrf(radiusAtDist));
+            var int diff; diff = divf(baseArea, areaAtDist);
+            scaledArea = divf(mulf(baseArea, diff), scale);
+            // Back to radius
+            scaledRadius = sqrtf(divf(scaledArea, PI));
+            // Get corresponding radius at 'distPlayer' for deviation vector at 'distPlayer'
+            scaledRadius = mulf(divf(scaledRadius, baseDist), distPlayer);
         } else {
-            // The projectile will land outside of the hit radius
-            rmin = castToIntf(GFA_SCATTER_MISS);
-            rmax = castToIntf(GFA_SCATTER_MAX);
+            // At dist > RANGED_CHANCE_MINDIST, scale with distance to get accuracy irrespective of distance
+            scaledArea = mulf(baseArea, fracf(100, accuracy));
+            // Back to radius
+            scaledRadius = sqrtf(divf(scaledArea, PI));
         };
 
-        // r_MinMax works with integers: scale up
-        var int rmaxI; rmaxI = roundf(mulf(rmax, FLOAT1K));
+        // Sample uniformly from circle radius with length and angle
+        var int scaledRadiusI; scaledRadiusI = roundf(mulf(sqrf(scaledRadius), GFA_FLOAT1K)); // Squared and scaled up
+        var int deviation; deviation = sqrtf(fracf(r_Max(scaledRadiusI), 1000)); // Scale back down and take square-root
+        var int angle; angle = mulf(PI, fracf(r_Max(2000), 1000)); // Scaled up/down for better integer resolution
 
-        // Azimuth scatter (horizontal deviation from a perfect shot in degrees)
-        var int angleX; angleX = fracf(r_Max(rmaxI), 1000); // Here the 1000 are scaled down again
-
-        // For a circular scattering pattern the range of possible values (rmin and rmax) for angleY is decreased:
-        // r^2 - x^2 = y^2  =>  y = sqrt(r^2 - x^2), where r is the radius to stay within the maximum radius
-
-        // Adjust rmin
-        if (lf(angleX, rmin)) {
-            rmin = sqrtf(subf(sqrf(rmin), sqrf(angleX)));
-        } else {
-            rmin = FLOATNULL;
+        // Limit the maximum deviation. This is cosmetics only and does not impact the hit chance
+        // Essentially, visually wide scatter makes it frustrating, so the maximum amount of scatter is limited,
+        // while retaining the fraction of wide shots
+        var int maxDeviation; maxDeviation = castToIntf(GFA_SCATTER_MAX);
+        var int minDeviation; minDeviation = castToIntf(GFA_SCATTER_MIN);
+        minDeviation = addf(minDeviation, mulf(subf(FLOATONE, accFrac), subf(baseRadius, minDeviation)));
+        if (gf(deviation, maxDeviation)) {
+            deviation = maxDeviation;
+        } else if (lf(deviation, baseRadius) && gf(deviation, minDeviation)) {
+            deviation = minDeviation;
         };
 
-        // r_MinMax works with integers: scale up
-        var int rminI; rminI = roundf(mulf(rmin, FLOAT1K));
-
-        // Adjust rmax
-        if (lf(angleX, rmax)) {
-            rmax = sqrtf(subf(sqrf(rmax), sqrf(angleX)));
-        } else {
-            rmax = FLOATNULL;
-        };
-
-        // r_MinMax works with integers: scale up
-        rmaxI = roundf(mulf(rmax, FLOAT1K));
-
-        // Elevation scatter (vertical deviation from a perfect shot in degrees)
-        var int angleY; angleY = fracf(r_MinMax(rminI, rmaxI), 1000); // Here the 1000 are scaled down again
-
-        // Randomize the sign of scatter
-        if (r_Max(1)) { // 0 or 1, approx. 50-50 chance
-            angleX = negf(angleX);
-        };
-        if (r_Max(1)) {
-            angleY = negf(angleY);
-        };
-
-        // Create vector in local space from distance. The angles calculated above will be applied to this vector
+        // From 2D circle projection, create vector in local 3D space with distance
         var int localPos[3];
-        localPos[0] = FLOATNULL;
-        localPos[1] = FLOATNULL;
+        SinCosApprox(angle);
+        localPos[0] = mulf(deviation, cosApprox); // X
+        localPos[1] = mulf(deviation, sinApprox); // Y
         localPos[2] = distance; // Distance into outVec (facing direction)
-
-        // Rotate around x-axis by angleX (elevation scatter). Rotation equations are simplified, because x and y are 0
-        SinCosApprox(Print_ToRadian(angleX));
-        localPos[1] = mulf(negf(localPos[2]), sinApprox); //  y*cos - z*sin = y'
-        localPos[2] = mulf(localPos[2], cosApprox);       //  y*sin + z*cos = z'
-
-        // Rotate around y-axis by angleY (azimuth scatter)
-        SinCosApprox(Print_ToRadian(angleY));
-        localPos[0] = mulf(localPos[2], sinApprox);       //  x*cos + z*sin = x'
-        localPos[2] = mulf(localPos[2], cosApprox);       // -x*sin + z*cos = z'
 
         // Get camera vob
         var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
@@ -430,6 +383,9 @@ func void GFA_SetupProjectile() {
 
     // Update the shooting statistics
     GFA_StatsShots += 1;
+    if (GFA_TRUE_HITCHANCE) {
+        GFA_StatsHitsMonteCarlo += lef(deviation, baseRadius);
+    };
 
 
     if (GFA_DEBUG_PRINT) {
@@ -437,7 +393,7 @@ func void GFA_SetupProjectile() {
         var int s; s = SB_New();
 
         SB("   aiming distance:   ");
-        SB(STR_Prefix(toStringf(divf(distPlayer, FLOAT1C)), 4));
+        SB(STR_Prefix(toStringf(divf(distPlayer, GFA_FLOAT1C)), 4));
         SB("m");
         MEM_Info(SB_ToString());
         SB_Clear();
@@ -455,18 +411,27 @@ func void GFA_SetupProjectile() {
             MEM_Info(SB_ToString());
             SB_Clear();
 
-            SB("   scatter:           (");
-            SB(STR_Prefix(toStringf(angleX), 5));
-            SBc(176 /* deg */);
-            SB(", ");
-            SB(STR_Prefix(toStringf(angleY), 5));
-            SBc(176 /* deg */);
-            SB(") visual angles");
+            SB("   scatter:           ");
+            SB(STR_Prefix(toStringf(deviation), 5));
+            SB("cm deviation (");
+            SB(STR_Prefix(toStringf(baseRadius), 5));
+            SB("cm hit radius, ");
+            SB(STR_Prefix(toStringf(scaledRadius), 5));
+            SB("cm sample radius)");
+            MEM_Info(SB_ToString());
+            SB_Clear();
+
+            SB("   considered as:     ");
+            if (gf(deviation, baseRadius)) {
+                SB("miss");
+            } else {
+                SB("hit");
+            };
             MEM_Info(SB_ToString());
             SB_Clear();
         } else {
             var int hitchance;
-            if (GOTHIC_BASE_VERSION == 1) {
+            if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
                 // In Gothic 1, the hit chance is determined by dexterity (for both bows and crossbows)
                 hitchance = hero.attribute[ATR_DEXTERITY];
             } else {
@@ -530,14 +495,14 @@ func void GFA_EnableProjectileGravity() {
             EAX = TRUE;
         } else {
             // No (collectable feature). Reset life time to -1
-            MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE_NEG);
+            MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, GFA_FLOATONE_NEG);
             EAX = FALSE;
         };
     } else if (!(projectile.bitfield[0] & zCVob_bitfield0_physicsEnabled)) {
         // Stopped moving: Decrease visibility?
         if (GFA_Flags & GFA_REUSE_PROJECTILES) {
             // No (collectable feature). Reset life time to -1
-            MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE_NEG);
+            MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, GFA_FLOATONE_NEG);
             EAX = FALSE;
         } else {
             // Yes (no collectable feature). Reset life time to 1
@@ -545,11 +510,11 @@ func void GFA_EnableProjectileGravity() {
             // Decrease life time and visibility (default behavior)
             EAX = TRUE;
         };
-    } else if (lf(lifeTime, FLOATONE_NEG)) {
+    } else if (lf(lifeTime, GFA_FLOATONE_NEG)) {
         // lifeTime < -1: Continue counting flight time until gravity drop
         lifeTime = addf(lifeTime, MEM_Timer.frameTimeFloat);
-        if (gef(lifeTime, FLOATONE_NEG)) {
-            lifeTime = FLOATONE_NEG;
+        if (gef(lifeTime, GFA_FLOATONE_NEG)) {
+            lifeTime = GFA_FLOATONE_NEG;
             // Apply gravity. Reset life time to -1
             var int rigidBody; rigidBody = projectile.rigidBody; // zCRigidBody*
             if (rigidBody) {
@@ -574,7 +539,7 @@ func void GFA_EnableProjectileGravity() {
  * float around with the previously set drop-off gravity (GFA_PROJECTILE_GRAVITY).
  */
 func void GFA_ResetProjectileGravity() {
-    var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, ECX);
+    var int arrowAI; arrowAI = GFA_SwitchExe(ESI, ESI, ECX, ECX);
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
     var int rigidBody; rigidBody = projectile._zCVob_rigidBody;
     if (!rigidBody) {
@@ -583,14 +548,14 @@ func void GFA_ResetProjectileGravity() {
 
     // Reset projectile gravity (zCRigidBody.gravity) after collision (oCAIArrow.collision) to default
     MEM_WriteInt(rigidBody+zCRigidBody_gravity_offset, FLOATONE);
-    if (lf(MEM_ReadInt(arrowAI+oCAIArrowBase_lifeTime_offset), FLOATONE_NEG)) {
+    if (lf(MEM_ReadInt(arrowAI+oCAIArrowBase_lifeTime_offset), GFA_FLOATONE_NEG)) {
         // Reset gravity timer
-        MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, FLOATONE_NEG);
+        MEM_WriteInt(arrowAI+oCAIArrowBase_lifeTime_offset, GFA_FLOATONE_NEG);
     };
 
     // Remove trail strip FX
-    if (GOTHIC_BASE_VERSION == 1) {
-        Wld_StopEffect_Ext(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0);
+    if (GOTHIC_BASE_VERSION != 2) {
+        GFA_Wld_StopEffect_Ext(GFA_TRAIL_FX_SIMPLE, projectile, projectile, 0);
     };
 };
 
@@ -605,7 +570,7 @@ func void GFA_ResetProjectileGravity() {
  * This function is only making changes if the shooter is the player.
  */
 func void GFA_OverwriteHitChance() {
-    var int arrowAI; arrowAI = MEMINT_SwitchG1G2(ESI, EBP);
+    var int arrowAI; arrowAI = GFA_SwitchExe(ESI, ESI, EBP, EBP);
     var C_Npc shooter; shooter = _^(MEM_ReadInt(arrowAI+oCAIArrow_origin_offset));
 
     // Only if shooter is the player and if free aiming is enabled for ranged combat
@@ -616,14 +581,18 @@ func void GFA_OverwriteHitChance() {
     var oCItem projectile; projectile = _^(MEM_ReadInt(arrowAI+oCAIArrowBase_hostVob_offset));
 
     // Hit chance, calculated from skill (or dexterity in Gothic 1) and distance
-    var int hitChancePtr; hitChancePtr = MEMINT_SwitchG1G2(/*esp+3Ch-28h*/ ESP+20, /*esp+1ACh-194h*/ ESP+24);
+    var int offset; offset = GFA_SwitchExe(/*3Ch-28h*/ 20, 20, 24, /*1ACh-194h*/ 24);
+    var int hitChancePtr; hitChancePtr = ESP+offset;
     var int hit;
 
     if (!GFA_TRUE_HITCHANCE) {
         // If accuracy/scattering is disabled, stick to the hit chance calculation from Gothic
 
         // G1: float, G2: integer
-        var int hitChance; hitChance = MEMINT_SwitchG1G2(MEM_ReadInt(hitChancePtr), mkf(MEM_ReadInt(hitChancePtr)));
+        var int hitChance; hitChance = MEM_ReadInt(hitChancePtr);
+        if (GOTHIC_BASE_VERSION == 130) || (GOTHIC_BASE_VERSION == 2) {
+            hitChance = mkf(hitChance);
+        };
 
         // The random number by which a hit is determined (integer)
         var int rand; rand = EAX % 100;
@@ -633,7 +602,7 @@ func void GFA_OverwriteHitChance() {
     } else {
         // If accuracy/scattering is enabled, all shots that hit the target are always positive hits
         hit = TRUE;
-        MEM_WriteInt(hitChancePtr, MEMINT_SwitchG1G2(FLOAT1C, 100)); // Overwrite to hit always
+        MEM_WriteInt(hitChancePtr, GFA_SwitchExe(GFA_FLOAT1C, GFA_FLOAT1C, 100, 100)); // Overwrite to hit always
     };
 
     // Update the shooting statistics
@@ -686,12 +655,12 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
     MEM_CopyBytes(vobPtr+zCVob_bbox3D_offset, _@(bbox), sizeof_zTBBox3D);
     var int dist; // Distance from bbox.mins to bbox.max
     dist = sqrtf(addf(addf(sqrf(subf(bbox[3], bbox[0])), sqrf(subf(bbox[4], bbox[1]))), sqrf(subf(bbox[5], bbox[2]))));
-    dist = addf(dist, FLOAT3C); // Add the 3m-shift of the start (see below)
+    dist = addf(dist, GFA_FLOAT3C); // Add the 3m-shift of the start (see below)
 
     // Adjust length of ray (large models have huge bounding boxes)
-    GFA_CollTrj[0] = subf(GFA_CollTrj[0], mulf(GFA_CollTrj[3], FLOAT3C)); // Start 3m behind projectile
-    GFA_CollTrj[1] = subf(GFA_CollTrj[1], mulf(GFA_CollTrj[4], FLOAT3C));
-    GFA_CollTrj[2] = subf(GFA_CollTrj[2], mulf(GFA_CollTrj[5], FLOAT3C));
+    GFA_CollTrj[0] = subf(GFA_CollTrj[0], mulf(GFA_CollTrj[3], GFA_FLOAT3C)); // Start 3m behind projectile
+    GFA_CollTrj[1] = subf(GFA_CollTrj[1], mulf(GFA_CollTrj[4], GFA_FLOAT3C));
+    GFA_CollTrj[2] = subf(GFA_CollTrj[2], mulf(GFA_CollTrj[5], GFA_FLOAT3C));
     GFA_CollTrj[3] = mulf(GFA_CollTrj[3], dist); // Trace trajectory from the edge through the bounding box
     GFA_CollTrj[4] = mulf(GFA_CollTrj[4], dist);
     GFA_CollTrj[5] = mulf(GFA_CollTrj[5], dist);
@@ -783,7 +752,9 @@ func int GFA_RefinedProjectileCollisionCheck(var int vobPtr, var int arrowAI) {
  * at an address where zCModel::TraceRay() returns a positive intersection.
  */
 func void GFA_RecordHitNode() {
-    var int nodeInst; nodeInst = MEM_ReadInt(MEMINT_SwitchG1G2(/*esp+18Ch-16Ch*/ ESP+32, /*esp+260h-248h*/ ESP+24));
+    var int offset; offset = GFA_SwitchExe(/*18Ch-16Ch*/ 32, 36, 24, /*260h-248h*/ 24);
+    var int nodeInstPtr; nodeInstPtr = ESP+offset;
+    var int nodeInst; nodeInst = MEM_ReadInt(nodeInstPtr); // zCModelNodeInst*
     var int node; node = MEM_ReadInt(nodeInst+zCModelNodeInst_protoNode_offset);
     GFA_HitModelNode = MEM_ReadString(node+zCModelNode_nodeName_offset);
 };

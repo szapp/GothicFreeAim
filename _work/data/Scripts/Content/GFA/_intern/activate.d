@@ -1,24 +1,14 @@
 /*
  * Activate free aiming and set internal settings
  *
- * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2019  mud-freak (@szapp)
- *
  * This file is part of Gothic Free Aim.
- * <http://github.com/szapp/GothicFreeAim>
+ * Copyright (C) 2016-2024  Sören Zapp (aka. mud-freak, szapp)
+ * https://github.com/szapp/GothicFreeAim
  *
  * Gothic Free Aim is free software: you can redistribute it and/or
  * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
- *
- * Gothic Free Aim is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * MIT License for more details.
- *
- * You should have received a copy of the MIT License along with
- * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -39,7 +29,7 @@ func void GFA_UpdateSettings(var int on) {
         if (GFA_Flags & GFA_RANGED) {
             if (GFA_NO_AIM_NO_FOCUS) {
                 // Set stricter focus collection
-                Focus_Ranged.npc_azi = castFromIntf(castToIntf(GFA_FOCUS_FAR_NPC)); // Cast twice for, Deadalus floats
+                Focus_Ranged.npc_azi = castFromIntf(castToIntf(GFA_FOCUS_FAR_NPC)); // Cast twice for Deadalus floats
             };
 
             // New camera mode (does not affect Gothic 1)
@@ -94,7 +84,7 @@ func void GFA_UpdateStatus() {
         GFA_DisableMagicDuringStrafing(GFA_Flags & GFA_SPELLS);
 
         // Apply control schemes for ranged and spell combat free aiming
-        if (GOTHIC_BASE_VERSION == 2) {
+        if (GOTHIC_BASE_VERSION == 130) || (GOTHIC_BASE_VERSION == 2) {
             // Get control scheme and overrides
             var int schemeAcross; schemeAcross = -(MEM_ReadInt(oCGame__s_bUseOldControls))+2; // G1 == 1, G2 == 2
             var int schemeRanged; schemeRanged = STR_ToInt(MEM_GetGothOpt("GFA", "overwriteControlSchemeRanged"));
@@ -125,8 +115,8 @@ func void GFA_UpdateStatus() {
  * accordingly:
  *  1 if not active (not currently aiming)
  *  4 if currently using a spell that supports aim movement (GFA_ACT_MOVEMENT)
- *  5 if currently aiming in ranged fight mode (FMODE_FAR)
- *  7 if currently aiming in magic fight mode with free aiming supported spell (FMODE_MAGIC)
+ *  5 if currently aiming in ranged fight mode (GFA_ACT_FAR)
+ *  7 if currently aiming in magic fight mode with free aiming supported spell (GFA_ACT_SPL)
  *
  * GFA_ACTIVE is prior set to 0 in GFA_UpdateStatus() if free aiming is disabled in the menu.
  *
@@ -150,7 +140,7 @@ func void GFA_IsActive() {
     };
 
     // Before anything else, check if player is in magic or ranged fight mode
-    var oCNpc her; her = getPlayerInst();
+    var oCNpc her; her = GFA_GetPlayerInst();
     if (her.fmode < FMODE_FAR) {
         GFA_SetCameraModes(0);
         GFA_AimMovement(0, "");
@@ -190,7 +180,7 @@ func void GFA_IsActive() {
     var _Cursor mouse; mouse = _^(Cursor_Ptr); // The _Cursor class from LeGo holds mouse properties
     var int keyPressed; keyPressed = (MEM_KeyPressed(MEM_GetKey(keyAiming)))
                                   || (MEM_KeyPressed(MEM_GetSecondaryKey(keyAiming)))
-                                  || (MEMINT_SwitchG1G2(mouse.keyLeft, FALSE)); // Additional key binding for Gothic 1
+                                  || (GFA_SwitchExe(mouse.keyLeft, mouse.keyLeft, FALSE, FALSE)); // Extra binding in G1
 
     // Body state checks
     var int standing;
@@ -210,7 +200,7 @@ func void GFA_IsActive() {
         GFA_SetCameraModes(1);
 
         // Check if active spell supports free aiming
-        var C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
+        var GFA_C_Spell spell; spell = GFA_GetActiveSpellInst(hero);
         var int eligible; eligible = GFA_IsSpellEligible(spell);
         if (!(eligible & GFA_ACT_FREEAIM)) {
             // Reset spell focus collection
@@ -247,16 +237,10 @@ func void GFA_IsActive() {
             };
 
             // Check if standing
-            MEM_PushInstParam(hero);
-            MEM_PushIntParam(BS_STAND);
-            MEM_Call(C_BodyStateContains);
-            standing = MEM_PopIntResult();
+            standing = GFA_BodyStateContains(hero, BS_STAND);
 
             // Exception: receiving damage removes standing body state
-            MEM_PushInstParam(hero);
-            MEM_PushIntParam(BS_STUMBLE);
-            MEM_Call(C_BodyStateContains);
-            stumbling = MEM_PopIntResult();
+            stumbling = GFA_BodyStateContains(hero, BS_STUMBLE);
 
             if (!standing) && (!stumbling) && (!GFA_InvestingOrCasting(hero)) {
                 GFA_ACTIVE = 1;
@@ -294,16 +278,10 @@ func void GFA_IsActive() {
         // Disable focus collection while running
         if (GFA_ACTIVE_CTRL_SCHEME == 1) || (!GFA_STRAFING) {
             // Check if standing
-            MEM_PushInstParam(hero);
-            MEM_PushIntParam(BS_STAND);
-            MEM_Call(C_BodyStateContains);
-            standing = MEM_PopIntResult();
+            standing = GFA_BodyStateContains(hero, BS_STAND);
 
             // Exception: receiving damage removes standing body state
-            MEM_PushInstParam(hero);
-            MEM_PushIntParam(BS_STUMBLE);
-            MEM_Call(C_BodyStateContains);
-            stumbling = MEM_PopIntResult();
+            stumbling = GFA_BodyStateContains(hero, BS_STUMBLE);
 
             if (!standing) && (!stumbling) {
                 GFA_ACTIVE = 1;
@@ -312,6 +290,6 @@ func void GFA_IsActive() {
         };
 
         // If this is reached, free aiming for ranged weapons is currently active
-        GFA_ACTIVE = FMODE_FAR; // Do not differentiate between bow and crossbow
+        GFA_ACTIVE = GFA_ACT_FAR; // Do not differentiate between bow and crossbow
     };
 };

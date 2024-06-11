@@ -1,24 +1,14 @@
 /*
  * Aim-specific trace ray and focus collection
  *
- * Gothic Free Aim (GFA) v1.2.0 - Free aiming for the video games Gothic 1 and Gothic 2 by Piranha Bytes
- * Copyright (C) 2016-2019  mud-freak (@szapp)
- *
  * This file is part of Gothic Free Aim.
- * <http://github.com/szapp/GothicFreeAim>
+ * Copyright (C) 2016-2024  Sören Zapp (aka. mud-freak, szapp)
+ * https://github.com/szapp/GothicFreeAim
  *
  * Gothic Free Aim is free software: you can redistribute it and/or
  * modify it under the terms of the MIT License.
  * On redistribution this notice must remain intact and all copies must
  * identify the original author.
- *
- * Gothic Free Aim is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * MIT License for more details.
- *
- * You should have received a copy of the MIT License along with
- * Gothic Free Aim.  If not, see <http://opensource.org/licenses/MIT>.
  */
 
 
@@ -36,7 +26,7 @@ func void GFA_AllowSoftSkinTraceRay(var int on) {
         // Skip first soft skin check, and first only!
         // The opcode for G1 and G2 is functionally identical. However, the instruction in G2 is 6 bytes long
         MEM_WriteByte(zCModel__TraceRay_softSkinCheck, ASMINT_OP_nop);
-        if (GOTHIC_BASE_VERSION == 1) {
+        if (GOTHIC_BASE_VERSION == 1) || (GOTHIC_BASE_VERSION == 112) {
             MEM_WriteByte(zCModel__TraceRay_softSkinCheck+1, /*33*/ 51); // xor  eax, eax
             MEM_WriteByte(zCModel__TraceRay_softSkinCheck+2, /*C0*/ 192);
         } else {
@@ -48,7 +38,7 @@ func void GFA_AllowSoftSkinTraceRay(var int on) {
         // G1:  8B 43 78         mov  eax, [ebx+78h]
         // G2:  8B 86 84 0 0 0   mov  eax, [esi+84h]
         MEM_WriteByte(zCModel__TraceRay_softSkinCheck, /*8B*/ 139);
-        MEM_WriteByte(zCModel__TraceRay_softSkinCheck+1, MEMINT_SwitchG1G2(/*43*/ 67, /*86*/ 134)); // EBX/ESI zCModel*
+        MEM_WriteByte(zCModel__TraceRay_softSkinCheck+1, GFA_SwitchExe(/*43*/ 67, 67, /*86*/ 134, 134)); // zCModel*
         MEM_WriteByte(zCModel__TraceRay_softSkinCheck+2, zCModel_meshSoftSkinList_numInArray_offset);
     };
     SET = !SET;
@@ -71,7 +61,7 @@ func int GFA_AimRayHead(var int npcPtr, var int fromPosPtr, var int dirPosPtr, v
             // Check if head has indeed a dedicated visual
             var int headNode; headNode = playerAI.modelHeadNode;
             if (MEM_ReadInt(headNode+zCModelNodeInst_visual_offset))
-            && (objCheckInheritance(npc._zCVob_visual, zCModel__classDef)) {
+            && (GFA_ObjCheckInheritance(npc._zCVob_visual, zCModel__classDef)) {
                 // Calculate bounding boxes of model nodes
                 var int model; model = npc._zCVob_visual;
                 const int call = 0;
@@ -128,7 +118,7 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
         // Get camera vob and player
         var zCVob camVob; camVob = _^(MEM_Game._zCSession_camVob);
         var zMAT4 camPos; camPos = _^(_@(camVob.trafoObjToWorld[0]));
-        var oCNpc her; her = getPlayerInst();
+        var oCNpc her; her = GFA_GetPlayerInst();
         var int herPtr; herPtr = _@(her);
 
         // Shift the start point for the trace ray beyond the player model. This is necessary, because if zooming out
@@ -144,17 +134,17 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
         if (GFA_CAMERA_X_SHIFT) {
             // This makes the distance mentioned above more complex and requires calculation of a point-line distance
             // between the camera and the player without taking any diagonal distance into account.
-            // For illustration: http://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
+            // For illustration: https://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
             // There x0 is the camera, x1 (or x2) is the player model, and d is what is being calculated.
 
             // Line consisting of two points: Left and right of the player model along the camera right vector
             var int line[6];
-            line[0] = subf(her._zCVob_trafoObjToWorld[ 3], mulf(camPos.v0[zMAT4_rightVec], FLOAT1K)); // Left
-            line[1] = subf(her._zCVob_trafoObjToWorld[ 7], mulf(camPos.v1[zMAT4_rightVec], FLOAT1K));
-            line[2] = subf(her._zCVob_trafoObjToWorld[11], mulf(camPos.v2[zMAT4_rightVec], FLOAT1K));
-            line[3] = addf(her._zCVob_trafoObjToWorld[ 3], mulf(camPos.v0[zMAT4_rightVec], FLOAT1K)); // Right
-            line[4] = addf(her._zCVob_trafoObjToWorld[ 7], mulf(camPos.v1[zMAT4_rightVec], FLOAT1K));
-            line[5] = addf(her._zCVob_trafoObjToWorld[11], mulf(camPos.v2[zMAT4_rightVec], FLOAT1K));
+            line[0] = subf(her._zCVob_trafoObjToWorld[ 3], mulf(camPos.v0[zMAT4_rightVec], GFA_FLOAT1K)); // Left
+            line[1] = subf(her._zCVob_trafoObjToWorld[ 7], mulf(camPos.v1[zMAT4_rightVec], GFA_FLOAT1K));
+            line[2] = subf(her._zCVob_trafoObjToWorld[11], mulf(camPos.v2[zMAT4_rightVec], GFA_FLOAT1K));
+            line[3] = addf(her._zCVob_trafoObjToWorld[ 3], mulf(camPos.v0[zMAT4_rightVec], GFA_FLOAT1K)); // Right
+            line[4] = addf(her._zCVob_trafoObjToWorld[ 7], mulf(camPos.v1[zMAT4_rightVec], GFA_FLOAT1K));
+            line[5] = addf(her._zCVob_trafoObjToWorld[11], mulf(camPos.v2[zMAT4_rightVec], GFA_FLOAT1K));
 
             // Subtract both points of the line from the camera position
             var int u[3]; var int v[3];
@@ -227,18 +217,13 @@ func int GFA_AimRay(var int distance, var int focusType, var int vobPtr, var int
 
             if (focusType != TARGET_TYPE_ITEMS) && (Hlp_Is_oCNpc(her.focus_vob)) {
                 // If an NPC focus is desired, more detailed checks are necessary
-
-                // Check if NPC is undead, function is not yet defined at time of parsing
                 var C_Npc target; target = _^(her.focus_vob);
-                MEM_PushInstParam(target);
-                MEM_Call(C_NpcIsUndead); // C_NpcIsUndead(target);
-                var int npcIsUndead; npcIsUndead = MEM_PopIntResult();
 
                 // More detailed focus type tests
-                if (focusType == TARGET_TYPE_NPCS)                                           // Focus any NPC
-                || ((focusType == TARGET_TYPE_ORCS) && (target.guild > GIL_SEPERATOR_ORC))   // Only focus orcs
-                || ((focusType == TARGET_TYPE_HUMANS) && (target.guild < GIL_SEPERATOR_HUM)) // Only focus humans
-                || ((focusType == TARGET_TYPE_UNDEAD) && (npcIsUndead)) {                    // Only focus undead NPCs
+                if (focusType == TARGET_TYPE_NPCS)                                             // Focus any NPC
+                || ((focusType == TARGET_TYPE_ORCS) && (target.guild > GFA_GIL_SEPERATOR_ORC)) // Only focus orcs
+                || ((focusType == TARGET_TYPE_HUMANS) && (target.guild < GIL_SEPERATOR_HUM))   // Only focus humans
+                || ((focusType == TARGET_TYPE_UNDEAD) && (GFA_NpcIsUndead(target))) {          // Only focus undead NPCs
                     // If focus was already found
                     if (her.focus_vob == foundVob) {
                         foundFocus = her.focus_vob;
