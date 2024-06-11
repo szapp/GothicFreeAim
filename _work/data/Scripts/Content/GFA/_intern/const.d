@@ -19,7 +19,7 @@
 
 /* Initialization */
 
-const string GFA_VERSION            = "Gothic Free Aim v1.2.0";
+const string GFA_VERSION            = "Gothic Free Aim v1.4.0";
 const int    GFA_LEGO_FLAGS         = LeGo_HookEngine       // For initializing all hooks
                                     | LeGo_ConsoleCommands  // For console commands and debugging
                                     | LeGo_Random;          // For scattering and other uses of random numbers
